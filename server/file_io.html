@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -24,12 +26,17 @@
 
   
   
-    <link rel="stylesheet" href="../_static/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+  
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  
   
 
   
-
-  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
     <link rel="top" title="IceProd master documentation" href="../index.html"/>
         <link rel="up" title="IceProd Server" href="index.html"/>
         <link rel="next" title="Globus" href="globus.html"/>
@@ -62,7 +69,7 @@
             
             
               <div class="version">
-                master
+                2.5.0
               </div>
             
           
@@ -83,22 +90,69 @@
           
             
             
-                <ul>
+              
+            
+            
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../admin/index.html">Administrator&#8217;s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../guide/login.html">Login</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/submission.html">Dataset Submission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/datasets.html">Dataset Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/tasks.html">Task Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/restapi.html">REST API Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/manually.html">Running Manually</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../admin/index.html">Administrator’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../admin/startup.html">Server Startup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../admin/common.html">Common Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../admin/extra_details.html">Extras</a></li>
+</ul>
+</li>
 </ul>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../core/index.html">IceProd Core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/index.html">IceProd Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/i3exec.html">I3Exec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/exe.html">Execution Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/exe_helper.html">Execution Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/exe_json.html">JSONRPC Calls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/jsonRPCclient.html">JSON-RPC Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/jsonUtil.html">JSON Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/init.html">Core Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/dataclasses.html">Dataclasses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/parser.html">Meta-Language Parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/serialization.html">Serialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/gridftp.html">GridFTP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/util.html">Utilities</a></li>
+</ul>
+</li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">IceProd Server</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="details/index.html">IceProd Server Details</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modules/db.html">Database Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modules/master_updater.html">Master Updater Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modules/proxy.html">Proxy Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modules/queue.html">Queueing Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modules/schedule.html">Schedule Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modules/website.html">Website Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="plugins/condor.html">Condor Plugin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="details/index.html">Server Details</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="details/submit_to_queue.html">From Submission to Queue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="details/task_relationships.html">Task Relationships</a></li>
+<li class="toctree-l3"><a class="reference internal" href="details/lifecycles.html">Lifecycles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="details/global_queueing.html">Global Queueing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="details/async.html">Asynchronous Programming</a></li>
+<li class="toctree-l3"><a class="reference internal" href="details/website.html">Website</a></li>
+<li class="toctree-l3"><a class="reference internal" href="details/auth.html">REST Authorization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="details/user_accounts.html">User Accounts</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rest_api/index.html">REST API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rest_api/datasets.html">Datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rest_api/config.html">Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rest_api/jobs.html">Jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rest_api/tasks.html">Tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rest_api/task_stats.html">Task Stats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rest_api/logs.html">Logs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rest_api/grids.html">Grids</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rest_api/pilots.html">Pilots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rest_api/auth.html">Auth</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="auth.html">Token Authentication</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config.html">Detailed Configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="dbmethods.html">DB Methods</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">File IO</a></li>
@@ -111,6 +165,7 @@
 <li class="toctree-l2"><a class="reference internal" href="server.html">Server</a></li>
 <li class="toctree-l2"><a class="reference internal" href="squid.html">Squid</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tornado.html">Tornado Web Utilities</a></li>
 </ul>
 </li>
 </ul>
@@ -134,169 +189,70 @@
 
       
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div style="float:right">
-            <a href="https://github.com/WIPACrepo/iceprod" class="fa fa-github"> Edit on GitHub</a>
-          </div>
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">IceProd Server</a> &raquo;</li>
+        
+      <li>File IO</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/server/file_io.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module-iceprod.server.file_io">
-<span id="id1"></span><span id="file-io"></span><span id="index-0"></span><h1>File IO<a class="headerlink" href="#module-iceprod.server.file_io" title="Permalink to this headline">¶</a></h1>
-<p>A <a class="reference external" href="https://docs.python.org/dev/library/concurrent.futures.html">Futures</a>-based
-file IO library using the Tornado
-<a class="reference external" href="http://tornado.readthedocs.org/en/latest/concurrent.html#tornado.concurrent.run_on_executor">concurrent.run_on_executor</a>
-decorator. Requires either Python &gt;= 3.2 or the <cite>futures</cite> package from pip.</p>
-<p>Tornado applications should be able to use it directly in a
-<a class="reference external" href="http://tornado.readthedocs.org/en/latest/gen.html#tornado.gen.coroutine">gen.coroutine</a>
-decorator, like so:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">iceprod.server.file_io</span> <span class="k">import</span> <span class="n">AsyncFileIO</span>
-<span class="k">class</span> <span class="nc">MyHandler</span><span class="p">(</span><span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">RequestHandler</span><span class="p">):</span>
-    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">io</span> <span class="o">=</span> <span class="n">AsyncFileIO</span><span class="p">()</span>
-        <span class="n">file</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">io</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s">&#39;my_file.txt&#39;</span><span class="p">)</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">io</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-        <span class="k">yield</span> <span class="n">AsyncFileIO</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
-</pre></div>
-</div>
-<dl class="class">
-<dt id="iceprod.server.file_io.AsyncFileIO">
-<em class="property">class </em><code class="descclassname">iceprod.server.file_io.</code><code class="descname">AsyncFileIO</code><span class="sig-paren">(</span><em>executor=None</em>, <em>io_loop=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/file_io.html#AsyncFileIO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.file_io.AsyncFileIO" title="Permalink to this definition">¶</a></dt>
-<dd><p>Async File IO hidden behind threads using concurrent.futures.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>executor</strong> &#8211; A concurrent.futures.Executor object, optional.
-Defaults to a 1 thread Executor.</li>
-<li><strong>io_loop</strong> &#8211; A tornado.ioloop.IOLoop object, optional.
-Defaults to the current IOLoop.</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-<dl class="method">
-<dt id="iceprod.server.file_io.AsyncFileIO.open">
-<code class="descname">open</code><span class="sig-paren">(</span><em>name</em>, <em>mode=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/file_io.html#AsyncFileIO.open"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.file_io.AsyncFileIO.open" title="Permalink to this definition">¶</a></dt>
-<dd><p>Open a file.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>filename</strong> &#8211; Filename of a file.</li>
-<li><strong>mode</strong> &#8211; Mode to open a file in, optional.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">file object.</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">IOError if file cannot be opened.</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.file_io.AsyncFileIO.read">
-<code class="descname">read</code><span class="sig-paren">(</span><em>file</em>, <em>bytes=65536</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/file_io.html#AsyncFileIO.read"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.file_io.AsyncFileIO.read" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read from an open file object.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>file</strong> &#8211; Open file object.</li>
-<li><strong>bytes</strong> &#8211; Number of bytes to read, defaults to 64k.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Data read from file.</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">IOError if file cannot be read from.</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.file_io.AsyncFileIO.readline">
-<code class="descname">readline</code><span class="sig-paren">(</span><em>file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/file_io.html#AsyncFileIO.readline"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.file_io.AsyncFileIO.readline" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read a line from an open file object.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>file</strong> &#8211; Open file object.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A line from the file.</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body">IOError if file cannot be read from.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.file_io.AsyncFileIO.write">
-<code class="descname">write</code><span class="sig-paren">(</span><em>file</em>, <em>data</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/file_io.html#AsyncFileIO.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.file_io.AsyncFileIO.write" title="Permalink to this definition">¶</a></dt>
-<dd><p>Write some data to an open file object.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>file</strong> &#8211; Open file object.</li>
-<li><strong>data</strong> &#8211; Some data to write.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">IOError if file cannot be written to.</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.file_io.AsyncFileIO.close">
-<code class="descname">close</code><span class="sig-paren">(</span><em>file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/file_io.html#AsyncFileIO.close"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.file_io.AsyncFileIO.close" title="Permalink to this definition">¶</a></dt>
-<dd><p>Close an open file object.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>file</strong> &#8211; Open file object.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body">IOError if file cannot be closed.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
+  <div class="section" id="file-io">
+<span id="index-0"></span><span id="id1"></span><h1>File IO<a class="headerlink" href="#file-io" title="Permalink to this headline">¶</a></h1>
 </div>
 
 
+           </div>
+           <div class="articleComments">
+            
            </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="globus.html" class="btn btn-neutral float-right" title="Globus" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="globus.html" class="btn btn-neutral float-right" title="Globus" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="dbmethods.html" class="btn btn-neutral" title="DB Methods" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="dbmethods.html" class="btn btn-neutral" title="DB Methods" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -328,15 +284,17 @@ Defaults to the current IOLoop.</li>
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
             VERSION:'master',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
@@ -345,14 +303,13 @@ Defaults to the current IOLoop.</li>
     <script type="text/javascript" src="../_static/js/theme.js"></script>
   
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

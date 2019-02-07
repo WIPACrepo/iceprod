@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -24,12 +26,17 @@
 
   
   
-    <link rel="stylesheet" href="../_static/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+  
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  
   
 
   
-
-  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
     <link rel="top" title="IceProd master documentation" href="../index.html"/>
         <link rel="next" title="Login" href="login.html"/>
         <link rel="prev" title="Overview" href="../overview.html"/> 
@@ -61,7 +68,7 @@
             
             
               <div class="version">
-                master
+                2.5.0
               </div>
             
           
@@ -82,22 +89,84 @@
           
             
             
-                <ul class="current">
+              
+            
+            
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">User&#8217;s Guide</a><ul>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">User’s Guide</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="login.html">Login</a></li>
 <li class="toctree-l2"><a class="reference internal" href="submission.html">Dataset Submission</a></li>
 <li class="toctree-l2"><a class="reference internal" href="datasets.html">Dataset Monitoring</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tasks.html">Task Monitoring</a></li>
-<li class="toctree-l2"><a class="reference internal" href="jsonrpc.html">JSON-RPC Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="restapi.html">REST API Interface</a></li>
 <li class="toctree-l2"><a class="reference internal" href="manually.html">Running Manually</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../admin/index.html">Administrator&#8217;s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../admin/index.html">Administrator’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../admin/startup.html">Server Startup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../admin/common.html">Common Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../admin/extra_details.html">Extras</a></li>
+</ul>
+</li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../core/index.html">IceProd Core</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../server/index.html">IceProd Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/index.html">IceProd Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/i3exec.html">I3Exec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/exe.html">Execution Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/exe_helper.html">Execution Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/exe_json.html">JSONRPC Calls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/jsonRPCclient.html">JSON-RPC Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/jsonUtil.html">JSON Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/init.html">Core Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/dataclasses.html">Dataclasses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/parser.html">Meta-Language Parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/serialization.html">Serialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/gridftp.html">GridFTP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/util.html">Utilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../server/index.html">IceProd Server</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../server/details/index.html">Server Details</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/submit_to_queue.html">From Submission to Queue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/task_relationships.html">Task Relationships</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/lifecycles.html">Lifecycles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/global_queueing.html">Global Queueing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/async.html">Asynchronous Programming</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/website.html">Website</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/auth.html">REST Authorization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/user_accounts.html">User Accounts</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../server/rest_api/index.html">REST API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/datasets.html">Datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/config.html">Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/jobs.html">Jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/tasks.html">Tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/task_stats.html">Task Stats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/logs.html">Logs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/grids.html">Grids</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/pilots.html">Pilots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/auth.html">Auth</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../server/auth.html">Token Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/config.html">Detailed Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/dbmethods.html">DB Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/file_io.html">File IO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/globus.html">Globus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/grid.html">Grid Queueing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/init.html">Server Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/module.html">Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/nginx.html">Nginx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/schedule.html">Schedule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/server.html">Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/squid.html">Squid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/tornado.html">Tornado Web Utilities</a></li>
+</ul>
+</li>
 </ul>
 
             
@@ -119,16 +188,53 @@
 
       
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div style="float:right">
-            <a href="https://github.com/WIPACrepo/iceprod" class="fa fa-github"> Edit on GitHub</a>
-          </div>
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>User’s Guide</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/guide/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
   <div class="section" id="user-s-guide">
-<h1>User&#8217;s Guide<a class="headerlink" href="#user-s-guide" title="Permalink to this headline">¶</a></h1>
-<p>From a user&#8217;s perspective, the only interface is the server website.
+<h1>User’s Guide<a class="headerlink" href="#user-s-guide" title="Permalink to this headline">¶</a></h1>
+<p>From a user’s perspective, the only interface is the server website.
 All interactions happen here: submitting a new dataset, monitoring
 progress, viewing errors, resetting tasks, etc.</p>
 <div class="icecube admonition note">
@@ -150,8 +256,8 @@ progress, viewing errors, resetting tasks, etc.</p>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="datasets.html">Dataset Monitoring</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tasks.html">Task Monitoring</a></li>
-<li class="toctree-l1"><a class="reference internal" href="jsonrpc.html">JSON-RPC Interface</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="jsonrpc.html#authentication">Authentication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="restapi.html">REST API Interface</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="restapi.html#authentication">Authentication</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="manually.html">Running Manually</a></li>
@@ -162,15 +268,18 @@ progress, viewing errors, resetting tasks, etc.</p>
 
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="login.html" class="btn btn-neutral float-right" title="Login" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="login.html" class="btn btn-neutral float-right" title="Login" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="../overview.html" class="btn btn-neutral" title="Overview" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="../overview.html" class="btn btn-neutral" title="Overview" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -202,15 +311,17 @@ progress, viewing errors, resetting tasks, etc.</p>
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
             VERSION:'master',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
@@ -219,14 +330,13 @@ progress, viewing errors, resetting tasks, etc.</p>
     <script type="text/javascript" src="../_static/js/theme.js"></script>
   
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

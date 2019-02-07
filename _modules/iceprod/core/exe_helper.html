@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -24,12 +26,17 @@
 
   
   
-    <link rel="stylesheet" href="../../../_static/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+  
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  
   
 
   
-
-  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
     <link rel="top" title="IceProd master documentation" href="../../../index.html"/>
         <link rel="up" title="iceprod.core" href="../core.html"/> 
 
@@ -60,7 +67,7 @@
             
             
               <div class="version">
-                master
+                2.5.0
               </div>
             
           
@@ -81,14 +88,84 @@
           
             
             
-                <ul>
+              
+            
+            
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../admin/index.html">Administrator&#8217;s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/login.html">Login</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/submission.html">Dataset Submission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/datasets.html">Dataset Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/tasks.html">Task Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/restapi.html">REST API Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/manually.html">Running Manually</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../admin/index.html">Administrator’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../admin/startup.html">Server Startup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../admin/common.html">Common Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../admin/extra_details.html">Extras</a></li>
+</ul>
+</li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../core/index.html">IceProd Core</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../server/index.html">IceProd Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/index.html">IceProd Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/i3exec.html">I3Exec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/exe.html">Execution Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/exe_helper.html">Execution Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/exe_json.html">JSONRPC Calls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/jsonRPCclient.html">JSON-RPC Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/jsonUtil.html">JSON Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/init.html">Core Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/dataclasses.html">Dataclasses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/parser.html">Meta-Language Parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/serialization.html">Serialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/gridftp.html">GridFTP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/util.html">Utilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../server/index.html">IceProd Server</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/details/index.html">Server Details</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/submit_to_queue.html">From Submission to Queue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/task_relationships.html">Task Relationships</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/lifecycles.html">Lifecycles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/global_queueing.html">Global Queueing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/async.html">Asynchronous Programming</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/website.html">Website</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/auth.html">REST Authorization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/user_accounts.html">User Accounts</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/rest_api/index.html">REST API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/datasets.html">Datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/config.html">Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/jobs.html">Jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/tasks.html">Tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/task_stats.html">Task Stats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/logs.html">Logs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/grids.html">Grids</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/pilots.html">Pilots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/auth.html">Auth</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/auth.html">Token Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/config.html">Detailed Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/dbmethods.html">DB Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/file_io.html">File IO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/globus.html">Globus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/grid.html">Grid Queueing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/init.html">Server Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/module.html">Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/nginx.html">Nginx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/schedule.html">Schedule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/server.html">Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/squid.html">Squid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/tornado.html">Tornado Web Utilities</a></li>
+</ul>
+</li>
 </ul>
 
             
@@ -110,19 +187,59 @@
 
       
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div style="float:right">
-            <a href="https://github.com/WIPACrepo/iceprod" class="fa fa-github"> Edit on GitHub</a>
-          </div>
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../core.html">iceprod.core</a> &raquo;</li>
+        
+      <li>iceprod.core.exe_helper</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
   <h1>Source code for iceprod.core.exe_helper</h1><div class="highlight"><pre>
-<span class="sd">&quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Help run class-based modules, including iceprod modules.</span>
 
 <span class="sd">This is run in a subprocess to help set up the environment,</span>
 <span class="sd">as well as contain any crashes.</span>
+
+<span class="sd">Note that this file should be backward-compatible with python 2.7+,</span>
+<span class="sd">as it will be run under the user&#39;s environment.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span>
@@ -131,28 +248,42 @@
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">imp</span>
 <span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">importlib</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">Iterable</span>
 
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">import</span> <span class="nn">cPickle</span> <span class="k">as</span> <span class="nn">pickle</span>
-<span class="k">except</span><span class="p">:</span>
+<span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
     <span class="kn">import</span> <span class="nn">pickle</span>
 
-<span class="kn">import</span> <span class="nn">logging</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">Iterable</span>
+<span class="kn">from</span> <span class="nn">json</span> <span class="k">import</span> <span class="n">loads</span> <span class="k">as</span> <span class="n">json_decode</span>
 
-<span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">constants</span>
-<span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">dataclasses</span>
-<span class="kn">from</span> <span class="nn">iceprod.core.jsonUtil</span> <span class="k">import</span> <span class="n">json_decode</span>
+<span class="c1"># from iceprod.core import constants</span>
+<span class="n">constants_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)),</span><span class="s1">&#39;__init__.py&#39;</span><span class="p">)</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">spec</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">spec_from_file_location</span><span class="p">(</span><span class="s1">&#39;constants&#39;</span><span class="p">,</span> <span class="n">constants_path</span><span class="p">)</span>
+    <span class="n">constants_mod</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">module_from_spec</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
+    <span class="n">spec</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">exec_module</span><span class="p">(</span><span class="n">constants_mod</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">imp</span>
+    <span class="n">constants_mod</span> <span class="o">=</span> <span class="n">imp</span><span class="o">.</span><span class="n">load_source</span><span class="p">(</span><span class="s1">&#39;constants&#39;</span><span class="p">,</span><span class="n">constants_path</span><span class="p">)</span>
+<span class="n">constants</span> <span class="o">=</span> <span class="n">constants_mod</span><span class="o">.</span><span class="n">constants</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">String</span> <span class="o">=</span> <span class="n">basestring</span>
+<span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+    <span class="n">String</span> <span class="o">=</span> <span class="nb">str</span>
 
 <div class="viewcode-block" id="get_args"><a class="viewcode-back" href="../../../core/exe_helper.html#iceprod.core.exe_helper.get_args">[docs]</a><span class="k">def</span> <span class="nf">get_args</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;Read json of [args, kwargs] from the std args file&quot;&quot;&quot;</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">constants</span><span class="p">[</span><span class="s">&#39;args&#39;</span><span class="p">])</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">constants</span><span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">])</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;get_args raw: %r&#39;</span><span class="p">,</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;get_args raw: </span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">data</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">json_decode</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="unicode_to_ascii"><a class="viewcode-back" href="../../../core/exe_helper.html#iceprod.core.exe_helper.unicode_to_ascii">[docs]</a><span class="k">def</span> <span class="nf">unicode_to_ascii</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">dataclasses</span><span class="o">.</span><span class="n">String</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">String</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="nb">dict</span><span class="p">):</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
@@ -166,70 +297,73 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">obj</span></div>
 
-<div class="viewcode-block" id="run"><a class="viewcode-back" href="../../../core/exe_helper.html#iceprod.core.exe_helper.run">[docs]</a><span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="n">classname</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="k">False</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="k">False</span><span class="p">):</span>
+<div class="viewcode-block" id="run"><a class="viewcode-back" href="../../../core/exe_helper.html#iceprod.core.exe_helper.run">[docs]</a><span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="n">classname</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span> <span class="k">if</span> <span class="n">debug</span> <span class="k">else</span> <span class="n">logging</span><span class="o">.</span><span class="n">WARN</span><span class="p">)</span>
-    <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;exe_helper(%s)&#39;</span><span class="p">,</span> <span class="n">classname</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;exe_helper(</span><span class="si">%s</span><span class="s1">)&#39;</span><span class="p">,</span> <span class="n">classname</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">classname</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;classname is missing&#39;</span><span class="p">)</span>
-    <span class="n">class_args</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;args&#39;</span><span class="p">:[],</span><span class="s">&#39;kwargs&#39;</span><span class="p">:{}}</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;classname is missing&#39;</span><span class="p">)</span>
+    <span class="n">class_args</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;args&#39;</span><span class="p">:[],</span><span class="s1">&#39;kwargs&#39;</span><span class="p">:{}}</span>
     <span class="k">if</span> <span class="n">args</span><span class="p">:</span>
         <span class="n">class_args</span> <span class="o">=</span> <span class="n">get_args</span><span class="p">()</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;args: %r&#39;</span><span class="p">,</span> <span class="n">class_args</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;args: </span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">class_args</span><span class="p">)</span>
     <span class="n">class_args</span> <span class="o">=</span> <span class="n">unicode_to_ascii</span><span class="p">(</span><span class="n">class_args</span><span class="p">)</span>
-    <span class="n">parts</span> <span class="o">=</span> <span class="n">classname</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="n">classname</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
         <span class="n">p</span><span class="p">,</span><span class="n">cl</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filename</span><span class="p">),</span><span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">p</span><span class="p">,</span><span class="n">cl</span> <span class="o">=</span> <span class="n">parts</span>
     <span class="k">if</span> <span class="n">filename</span><span class="p">:</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;try loading from source&#39;</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;try loading from source&#39;</span><span class="p">)</span>
         <span class="n">mod</span> <span class="o">=</span> <span class="n">imp</span><span class="o">.</span><span class="n">load_source</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
         <span class="n">class_obj</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span><span class="n">cl</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;try regular import&#39;</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;try regular import&#39;</span><span class="p">)</span>
         <span class="n">mod</span> <span class="o">=</span> <span class="nb">__import__</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="nb">globals</span><span class="p">(),</span><span class="nb">locals</span><span class="p">(),[</span><span class="n">cl</span><span class="p">])</span>
         <span class="n">class_obj</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span><span class="n">cl</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">isclass</span><span class="p">(</span><span class="n">class_obj</span><span class="p">)</span> <span class="ow">and</span>
-        <span class="nb">any</span><span class="p">(</span><span class="k">True</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getmro</span><span class="p">(</span><span class="n">class_obj</span><span class="p">)</span> <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;IPBaseClass&#39;</span><span class="p">)):</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;IceProd v1 class&#39;</span><span class="p">)</span>
+        <span class="nb">any</span><span class="p">(</span><span class="kc">True</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getmro</span><span class="p">(</span><span class="n">class_obj</span><span class="p">)</span> <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;IPBaseClass&#39;</span><span class="p">)):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;IceProd v1 class&#39;</span><span class="p">)</span>
         <span class="n">instance</span> <span class="o">=</span> <span class="n">class_obj</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">class_args</span><span class="p">[</span><span class="s">&#39;kwargs&#39;</span><span class="p">]:</span>
-            <span class="n">instance</span><span class="o">.</span><span class="n">SetParameter</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">class_args</span><span class="p">[</span><span class="s">&#39;kwargs&#39;</span><span class="p">][</span><span class="n">k</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">class_args</span><span class="p">[</span><span class="s1">&#39;kwargs&#39;</span><span class="p">]:</span>
+            <span class="n">instance</span><span class="o">.</span><span class="n">SetParameter</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">class_args</span><span class="p">[</span><span class="s1">&#39;kwargs&#39;</span><span class="p">][</span><span class="n">k</span><span class="p">])</span>
         <span class="n">stats</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="n">instance</span><span class="o">.</span><span class="n">Execute</span><span class="p">(</span><span class="n">stats</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">stats</span><span class="p">:</span>
-            <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">stats</span><span class="p">,</span><span class="nb">open</span><span class="p">(</span><span class="n">constants</span><span class="p">[</span><span class="s">&#39;stats&#39;</span><span class="p">],</span><span class="s">&#39;w&#39;</span><span class="p">))</span>
+            <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">stats</span><span class="p">,</span><span class="nb">open</span><span class="p">(</span><span class="n">constants</span><span class="p">[</span><span class="s1">&#39;stats&#39;</span><span class="p">],</span><span class="s1">&#39;wb&#39;</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">ret</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Execute() returned %r&#39;</span><span class="o">%</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Execute() returned </span><span class="si">%r</span><span class="s1">&#39;</span><span class="o">%</span><span class="n">ret</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;regular callable&#39;</span><span class="p">)</span>
-        <span class="n">class_obj</span><span class="p">(</span><span class="o">*</span><span class="n">class_args</span><span class="p">[</span><span class="s">&#39;args&#39;</span><span class="p">],</span><span class="o">**</span><span class="n">class_args</span><span class="p">[</span><span class="s">&#39;kwargs&#39;</span><span class="p">])</span></div>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;regular callable&#39;</span><span class="p">)</span>
+        <span class="n">class_obj</span><span class="p">(</span><span class="o">*</span><span class="n">class_args</span><span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">],</span><span class="o">**</span><span class="n">class_args</span><span class="p">[</span><span class="s1">&#39;kwargs&#39;</span><span class="p">])</span></div>
 
 <div class="viewcode-block" id="main"><a class="viewcode-back" href="../../../core/exe_helper.html#iceprod.core.exe_helper.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
     <span class="kn">import</span> <span class="nn">argparse</span>
-    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s">&#39;IceProd Core&#39;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-c&#39;</span><span class="p">,</span><span class="s">&#39;--classname&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="k">None</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s">&#39;Specify class name&#39;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-f&#39;</span><span class="p">,</span><span class="s">&#39;--filename&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="k">None</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s">&#39;Specify file to find the class in&#39;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-a&#39;</span><span class="p">,</span><span class="s">&#39;--args&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="k">False</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s">&#39;Enable arg file detection&#39;</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-d&#39;</span><span class="p">,</span><span class="s">&#39;--debug&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="k">False</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s">&#39;Enable debug actions and logging&#39;</span><span class="p">)</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s1">&#39;IceProd Core&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-c&#39;</span><span class="p">,</span><span class="s1">&#39;--classname&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Specify class name&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-f&#39;</span><span class="p">,</span><span class="s1">&#39;--filename&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Specify file to find the class in&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-a&#39;</span><span class="p">,</span><span class="s1">&#39;--args&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Enable arg file detection&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-d&#39;</span><span class="p">,</span><span class="s1">&#39;--debug&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Enable debug actions and logging&#39;</span><span class="p">)</span>
     <span class="n">args</span> <span class="o">=</span> <span class="nb">vars</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">())</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">run</span><span class="p">(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">constants</span><span class="p">[</span><span class="s">&#39;task_exception&#39;</span><span class="p">],</span><span class="s">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">constants</span><span class="p">[</span><span class="s1">&#39;task_exception&#39;</span><span class="p">],</span><span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">e</span><span class="p">,</span><span class="n">f</span><span class="p">)</span>
         <span class="k">raise</span></div>
 
-<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
     <span class="n">main</span><span class="p">()</span>
 </pre></div>
 
+           </div>
+           <div class="articleComments">
+            
            </div>
           </div>
           <footer>
@@ -262,15 +396,17 @@
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
             VERSION:'master',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
@@ -279,14 +415,13 @@
     <script type="text/javascript" src="../../../_static/js/theme.js"></script>
   
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

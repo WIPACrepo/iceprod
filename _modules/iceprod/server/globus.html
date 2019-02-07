@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -24,12 +26,17 @@
 
   
   
-    <link rel="stylesheet" href="../../../_static/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+  
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  
   
 
   
-
-  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
     <link rel="top" title="IceProd master documentation" href="../../../index.html"/>
         <link rel="up" title="iceprod.server" href="../server.html"/> 
 
@@ -60,7 +67,7 @@
             
             
               <div class="version">
-                master
+                2.5.0
               </div>
             
           
@@ -81,14 +88,84 @@
           
             
             
-                <ul>
+              
+            
+            
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../admin/index.html">Administrator&#8217;s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/login.html">Login</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/submission.html">Dataset Submission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/datasets.html">Dataset Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/tasks.html">Task Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/restapi.html">REST API Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/manually.html">Running Manually</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../admin/index.html">Administrator’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../admin/startup.html">Server Startup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../admin/common.html">Common Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../admin/extra_details.html">Extras</a></li>
+</ul>
+</li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../core/index.html">IceProd Core</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../server/index.html">IceProd Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/index.html">IceProd Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/i3exec.html">I3Exec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/exe.html">Execution Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/exe_helper.html">Execution Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/exe_json.html">JSONRPC Calls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/jsonRPCclient.html">JSON-RPC Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/jsonUtil.html">JSON Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/init.html">Core Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/dataclasses.html">Dataclasses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/parser.html">Meta-Language Parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/serialization.html">Serialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/gridftp.html">GridFTP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/util.html">Utilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../server/index.html">IceProd Server</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/details/index.html">Server Details</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/submit_to_queue.html">From Submission to Queue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/task_relationships.html">Task Relationships</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/lifecycles.html">Lifecycles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/global_queueing.html">Global Queueing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/async.html">Asynchronous Programming</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/website.html">Website</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/auth.html">REST Authorization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/user_accounts.html">User Accounts</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/rest_api/index.html">REST API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/datasets.html">Datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/config.html">Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/jobs.html">Jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/tasks.html">Tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/task_stats.html">Task Stats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/logs.html">Logs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/grids.html">Grids</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/pilots.html">Pilots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/auth.html">Auth</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/auth.html">Token Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/config.html">Detailed Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/dbmethods.html">DB Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/file_io.html">File IO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/globus.html">Globus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/grid.html">Grid Queueing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/init.html">Server Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/module.html">Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/nginx.html">Nginx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/schedule.html">Schedule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/server.html">Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/squid.html">Squid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/tornado.html">Tornado Web Utilities</a></li>
+</ul>
+</li>
 </ul>
 
             
@@ -110,15 +187,52 @@
 
       
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div style="float:right">
-            <a href="https://github.com/WIPACrepo/iceprod" class="fa fa-github"> Edit on GitHub</a>
-          </div>
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../server.html">iceprod.server</a> &raquo;</li>
+        
+      <li>iceprod.server.globus</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
   <h1>Source code for iceprod.server.globus</h1><div class="highlight"><pre>
-<span class="sd">&quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Tools to help manage Globus proxies</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
@@ -128,7 +242,7 @@
 
 <span class="kn">from</span> <span class="nn">iceprod.server.config</span> <span class="k">import</span> <span class="n">IceProdConfig</span>
 
-<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;globus&#39;</span><span class="p">)</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;globus&#39;</span><span class="p">)</span>
 
 <div class="viewcode-block" id="SiteGlobusProxy"><a class="viewcode-back" href="../../../server/globus.html#iceprod.server.globus.SiteGlobusProxy">[docs]</a><span class="k">class</span> <span class="nc">SiteGlobusProxy</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -137,79 +251,83 @@
 <span class="sd">    :param cfgfile: cfgfile location (optional)</span>
 <span class="sd">    :param duration: proxy duration (optional, default 72 hours)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cfgfile</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cfgfile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">cfgfile</span><span class="p">:</span>
-            <span class="n">cfgfile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span><span class="s">&#39;globus_proxy.json&#39;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="o">=</span> <span class="n">IceProdConfig</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">cfgfile</span><span class="p">,</span> <span class="n">defaults</span><span class="o">=</span><span class="k">False</span><span class="p">,</span>
-                                 <span class="n">validate</span><span class="o">=</span><span class="k">False</span><span class="p">)</span>
+            <span class="n">cfgfile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span><span class="s1">&#39;globus_proxy.json&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="o">=</span> <span class="n">IceProdConfig</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">cfgfile</span><span class="p">,</span> <span class="n">defaults</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                 <span class="n">validate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">duration</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;duration&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">duration</span>
-        <span class="k">elif</span> <span class="s">&#39;duration&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;duration&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">72</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">duration</span>
+        <span class="k">elif</span> <span class="s1">&#39;duration&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">72</span>
 
 <div class="viewcode-block" id="SiteGlobusProxy.set_passphrase"><a class="viewcode-back" href="../../../server/globus.html#iceprod.server.globus.SiteGlobusProxy.set_passphrase">[docs]</a>    <span class="k">def</span> <span class="nf">set_passphrase</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set the passphrase&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;passphrase&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;passphrase&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span></div>
 
 <div class="viewcode-block" id="SiteGlobusProxy.set_duration"><a class="viewcode-back" href="../../../server/globus.html#iceprod.server.globus.SiteGlobusProxy.set_duration">[docs]</a>    <span class="k">def</span> <span class="nf">set_duration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set the duration&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;duration&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span></div>
 
 <div class="viewcode-block" id="SiteGlobusProxy.set_voms_vo"><a class="viewcode-back" href="../../../server/globus.html#iceprod.server.globus.SiteGlobusProxy.set_voms_vo">[docs]</a>    <span class="k">def</span> <span class="nf">set_voms_vo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vo</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set the voms VO&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;voms_vo&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vo</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;voms_vo&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vo</span></div>
 
 <div class="viewcode-block" id="SiteGlobusProxy.set_voms_role"><a class="viewcode-back" href="../../../server/globus.html#iceprod.server.globus.SiteGlobusProxy.set_voms_role">[docs]</a>    <span class="k">def</span> <span class="nf">set_voms_role</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set the voms role&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;voms_role&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">r</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;voms_role&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">r</span></div>
 
 <div class="viewcode-block" id="SiteGlobusProxy.update_proxy"><a class="viewcode-back" href="../../../server/globus.html#iceprod.server.globus.SiteGlobusProxy.update_proxy">[docs]</a>    <span class="k">def</span> <span class="nf">update_proxy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Update the proxy&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="s">&#39;passphrase&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;passphrase missing&#39;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="s">&#39;duration&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;duration missing&#39;</span><span class="p">)</span>
-        <span class="n">FNULL</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">devnull</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;duration: %r&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;duration&#39;</span><span class="p">])</span>
-        <span class="k">if</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">([</span><span class="s">&#39;grid-proxy-info&#39;</span><span class="p">,</span><span class="s">&#39;-e&#39;</span><span class="p">,</span>
-                            <span class="s">&#39;-valid&#39;</span><span class="p">,</span><span class="s">&#39;%d:0&#39;</span><span class="o">%</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;duration&#39;</span><span class="p">],</span>
+        <span class="k">if</span> <span class="s1">&#39;passphrase&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;passphrase missing&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;duration&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;duration missing&#39;</span><span class="p">)</span>
+        <span class="n">FNULL</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">devnull</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;duration: </span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">([</span><span class="s1">&#39;grid-proxy-info&#39;</span><span class="p">,</span><span class="s1">&#39;-e&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;-valid&#39;</span><span class="p">,</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">:0&#39;</span><span class="o">%</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">],</span>
                            <span class="p">],</span> <span class="n">stdout</span><span class="o">=</span><span class="n">FNULL</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">FNULL</span><span class="p">):</span>
-            <span class="c"># proxy needs updating</span>
-            <span class="k">if</span> <span class="s">&#39;voms_vo&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;voms_vo&#39;</span><span class="p">]:</span>
-                <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;voms-proxy-init&#39;</span><span class="p">]</span>
-                <span class="k">if</span> <span class="s">&#39;voms_role&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;voms_role&#39;</span><span class="p">]:</span>
-                    <span class="n">vo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;voms_vo&#39;</span><span class="p">]</span>
-                    <span class="n">role</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;voms_role&#39;</span><span class="p">]</span>
-                    <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s">&#39;-voms&#39;</span><span class="p">,</span> <span class="s">&#39;{0}:/{0}/Role={1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">vo</span><span class="p">,</span> <span class="n">role</span><span class="p">)])</span>
+            <span class="c1"># proxy needs updating</span>
+            <span class="k">if</span> <span class="s1">&#39;voms_vo&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;voms_vo&#39;</span><span class="p">]:</span>
+                <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;voms-proxy-init&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="s1">&#39;voms_role&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;voms_role&#39;</span><span class="p">]:</span>
+                    <span class="n">vo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;voms_vo&#39;</span><span class="p">]</span>
+                    <span class="n">role</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;voms_role&#39;</span><span class="p">]</span>
+                    <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s1">&#39;-voms&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">:/</span><span class="si">{0}</span><span class="s1">/Role=</span><span class="si">{1}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">vo</span><span class="p">,</span> <span class="n">role</span><span class="p">)])</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s">&#39;-voms&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;voms_vo&#39;</span><span class="p">]])</span>
+                    <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s1">&#39;-voms&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;voms_vo&#39;</span><span class="p">]])</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;grid-proxy-init&#39;</span><span class="p">]</span>
-            <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s">&#39;-pwstdin&#39;</span><span class="p">,</span><span class="s">&#39;-valid&#39;</span><span class="p">,</span><span class="s">&#39;%d:0&#39;</span><span class="o">%</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;duration&#39;</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)])</span>
+                <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;grid-proxy-init&#39;</span><span class="p">]</span>
+            <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s1">&#39;-pwstdin&#39;</span><span class="p">,</span><span class="s1">&#39;-valid&#39;</span><span class="p">,</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">:0&#39;</span><span class="o">%</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)])</span>
             <span class="n">p</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">stdin</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
                                  <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
                                  <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">)</span>
-            <span class="n">stdout</span><span class="p">,</span><span class="n">stderr</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">communicate</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;passphrase&#39;</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;proxy cmd: %r&#39;</span><span class="p">,</span> <span class="n">cmd</span><span class="p">)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;stdout: %s&#39;</span><span class="p">,</span> <span class="n">stdout</span><span class="p">)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;stderr: %s&#39;</span><span class="p">,</span> <span class="n">stderr</span><span class="p">)</span>
+            <span class="n">inputbytes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;passphrase&#39;</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="n">stdout</span><span class="p">,</span><span class="n">stderr</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">communicate</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="n">inputbytes</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">))</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;proxy cmd: </span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">cmd</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;stdout: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">stdout</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;stderr: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">stderr</span><span class="p">)</span>
             <span class="n">p</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
-            <span class="k">if</span> <span class="s">&#39;voms_vo&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;voms_vo&#39;</span><span class="p">]:</span>
-                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">stdout</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">):</span>
-                    <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;Creating proxy&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">line</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;Done&#39;</span><span class="p">):</span>
-                        <span class="k">break</span> <span class="c"># this is a good proxy</span>
+            <span class="k">if</span> <span class="s1">&#39;voms_vo&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;voms_vo&#39;</span><span class="p">]:</span>
+                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">stdout</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;Creating proxy&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">line</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;Done&#39;</span><span class="p">):</span>
+                        <span class="k">break</span> <span class="c1"># this is a good proxy</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;voms-proxy-init failed&#39;</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;voms-proxy-init failed&#39;</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">p</span><span class="o">.</span><span class="n">returncode</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;grid-proxy-init failed&#39;</span><span class="p">)</span></div>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;grid-proxy-init failed&#39;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="SiteGlobusProxy.get_proxy"><a class="viewcode-back" href="../../../server/globus.html#iceprod.server.globus.SiteGlobusProxy.get_proxy">[docs]</a>    <span class="k">def</span> <span class="nf">get_proxy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Get the proxy location&quot;&quot;&quot;</span>
-        <span class="n">FNULL</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">devnull</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">([</span><span class="s">&#39;grid-proxy-info&#39;</span><span class="p">,</span><span class="s">&#39;-path&#39;</span><span class="p">],</span>
-                                       <span class="n">stderr</span><span class="o">=</span><span class="n">FNULL</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span></div></div>
+        <span class="n">FNULL</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">devnull</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">([</span><span class="s1">&#39;grid-proxy-info&#39;</span><span class="p">,</span><span class="s1">&#39;-path&#39;</span><span class="p">],</span>
+                                       <span class="n">stderr</span><span class="o">=</span><span class="n">FNULL</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span></div></div>
 </pre></div>
 
+           </div>
+           <div class="articleComments">
+            
            </div>
           </div>
           <footer>
@@ -242,15 +360,17 @@
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
             VERSION:'master',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
@@ -259,14 +379,13 @@
     <script type="text/javascript" src="../../../_static/js/theme.js"></script>
   
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

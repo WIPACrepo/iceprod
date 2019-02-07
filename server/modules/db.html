@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -24,16 +26,18 @@
 
   
   
-    <link rel="stylesheet" href="../../_static/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+  
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  
   
 
   
-
-  
-    <link rel="top" title="IceProd master documentation" href="../../index.html"/>
-        <link rel="up" title="IceProd Server" href="../index.html"/>
-        <link rel="next" title="Master Updater Module" href="master_updater.html"/>
-        <link rel="prev" title="Roles" href="../details/roles.html"/> 
+        <link rel="index" title="Index"
+              href="../../genindex.html"/>
+        <link rel="search" title="Search" href="../../search.html"/>
+    <link rel="top" title="IceProd master documentation" href="../../index.html"/> 
 
   
   <script src="../../_static/js/modernizr.min.js"></script>
@@ -62,7 +66,7 @@
             
             
               <div class="version">
-                master
+                2.5.0
               </div>
             
           
@@ -83,22 +87,69 @@
           
             
             
-                <ul>
+              
+            
+            
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../admin/index.html">Administrator&#8217;s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../guide/index.html">User’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/login.html">Login</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/submission.html">Dataset Submission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/datasets.html">Dataset Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/tasks.html">Task Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/restapi.html">REST API Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/manually.html">Running Manually</a></li>
 </ul>
-<ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../../core/index.html">IceProd Core</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../index.html">IceProd Server</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../details/index.html">IceProd Server Details</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Database Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="master_updater.html">Master Updater Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="proxy.html">Proxy Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="queue.html">Queueing Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="schedule.html">Schedule Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="website.html">Website Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../plugins/condor.html">Condor Plugin</a></li>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../admin/index.html">Administrator’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../admin/startup.html">Server Startup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../admin/common.html">Common Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../admin/extra_details.html">Extras</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../core/index.html">IceProd Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/i3exec.html">I3Exec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/exe.html">Execution Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/exe_helper.html">Execution Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/exe_json.html">JSONRPC Calls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/jsonRPCclient.html">JSON-RPC Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/jsonUtil.html">JSON Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/init.html">Core Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/dataclasses.html">Dataclasses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/parser.html">Meta-Language Parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/serialization.html">Serialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/gridftp.html">GridFTP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/util.html">Utilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">IceProd Server</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../details/index.html">Server Details</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../details/submit_to_queue.html">From Submission to Queue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/task_relationships.html">Task Relationships</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/lifecycles.html">Lifecycles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/global_queueing.html">Global Queueing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/async.html">Asynchronous Programming</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/website.html">Website</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/auth.html">REST Authorization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/user_accounts.html">User Accounts</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../rest_api/index.html">REST API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/datasets.html">Datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/config.html">Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/jobs.html">Jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/tasks.html">Tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/task_stats.html">Task Stats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/logs.html">Logs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/grids.html">Grids</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/pilots.html">Pilots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/auth.html">Auth</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../auth.html">Token Authentication</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../config.html">Detailed Configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../dbmethods.html">DB Methods</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../file_io.html">File IO</a></li>
@@ -111,6 +162,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../server.html">Server</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../squid.html">Squid</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tornado.html">Tornado Web Utilities</a></li>
 </ul>
 </li>
 </ul>
@@ -134,171 +186,61 @@
 
       
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div style="float:right">
-            <a href="https://github.com/WIPACrepo/iceprod" class="fa fa-github"> Edit on GitHub</a>
-          </div>
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+      <li>Database Module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/server/modules/db.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module-iceprod.server.modules.db">
-<span id="database-module"></span><span id="dbmodule"></span><span id="index-0"></span><h1>Database Module<a class="headerlink" href="#module-iceprod.server.modules.db" title="Permalink to this headline">¶</a></h1>
-<p>Database server module</p>
-<dl class="class">
-<dt id="iceprod.server.modules.db.db">
-<em class="property">class </em><code class="descclassname">iceprod.server.modules.db.</code><code class="descname">db</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#db"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.db" title="Permalink to this definition">¶</a></dt>
-<dd><p>Handle all interaction with the local database</p>
-<dl class="method">
-<dt id="iceprod.server.modules.db.db.start">
-<code class="descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#db.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.db.start" title="Permalink to this definition">¶</a></dt>
-<dd><p>Start database</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.modules.db.db.stop">
-<code class="descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#db.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.db.stop" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.modules.db.db.kill">
-<code class="descname">kill</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#db.kill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.db.kill" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="exception">
-<dt id="iceprod.server.modules.db.DBResetError">
-<em class="property">exception </em><code class="descclassname">iceprod.server.modules.db.</code><code class="descname">DBResetError</code><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#DBResetError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.DBResetError" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="iceprod.server.modules.db.read_db_conf">
-<code class="descclassname">iceprod.server.modules.db.</code><code class="descname">read_db_conf</code><span class="sig-paren">(</span><em>field_name=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#read_db_conf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.read_db_conf" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read the DB conf data from file.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>field_name</strong> (<a class="reference internal" href="../init.html#iceprod.server.GlobalID.string" title="iceprod.server.GlobalID.string"><em>string</em></a>) &#8211; (optional) field to return</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Either a specific field, or all fields in a dict</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="class">
-<dt id="iceprod.server.modules.db.DBAPI">
-<em class="property">class </em><code class="descclassname">iceprod.server.modules.db.</code><code class="descname">DBAPI</code><span class="sig-paren">(</span><em>parent</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#DBAPI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.DBAPI" title="Permalink to this definition">¶</a></dt>
-<dd><p>API for database interaction</p>
-<p>Config data (such as tables) are found at <a class="reference internal" href="../details/dbtables.html#dbconfig"><span class="std std-ref">DB Config</span></a>.</p>
-<dl class="attribute">
-<dt id="iceprod.server.modules.db.DBAPI.archive_tables">
-<code class="descname">archive_tables</code><em class="property"> = [u'site', u'node', u'dataset', u'dataset_notes', u'dataset_stat', u'job', u'job_stat', u'task', u'task_stat', u'task_log', u'config', u'resource', u'data']</em><a class="headerlink" href="#iceprod.server.modules.db.DBAPI.archive_tables" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="iceprod.server.modules.db.DBAPI.indices">
-<code class="descname">indices</code><em class="property"> = {u'search': [u'dataset_id', u'task_status', u'job_id'], u'task': [u'task_rel_id'], u'task_log': [u'task_id'], u'task_rel': [u'dataset_id'], u'job': [u'dataset_id', u'status,dataset_id'], u'task_lookup': [u'queue']}</em><a class="headerlink" href="#iceprod.server.modules.db.DBAPI.indices" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="iceprod.server.modules.db.DBAPI.status_options">
-<code class="descname">status_options</code><em class="property"> = {u'job': [u'processing', u'complete', u'suspended', u'errors'], u'task': [u'idle', u'waiting', u'queued', u'processing', u'complete', u'suspended', u'failed', u'resume', u'reset'], u'dataset': [u'processing', u'truncated', u'complete', u'suspended', u'errors']}</em><a class="headerlink" href="#iceprod.server.modules.db.DBAPI.status_options" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.modules.db.DBAPI.init">
-<code class="descname">init</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#DBAPI.init"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.DBAPI.init" title="Permalink to this definition">¶</a></dt>
-<dd><p>Initialize the settings table, if necessary.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.modules.db.DBAPI.acquire_lock">
-<code class="descname">acquire_lock</code><span class="sig-paren">(</span><em>lock_name='_none_'</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#DBAPI.acquire_lock"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.DBAPI.acquire_lock" title="Permalink to this definition">¶</a></dt>
-<dd><p>Yield a <a class="reference external" href="http://tornado.readthedocs.io/en/stable/locks.html#tornado.locks.Lock" title="(in Tornado v4.5.1)"><code class="xref py py-class docutils literal"><span class="pre">tornado.locks.Lock</span></code></a> for a specific task.</p>
-<p>This is designed to be used in a context-manager:</p>
-<blockquote>
-<div><dl class="docutils">
-<dt>with (yield db.acquire_lock(&#8216;task1&#8217;)):</dt>
-<dd># do something</dd>
-</dl>
-</div></blockquote>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>lock_name</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; The name of the task</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.modules.db.DBAPI.increment_id">
-<code class="descname">increment_id</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#DBAPI.increment_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.DBAPI.increment_id" title="Permalink to this definition">¶</a></dt>
-<dd><p>Increment the id of a table, returning the old value.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>table_name</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; The name of the table</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A table id</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)">str</a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.modules.db.DBAPI.query">
-<code class="descname">query</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#DBAPI.query"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.DBAPI.query" title="Permalink to this definition">¶</a></dt>
-<dd><p>Execute a database query.</p>
-<p>If this is a read (SELECT) query, it will return an iterator
-over rows. If this is a write (INSERT, UPDATE, REPLACE) query,
-it will return <cite>None</cite>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>sql</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; The query to execute</li>
-<li><strong>bindings</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#tuple" title="(in Python v3.6)"><em>tuple</em></a>) &#8211; The bindings, if any</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">iterator or None</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="iceprod.server.modules.db.SQLite">
-<em class="property">class </em><code class="descclassname">iceprod.server.modules.db.</code><code class="descname">SQLite</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#SQLite"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.SQLite" title="Permalink to this definition">¶</a></dt>
-<dd><p>SQLite 3 implementation of DBAPI</p>
-</dd></dl>
-
+  <div class="section" id="database-module">
+<span id="dbmodule"></span><span id="index-0"></span><h1>Database Module<a class="headerlink" href="#database-module" title="Permalink to this headline">¶</a></h1>
 </div>
 
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
-  
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="master_updater.html" class="btn btn-neutral float-right" title="Master Updater Module" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="../details/roles.html" class="btn btn-neutral" title="Roles" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
-    </div>
   
 
   <hr/>
@@ -328,15 +270,17 @@ it will return <cite>None</cite>.</p>
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../',
             VERSION:'master',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
@@ -345,14 +289,13 @@ it will return <cite>None</cite>.</p>
     <script type="text/javascript" src="../../_static/js/theme.js"></script>
   
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

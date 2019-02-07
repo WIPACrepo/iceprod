@@ -1,0 +1,384 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>REST API - Config &mdash; IceProd master documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+  
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../genindex.html"/>
+        <link rel="search" title="Search" href="../../search.html"/>
+    <link rel="top" title="IceProd master documentation" href="../../index.html"/>
+        <link rel="up" title="IceProd REST API" href="index.html"/>
+        <link rel="next" title="REST API - Jobs" href="jobs.html"/>
+        <link rel="prev" title="REST API - Datasets" href="datasets.html"/> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> IceProd
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.5.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../guide/index.html">User’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/login.html">Login</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/submission.html">Dataset Submission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/datasets.html">Dataset Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/tasks.html">Task Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/restapi.html">REST API Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/manually.html">Running Manually</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../admin/index.html">Administrator’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../admin/startup.html">Server Startup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../admin/common.html">Common Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../admin/extra_details.html">Extras</a></li>
+</ul>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../core/index.html">IceProd Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/i3exec.html">I3Exec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/exe.html">Execution Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/exe_helper.html">Execution Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/exe_json.html">JSONRPC Calls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/jsonRPCclient.html">JSON-RPC Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/jsonUtil.html">JSON Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/init.html">Core Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/dataclasses.html">Dataclasses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/parser.html">Meta-Language Parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/serialization.html">Serialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/gridftp.html">GridFTP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/util.html">Utilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">IceProd Server</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../details/index.html">Server Details</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../details/submit_to_queue.html">From Submission to Queue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/task_relationships.html">Task Relationships</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/lifecycles.html">Lifecycles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/global_queueing.html">Global Queueing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/async.html">Asynchronous Programming</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/website.html">Website</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/auth.html">REST Authorization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/user_accounts.html">User Accounts</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">REST API</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="datasets.html">Datasets</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="jobs.html">Jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tasks.html">Tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="task_stats.html">Task Stats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="logs.html">Logs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="grids.html">Grids</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pilots.html">Pilots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="auth.html">Auth</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../auth.html">Token Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config.html">Detailed Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dbmethods.html">DB Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../file_io.html">File IO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../globus.html">Globus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../grid.html">Grid Queueing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../init.html">Server Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../module.html">Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nginx.html">Nginx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../schedule.html">Schedule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server.html">Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../squid.html">Squid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tornado.html">Tornado Web Utilities</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">IceProd</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">IceProd Server</a> &raquo;</li>
+        
+          <li><a href="index.html">IceProd REST API</a> &raquo;</li>
+        
+      <li>REST API - Config</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/server/rest_api/config.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-iceprod.server.rest.config">
+<span id="rest-api-config"></span><h1>REST API - Config<a class="headerlink" href="#module-iceprod.server.rest.config" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="iceprod.server.rest.config.setup">
+<code class="descclassname">iceprod.server.rest.config.</code><code class="descname">setup</code><span class="sig-paren">(</span><em>config</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/config.html#setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.config.setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Setup method for Config REST API.</p>
+<p>Sets up any database connections or other prerequisites.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a>) – an instance of <a class="reference internal" href="../config.html#module-iceprod.server.config" title="iceprod.server.config"><code class="xref py py-class docutils literal"><span class="pre">iceprod.server.config</span></code></a>.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Routes for config, which can be passed to <a class="reference external" href="https://tornado.readthedocs.io/en/stable/web.html#tornado.web.Application" title="(in Tornado v5.1.1)"><code class="xref py py-class docutils literal"><span class="pre">tornado.web.Application</span></code></a>.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#list" title="(in Python v3.6)">list</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.rest.config.ConfigHandler">
+<em class="property">class </em><code class="descclassname">iceprod.server.rest.config.</code><code class="descname">ConfigHandler</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/config.html#ConfigHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.config.ConfigHandler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle config requests.</p>
+<dl class="method">
+<dt id="iceprod.server.rest.config.ConfigHandler.initialize">
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>database=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/config.html#ConfigHandler.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.config.ConfigHandler.initialize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.rest.config.ConfigHandler.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>dataset_id</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/config.html#ConfigHandler.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.config.ConfigHandler.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a config.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dataset_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – the dataset id of the config</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">config</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.rest.config.ConfigHandler.put">
+<code class="descname">put</code><span class="sig-paren">(</span><em>dataset_id</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/config.html#ConfigHandler.put"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.config.ConfigHandler.put" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set a config.</p>
+<p>Body should contain the config.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dataset_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – the dataset id of the config</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">empty dict</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="jobs.html" class="btn btn-neutral float-right" title="REST API - Jobs" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="datasets.html" class="btn btn-neutral" title="REST API - Datasets" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, IceCube Collaboration.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'master',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
+      });
+  </script> 
+
+</body>
+</html>

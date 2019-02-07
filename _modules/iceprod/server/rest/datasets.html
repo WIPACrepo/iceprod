@@ -1,0 +1,559 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>iceprod.server.rest.datasets &mdash; IceProd master documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+  
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+  
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../../search.html"/>
+    <link rel="top" title="IceProd master documentation" href="../../../../index.html"/>
+        <link rel="up" title="iceprod.server" href="../../server.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> IceProd
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.5.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../guide/index.html">User’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guide/login.html">Login</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guide/submission.html">Dataset Submission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guide/datasets.html">Dataset Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guide/tasks.html">Task Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guide/restapi.html">REST API Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guide/manually.html">Running Manually</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../admin/index.html">Administrator’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../admin/startup.html">Server Startup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../admin/common.html">Common Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../admin/extra_details.html">Extras</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../core/index.html">IceProd Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/i3exec.html">I3Exec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/exe.html">Execution Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/exe_helper.html">Execution Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/exe_json.html">JSONRPC Calls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/jsonRPCclient.html">JSON-RPC Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/jsonUtil.html">JSON Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/init.html">Core Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/dataclasses.html">Dataclasses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/parser.html">Meta-Language Parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/serialization.html">Serialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/gridftp.html">GridFTP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/util.html">Utilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../server/index.html">IceProd Server</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/details/index.html">Server Details</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/details/submit_to_queue.html">From Submission to Queue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/details/task_relationships.html">Task Relationships</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/details/lifecycles.html">Lifecycles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/details/global_queueing.html">Global Queueing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/details/async.html">Asynchronous Programming</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/details/website.html">Website</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/details/auth.html">REST Authorization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/details/user_accounts.html">User Accounts</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/rest_api/index.html">REST API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/datasets.html">Datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/config.html">Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/jobs.html">Jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/tasks.html">Tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/task_stats.html">Task Stats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/logs.html">Logs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/grids.html">Grids</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/pilots.html">Pilots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/auth.html">Auth</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/auth.html">Token Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/config.html">Detailed Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/dbmethods.html">DB Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/file_io.html">File IO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/globus.html">Globus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/grid.html">Grid Queueing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/init.html">Server Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/module.html">Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/nginx.html">Nginx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/schedule.html">Schedule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/server.html">Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/squid.html">Squid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/tornado.html">Tornado Web Utilities</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">IceProd</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../server.html">iceprod.server</a> &raquo;</li>
+        
+      <li>iceprod.server.rest.datasets</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for iceprod.server.rest.datasets</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">uuid</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">defaultdict</span>
+
+<span class="kn">import</span> <span class="nn">tornado.web</span>
+<span class="kn">import</span> <span class="nn">tornado.httpclient</span>
+<span class="kn">from</span> <span class="nn">tornado.platform.asyncio</span> <span class="k">import</span> <span class="n">to_asyncio_future</span>
+<span class="kn">import</span> <span class="nn">pymongo</span>
+<span class="kn">import</span> <span class="nn">motor</span>
+
+<span class="kn">from</span> <span class="nn">iceprod.server.rest</span> <span class="k">import</span> <span class="n">RESTHandler</span><span class="p">,</span> <span class="n">RESTHandlerSetup</span><span class="p">,</span> <span class="n">authorization</span>
+<span class="kn">from</span> <span class="nn">iceprod.server.util</span> <span class="k">import</span> <span class="n">nowstr</span><span class="p">,</span> <span class="n">status_sort</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;rest.datasets&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="setup"><a class="viewcode-back" href="../../../../server/rest_api/datasets.html#iceprod.server.rest.datasets.setup">[docs]</a><span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Setup method for Dataset REST API.</span>
+
+<span class="sd">    Sets up any database connections or other prerequisites.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        config (dict): an instance of :py:class:`iceprod.server.config`.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list: Routes for dataset, which can be passed to :py:class:`tornado.web.Application`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cfg_rest</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;rest&#39;</span><span class="p">,{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;datasets&#39;</span><span class="p">,{})</span>
+    <span class="n">db_cfg</span> <span class="o">=</span> <span class="n">cfg_rest</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;database&#39;</span><span class="p">,{})</span>
+
+    <span class="c1"># add indexes</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">pymongo</span><span class="o">.</span><span class="n">MongoClient</span><span class="p">(</span><span class="o">**</span><span class="n">db_cfg</span><span class="p">)</span><span class="o">.</span><span class="n">datasets</span>
+    <span class="k">if</span> <span class="s1">&#39;dataset_id_index&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">db</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">index_information</span><span class="p">():</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">create_index</span><span class="p">(</span><span class="s1">&#39;dataset_id&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;dataset_id_index&#39;</span><span class="p">,</span> <span class="n">unique</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">handler_cfg</span> <span class="o">=</span> <span class="n">RESTHandlerSetup</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">handler_cfg</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+        <span class="s1">&#39;database&#39;</span><span class="p">:</span> <span class="n">motor</span><span class="o">.</span><span class="n">motor_tornado</span><span class="o">.</span><span class="n">MotorClient</span><span class="p">(</span><span class="o">**</span><span class="n">db_cfg</span><span class="p">)</span><span class="o">.</span><span class="n">datasets</span><span class="p">,</span>
+    <span class="p">})</span>
+
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="p">(</span><span class="sa">r</span><span class="s1">&#39;/datasets&#39;</span><span class="p">,</span> <span class="n">MultiDatasetHandler</span><span class="p">,</span> <span class="n">handler_cfg</span><span class="p">),</span>
+        <span class="p">(</span><span class="sa">r</span><span class="s1">&#39;/datasets/(?P&lt;dataset_id&gt;\w+)&#39;</span><span class="p">,</span> <span class="n">DatasetHandler</span><span class="p">,</span> <span class="n">handler_cfg</span><span class="p">),</span>
+        <span class="p">(</span><span class="sa">r</span><span class="s1">&#39;/datasets/(?P&lt;dataset_id&gt;\w+)/description&#39;</span><span class="p">,</span> <span class="n">DatasetDescriptionHandler</span><span class="p">,</span> <span class="n">handler_cfg</span><span class="p">),</span>
+        <span class="p">(</span><span class="sa">r</span><span class="s1">&#39;/datasets/(?P&lt;dataset_id&gt;\w+)/status&#39;</span><span class="p">,</span> <span class="n">DatasetStatusHandler</span><span class="p">,</span> <span class="n">handler_cfg</span><span class="p">),</span>
+        <span class="p">(</span><span class="sa">r</span><span class="s1">&#39;/dataset_summaries/status&#39;</span><span class="p">,</span> <span class="n">DatasetSummariesStatusHandler</span><span class="p">,</span> <span class="n">handler_cfg</span><span class="p">),</span>
+    <span class="p">]</span></div>
+
+<div class="viewcode-block" id="BaseHandler"><a class="viewcode-back" href="../../../../server/rest_api/datasets.html#iceprod.server.rest.datasets.BaseHandler">[docs]</a><span class="k">class</span> <span class="nc">BaseHandler</span><span class="p">(</span><span class="n">RESTHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base handler for Dataset REST API. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="BaseHandler.initialize"><a class="viewcode-back" href="../../../../server/rest_api/datasets.html#iceprod.server.rest.datasets.BaseHandler.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">database</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BaseHandler</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span> <span class="o">=</span> <span class="n">database</span></div></div>
+
+<div class="viewcode-block" id="MultiDatasetHandler"><a class="viewcode-back" href="../../../../server/rest_api/datasets.html#iceprod.server.rest.datasets.MultiDatasetHandler">[docs]</a><span class="k">class</span> <span class="nc">MultiDatasetHandler</span><span class="p">(</span><span class="n">BaseHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handle multi-group requests.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="MultiDatasetHandler.get"><a class="viewcode-back" href="../../../../server/rest_api/datasets.html#iceprod.server.rest.datasets.MultiDatasetHandler.get">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">,</span><span class="s1">&#39;client&#39;</span><span class="p">,</span><span class="s1">&#39;system&#39;</span><span class="p">,</span><span class="s1">&#39;user&#39;</span><span class="p">])</span> <span class="c1">#TODO: figure out how to do auth for each dataset in the list</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a dict of datasets.</span>
+
+<span class="sd">        Params (optional):</span>
+<span class="sd">            status: | separated list of status filters</span>
+<span class="sd">            keys: | separated list of keys to return for each dataset</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: {&lt;dataset_id&gt;: metadata}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_argument</span><span class="p">(</span><span class="s1">&#39;status&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">status</span><span class="p">:</span>
+            <span class="n">query</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;$in&#39;</span><span class="p">:</span> <span class="n">status</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;|&#39;</span><span class="p">)}</span>
+
+        <span class="n">projection</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_argument</span><span class="p">(</span><span class="s1">&#39;keys&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">keys</span><span class="p">:</span>
+            <span class="n">projection</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">x</span><span class="p">:</span><span class="kc">True</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">keys</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;|&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span><span class="p">})</span>
+
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="n">projection</span><span class="p">):</span>
+            <span class="n">k</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;dataset_id&#39;</span><span class="p">]</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">row</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="MultiDatasetHandler.post"><a class="viewcode-back" href="../../../../server/rest_api/datasets.html#iceprod.server.rest.datasets.MultiDatasetHandler.post">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">,</span><span class="s1">&#39;user&#39;</span><span class="p">])</span> <span class="c1"># anyone should be able to create a dataset</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add a dataset.</span>
+
+<span class="sd">        Body should contain all necessary fields for a dataset.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">body</span><span class="p">)</span>
+
+        <span class="c1"># validate first</span>
+        <span class="n">req_fields</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s1">&#39;jobs_submitted&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+            <span class="s1">&#39;tasks_submitted&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+            <span class="s1">&#39;group&#39;</span><span class="p">:</span> <span class="nb">str</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">req_fields</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">HTTPError</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s1">&#39;missing key: &#39;</span><span class="o">+</span><span class="n">k</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">req_fields</span><span class="p">[</span><span class="n">k</span><span class="p">]):</span>
+                <span class="n">r</span> <span class="o">=</span> <span class="s1">&#39;key &quot;</span><span class="si">{}</span><span class="s1">&quot; should be of type </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">req_fields</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">HTTPError</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="n">r</span><span class="p">)</span>
+
+        <span class="c1"># generate dataset number</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">find_one_and_update</span><span class="p">(</span>
+            <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;dataset_num&#39;</span><span class="p">},</span>
+            <span class="p">{</span><span class="s1">&#39;$inc&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;num&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}},</span>
+            <span class="n">projection</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;num&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+            <span class="n">upsert</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">return_document</span><span class="o">=</span><span class="n">pymongo</span><span class="o">.</span><span class="n">ReturnDocument</span><span class="o">.</span><span class="n">AFTER</span><span class="p">)</span>
+        <span class="n">dataset_num</span> <span class="o">=</span> <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;num&#39;</span><span class="p">]</span>
+
+        <span class="c1"># set some fields</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;dataset_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid1</span><span class="p">()</span><span class="o">.</span><span class="n">hex</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;dataset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset_num</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;processing&#39;</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;start_date&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nowstr</span><span class="p">()</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;username&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">auth_data</span><span class="p">[</span><span class="s1">&#39;username&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s1">&#39;priority&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;priority&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="s1">&#39;debug&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;debug&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="c1"># insert</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">insert_one</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="c1"># set auth rules</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">auth_url</span><span class="o">+</span><span class="s1">&#39;/auths/&#39;</span><span class="o">+</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;dataset_id&#39;</span><span class="p">]</span>
+        <span class="n">http_client</span> <span class="o">=</span> <span class="n">tornado</span><span class="o">.</span><span class="n">httpclient</span><span class="o">.</span><span class="n">AsyncHTTPClient</span><span class="p">()</span>
+        <span class="n">auth_data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;read_groups&#39;</span><span class="p">:[</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;group&#39;</span><span class="p">],</span><span class="s1">&#39;users&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;write_groups&#39;</span><span class="p">:[</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;group&#39;</span><span class="p">]],</span>
+        <span class="p">}</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Authorization header: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;bearer &#39;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">module_auth_key</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">to_asyncio_future</span><span class="p">(</span><span class="n">http_client</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">url</span><span class="p">,</span>
+                <span class="n">method</span><span class="o">=</span><span class="s1">&#39;PUT&#39;</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">auth_data</span><span class="p">),</span>
+                <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Authorization&#39;</span><span class="p">:</span> <span class="s1">&#39;bearer &#39;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">module_auth_key</span><span class="p">}))</span>
+
+        <span class="c1"># return success</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_status</span><span class="p">(</span><span class="mi">201</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_header</span><span class="p">(</span><span class="s1">&#39;Location&#39;</span><span class="p">,</span> <span class="s1">&#39;/datasets/&#39;</span><span class="o">+</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;dataset_id&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">({</span><span class="s1">&#39;result&#39;</span><span class="p">:</span> <span class="s1">&#39;/datasets/&#39;</span><span class="o">+</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;dataset_id&#39;</span><span class="p">]})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span></div></div>
+
+<div class="viewcode-block" id="DatasetHandler"><a class="viewcode-back" href="../../../../server/rest_api/datasets.html#iceprod.server.rest.datasets.DatasetHandler">[docs]</a><span class="k">class</span> <span class="nc">DatasetHandler</span><span class="p">(</span><span class="n">BaseHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handle dataset requests.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="DatasetHandler.get"><a class="viewcode-back" href="../../../../server/rest_api/datasets.html#iceprod.server.rest.datasets.DatasetHandler.get">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">,</span><span class="s1">&#39;client&#39;</span><span class="p">,</span><span class="s1">&#39;system&#39;</span><span class="p">,</span><span class="s1">&#39;pilot&#39;</span><span class="p">],</span> <span class="n">attrs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;dataset_id:read&#39;</span><span class="p">])</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a dataset.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dataset_id (str): the dataset</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: dataset metadata</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s1">&#39;dataset_id&#39;</span><span class="p">:</span><span class="n">dataset_id</span><span class="p">},</span>
+                <span class="n">projection</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span><span class="kc">False</span><span class="p">})</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">send_error</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;Dataset not found&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span></div></div>
+
+<div class="viewcode-block" id="DatasetDescriptionHandler"><a class="viewcode-back" href="../../../../server/rest_api/datasets.html#iceprod.server.rest.datasets.DatasetDescriptionHandler">[docs]</a><span class="k">class</span> <span class="nc">DatasetDescriptionHandler</span><span class="p">(</span><span class="n">BaseHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handle dataset description updates.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="DatasetDescriptionHandler.put"><a class="viewcode-back" href="../../../../server/rest_api/datasets.html#iceprod.server.rest.datasets.DatasetDescriptionHandler.put">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">],</span> <span class="n">attrs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;dataset_id:write&#39;</span><span class="p">])</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set a dataset description.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dataset_id (str): the dataset</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: empty dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">body</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;description&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">HTTPError</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s1">&#39;missing description&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">],</span><span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">HTTPError</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s1">&#39;bad description&#39;</span><span class="p">)</span>
+
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">find_one_and_update</span><span class="p">({</span><span class="s1">&#39;dataset_id&#39;</span><span class="p">:</span><span class="n">dataset_id</span><span class="p">},</span>
+                <span class="p">{</span><span class="s1">&#39;$set&#39;</span><span class="p">:{</span><span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]}},</span>
+                <span class="n">projection</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">send_error</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;Dataset not found&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">({})</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span></div></div>
+
+<div class="viewcode-block" id="DatasetStatusHandler"><a class="viewcode-back" href="../../../../server/rest_api/datasets.html#iceprod.server.rest.datasets.DatasetStatusHandler">[docs]</a><span class="k">class</span> <span class="nc">DatasetStatusHandler</span><span class="p">(</span><span class="n">BaseHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handle dataset status updates.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="DatasetStatusHandler.put"><a class="viewcode-back" href="../../../../server/rest_api/datasets.html#iceprod.server.rest.datasets.DatasetStatusHandler.put">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">,</span><span class="s1">&#39;system&#39;</span><span class="p">,</span><span class="s1">&#39;client&#39;</span><span class="p">],</span> <span class="n">attrs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;dataset_id:write&#39;</span><span class="p">])</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set a dataset status.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dataset_id (str): the dataset</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: empty dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">body</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;status&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">HTTPError</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s1">&#39;missing status&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;processing&#39;</span><span class="p">,</span><span class="s1">&#39;suspended&#39;</span><span class="p">,</span><span class="s1">&#39;errors&#39;</span><span class="p">,</span><span class="s1">&#39;truncated&#39;</span><span class="p">,</span><span class="s1">&#39;complete&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">HTTPError</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s1">&#39;bad status&#39;</span><span class="p">)</span>
+
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">find_one_and_update</span><span class="p">({</span><span class="s1">&#39;dataset_id&#39;</span><span class="p">:</span><span class="n">dataset_id</span><span class="p">},</span>
+                <span class="p">{</span><span class="s1">&#39;$set&#39;</span><span class="p">:{</span><span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]}},</span>
+                <span class="n">projection</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">send_error</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;Dataset not found&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">({})</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span></div></div>
+
+<div class="viewcode-block" id="DatasetSummariesStatusHandler"><a class="viewcode-back" href="../../../../server/rest_api/datasets.html#iceprod.server.rest.datasets.DatasetSummariesStatusHandler">[docs]</a><span class="k">class</span> <span class="nc">DatasetSummariesStatusHandler</span><span class="p">(</span><span class="n">BaseHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handle dataset summary grouping by status.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="DatasetSummariesStatusHandler.get"><a class="viewcode-back" href="../../../../server/rest_api/datasets.html#iceprod.server.rest.datasets.DatasetSummariesStatusHandler.get">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">,</span><span class="s1">&#39;system&#39;</span><span class="p">,</span><span class="s1">&#39;client&#39;</span><span class="p">,</span><span class="s1">&#39;user&#39;</span><span class="p">])</span> <span class="c1">#TODO: figure out how to do auth for each dataset in the list</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the dataset summary for all datasets, group by status.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: {&lt;status&gt;: [&lt;dataset_id&gt;,]}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cursor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
+                <span class="n">projection</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span><span class="kc">False</span><span class="p">,</span><span class="s1">&#39;status&#39;</span><span class="p">:</span><span class="kc">True</span><span class="p">,</span><span class="s1">&#39;dataset_id&#39;</span><span class="p">:</span><span class="kc">True</span><span class="p">})</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">cursor</span><span class="p">:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;dataset_id&#39;</span><span class="p">])</span>
+        <span class="n">ret2</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">status_sort</span><span class="p">):</span>
+            <span class="n">ret2</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">ret</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">ret2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span></div></div>
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, IceCube Collaboration.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'master',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
+      });
+  </script> 
+
+</body>
+</html>

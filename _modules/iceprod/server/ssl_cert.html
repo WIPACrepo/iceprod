@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -24,12 +26,17 @@
 
   
   
-    <link rel="stylesheet" href="../../../_static/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+  
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  
   
 
   
-
-  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
     <link rel="top" title="IceProd master documentation" href="../../../index.html"/>
         <link rel="up" title="iceprod.server" href="../server.html"/> 
 
@@ -60,7 +67,7 @@
             
             
               <div class="version">
-                master
+                2.5.0
               </div>
             
           
@@ -81,14 +88,84 @@
           
             
             
-                <ul>
+              
+            
+            
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../admin/index.html">Administrator&#8217;s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/login.html">Login</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/submission.html">Dataset Submission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/datasets.html">Dataset Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/tasks.html">Task Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/restapi.html">REST API Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/manually.html">Running Manually</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../admin/index.html">Administrator’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../admin/startup.html">Server Startup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../admin/common.html">Common Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../admin/extra_details.html">Extras</a></li>
+</ul>
+</li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../core/index.html">IceProd Core</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../server/index.html">IceProd Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/index.html">IceProd Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/i3exec.html">I3Exec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/exe.html">Execution Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/exe_helper.html">Execution Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/exe_json.html">JSONRPC Calls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/jsonRPCclient.html">JSON-RPC Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/jsonUtil.html">JSON Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/init.html">Core Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/dataclasses.html">Dataclasses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/parser.html">Meta-Language Parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/serialization.html">Serialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/gridftp.html">GridFTP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/util.html">Utilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../server/index.html">IceProd Server</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/details/index.html">Server Details</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/submit_to_queue.html">From Submission to Queue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/task_relationships.html">Task Relationships</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/lifecycles.html">Lifecycles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/global_queueing.html">Global Queueing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/async.html">Asynchronous Programming</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/website.html">Website</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/auth.html">REST Authorization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/user_accounts.html">User Accounts</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/rest_api/index.html">REST API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/datasets.html">Datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/config.html">Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/jobs.html">Jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/tasks.html">Tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/task_stats.html">Task Stats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/logs.html">Logs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/grids.html">Grids</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/pilots.html">Pilots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/auth.html">Auth</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/auth.html">Token Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/config.html">Detailed Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/dbmethods.html">DB Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/file_io.html">File IO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/globus.html">Globus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/grid.html">Grid Queueing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/init.html">Server Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/module.html">Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/nginx.html">Nginx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/schedule.html">Schedule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/server.html">Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/squid.html">Squid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/tornado.html">Tornado Web Utilities</a></li>
+</ul>
+</li>
 </ul>
 
             
@@ -110,15 +187,52 @@
 
       
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div style="float:right">
-            <a href="https://github.com/WIPACrepo/iceprod" class="fa fa-github"> Edit on GitHub</a>
-          </div>
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../server.html">iceprod.server</a> &raquo;</li>
+        
+      <li>iceprod.server.ssl_cert</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
   <h1>Source code for iceprod.server.ssl_cert</h1><div class="highlight"><pre>
-<span class="sd">&quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Functions relating to OpenSSL certificates.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
@@ -137,35 +251,35 @@
 
 <span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">functions</span>
 
-<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;ssl_cert&#39;</span><span class="p">)</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;ssl_cert&#39;</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="create_ca"><a class="viewcode-back" href="../../../server/ssl_cert.html#iceprod.server.ssl_cert.create_ca">[docs]</a><span class="k">def</span> <span class="nf">create_ca</span><span class="p">(</span><span class="n">cert_filename</span><span class="p">,</span><span class="n">key_filename</span><span class="p">,</span><span class="n">days</span><span class="o">=</span><span class="mi">365</span><span class="p">,</span><span class="n">hostname</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+<div class="viewcode-block" id="create_ca"><a class="viewcode-back" href="../../../server/ssl_cert.html#iceprod.server.ssl_cert.create_ca">[docs]</a><span class="k">def</span> <span class="nf">create_ca</span><span class="p">(</span><span class="n">cert_filename</span><span class="p">,</span><span class="n">key_filename</span><span class="p">,</span><span class="n">days</span><span class="o">=</span><span class="mi">365</span><span class="p">,</span><span class="n">hostname</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Make a certificate authority and key pair&quot;&quot;&quot;</span>
     <span class="n">cert_filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="n">cert_filename</span><span class="p">))</span>
     <span class="n">key_filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="n">key_filename</span><span class="p">))</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;making CA cert at %s&#39;</span><span class="p">,</span><span class="n">cert_filename</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;making CA cert at </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">cert_filename</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">cert_filename</span><span class="p">)</span>
             <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">key_filename</span><span class="p">)):</span>
-        <span class="k">if</span> <span class="n">hostname</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
-            <span class="c"># get hostname</span>
-            <span class="n">hostname</span> <span class="o">=</span> <span class="n">functions</span><span class="o">.</span><span class="n">gethostname</span><span class="p">()</span>
-            <span class="k">if</span> <span class="n">hostname</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Cannot get hostname&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">hostname</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># get hostname</span>
+            <span class="n">hostname</span> <span class="o">=</span> <span class="n">functions</span><span class="o">.</span><span class="n">gethostname</span><span class="p">()</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">hostname</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Cannot get hostname&#39;</span><span class="p">)</span>
 
-        <span class="c"># create a key pair</span>
+        <span class="c1"># create a key pair</span>
         <span class="n">k</span> <span class="o">=</span> <span class="n">crypto</span><span class="o">.</span><span class="n">PKey</span><span class="p">()</span>
         <span class="n">k</span><span class="o">.</span><span class="n">generate_key</span><span class="p">(</span><span class="n">crypto</span><span class="o">.</span><span class="n">TYPE_RSA</span><span class="p">,</span> <span class="mi">2048</span><span class="p">)</span>
 
-        <span class="c"># create a self-signed cert</span>
+        <span class="c1"># create a self-signed cert</span>
         <span class="n">cert</span> <span class="o">=</span> <span class="n">crypto</span><span class="o">.</span><span class="n">X509</span><span class="p">()</span>
-        <span class="n">cert</span><span class="o">.</span><span class="n">set_version</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="c"># version 3, since count starts at 0</span>
-        <span class="n">cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">()</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="s">&quot;US&quot;</span>
-        <span class="n">cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">()</span><span class="o">.</span><span class="n">ST</span> <span class="o">=</span> <span class="s">&quot;Wisconsin&quot;</span>
-        <span class="n">cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">()</span><span class="o">.</span><span class="n">L</span> <span class="o">=</span> <span class="s">&quot;Madison&quot;</span>
-        <span class="n">cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">()</span><span class="o">.</span><span class="n">O</span> <span class="o">=</span> <span class="s">&quot;University of Wisconsin-Madison&quot;</span>
-        <span class="n">cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">()</span><span class="o">.</span><span class="n">OU</span> <span class="o">=</span> <span class="s">&quot;IceCube IceProd Root CA&quot;</span>
+        <span class="n">cert</span><span class="o">.</span><span class="n">set_version</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="c1"># version 3, since count starts at 0</span>
+        <span class="n">cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">()</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="s2">&quot;US&quot;</span>
+        <span class="n">cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">()</span><span class="o">.</span><span class="n">ST</span> <span class="o">=</span> <span class="s2">&quot;Wisconsin&quot;</span>
+        <span class="n">cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">()</span><span class="o">.</span><span class="n">L</span> <span class="o">=</span> <span class="s2">&quot;Madison&quot;</span>
+        <span class="n">cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">()</span><span class="o">.</span><span class="n">O</span> <span class="o">=</span> <span class="s2">&quot;University of Wisconsin-Madison&quot;</span>
+        <span class="n">cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">()</span><span class="o">.</span><span class="n">OU</span> <span class="o">=</span> <span class="s2">&quot;IceCube IceProd Root CA&quot;</span>
         <span class="n">cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">()</span><span class="o">.</span><span class="n">CN</span> <span class="o">=</span> <span class="n">hostname</span>
         <span class="n">cert</span><span class="o">.</span><span class="n">set_serial_number</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
         <span class="n">cert</span><span class="o">.</span><span class="n">gmtime_adj_notBefore</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
@@ -173,74 +287,76 @@
         <span class="n">cert</span><span class="o">.</span><span class="n">set_issuer</span><span class="p">(</span><span class="n">cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">())</span>
         <span class="n">cert</span><span class="o">.</span><span class="n">set_pubkey</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
 
-        <span class="c"># get integer public key for cert</span>
-        <span class="c"># pyOpenSSL doesn&#39;t provide a good access method,</span>
-        <span class="c"># so do it the hard way by extracting from key output</span>
+        <span class="c1"># get integer public key for cert</span>
+        <span class="c1"># pyOpenSSL doesn&#39;t provide a good access method,</span>
+        <span class="c1"># so do it the hard way by extracting from key output</span>
         <span class="n">pubkey</span> <span class="o">=</span> <span class="n">crypto</span><span class="o">.</span><span class="n">dump_privatekey</span><span class="p">(</span><span class="n">crypto</span><span class="o">.</span><span class="n">FILETYPE_TEXT</span><span class="p">,</span> <span class="n">cert</span><span class="o">.</span><span class="n">get_pubkey</span><span class="p">())</span>
-        <span class="n">pubkey</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">pubkey</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="s">&#39; &#39;</span><span class="p">]</span>
-        <span class="n">pubkey</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pubkey</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">,</span><span class="s">&#39;&#39;</span><span class="p">),</span><span class="mi">16</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">pubkey</span><span class="p">)</span>
+        <span class="n">pubkey</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">pubkey</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">x</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39; &#39;</span><span class="p">)]</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">pubkey</span><span class="p">)</span>
+        <span class="n">pubkey</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pubkey</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;:&#39;</span><span class="p">,</span><span class="sa">b</span><span class="s1">&#39;&#39;</span><span class="p">),</span><span class="mi">16</span><span class="p">)</span>
 
-        <span class="c"># make asn1 DER encoding</span>
+        <span class="c1"># make asn1 DER encoding</span>
         <span class="n">seq</span> <span class="o">=</span> <span class="n">univ</span><span class="o">.</span><span class="n">Sequence</span><span class="p">()</span>
         <span class="n">seq</span><span class="o">.</span><span class="n">setComponentByPosition</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">univ</span><span class="o">.</span><span class="n">Integer</span><span class="p">(</span><span class="n">pubkey</span><span class="p">))</span>
         <span class="n">seq</span><span class="o">.</span><span class="n">setComponentByPosition</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">univ</span><span class="o">.</span><span class="n">Integer</span><span class="p">(</span><span class="mi">65537</span><span class="p">))</span>
         <span class="n">enc</span> <span class="o">=</span> <span class="n">encoder</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span>
 
-        <span class="c"># get hash of DER</span>
-        <span class="nb">hash</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha1</span><span class="p">(</span><span class="n">enc</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+        <span class="c1"># get hash of DER</span>
+        <span class="nb">hash</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha1</span><span class="p">(</span><span class="n">enc</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
 
-        <span class="c"># add extensions</span>
+        <span class="c1"># add extensions</span>
         <span class="n">cert</span><span class="o">.</span><span class="n">add_extensions</span><span class="p">([</span>
-            <span class="n">crypto</span><span class="o">.</span><span class="n">X509Extension</span><span class="p">(</span><span class="s">&quot;basicConstraints&quot;</span><span class="p">,</span> <span class="k">True</span><span class="p">,</span>
-                                 <span class="s">&quot;CA:TRUE, pathlen:1&quot;</span><span class="p">),</span>
-            <span class="n">crypto</span><span class="o">.</span><span class="n">X509Extension</span><span class="p">(</span><span class="s">&quot;keyUsage&quot;</span><span class="p">,</span> <span class="k">True</span><span class="p">,</span>
-                                 <span class="s">&quot;keyCertSign, cRLSign&quot;</span><span class="p">),</span>
-            <span class="n">crypto</span><span class="o">.</span><span class="n">X509Extension</span><span class="p">(</span><span class="s">&quot;subjectKeyIdentifier&quot;</span><span class="p">,</span> <span class="k">False</span><span class="p">,</span> <span class="nb">hash</span><span class="p">,</span>
+            <span class="n">crypto</span><span class="o">.</span><span class="n">X509Extension</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;basicConstraints&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span>
+                                 <span class="sa">b</span><span class="s2">&quot;CA:TRUE, pathlen:1&quot;</span><span class="p">),</span>
+            <span class="n">crypto</span><span class="o">.</span><span class="n">X509Extension</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;keyUsage&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span>
+                                 <span class="sa">b</span><span class="s2">&quot;keyCertSign, cRLSign&quot;</span><span class="p">),</span>
+            <span class="n">crypto</span><span class="o">.</span><span class="n">X509Extension</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;subjectKeyIdentifier&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="nb">hash</span><span class="p">,</span>
                                  <span class="n">subject</span><span class="o">=</span><span class="n">cert</span><span class="p">),</span>
-            <span class="n">crypto</span><span class="o">.</span><span class="n">X509Extension</span><span class="p">(</span><span class="s">&quot;subjectAltName&quot;</span><span class="p">,</span> <span class="k">False</span><span class="p">,</span> <span class="s">&#39;DNS:&#39;</span><span class="o">+</span><span class="n">hostname</span><span class="p">)</span>
+            <span class="n">crypto</span><span class="o">.</span><span class="n">X509Extension</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;subjectAltName&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;DNS:&#39;</span><span class="o">+</span><span class="n">hostname</span><span class="p">)</span>
             <span class="p">])</span>
-        <span class="n">cert</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="s">&#39;sha1&#39;</span><span class="p">)</span>
+        <span class="n">cert</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="s1">&#39;sha1&#39;</span><span class="p">)</span>
 
-        <span class="nb">open</span><span class="p">(</span><span class="n">cert_filename</span><span class="p">,</span> <span class="s">&quot;w&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+        <span class="nb">open</span><span class="p">(</span><span class="n">cert_filename</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
             <span class="n">crypto</span><span class="o">.</span><span class="n">dump_certificate</span><span class="p">(</span><span class="n">crypto</span><span class="o">.</span><span class="n">FILETYPE_PEM</span><span class="p">,</span> <span class="n">cert</span><span class="p">))</span>
-        <span class="nb">open</span><span class="p">(</span><span class="n">key_filename</span><span class="p">,</span> <span class="s">&quot;w&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+        <span class="nb">open</span><span class="p">(</span><span class="n">key_filename</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
             <span class="n">crypto</span><span class="o">.</span><span class="n">dump_privatekey</span><span class="p">(</span><span class="n">crypto</span><span class="o">.</span><span class="n">FILETYPE_PEM</span><span class="p">,</span> <span class="n">k</span><span class="p">))</span></div>
 
 
-<div class="viewcode-block" id="create_cert"><a class="viewcode-back" href="../../../server/ssl_cert.html#iceprod.server.ssl_cert.create_cert">[docs]</a><span class="k">def</span> <span class="nf">create_cert</span><span class="p">(</span><span class="n">cert_filename</span><span class="p">,</span><span class="n">key_filename</span><span class="p">,</span><span class="n">days</span><span class="o">=</span><span class="mi">365</span><span class="p">,</span><span class="n">hostname</span><span class="o">=</span><span class="k">None</span><span class="p">,</span>
-        <span class="n">cacert</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">cakey</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">allow_resign</span><span class="o">=</span><span class="k">False</span><span class="p">):</span>
+<div class="viewcode-block" id="create_cert"><a class="viewcode-back" href="../../../server/ssl_cert.html#iceprod.server.ssl_cert.create_cert">[docs]</a><span class="k">def</span> <span class="nf">create_cert</span><span class="p">(</span><span class="n">cert_filename</span><span class="p">,</span><span class="n">key_filename</span><span class="p">,</span><span class="n">days</span><span class="o">=</span><span class="mi">365</span><span class="p">,</span><span class="n">hostname</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">cacert</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">cakey</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">allow_resign</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Make a certificate and key pair&quot;&quot;&quot;</span>
     <span class="n">cert_filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="n">cert_filename</span><span class="p">))</span>
     <span class="n">key_filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="n">key_filename</span><span class="p">))</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;making cert at %s&#39;</span><span class="p">,</span><span class="n">cert_filename</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;making cert at </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">cert_filename</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">cacert</span><span class="p">:</span>
         <span class="n">cacert</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="n">cacert</span><span class="p">))</span>
         <span class="n">cakey</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="n">cakey</span><span class="p">))</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;with CA %s&#39;</span><span class="p">,</span><span class="n">cacert</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;with CA </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">cacert</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">cacert</span><span class="p">)</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">cakey</span><span class="p">)):</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;CA cert does not exist&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;CA cert does not exist&#39;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">cert_filename</span><span class="p">)</span>
             <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">key_filename</span><span class="p">)):</span>
-        <span class="k">if</span> <span class="n">hostname</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
-            <span class="c"># get hostname</span>
-            <span class="n">hostname</span> <span class="o">=</span> <span class="n">functions</span><span class="o">.</span><span class="n">gethostname</span><span class="p">()</span>
-            <span class="k">if</span> <span class="n">hostname</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Cannot get hostname&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">hostname</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># get hostname</span>
+            <span class="n">hostname</span> <span class="o">=</span> <span class="n">functions</span><span class="o">.</span><span class="n">gethostname</span><span class="p">()</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">hostname</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Cannot get hostname&#39;</span><span class="p">)</span>
 
-        <span class="c"># create a key pair</span>
+        <span class="c1"># create a key pair</span>
         <span class="n">k</span> <span class="o">=</span> <span class="n">crypto</span><span class="o">.</span><span class="n">PKey</span><span class="p">()</span>
         <span class="n">k</span><span class="o">.</span><span class="n">generate_key</span><span class="p">(</span><span class="n">crypto</span><span class="o">.</span><span class="n">TYPE_RSA</span><span class="p">,</span> <span class="mi">2048</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">cacert</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span> <span class="n">cakey</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
-            <span class="c"># self-signed</span>
+        <span class="k">if</span> <span class="n">cacert</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">cakey</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># self-signed</span>
             <span class="n">cert</span> <span class="o">=</span> <span class="n">crypto</span><span class="o">.</span><span class="n">X509</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="c"># certificate request</span>
+            <span class="c1"># certificate request</span>
             <span class="n">cert</span> <span class="o">=</span> <span class="n">crypto</span><span class="o">.</span><span class="n">X509Req</span><span class="p">()</span>
 
-        <span class="k">if</span> <span class="n">cacert</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span> <span class="n">cakey</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
-            <span class="c"># self-sign</span>
+        <span class="k">if</span> <span class="n">cacert</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">cakey</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># self-sign</span>
             <span class="n">cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">()</span><span class="o">.</span><span class="n">CN</span> <span class="o">=</span> <span class="n">hostname</span>
 
             <span class="n">cert</span><span class="o">.</span><span class="n">gmtime_adj_notBefore</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
@@ -249,39 +365,39 @@
             <span class="n">cert</span><span class="o">.</span><span class="n">set_issuer</span><span class="p">(</span><span class="n">cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">())</span>
             <span class="n">cert</span><span class="o">.</span><span class="n">set_pubkey</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
 
-            <span class="c"># add extensions</span>
-            <span class="n">exts</span> <span class="o">=</span> <span class="p">[</span><span class="n">crypto</span><span class="o">.</span><span class="n">X509Extension</span><span class="p">(</span><span class="s">&quot;subjectAltName&quot;</span><span class="p">,</span> <span class="k">False</span><span class="p">,</span> <span class="s">&#39;DNS:&#39;</span><span class="o">+</span><span class="n">hostname</span><span class="p">)]</span>
+            <span class="c1"># add extensions</span>
+            <span class="n">exts</span> <span class="o">=</span> <span class="p">[</span><span class="n">crypto</span><span class="o">.</span><span class="n">X509Extension</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;subjectAltName&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;DNS:&#39;</span><span class="o">+</span><span class="n">hostname</span><span class="p">)]</span>
             <span class="k">if</span> <span class="n">allow_resign</span><span class="p">:</span>
                 <span class="n">exts</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span>
-                    <span class="n">crypto</span><span class="o">.</span><span class="n">X509Extension</span><span class="p">(</span><span class="s">&quot;basicConstraints&quot;</span><span class="p">,</span> <span class="k">True</span><span class="p">,</span>
-                                         <span class="s">&quot;CA:TRUE, pathlen:0&quot;</span><span class="p">),</span>
-                    <span class="c">#crypto.X509Extension(&quot;keyUsage&quot;, True,</span>
-                    <span class="c">#                     &quot;keyCertSign, cRLSign&quot;),</span>
-                    <span class="c">#crypto.X509Extension(&quot;subjectKeyIdentifier&quot;, False, hash,</span>
-                    <span class="c">#                     subject=cert),</span>
+                    <span class="n">crypto</span><span class="o">.</span><span class="n">X509Extension</span><span class="p">(</span><span class="s2">&quot;basicConstraints&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span>
+                                         <span class="s2">&quot;CA:TRUE, pathlen:0&quot;</span><span class="p">),</span>
+                    <span class="c1">#crypto.X509Extension(&quot;keyUsage&quot;, True,</span>
+                    <span class="c1">#                     &quot;keyCertSign, cRLSign&quot;),</span>
+                    <span class="c1">#crypto.X509Extension(&quot;subjectKeyIdentifier&quot;, False, hash,</span>
+                    <span class="c1">#                     subject=cert),</span>
                     <span class="p">])</span>
             <span class="n">cert</span><span class="o">.</span><span class="n">add_extensions</span><span class="p">(</span><span class="n">exts</span><span class="p">)</span>
-            <span class="n">cert</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="s">&#39;sha1&#39;</span><span class="p">)</span>
+            <span class="n">cert</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="s1">&#39;sha1&#39;</span><span class="p">)</span>
 
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">()</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="s">&quot;US&quot;</span>
-            <span class="n">cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">()</span><span class="o">.</span><span class="n">ST</span> <span class="o">=</span> <span class="s">&quot;Wisconsin&quot;</span>
-            <span class="n">cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">()</span><span class="o">.</span><span class="n">L</span> <span class="o">=</span> <span class="s">&quot;Madison&quot;</span>
-            <span class="n">cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">()</span><span class="o">.</span><span class="n">O</span> <span class="o">=</span> <span class="s">&quot;University of Wisconsin-Madison&quot;</span>
-            <span class="n">cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">()</span><span class="o">.</span><span class="n">OU</span> <span class="o">=</span> <span class="s">&quot;IceCube IceProd&quot;</span>
+            <span class="n">cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">()</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="s2">&quot;US&quot;</span>
+            <span class="n">cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">()</span><span class="o">.</span><span class="n">ST</span> <span class="o">=</span> <span class="s2">&quot;Wisconsin&quot;</span>
+            <span class="n">cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">()</span><span class="o">.</span><span class="n">L</span> <span class="o">=</span> <span class="s2">&quot;Madison&quot;</span>
+            <span class="n">cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">()</span><span class="o">.</span><span class="n">O</span> <span class="o">=</span> <span class="s2">&quot;University of Wisconsin-Madison&quot;</span>
+            <span class="n">cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">()</span><span class="o">.</span><span class="n">OU</span> <span class="o">=</span> <span class="s2">&quot;IceCube IceProd&quot;</span>
             <span class="n">cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">()</span><span class="o">.</span><span class="n">CN</span> <span class="o">=</span> <span class="n">hostname</span>
 
-            <span class="c"># finish cert req</span>
+            <span class="c1"># finish cert req</span>
             <span class="n">cert</span><span class="o">.</span><span class="n">set_pubkey</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
-            <span class="n">cert</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="s">&#39;sha1&#39;</span><span class="p">)</span>
+            <span class="n">cert</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="s1">&#39;sha1&#39;</span><span class="p">)</span>
 
-            <span class="c"># load CA</span>
+            <span class="c1"># load CA</span>
             <span class="n">cacert</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="n">cacert</span><span class="p">))</span>
             <span class="n">cakey</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="n">cakey</span><span class="p">))</span>
             <span class="n">ca_cert</span> <span class="o">=</span> <span class="n">crypto</span><span class="o">.</span><span class="n">load_certificate</span><span class="p">(</span><span class="n">crypto</span><span class="o">.</span><span class="n">FILETYPE_PEM</span><span class="p">,</span><span class="nb">open</span><span class="p">(</span><span class="n">cacert</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
             <span class="n">ca_key</span> <span class="o">=</span> <span class="n">crypto</span><span class="o">.</span><span class="n">load_privatekey</span><span class="p">(</span><span class="n">crypto</span><span class="o">.</span><span class="n">FILETYPE_PEM</span><span class="p">,</span><span class="nb">open</span><span class="p">(</span><span class="n">cakey</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
 
-            <span class="c"># make actual cert and sign with CA</span>
+            <span class="c1"># make actual cert and sign with CA</span>
             <span class="n">cert2</span> <span class="o">=</span> <span class="n">crypto</span><span class="o">.</span><span class="n">X509</span><span class="p">()</span>
             <span class="n">cert2</span><span class="o">.</span><span class="n">set_subject</span><span class="p">(</span><span class="n">cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">())</span>
             <span class="n">cert2</span><span class="o">.</span><span class="n">set_serial_number</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
@@ -290,26 +406,26 @@
             <span class="n">cert2</span><span class="o">.</span><span class="n">set_issuer</span><span class="p">(</span><span class="n">ca_cert</span><span class="o">.</span><span class="n">get_subject</span><span class="p">())</span>
             <span class="n">cert2</span><span class="o">.</span><span class="n">set_pubkey</span><span class="p">(</span><span class="n">cert</span><span class="o">.</span><span class="n">get_pubkey</span><span class="p">())</span>
 
-            <span class="c"># add extensions</span>
-            <span class="n">exts</span> <span class="o">=</span> <span class="p">[</span><span class="n">crypto</span><span class="o">.</span><span class="n">X509Extension</span><span class="p">(</span><span class="s">&quot;subjectAltName&quot;</span><span class="p">,</span> <span class="k">False</span><span class="p">,</span> <span class="s">&#39;DNS:&#39;</span><span class="o">+</span><span class="n">hostname</span><span class="p">)]</span>
+            <span class="c1"># add extensions</span>
+            <span class="n">exts</span> <span class="o">=</span> <span class="p">[</span><span class="n">crypto</span><span class="o">.</span><span class="n">X509Extension</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;subjectAltName&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;DNS:&#39;</span><span class="o">+</span><span class="n">hostname</span><span class="p">)]</span>
             <span class="k">if</span> <span class="n">allow_resign</span><span class="p">:</span>
                 <span class="n">exts</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span>
-                    <span class="n">crypto</span><span class="o">.</span><span class="n">X509Extension</span><span class="p">(</span><span class="s">&quot;basicConstraints&quot;</span><span class="p">,</span> <span class="k">True</span><span class="p">,</span>
-                                         <span class="s">&quot;CA:TRUE, pathlen:0&quot;</span><span class="p">),</span>
-                    <span class="c">#crypto.X509Extension(&quot;keyUsage&quot;, True,</span>
-                    <span class="c">#                     &quot;keyCertSign, cRLSign&quot;),</span>
-                    <span class="c">#crypto.X509Extension(&quot;subjectKeyIdentifier&quot;, False, hash,</span>
-                    <span class="c">#                     subject=cert),</span>
+                    <span class="n">crypto</span><span class="o">.</span><span class="n">X509Extension</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;basicConstraints&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span>
+                                         <span class="sa">b</span><span class="s2">&quot;CA:TRUE, pathlen:0&quot;</span><span class="p">),</span>
+                    <span class="c1">#crypto.X509Extension(&quot;keyUsage&quot;, True,</span>
+                    <span class="c1">#                     &quot;keyCertSign, cRLSign&quot;),</span>
+                    <span class="c1">#crypto.X509Extension(&quot;subjectKeyIdentifier&quot;, False, hash,</span>
+                    <span class="c1">#                     subject=cert),</span>
                     <span class="p">])</span>
             <span class="n">cert2</span><span class="o">.</span><span class="n">add_extensions</span><span class="p">(</span><span class="n">exts</span><span class="p">)</span>
-            <span class="n">cert2</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">ca_key</span><span class="p">,</span> <span class="s">&#39;sha1&#39;</span><span class="p">)</span>
+            <span class="n">cert2</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">ca_key</span><span class="p">,</span> <span class="s1">&#39;sha1&#39;</span><span class="p">)</span>
 
-            <span class="c"># overwrite cert req with real cert</span>
+            <span class="c1"># overwrite cert req with real cert</span>
             <span class="n">cert</span> <span class="o">=</span> <span class="n">cert2</span>
 
-        <span class="nb">open</span><span class="p">(</span><span class="n">cert_filename</span><span class="p">,</span> <span class="s">&quot;w&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+        <span class="nb">open</span><span class="p">(</span><span class="n">cert_filename</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
             <span class="n">crypto</span><span class="o">.</span><span class="n">dump_certificate</span><span class="p">(</span><span class="n">crypto</span><span class="o">.</span><span class="n">FILETYPE_PEM</span><span class="p">,</span> <span class="n">cert</span><span class="p">))</span>
-        <span class="nb">open</span><span class="p">(</span><span class="n">key_filename</span><span class="p">,</span> <span class="s">&quot;w&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+        <span class="nb">open</span><span class="p">(</span><span class="n">key_filename</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
             <span class="n">crypto</span><span class="o">.</span><span class="n">dump_privatekey</span><span class="p">(</span><span class="n">crypto</span><span class="o">.</span><span class="n">FILETYPE_PEM</span><span class="p">,</span> <span class="n">k</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="verify_cert"><a class="viewcode-back" href="../../../server/ssl_cert.html#iceprod.server.ssl_cert.verify_cert">[docs]</a><span class="k">def</span> <span class="nf">verify_cert</span><span class="p">(</span><span class="n">cert_filename</span><span class="p">,</span><span class="n">key_filename</span><span class="p">):</span>
@@ -322,33 +438,36 @@
     <span class="n">cert</span> <span class="o">=</span> <span class="n">crypto</span><span class="o">.</span><span class="n">load_certificate</span><span class="p">(</span><span class="n">crypto</span><span class="o">.</span><span class="n">FILETYPE_PEM</span><span class="p">,</span><span class="nb">open</span><span class="p">(</span><span class="n">cert_filename</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
     <span class="n">key</span> <span class="o">=</span> <span class="n">crypto</span><span class="o">.</span><span class="n">load_privatekey</span><span class="p">(</span><span class="n">crypto</span><span class="o">.</span><span class="n">FILETYPE_PEM</span><span class="p">,</span><span class="nb">open</span><span class="p">(</span><span class="n">key_filename</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
 
-    <span class="c"># check date</span>
-    <span class="n">begin</span> <span class="o">=</span> <span class="n">cert</span><span class="o">.</span><span class="n">get_notBefore</span><span class="p">()</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;begin: %r&#39;</span><span class="p">,</span><span class="n">begin</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">begin</span><span class="p">,</span> <span class="s">&quot;%Y%m%d%H%M%SZ&quot;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">():</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;cert only valid in future&#39;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="k">False</span>
-    <span class="n">end</span> <span class="o">=</span> <span class="n">cert</span><span class="o">.</span><span class="n">get_notAfter</span><span class="p">()</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;end: %r&#39;</span><span class="p">,</span><span class="n">end</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">end</span><span class="p">,</span> <span class="s">&quot;%Y%m%d%H%M%SZ&quot;</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">():</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;cert has expired&#39;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="k">False</span>
+    <span class="c1"># check date</span>
+    <span class="n">begin</span> <span class="o">=</span> <span class="n">cert</span><span class="o">.</span><span class="n">get_notBefore</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;begin: </span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">begin</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">begin</span><span class="p">,</span> <span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">%H%M%SZ&quot;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">():</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;cert only valid in future&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="n">end</span> <span class="o">=</span> <span class="n">cert</span><span class="o">.</span><span class="n">get_notAfter</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;end: </span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">end</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">end</span><span class="p">,</span> <span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">%H%M%SZ&quot;</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">():</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;cert has expired&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span>
 
-    <span class="c"># check matching cert and key</span>
+    <span class="c1"># check matching cert and key</span>
     <span class="n">ctx</span> <span class="o">=</span> <span class="n">SSL</span><span class="o">.</span><span class="n">Context</span><span class="p">(</span><span class="n">SSL</span><span class="o">.</span><span class="n">TLSv1_METHOD</span><span class="p">)</span>
     <span class="n">ctx</span><span class="o">.</span><span class="n">use_privatekey</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
     <span class="n">ctx</span><span class="o">.</span><span class="n">use_certificate</span><span class="p">(</span><span class="n">cert</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">ctx</span><span class="o">.</span><span class="n">check_privatekey</span><span class="p">()</span>
     <span class="k">except</span> <span class="n">SSL</span><span class="o">.</span><span class="n">Error</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;cert and key do not match&#39;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="k">False</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;cert and key do not match&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="k">True</span></div>
+        <span class="k">return</span> <span class="kc">True</span></div>
 
 
 </pre></div>
 
+           </div>
+           <div class="articleComments">
+            
            </div>
           </div>
           <footer>
@@ -381,15 +500,17 @@
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
             VERSION:'master',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
@@ -398,14 +519,13 @@
     <script type="text/javascript" src="../../../_static/js/theme.js"></script>
   
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

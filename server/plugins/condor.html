@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -24,16 +26,18 @@
 
   
   
-    <link rel="stylesheet" href="../../_static/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+  
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  
   
 
   
-
-  
-    <link rel="top" title="IceProd master documentation" href="../../index.html"/>
-        <link rel="up" title="IceProd Server" href="../index.html"/>
-        <link rel="next" title="Detailed Configuration" href="../config.html"/>
-        <link rel="prev" title="Website Module" href="../modules/website.html"/> 
+        <link rel="index" title="Index"
+              href="../../genindex.html"/>
+        <link rel="search" title="Search" href="../../search.html"/>
+    <link rel="top" title="IceProd master documentation" href="../../index.html"/> 
 
   
   <script src="../../_static/js/modernizr.min.js"></script>
@@ -62,7 +66,7 @@
             
             
               <div class="version">
-                master
+                2.5.0
               </div>
             
           
@@ -83,22 +87,69 @@
           
             
             
-                <ul>
+              
+            
+            
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../admin/index.html">Administrator&#8217;s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../guide/index.html">User’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/login.html">Login</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/submission.html">Dataset Submission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/datasets.html">Dataset Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/tasks.html">Task Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/restapi.html">REST API Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/manually.html">Running Manually</a></li>
 </ul>
-<ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../../core/index.html">IceProd Core</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../index.html">IceProd Server</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../details/index.html">IceProd Server Details</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules/db.html">Database Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules/master_updater.html">Master Updater Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules/proxy.html">Proxy Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules/queue.html">Queueing Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules/schedule.html">Schedule Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules/website.html">Website Module</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Condor Plugin</a></li>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../admin/index.html">Administrator’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../admin/startup.html">Server Startup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../admin/common.html">Common Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../admin/extra_details.html">Extras</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../core/index.html">IceProd Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/i3exec.html">I3Exec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/exe.html">Execution Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/exe_helper.html">Execution Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/exe_json.html">JSONRPC Calls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/jsonRPCclient.html">JSON-RPC Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/jsonUtil.html">JSON Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/init.html">Core Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/dataclasses.html">Dataclasses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/parser.html">Meta-Language Parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/serialization.html">Serialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/gridftp.html">GridFTP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/util.html">Utilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">IceProd Server</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../details/index.html">Server Details</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../details/submit_to_queue.html">From Submission to Queue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/task_relationships.html">Task Relationships</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/lifecycles.html">Lifecycles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/global_queueing.html">Global Queueing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/async.html">Asynchronous Programming</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/website.html">Website</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/auth.html">REST Authorization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/user_accounts.html">User Accounts</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../rest_api/index.html">REST API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/datasets.html">Datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/config.html">Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/jobs.html">Jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/tasks.html">Tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/task_stats.html">Task Stats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/logs.html">Logs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/grids.html">Grids</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/pilots.html">Pilots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/auth.html">Auth</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../auth.html">Token Authentication</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../config.html">Detailed Configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../dbmethods.html">DB Methods</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../file_io.html">File IO</a></li>
@@ -111,6 +162,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../server.html">Server</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../squid.html">Squid</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tornado.html">Tornado Web Utilities</a></li>
 </ul>
 </li>
 </ul>
@@ -134,10 +186,47 @@
 
       
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div style="float:right">
-            <a href="https://github.com/WIPACrepo/iceprod" class="fa fa-github"> Edit on GitHub</a>
-          </div>
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+      <li>Condor Plugin</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/server/plugins/condor.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
@@ -146,32 +235,48 @@
 <p>The Condor plugin.  Allows submission to
 <a class="reference external" href="http://research.cs.wisc.edu/htcondor/">HTCondor</a>.</p>
 <p>Note: Condor was renamed to HTCondor in 2012.</p>
+<dl class="function">
+<dt id="iceprod.server.plugins.condor.check_call_clean_env">
+<code class="descclassname">iceprod.server.plugins.condor.</code><code class="descname">check_call_clean_env</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/plugins/condor.html#check_call_clean_env"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.plugins.condor.check_call_clean_env" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="iceprod.server.plugins.condor.check_output_clean_env">
+<code class="descclassname">iceprod.server.plugins.condor.</code><code class="descname">check_output_clean_env</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/plugins/condor.html#check_output_clean_env"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.plugins.condor.check_output_clean_env" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="iceprod.server.plugins.condor.condor_os_reqs">
+<code class="descclassname">iceprod.server.plugins.condor.</code><code class="descname">condor_os_reqs</code><span class="sig-paren">(</span><em>os_arch</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/plugins/condor.html#condor_os_reqs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.plugins.condor.condor_os_reqs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert from OS_ARCH to Condor OS requirements</p>
+</dd></dl>
+
 <dl class="class">
 <dt id="iceprod.server.plugins.condor.condor">
-<em class="property">class </em><code class="descclassname">iceprod.server.plugins.condor.</code><code class="descname">condor</code><span class="sig-paren">(</span><em>gridspec</em>, <em>queue_cfg</em>, <em>cfg</em>, <em>modules</em>, <em>io_loop</em>, <em>executor</em>, <em>statsd</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/plugins/condor.html#condor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.plugins.condor.condor" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">iceprod.server.plugins.condor.</code><code class="descname">condor</code><span class="sig-paren">(</span><em>gridspec</em>, <em>queue_cfg</em>, <em>cfg</em>, <em>modules</em>, <em>io_loop</em>, <em>executor</em>, <em>statsd</em>, <em>rest_client</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/plugins/condor.html#condor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.plugins.condor.condor" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="method">
 <dt id="iceprod.server.plugins.condor.condor.generate_submit_file">
-<code class="descname">generate_submit_file</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/plugins/condor.html#condor.generate_submit_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.plugins.condor.condor.generate_submit_file" title="Permalink to this definition">¶</a></dt>
+<code class="descname">generate_submit_file</code><span class="sig-paren">(</span><em>task</em>, <em>cfg=None</em>, <em>passkey=None</em>, <em>filelist=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/plugins/condor.html#condor.generate_submit_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.plugins.condor.condor.generate_submit_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate queueing system submit file for task in dir.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="iceprod.server.plugins.condor.condor.submit">
+<code class="descname">submit</code><span class="sig-paren">(</span><em>task</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/plugins/condor.html#condor.submit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.plugins.condor.condor.submit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Submit task to queueing system.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="iceprod.server.plugins.condor.condor.get_grid_status">
-<code class="descname">get_grid_status</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/plugins/condor.html#condor.get_grid_status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.plugins.condor.condor.get_grid_status" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_grid_status</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/plugins/condor.html#condor.get_grid_status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.plugins.condor.condor.get_grid_status" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get all tasks running on the queue system.
 Returns {grid_queue_id:{status,submit_dir}}</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="iceprod.server.plugins.condor.condor.remove">
-<code class="descname">remove</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/plugins/condor.html#condor.remove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.plugins.condor.condor.remove" title="Permalink to this definition">¶</a></dt>
+<code class="descname">remove</code><span class="sig-paren">(</span><em>tasks</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/plugins/condor.html#condor.remove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.plugins.condor.condor.remove" title="Permalink to this definition">¶</a></dt>
 <dd><p>Remove tasks from queueing system.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.plugins.condor.condor.submit">
-<code class="descname">submit</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/plugins/condor.html#condor.submit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.plugins.condor.condor.submit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Submit task to queueing system.</p>
 </dd></dl>
 
 </dd></dl>
@@ -180,17 +285,11 @@ Returns {grid_queue_id:{status,submit_dir}}</p>
 
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
-  
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="../config.html" class="btn btn-neutral float-right" title="Detailed Configuration" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="../modules/website.html" class="btn btn-neutral" title="Website Module" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
-    </div>
   
 
   <hr/>
@@ -220,15 +319,17 @@ Returns {grid_queue_id:{status,submit_dir}}</p>
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../',
             VERSION:'master',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
@@ -237,14 +338,13 @@ Returns {grid_queue_id:{status,submit_dir}}</p>
     <script type="text/javascript" src="../../_static/js/theme.js"></script>
   
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -24,12 +26,17 @@
 
   
   
-    <link rel="stylesheet" href="_static/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+  
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  
   
 
   
-
-  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
     <link rel="top" title="IceProd master documentation" href="index.html"/>
  
 
@@ -62,7 +69,7 @@
             
             
               <div class="version">
-                master
+                2.5.0
               </div>
             
           
@@ -83,14 +90,84 @@
           
             
             
-                <ul>
+              
+            
+            
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="admin/index.html">Administrator&#8217;s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/index.html">User’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide/login.html">Login</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/submission.html">Dataset Submission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/datasets.html">Dataset Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/tasks.html">Task Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/restapi.html">REST API Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/manually.html">Running Manually</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="admin/index.html">Administrator’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="admin/startup.html">Server Startup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="admin/common.html">Common Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="admin/extra_details.html">Extras</a></li>
+</ul>
+</li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="core/index.html">IceProd Core</a></li>
-<li class="toctree-l1"><a class="reference internal" href="server/index.html">IceProd Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/index.html">IceProd Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="core/i3exec.html">I3Exec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core/exe.html">Execution Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core/exe_helper.html">Execution Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core/exe_json.html">JSONRPC Calls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core/jsonRPCclient.html">JSON-RPC Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core/jsonUtil.html">JSON Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core/init.html">Core Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core/dataclasses.html">Dataclasses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core/parser.html">Meta-Language Parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core/functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core/serialization.html">Serialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core/gridftp.html">GridFTP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core/util.html">Utilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="server/index.html">IceProd Server</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="server/details/index.html">Server Details</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="server/details/submit_to_queue.html">From Submission to Queue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/details/task_relationships.html">Task Relationships</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/details/lifecycles.html">Lifecycles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/details/global_queueing.html">Global Queueing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/details/async.html">Asynchronous Programming</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/details/website.html">Website</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/details/auth.html">REST Authorization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/details/user_accounts.html">User Accounts</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="server/rest_api/index.html">REST API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="server/rest_api/datasets.html">Datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/rest_api/config.html">Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/rest_api/jobs.html">Jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/rest_api/tasks.html">Tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/rest_api/task_stats.html">Task Stats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/rest_api/logs.html">Logs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/rest_api/grids.html">Grids</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/rest_api/pilots.html">Pilots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/rest_api/auth.html">Auth</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="server/auth.html">Token Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/config.html">Detailed Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/dbmethods.html">DB Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/file_io.html">File IO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/globus.html">Globus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/grid.html">Grid Queueing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/init.html">Server Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/module.html">Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/nginx.html">Nginx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/schedule.html">Schedule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/server.html">Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/squid.html">Squid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/tornado.html">Tornado Web Utilities</a></li>
+</ul>
+</li>
 </ul>
 
             
@@ -112,10 +189,43 @@
 
       
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div style="float:right">
-            <a href="https://github.com/WIPACrepo/iceprod" class="fa fa-github"> Edit on GitHub</a>
-          </div>
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Python Module Index</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
@@ -126,7 +236,7 @@
    <a href="#cap-i"><strong>i</strong></a>
    </div>
 
-   <table class="indextable modindextable" cellspacing="0" cellpadding="2">
+   <table class="indextable modindextable">
      <tr class="pcap"><td></td><td>&#160;</td><td></td></tr>
      <tr class="cap" id="cap-i"><td></td><td>
        <strong>i</strong></td><td></td></tr>
@@ -174,11 +284,6 @@
      <tr class="cg-1">
        <td></td>
        <td>&#160;&#160;&#160;
-       <a href="core/jsonRPCclient.html#module-iceprod.core.jsonRPCclient"><code class="xref">iceprod.core.jsonRPCclient</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
        <a href="core/jsonUtil.html#module-iceprod.core.jsonUtil"><code class="xref">iceprod.core.jsonUtil</code></a></td><td>
        <em></em></td></tr>
      <tr class="cg-1">
@@ -209,51 +314,6 @@
      <tr class="cg-1">
        <td></td>
        <td>&#160;&#160;&#160;
-       <a href="server/dbmethods.html#module-iceprod.server.dbmethods"><code class="xref">iceprod.server.dbmethods</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="server/dbmethods.html#module-iceprod.server.dbmethods.auth"><code class="xref">iceprod.server.dbmethods.auth</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="server/dbmethods.html#module-iceprod.server.dbmethods.cron"><code class="xref">iceprod.server.dbmethods.cron</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="server/dbmethods.html#module-iceprod.server.dbmethods.misc"><code class="xref">iceprod.server.dbmethods.misc</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="server/dbmethods.html#module-iceprod.server.dbmethods.node"><code class="xref">iceprod.server.dbmethods.node</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="server/dbmethods.html#module-iceprod.server.dbmethods.queue"><code class="xref">iceprod.server.dbmethods.queue</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="server/dbmethods.html#module-iceprod.server.dbmethods.rpc"><code class="xref">iceprod.server.dbmethods.rpc</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="server/dbmethods.html#module-iceprod.server.dbmethods.web"><code class="xref">iceprod.server.dbmethods.web</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="server/file_io.html#module-iceprod.server.file_io"><code class="xref">iceprod.server.file_io</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
        <a href="server/globus.html#module-iceprod.server.globus"><code class="xref">iceprod.server.globus</code></a></td><td>
        <em></em></td></tr>
      <tr class="cg-1">
@@ -269,12 +329,7 @@
      <tr class="cg-1">
        <td></td>
        <td>&#160;&#160;&#160;
-       <a href="server/modules/db.html#module-iceprod.server.modules.db"><code class="xref">iceprod.server.modules.db</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="server/modules/proxy.html#module-iceprod.server.modules.proxy"><code class="xref">iceprod.server.modules.proxy</code></a></td><td>
+       <a href="server/modules/queue.html#module-iceprod.server.modules.queue"><code class="xref">iceprod.server.modules.queue</code></a></td><td>
        <em></em></td></tr>
      <tr class="cg-1">
        <td></td>
@@ -289,12 +344,52 @@
      <tr class="cg-1">
        <td></td>
        <td>&#160;&#160;&#160;
-       <a href="server/nginx.html#module-iceprod.server.nginx"><code class="xref">iceprod.server.nginx</code></a></td><td>
+       <a href="server/plugins/condor.html#module-iceprod.server.plugins.condor"><code class="xref">iceprod.server.plugins.condor</code></a></td><td>
        <em></em></td></tr>
      <tr class="cg-1">
        <td></td>
        <td>&#160;&#160;&#160;
-       <a href="server/plugins/condor.html#module-iceprod.server.plugins.condor"><code class="xref">iceprod.server.plugins.condor</code></a></td><td>
+       <a href="server/rest_api/auth.html#module-iceprod.server.rest.auth"><code class="xref">iceprod.server.rest.auth</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="server/rest_api/config.html#module-iceprod.server.rest.config"><code class="xref">iceprod.server.rest.config</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="server/rest_api/datasets.html#module-iceprod.server.rest.datasets"><code class="xref">iceprod.server.rest.datasets</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="server/rest_api/grids.html#module-iceprod.server.rest.grids"><code class="xref">iceprod.server.rest.grids</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="server/rest_api/jobs.html#module-iceprod.server.rest.jobs"><code class="xref">iceprod.server.rest.jobs</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="server/rest_api/logs.html#module-iceprod.server.rest.logs"><code class="xref">iceprod.server.rest.logs</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="server/rest_api/pilots.html#module-iceprod.server.rest.pilots"><code class="xref">iceprod.server.rest.pilots</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="server/rest_api/task_stats.html#module-iceprod.server.rest.task_stats"><code class="xref">iceprod.server.rest.task_stats</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="server/rest_api/tasks.html#module-iceprod.server.rest.tasks"><code class="xref">iceprod.server.rest.tasks</code></a></td><td>
        <em></em></td></tr>
      <tr class="cg-1">
        <td></td>
@@ -304,16 +399,14 @@
      <tr class="cg-1">
        <td></td>
        <td>&#160;&#160;&#160;
-       <a href="server/squid.html#module-iceprod.server.squid"><code class="xref">iceprod.server.squid</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
        <a href="server/ssl_cert.html#module-iceprod.server.ssl_cert"><code class="xref">iceprod.server.ssl_cert</code></a></td><td>
        <em></em></td></tr>
    </table>
 
 
+           </div>
+           <div class="articleComments">
+            
            </div>
           </div>
           <footer>
@@ -346,15 +439,17 @@
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
             VERSION:'master',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
@@ -363,14 +458,13 @@
     <script type="text/javascript" src="_static/js/theme.js"></script>
   
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

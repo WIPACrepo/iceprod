@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -24,12 +26,17 @@
 
   
   
-    <link rel="stylesheet" href="../../../_static/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+  
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  
   
 
   
-
-  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
     <link rel="top" title="IceProd master documentation" href="../../../index.html"/>
         <link rel="up" title="iceprod.core" href="../core.html"/> 
 
@@ -60,7 +67,7 @@
             
             
               <div class="version">
-                master
+                2.5.0
               </div>
             
           
@@ -81,14 +88,84 @@
           
             
             
-                <ul>
+              
+            
+            
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../admin/index.html">Administrator&#8217;s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/login.html">Login</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/submission.html">Dataset Submission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/datasets.html">Dataset Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/tasks.html">Task Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/restapi.html">REST API Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/manually.html">Running Manually</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../admin/index.html">Administrator’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../admin/startup.html">Server Startup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../admin/common.html">Common Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../admin/extra_details.html">Extras</a></li>
+</ul>
+</li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../core/index.html">IceProd Core</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../server/index.html">IceProd Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/index.html">IceProd Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/i3exec.html">I3Exec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/exe.html">Execution Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/exe_helper.html">Execution Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/exe_json.html">JSONRPC Calls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/jsonRPCclient.html">JSON-RPC Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/jsonUtil.html">JSON Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/init.html">Core Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/dataclasses.html">Dataclasses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/parser.html">Meta-Language Parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/serialization.html">Serialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/gridftp.html">GridFTP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/util.html">Utilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../server/index.html">IceProd Server</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/details/index.html">Server Details</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/submit_to_queue.html">From Submission to Queue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/task_relationships.html">Task Relationships</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/lifecycles.html">Lifecycles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/global_queueing.html">Global Queueing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/async.html">Asynchronous Programming</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/website.html">Website</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/auth.html">REST Authorization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/user_accounts.html">User Accounts</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/rest_api/index.html">REST API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/datasets.html">Datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/config.html">Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/jobs.html">Jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/tasks.html">Tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/task_stats.html">Task Stats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/logs.html">Logs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/grids.html">Grids</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/pilots.html">Pilots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/auth.html">Auth</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/auth.html">Token Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/config.html">Detailed Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/dbmethods.html">DB Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/file_io.html">File IO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/globus.html">Globus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/grid.html">Grid Queueing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/init.html">Server Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/module.html">Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/nginx.html">Nginx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/schedule.html">Schedule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/server.html">Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/squid.html">Squid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/tornado.html">Tornado Web Utilities</a></li>
+</ul>
+</li>
 </ul>
 
             
@@ -110,15 +187,52 @@
 
       
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div style="float:right">
-            <a href="https://github.com/WIPACrepo/iceprod" class="fa fa-github"> Edit on GitHub</a>
-          </div>
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../core.html">iceprod.core</a> &raquo;</li>
+        
+      <li>iceprod.core.functions</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
   <h1>Source code for iceprod.core.functions</h1><div class="highlight"><pre>
-<span class="sd">&quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Common functions</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
@@ -138,6 +252,7 @@
 <span class="kn">import</span> <span class="nn">hashlib</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
 <span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">contextmanager</span>
+<span class="kn">import</span> <span class="nn">asyncio</span>
 
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">import</span> <span class="nn">cPickle</span> <span class="k">as</span> <span class="nn">pickle</span>
@@ -147,89 +262,88 @@
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">import</span> <span class="nn">psutil</span>
 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-    <span class="n">psutil</span> <span class="o">=</span> <span class="k">None</span>
+    <span class="n">psutil</span> <span class="o">=</span> <span class="kc">None</span>
 
 <span class="kn">import</span> <span class="nn">requests</span>
 <span class="kn">from</span> <span class="nn">requests.packages.urllib3.util.retry</span> <span class="k">import</span> <span class="n">Retry</span>
 <span class="kn">from</span> <span class="nn">requests.adapters</span> <span class="k">import</span> <span class="n">HTTPAdapter</span>
 <span class="kn">from</span> <span class="nn">requests_toolbelt.multipart.encoder</span> <span class="k">import</span> <span class="n">MultipartEncoder</span>
+<span class="kn">from</span> <span class="nn">rest_tools.client</span> <span class="k">import</span> <span class="n">Session</span><span class="p">,</span> <span class="n">AsyncSession</span>
 
 <span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">util</span>
 <span class="kn">from</span> <span class="nn">iceprod.core.gridftp</span> <span class="k">import</span> <span class="n">GridFTP</span>
-<span class="kn">from</span> <span class="nn">iceprod.core.jsonUtil</span> <span class="k">import</span> <span class="n">json_encode</span><span class="p">,</span><span class="n">json_decode</span>
-
-<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;functions&#39;</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">iceprod.core.jsonUtil</span> <span class="k">import</span> <span class="n">json_encode</span><span class="p">,</span> <span class="n">json_decode</span>
 
 
-<span class="c">### Compression Functions ###</span>
-<span class="n">_compress_suffixes</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;.tgz&#39;</span><span class="p">,</span><span class="s">&#39;.gz&#39;</span><span class="p">,</span><span class="s">&#39;.tbz2&#39;</span><span class="p">,</span><span class="s">&#39;.tbz&#39;</span><span class="p">,</span><span class="s">&#39;.bz2&#39;</span><span class="p">,</span><span class="s">&#39;.bz&#39;</span><span class="p">,</span>
-                     <span class="s">&#39;.lzma2&#39;</span><span class="p">,</span><span class="s">&#39;.lzma&#39;</span><span class="p">,</span><span class="s">&#39;.lz&#39;</span><span class="p">,</span><span class="s">&#39;.xz&#39;</span><span class="p">)</span>
-<span class="n">_tar_suffixes</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;.tar&#39;</span><span class="p">,</span> <span class="s">&#39;.tar.gz&#39;</span><span class="p">,</span> <span class="s">&#39;.tgz&#39;</span><span class="p">,</span> <span class="s">&#39;.tar.bz2&#39;</span><span class="p">,</span> <span class="s">&#39;.tbz2&#39;</span><span class="p">,</span> <span class="s">&#39;.tbz&#39;</span><span class="p">,</span>
-                <span class="s">&#39;.tar.lzma&#39;</span><span class="p">,</span> <span class="s">&#39;.tar.xz&#39;</span><span class="p">,</span> <span class="s">&#39;.tlz&#39;</span><span class="p">,</span> <span class="s">&#39;.txz&#39;</span><span class="p">)</span>
+<span class="c1">### Compression Functions ###</span>
+<span class="n">_compress_suffixes</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;.tgz&#39;</span><span class="p">,</span><span class="s1">&#39;.gz&#39;</span><span class="p">,</span><span class="s1">&#39;.tbz2&#39;</span><span class="p">,</span><span class="s1">&#39;.tbz&#39;</span><span class="p">,</span><span class="s1">&#39;.bz2&#39;</span><span class="p">,</span><span class="s1">&#39;.bz&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;.lzma2&#39;</span><span class="p">,</span><span class="s1">&#39;.lzma&#39;</span><span class="p">,</span><span class="s1">&#39;.lz&#39;</span><span class="p">,</span><span class="s1">&#39;.xz&#39;</span><span class="p">)</span>
+<span class="n">_tar_suffixes</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;.tar&#39;</span><span class="p">,</span> <span class="s1">&#39;.tar.gz&#39;</span><span class="p">,</span> <span class="s1">&#39;.tgz&#39;</span><span class="p">,</span> <span class="s1">&#39;.tar.bz2&#39;</span><span class="p">,</span> <span class="s1">&#39;.tbz2&#39;</span><span class="p">,</span> <span class="s1">&#39;.tbz&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;.tar.lzma&#39;</span><span class="p">,</span> <span class="s1">&#39;.tar.xz&#39;</span><span class="p">,</span> <span class="s1">&#39;.tlz&#39;</span><span class="p">,</span> <span class="s1">&#39;.txz&#39;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="uncompress"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.uncompress">[docs]</a><span class="k">def</span> <span class="nf">uncompress</span><span class="p">(</span><span class="n">infile</span><span class="p">,</span> <span class="n">out_dir</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+<div class="viewcode-block" id="uncompress"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.uncompress">[docs]</a><span class="k">def</span> <span class="nf">uncompress</span><span class="p">(</span><span class="n">infile</span><span class="p">,</span> <span class="n">out_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Uncompress a file, if possible&quot;&quot;&quot;</span>
     <span class="n">files</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">cur_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">out_dir</span><span class="p">:</span>
             <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">out_dir</span><span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;uncompressing %s&#39;</span><span class="p">,</span><span class="n">infile</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;uncompressing </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">infile</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">istarred</span><span class="p">(</span><span class="n">infile</span><span class="p">):</span>
-            <span class="c"># handle tarfile</span>
-            <span class="n">output</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">([</span><span class="s">&#39;tar&#39;</span><span class="p">,</span><span class="s">&#39;-atf&#39;</span><span class="p">,</span><span class="n">infile</span><span class="p">])</span>
-            <span class="n">files</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">output</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">and</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s">&#39;/&#39;</span><span class="p">]</span>
+            <span class="c1"># handle tarfile</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">([</span><span class="s1">&#39;tar&#39;</span><span class="p">,</span><span class="s1">&#39;-atf&#39;</span><span class="p">,</span><span class="n">infile</span><span class="p">])</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+            <span class="n">files</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">output</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">and</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;/&#39;</span><span class="p">]</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">files</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;no files inside tarfile&#39;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;no files inside tarfile&#39;</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
                     <span class="k">break</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">([</span><span class="s">&#39;tar&#39;</span><span class="p">,</span><span class="s">&#39;-axf&#39;</span><span class="p">,</span><span class="n">infile</span><span class="p">])</span>
+                <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">([</span><span class="s1">&#39;tar&#39;</span><span class="p">,</span><span class="s1">&#39;-axf&#39;</span><span class="p">,</span><span class="n">infile</span><span class="p">])</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">infile</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;.gz&#39;</span><span class="p">):</span>
-                <span class="n">cmd</span> <span class="o">=</span> <span class="s">&#39;gzip&#39;</span>
-            <span class="k">elif</span> <span class="nb">any</span><span class="p">(</span><span class="n">infile</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;.bz&#39;</span><span class="p">,</span><span class="s">&#39;.bz2&#39;</span><span class="p">)):</span>
-                <span class="n">cmd</span> <span class="o">=</span> <span class="s">&#39;bzip2&#39;</span>
-            <span class="k">elif</span> <span class="nb">any</span><span class="p">(</span><span class="n">infile</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;.xz&#39;</span><span class="p">,</span><span class="s">&#39;.lzma&#39;</span><span class="p">)):</span>
-                <span class="n">cmd</span> <span class="o">=</span> <span class="s">&#39;xz&#39;</span>
+            <span class="k">if</span> <span class="n">infile</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.gz&#39;</span><span class="p">):</span>
+                <span class="n">cmd</span> <span class="o">=</span> <span class="s1">&#39;gzip&#39;</span>
+            <span class="k">elif</span> <span class="nb">any</span><span class="p">(</span><span class="n">infile</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;.bz&#39;</span><span class="p">,</span><span class="s1">&#39;.bz2&#39;</span><span class="p">)):</span>
+                <span class="n">cmd</span> <span class="o">=</span> <span class="s1">&#39;bzip2&#39;</span>
+            <span class="k">elif</span> <span class="nb">any</span><span class="p">(</span><span class="n">infile</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;.xz&#39;</span><span class="p">,</span><span class="s1">&#39;.lzma&#39;</span><span class="p">)):</span>
+                <span class="n">cmd</span> <span class="o">=</span> <span class="s1">&#39;xz&#39;</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;unknown format: %s&#39;</span><span class="p">,</span><span class="n">infile</span><span class="p">)</span>
-                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;unknown format&#39;</span><span class="p">)</span>
-            <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">([</span><span class="n">cmd</span><span class="p">,</span><span class="s">&#39;-kdf&#39;</span><span class="p">,</span><span class="n">infile</span><span class="p">])</span>
-            <span class="n">files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">infile</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;unknown format: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">infile</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;unknown format&#39;</span><span class="p">)</span>
+            <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">([</span><span class="n">cmd</span><span class="p">,</span><span class="s1">&#39;-kdf&#39;</span><span class="p">,</span><span class="n">infile</span><span class="p">])</span>
+            <span class="n">files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">infile</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
     <span class="k">finally</span><span class="p">:</span>
         <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">cur_dir</span><span class="p">)</span>
 
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;files: %r&#39;</span><span class="p">,</span> <span class="n">files</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;files: </span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">files</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">files</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">files</span></div>
 
-<div class="viewcode-block" id="compress"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.compress">[docs]</a><span class="k">def</span> <span class="nf">compress</span><span class="p">(</span><span class="n">infile</span><span class="p">,</span><span class="n">compression</span><span class="o">=</span><span class="s">&#39;lzma&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="compress"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.compress">[docs]</a><span class="k">def</span> <span class="nf">compress</span><span class="p">(</span><span class="n">infile</span><span class="p">,</span><span class="n">compression</span><span class="o">=</span><span class="s1">&#39;lzma&#39;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Compress a file or directory.</span>
 <span class="sd">       The compression argument is used as the new file extension&quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">istarred</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">compression</span><span class="p">)</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">infile</span><span class="p">):</span>
-        <span class="n">outfile</span> <span class="o">=</span> <span class="n">infile</span><span class="o">+</span><span class="s">&#39;.tar.&#39;</span><span class="o">+</span><span class="n">compression</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">istarred</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="o">+</span><span class="n">compression</span><span class="p">)</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">infile</span><span class="p">):</span>
+        <span class="n">outfile</span> <span class="o">=</span> <span class="n">infile</span><span class="o">+</span><span class="s1">&#39;.tar.&#39;</span><span class="o">+</span><span class="n">compression</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">outfile</span> <span class="o">=</span> <span class="n">infile</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">compression</span>
+        <span class="n">outfile</span> <span class="o">=</span> <span class="n">infile</span><span class="o">+</span><span class="s1">&#39;.&#39;</span><span class="o">+</span><span class="n">compression</span>
     <span class="k">if</span> <span class="n">istarred</span><span class="p">(</span><span class="n">outfile</span><span class="p">):</span>
         <span class="n">dirname</span><span class="p">,</span> <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">infile</span><span class="p">)</span>
-        <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">([</span><span class="s">&#39;tar&#39;</span><span class="p">,</span><span class="s">&#39;-acf&#39;</span><span class="p">,</span><span class="n">outfile</span><span class="p">,</span><span class="s">&#39;-C&#39;</span><span class="p">,</span><span class="n">dirname</span><span class="p">,</span><span class="n">filename</span><span class="p">])</span>
+        <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">([</span><span class="s1">&#39;tar&#39;</span><span class="p">,</span><span class="s1">&#39;-acf&#39;</span><span class="p">,</span><span class="n">outfile</span><span class="p">,</span><span class="s1">&#39;-C&#39;</span><span class="p">,</span><span class="n">dirname</span><span class="p">,</span><span class="n">filename</span><span class="p">])</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">outfile</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;.gz&#39;</span><span class="p">):</span>
-            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;gzip&#39;</span><span class="p">]</span>
-        <span class="k">elif</span> <span class="nb">any</span><span class="p">(</span><span class="n">outfile</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;.bz&#39;</span><span class="p">,</span><span class="s">&#39;.bz2&#39;</span><span class="p">)):</span>
-            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;bzip2&#39;</span><span class="p">]</span>
-        <span class="k">elif</span> <span class="n">outfile</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;.xz&#39;</span><span class="p">):</span>
-            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;xz&#39;</span><span class="p">]</span>
-        <span class="k">elif</span> <span class="n">outfile</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;.lzma&#39;</span><span class="p">):</span>
-            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;xz&#39;</span><span class="p">,</span><span class="s">&#39;-F&#39;</span><span class="p">,</span><span class="s">&#39;lzma&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">outfile</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.gz&#39;</span><span class="p">):</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;gzip&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">any</span><span class="p">(</span><span class="n">outfile</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;.bz&#39;</span><span class="p">,</span><span class="s1">&#39;.bz2&#39;</span><span class="p">)):</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;bzip2&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">outfile</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.xz&#39;</span><span class="p">):</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;xz&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">outfile</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.lzma&#39;</span><span class="p">):</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;xz&#39;</span><span class="p">,</span><span class="s1">&#39;-F&#39;</span><span class="p">,</span><span class="s1">&#39;lzma&#39;</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;unknown format: %s&#39;</span><span class="p">,</span><span class="n">infile</span><span class="p">)</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;unknown format&#39;</span><span class="p">)</span>
-        <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">cmd</span><span class="o">+</span><span class="p">[</span><span class="s">&#39;-kf&#39;</span><span class="p">,</span><span class="n">infile</span><span class="p">])</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;unknown format: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">infile</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;unknown format&#39;</span><span class="p">)</span>
+        <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">cmd</span><span class="o">+</span><span class="p">[</span><span class="s1">&#39;-kf&#39;</span><span class="p">,</span><span class="n">infile</span><span class="p">])</span>
     <span class="k">return</span> <span class="n">outfile</span></div>
 
 <div class="viewcode-block" id="iscompressed"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.iscompressed">[docs]</a><span class="k">def</span> <span class="nf">iscompressed</span><span class="p">(</span><span class="n">infile</span><span class="p">):</span>
@@ -240,92 +354,91 @@
     <span class="sd">&quot;&quot;&quot;Check if a file is a tarred file, based on file name&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">infile</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">_tar_suffixes</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="cksm"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.cksm">[docs]</a><span class="k">def</span> <span class="nf">cksm</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="nb">type</span><span class="p">,</span><span class="n">buffersize</span><span class="o">=</span><span class="mi">16384</span><span class="p">,</span><span class="n">file</span><span class="o">=</span><span class="k">True</span><span class="p">):</span>
+<div class="viewcode-block" id="cksm"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.cksm">[docs]</a><span class="k">def</span> <span class="nf">cksm</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="nb">type</span><span class="p">,</span><span class="n">buffersize</span><span class="o">=</span><span class="mi">16384</span><span class="p">,</span><span class="n">file</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Return checksum of file using algorithm specified&quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="nb">type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;md5&#39;</span><span class="p">,</span><span class="s">&#39;sha1&#39;</span><span class="p">,</span><span class="s">&#39;sha256&#39;</span><span class="p">,</span><span class="s">&#39;sha512&#39;</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;cannot get checksum for type %r&#39;</span><span class="p">,</span><span class="nb">type</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;md5&#39;</span><span class="p">,</span><span class="s1">&#39;sha1&#39;</span><span class="p">,</span><span class="s1">&#39;sha256&#39;</span><span class="p">,</span><span class="s1">&#39;sha512&#39;</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;cannot get checksum for type </span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span><span class="nb">type</span><span class="p">)</span>
 
     <span class="k">try</span><span class="p">:</span>
         <span class="n">digest</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">hashlib</span><span class="p">,</span><span class="nb">type</span><span class="p">)()</span>
-    <span class="k">except</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;cannot get checksum for type %r&#39;</span><span class="p">,</span><span class="nb">type</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;cannot get checksum for type </span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span><span class="nb">type</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">file</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
-        <span class="c"># checksum file contents</span>
-        <span class="n">filed</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
-        <span class="n">buffer</span> <span class="o">=</span> <span class="n">filed</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">buffersize</span><span class="p">)</span>
-        <span class="k">while</span> <span class="n">buffer</span><span class="p">:</span>
-            <span class="n">digest</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span>
+        <span class="c1"># checksum file contents</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">filed</span><span class="p">:</span>
             <span class="n">buffer</span> <span class="o">=</span> <span class="n">filed</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">buffersize</span><span class="p">)</span>
-        <span class="n">filed</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">while</span> <span class="n">buffer</span><span class="p">:</span>
+                <span class="n">digest</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span>
+                <span class="n">buffer</span> <span class="o">=</span> <span class="n">filed</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">buffersize</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="c"># just checksum the contents of the first argument</span>
+        <span class="c1"># just checksum the contents of the first argument</span>
         <span class="n">digest</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">digest</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="md5sum"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.md5sum">[docs]</a><span class="k">def</span> <span class="nf">md5sum</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">buffersize</span><span class="o">=</span><span class="mi">16384</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Return md5 digest of file&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">cksm</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="s">&#39;md5&#39;</span><span class="p">,</span><span class="n">buffersize</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">cksm</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="s1">&#39;md5&#39;</span><span class="p">,</span><span class="n">buffersize</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="sha1sum"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.sha1sum">[docs]</a><span class="k">def</span> <span class="nf">sha1sum</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">buffersize</span><span class="o">=</span><span class="mi">16384</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Return sha1 digest of file&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">cksm</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="s">&#39;sha1&#39;</span><span class="p">,</span><span class="n">buffersize</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">cksm</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="s1">&#39;sha1&#39;</span><span class="p">,</span><span class="n">buffersize</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="sha256sum"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.sha256sum">[docs]</a><span class="k">def</span> <span class="nf">sha256sum</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">buffersize</span><span class="o">=</span><span class="mi">16384</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Return sha256 digest of file&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">cksm</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="s">&#39;sha256&#39;</span><span class="p">,</span><span class="n">buffersize</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">cksm</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="s1">&#39;sha256&#39;</span><span class="p">,</span><span class="n">buffersize</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="sha512sum"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.sha512sum">[docs]</a><span class="k">def</span> <span class="nf">sha512sum</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">buffersize</span><span class="o">=</span><span class="mi">16384</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Return sha512 digest of file&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">cksm</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="s">&#39;sha512&#39;</span><span class="p">,</span><span class="n">buffersize</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">cksm</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="s1">&#39;sha512&#39;</span><span class="p">,</span><span class="n">buffersize</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="load_cksm"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.load_cksm">[docs]</a><span class="k">def</span> <span class="nf">load_cksm</span><span class="p">(</span><span class="n">sumfile</span><span class="p">,</span> <span class="n">base_filename</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Load the checksum from a file&quot;&quot;&quot;</span>
-    <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">open</span><span class="p">(</span><span class="n">sumfile</span><span class="p">,</span><span class="s">&#39;r&#39;</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">open</span><span class="p">(</span><span class="n">sumfile</span><span class="p">,</span><span class="s1">&#39;r&#39;</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">base_filename</span><span class="p">)</span> <span class="ow">in</span> <span class="n">l</span><span class="p">:</span>
-            <span class="n">sum_cksm</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">l</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+            <span class="n">sum_cksm</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">l</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
             <span class="k">return</span> <span class="n">sum_cksm</span>
-    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;could not find checksum in file&#39;</span><span class="p">)</span></div>
+    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;could not find checksum in file&#39;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="check_cksm"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.check_cksm">[docs]</a><span class="k">def</span> <span class="nf">check_cksm</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="nb">type</span><span class="p">,</span><span class="nb">sum</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Check a checksum of a file&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">file</span><span class="p">):</span>
-        <span class="k">return</span> <span class="k">False</span>
-    <span class="c"># get checksum from file</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="c1"># get checksum from file</span>
     <span class="n">file_cksm</span> <span class="o">=</span> <span class="n">cksm</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="nb">type</span><span class="p">)</span>
-    <span class="c"># load sum</span>
+    <span class="c1"># load sum</span>
     <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="nb">sum</span><span class="p">):</span>
         <span class="n">sum_cksm</span> <span class="o">=</span> <span class="n">load_cksm</span><span class="p">(</span><span class="nb">sum</span><span class="p">,</span> <span class="n">file</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">sum_cksm</span> <span class="o">=</span> <span class="nb">sum</span>
-    <span class="c"># check sum</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;file_cksm: %r&#39;</span><span class="p">,</span> <span class="n">file_cksm</span><span class="p">)</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;sum_cksm:  %r&#39;</span><span class="p">,</span> <span class="n">sum_cksm</span><span class="p">)</span>
+    <span class="c1"># check sum</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;file_cksm: </span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">file_cksm</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;sum_cksm:  </span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">sum_cksm</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">file_cksm</span> <span class="o">==</span> <span class="n">sum_cksm</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="check_md5sum"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.check_md5sum">[docs]</a><span class="k">def</span> <span class="nf">check_md5sum</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="nb">sum</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Check an md5sum of a file&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">check_cksm</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="s">&#39;md5&#39;</span><span class="p">,</span><span class="nb">sum</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">check_cksm</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="s1">&#39;md5&#39;</span><span class="p">,</span><span class="nb">sum</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="check_sha1sum"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.check_sha1sum">[docs]</a><span class="k">def</span> <span class="nf">check_sha1sum</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="nb">sum</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Check an sha1sum of a file&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">check_cksm</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="s">&#39;sha1&#39;</span><span class="p">,</span><span class="nb">sum</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">check_cksm</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="s1">&#39;sha1&#39;</span><span class="p">,</span><span class="nb">sum</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="check_sha256sum"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.check_sha256sum">[docs]</a><span class="k">def</span> <span class="nf">check_sha256sum</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="nb">sum</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Check an sha256sum of a file&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">check_cksm</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="s">&#39;sha256&#39;</span><span class="p">,</span><span class="nb">sum</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">check_cksm</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="s1">&#39;sha256&#39;</span><span class="p">,</span><span class="nb">sum</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="check_sha512sum"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.check_sha512sum">[docs]</a><span class="k">def</span> <span class="nf">check_sha512sum</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="nb">sum</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Check an sha512sum of a file&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">check_cksm</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="s">&#39;sha512&#39;</span><span class="p">,</span><span class="nb">sum</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">check_cksm</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="s1">&#39;sha512&#39;</span><span class="p">,</span><span class="nb">sum</span><span class="p">)</span></div>
 
 
-<span class="c">### File and Directory Manipulation Functions ###</span>
+<span class="c1">### File and Directory Manipulation Functions ###</span>
 
 <div class="viewcode-block" id="removedirs"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.removedirs">[docs]</a><span class="k">def</span> <span class="nf">removedirs</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
-            <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="k">True</span><span class="p">)</span>
+            <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
@@ -334,21 +447,21 @@
 <div class="viewcode-block" id="copy"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.copy">[docs]</a><span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="n">src</span><span class="p">,</span><span class="n">dest</span><span class="p">):</span>
     <span class="n">parent_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">dest</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">parent_dir</span><span class="p">):</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;attempting to make parent dest dir %s&#39;</span><span class="p">,</span><span class="n">parent_dir</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;attempting to make parent dest dir </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">parent_dir</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">parent_dir</span><span class="p">)</span>
-        <span class="k">except</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;failed to make dest directory for copy&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;failed to make dest directory for copy&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="k">raise</span>
     <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">src</span><span class="p">):</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;dircopy: %s to %s&#39;</span><span class="p">,</span><span class="n">src</span><span class="p">,</span><span class="n">dest</span><span class="p">)</span>
-        <span class="n">shutil</span><span class="o">.</span><span class="n">copytree</span><span class="p">(</span><span class="n">src</span><span class="p">,</span><span class="n">dest</span><span class="p">,</span><span class="n">symlinks</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;dircopy: </span><span class="si">%s</span><span class="s1"> to </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">src</span><span class="p">,</span><span class="n">dest</span><span class="p">)</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">copytree</span><span class="p">(</span><span class="n">src</span><span class="p">,</span><span class="n">dest</span><span class="p">,</span><span class="n">symlinks</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;filecopy: %s to %s&#39;</span><span class="p">,</span><span class="n">src</span><span class="p">,</span><span class="n">dest</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;filecopy: </span><span class="si">%s</span><span class="s1"> to </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">src</span><span class="p">,</span><span class="n">dest</span><span class="p">)</span>
         <span class="n">shutil</span><span class="o">.</span><span class="n">copy2</span><span class="p">(</span><span class="n">src</span><span class="p">,</span><span class="n">dest</span><span class="p">)</span></div>
 
 
-<span class="c">### Network Functions ###</span>
+<span class="c1">### Network Functions ###</span>
 
 <div class="viewcode-block" id="getInterfaces"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.getInterfaces">[docs]</a><span class="k">def</span> <span class="nf">getInterfaces</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -368,212 +481,224 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="n">snic</span><span class="o">.</span><span class="n">address</span><span class="p">:</span>
                 <span class="k">continue</span>
             <span class="k">if</span> <span class="n">snic</span><span class="o">.</span><span class="n">family</span> <span class="o">==</span> <span class="n">socket</span><span class="o">.</span><span class="n">AF_INET</span><span class="p">:</span>
-                <span class="n">n</span><span class="p">[</span><span class="s">&#39;ipv4&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">snic</span><span class="o">.</span><span class="n">address</span>
+                <span class="n">n</span><span class="p">[</span><span class="s1">&#39;ipv4&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">snic</span><span class="o">.</span><span class="n">address</span>
             <span class="k">elif</span> <span class="n">snic</span><span class="o">.</span><span class="n">family</span> <span class="o">==</span> <span class="n">socket</span><span class="o">.</span><span class="n">AF_INET6</span><span class="p">:</span>
-                <span class="n">n</span><span class="p">[</span><span class="s">&#39;ipv6&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">snic</span><span class="o">.</span><span class="n">address</span>
+                <span class="n">n</span><span class="p">[</span><span class="s1">&#39;ipv6&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">snic</span><span class="o">.</span><span class="n">address</span>
             <span class="k">elif</span> <span class="n">snic</span><span class="o">.</span><span class="n">family</span> <span class="o">==</span> <span class="n">psutil</span><span class="o">.</span><span class="n">AF_LINK</span><span class="p">:</span>
-                <span class="n">n</span><span class="p">[</span><span class="s">&#39;mac&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">snic</span><span class="o">.</span><span class="n">address</span>
+                <span class="n">n</span><span class="p">[</span><span class="s1">&#39;mac&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">snic</span><span class="o">.</span><span class="n">address</span>
         <span class="n">interfaces</span><span class="p">[</span><span class="n">nic_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">n</span>
     <span class="k">return</span> <span class="n">interfaces</span></div>
 
 <div class="viewcode-block" id="get_local_ip_address"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.get_local_ip_address">[docs]</a><span class="k">def</span> <span class="nf">get_local_ip_address</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;Get the local (loopback) ip address&quot;&quot;&quot;</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">socket</span><span class="o">.</span><span class="n">gethostbyname</span><span class="p">(</span><span class="s">&#39;localhost&#39;</span><span class="p">)</span>
-    <span class="k">except</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">socket</span><span class="o">.</span><span class="n">gethostbyname</span><span class="p">(</span><span class="s1">&#39;localhost&#39;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">socket</span><span class="o">.</span><span class="n">gethostbyname</span><span class="p">(</span> <span class="n">socket</span><span class="o">.</span><span class="n">getfqdn</span><span class="p">()</span> <span class="p">)</span></div>
 
 <div class="viewcode-block" id="gethostname"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.gethostname">[docs]</a><span class="k">def</span> <span class="nf">gethostname</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;Get hostname of this computer.&quot;&quot;&quot;</span>
     <span class="n">ret</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">getfqdn</span><span class="p">()</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">resp</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;http://simprod.icecube.wisc.edu/downloads/getip.php&#39;</span><span class="p">)</span>
+        <span class="n">resp</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;http://simprod.icecube.wisc.edu/downloads/getip.php&#39;</span><span class="p">)</span>
         <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;getip: %r&#39;</span><span class="p">,</span> <span class="n">resp</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
-        <span class="n">ret2</span> <span class="o">=</span> <span class="n">resp</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ret2</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="s">&#39;.&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ret</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[:</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">ret2</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">:])</span>
-    <span class="k">except</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error getting global ip&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;getip: </span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">resp</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+        <span class="n">ret2</span> <span class="o">=</span> <span class="n">resp</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ret2</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="s1">&#39;.&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ret</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[:</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">ret2</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">:])</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;error getting global ip&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">ret</span></div>
 
 <span class="nd">@contextmanager</span>
-<span class="k">def</span> <span class="nf">_http_helper</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="p">{}):</span>
+<span class="k">def</span> <span class="nf">_http_helper</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="p">{},</span> <span class="n">sync</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Set up an http session using requests&quot;&quot;&quot;</span>
-    <span class="k">with</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
-        <span class="k">if</span> <span class="s">&#39;username&#39;</span> <span class="ow">in</span> <span class="n">options</span> <span class="ow">and</span> <span class="s">&#39;password&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
-            <span class="n">s</span><span class="o">.</span><span class="n">auth</span> <span class="o">=</span> <span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s">&#39;username&#39;</span><span class="p">],</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;password&#39;</span><span class="p">])</span>
-        <span class="k">if</span> <span class="s">&#39;sslcert&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
-            <span class="k">if</span> <span class="s">&#39;sslkey&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
-                <span class="n">s</span><span class="o">.</span><span class="n">cert</span> <span class="o">=</span> <span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s">&#39;sslcert&#39;</span><span class="p">],</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;sslkey&#39;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">sync</span><span class="p">:</span>
+        <span class="n">session</span> <span class="o">=</span> <span class="n">Session</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">session</span> <span class="o">=</span> <span class="n">AsyncSession</span>
+    <span class="k">with</span> <span class="n">session</span><span class="p">()</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s1">&#39;username&#39;</span> <span class="ow">in</span> <span class="n">options</span> <span class="ow">and</span> <span class="s1">&#39;password&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+            <span class="n">s</span><span class="o">.</span><span class="n">auth</span> <span class="o">=</span> <span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s1">&#39;username&#39;</span><span class="p">],</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;password&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s1">&#39;sslcert&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s1">&#39;sslkey&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+                <span class="n">s</span><span class="o">.</span><span class="n">cert</span> <span class="o">=</span> <span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s1">&#39;sslcert&#39;</span><span class="p">],</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;sslkey&#39;</span><span class="p">])</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">s</span><span class="o">.</span><span class="n">cert</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;sslcert&#39;</span><span class="p">]</span>
-        <span class="k">if</span> <span class="s">&#39;cacert&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
-            <span class="n">s</span><span class="o">.</span><span class="n">verify</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;cacert&#39;</span><span class="p">]</span>
-        <span class="n">retries</span> <span class="o">=</span> <span class="n">Retry</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-                <span class="n">backoff_factor</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
-                <span class="n">status_forcelist</span><span class="o">=</span><span class="p">[</span> <span class="mi">408</span><span class="p">,</span> <span class="mi">500</span><span class="p">,</span> <span class="mi">502</span><span class="p">,</span> <span class="mi">503</span><span class="p">,</span> <span class="mi">504</span> <span class="p">])</span>
-        <span class="n">s</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s">&#39;http://&#39;</span><span class="p">,</span> <span class="n">HTTPAdapter</span><span class="p">(</span><span class="n">max_retries</span><span class="o">=</span><span class="n">retries</span><span class="p">))</span>
-        <span class="n">s</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s">&#39;https://&#39;</span><span class="p">,</span> <span class="n">HTTPAdapter</span><span class="p">(</span><span class="n">max_retries</span><span class="o">=</span><span class="n">retries</span><span class="p">))</span>
+                <span class="n">s</span><span class="o">.</span><span class="n">cert</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;sslcert&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s1">&#39;cacert&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+            <span class="n">s</span><span class="o">.</span><span class="n">verify</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;cacert&#39;</span><span class="p">]</span>
         <span class="k">yield</span> <span class="n">s</span>
 
-<div class="viewcode-block" id="download"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.download">[docs]</a><span class="k">def</span> <span class="nf">download</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">{}):</span>
+<div class="viewcode-block" id="download"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.download">[docs]</a><span class="k">async</span> <span class="k">def</span> <span class="nf">download</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">{}):</span>
     <span class="sd">&quot;&quot;&quot;Download a file, checksumming if possible&quot;&quot;&quot;</span>
     <span class="n">local</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="n">local</span><span class="p">))</span>
     <span class="n">url</span>  <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="n">url</span><span class="p">))</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">isurl</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
-            <span class="n">url</span> <span class="o">=</span> <span class="s">&#39;file:&#39;</span><span class="o">+</span><span class="n">url</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="s1">&#39;file:&#39;</span><span class="o">+</span><span class="n">url</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;unsupported protocol %s&quot;</span> <span class="o">%</span> <span class="n">url</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;unsupported protocol </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">url</span><span class="p">)</span>
 
-    <span class="c"># strip off query params</span>
-    <span class="k">if</span> <span class="s">&#39;?&#39;</span> <span class="ow">in</span> <span class="n">url</span><span class="p">:</span>
-        <span class="n">clean_url</span> <span class="o">=</span> <span class="n">url</span><span class="p">[:</span><span class="n">url</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&#39;?&#39;</span><span class="p">)]</span>
-    <span class="k">elif</span> <span class="s">&#39;#&#39;</span> <span class="ow">in</span> <span class="n">url</span><span class="p">:</span>
-        <span class="n">clean_url</span> <span class="o">=</span> <span class="n">url</span><span class="p">[:</span><span class="n">url</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&#39;#&#39;</span><span class="p">)]</span>
+    <span class="c1"># strip off query params</span>
+    <span class="k">if</span> <span class="s1">&#39;?&#39;</span> <span class="ow">in</span> <span class="n">url</span><span class="p">:</span>
+        <span class="n">clean_url</span> <span class="o">=</span> <span class="n">url</span><span class="p">[:</span><span class="n">url</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">&#39;?&#39;</span><span class="p">)]</span>
+    <span class="k">elif</span> <span class="s1">&#39;#&#39;</span> <span class="ow">in</span> <span class="n">url</span><span class="p">:</span>
+        <span class="n">clean_url</span> <span class="o">=</span> <span class="n">url</span><span class="p">[:</span><span class="n">url</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">&#39;#&#39;</span><span class="p">)]</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">clean_url</span> <span class="o">=</span> <span class="n">url</span>
 
-    <span class="c"># fix local to be a filename to write to</span>
-    <span class="k">if</span> <span class="n">local</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;file:&#39;</span><span class="p">):</span>
+    <span class="c1"># fix local to be a filename to write to</span>
+    <span class="k">if</span> <span class="n">local</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;file:&#39;</span><span class="p">):</span>
         <span class="n">local</span> <span class="o">=</span> <span class="n">local</span><span class="p">[</span><span class="mi">5</span><span class="p">:]</span>
     <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">local</span><span class="p">):</span>
         <span class="n">local</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">local</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">clean_url</span><span class="p">))</span>
 
-    <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;wget(): src: %s, local: %s&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;wget(): src: </span><span class="si">%s</span><span class="s1">, local: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
 
-    <span class="c"># actually download the file</span>
+    <span class="c1"># actually download the file</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;http&#39;</span><span class="p">):</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;http from %s to %s&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
-            <span class="k">with</span> <span class="n">_http_helper</span><span class="p">(</span><span class="n">options</span><span class="p">)</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
-                <span class="n">r</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="k">True</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
-                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">local</span><span class="p">,</span> <span class="s">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-                    <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">r</span><span class="o">.</span><span class="n">iter_content</span><span class="p">(</span><span class="mi">65536</span><span class="p">):</span>
-                        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
-                <span class="n">r</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
-        <span class="k">elif</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;file:&#39;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;http&#39;</span><span class="p">):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;http from </span><span class="si">%s</span><span class="s1"> to </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
+            <span class="k">def</span> <span class="nf">_d</span><span class="p">():</span>
+                <span class="k">with</span> <span class="n">_http_helper</span><span class="p">(</span><span class="n">options</span><span class="p">)</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
+                    <span class="n">r</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+                    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">local</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                        <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">r</span><span class="o">.</span><span class="n">iter_content</span><span class="p">(</span><span class="mi">65536</span><span class="p">):</span>
+                            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+                    <span class="n">r</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+            <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span><span class="o">.</span><span class="n">run_in_executor</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">_d</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;file:&#39;</span><span class="p">):</span>
             <span class="n">url</span> <span class="o">=</span> <span class="n">url</span><span class="p">[</span><span class="mi">5</span><span class="p">:]</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;copy from %s to %s&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;copy from </span><span class="si">%s</span><span class="s1"> to </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
-                <span class="n">copy</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;gsiftp:&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;ftp:&#39;</span><span class="p">):</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;gsiftp from %s to %s&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
-            <span class="n">GridFTP</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">local</span><span class="p">)</span>
+                <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span><span class="o">.</span><span class="n">run_in_executor</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span>
+                        <span class="n">partial</span><span class="p">(</span><span class="n">copy</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;gsiftp:&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;ftp:&#39;</span><span class="p">):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;gsiftp from </span><span class="si">%s</span><span class="s1"> to </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
+            <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span><span class="o">.</span><span class="n">run_in_executor</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">partial</span><span class="p">(</span><span class="n">GridFTP</span><span class="o">.</span><span class="n">get</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">local</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;unsupported protocol %s&quot;</span> <span class="o">%</span> <span class="n">url</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;unsupported protocol </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">url</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">local</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;download failed - file does not exist&#39;</span><span class="p">)</span>
-    <span class="k">except</span><span class="p">:</span>
-        <span class="n">removedirs</span><span class="p">(</span><span class="n">local</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;download failed - file does not exist&#39;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span><span class="o">.</span><span class="n">run_in_executor</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">removedirs</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
         <span class="k">raise</span>
 
     <span class="k">return</span> <span class="n">local</span></div>
 
-<div class="viewcode-block" id="upload"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.upload">[docs]</a><span class="k">def</span> <span class="nf">upload</span><span class="p">(</span><span class="n">local</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">{}):</span>
+<div class="viewcode-block" id="upload"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.upload">[docs]</a><span class="k">async</span> <span class="k">def</span> <span class="nf">upload</span><span class="p">(</span><span class="n">local</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">{}):</span>
     <span class="sd">&quot;&quot;&quot;Upload a file, checksumming if possible&quot;&quot;&quot;</span>
     <span class="n">local</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="n">local</span><span class="p">)</span>
     <span class="n">url</span>  <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">isurl</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
-            <span class="n">url</span> <span class="o">=</span> <span class="s">&#39;file:&#39;</span><span class="o">+</span><span class="n">url</span>
+        <span class="k">if</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">):</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="s1">&#39;file:&#39;</span><span class="o">+</span><span class="n">url</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;unsupported protocol %s&quot;</span> <span class="o">%</span> <span class="n">url</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">local</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;file:&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;unsupported protocol </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">url</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">local</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;file:&#39;</span><span class="p">):</span>
         <span class="n">local</span> <span class="o">=</span> <span class="n">local</span><span class="p">[</span><span class="mi">5</span><span class="p">:]</span>
     <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">local</span><span class="p">):</span>
-        <span class="n">compress</span><span class="p">(</span><span class="n">local</span><span class="p">,</span> <span class="s">&#39;tar&#39;</span><span class="p">)</span>
-        <span class="n">local</span> <span class="o">+=</span> <span class="s">&#39;.tar&#39;</span>
+        <span class="n">compress</span><span class="p">(</span><span class="n">local</span><span class="p">,</span> <span class="s1">&#39;tar&#39;</span><span class="p">)</span>
+        <span class="n">local</span> <span class="o">+=</span> <span class="s1">&#39;.tar&#39;</span>
 
-    <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;wput(): local: %s, url: %s&#39;</span><span class="p">,</span> <span class="n">local</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;wput(): local: </span><span class="si">%s</span><span class="s1">, url: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">local</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">local</span><span class="p">):</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;upload: local path, %s, does not exist&#39;</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
-        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;local file does not exist&#39;</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;upload: local path, </span><span class="si">%s</span><span class="s1">, does not exist&#39;</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;local file does not exist&#39;</span><span class="p">)</span>
 
     <span class="n">chksum</span> <span class="o">=</span> <span class="n">sha512sum</span><span class="p">(</span><span class="n">local</span><span class="p">)</span>
-    <span class="n">chksum_type</span> <span class="o">=</span> <span class="s">&#39;sha512&#39;</span>
+    <span class="n">chksum_type</span> <span class="o">=</span> <span class="s1">&#39;sha512&#39;</span>
 
-    <span class="c"># actually upload the file</span>
-    <span class="k">if</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;http&#39;</span><span class="p">):</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;http from %s to %s&#39;</span><span class="p">,</span> <span class="n">local</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
-        <span class="k">with</span> <span class="n">_http_helper</span><span class="p">(</span><span class="n">options</span><span class="p">)</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
-            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">local</span><span class="p">,</span> <span class="s">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-                <span class="n">m</span> <span class="o">=</span> <span class="n">MultipartEncoder</span><span class="p">(</span>
-                    <span class="n">fields</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;field0&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;filename&#39;</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="s">&#39;text/plain&#39;</span><span class="p">)}</span>
-                    <span class="p">)</span>
-                <span class="n">r</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">m</span><span class="p">,</span>
-                           <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">content_type</span><span class="p">})</span>
-                <span class="n">r</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
-                <span class="c"># get checksum</span>
-                <span class="n">r</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="k">True</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">local</span><span class="o">+</span><span class="s">&#39;.tmp&#39;</span><span class="p">,</span> <span class="s">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-                        <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">r</span><span class="o">.</span><span class="n">iter_content</span><span class="p">(</span><span class="mi">65536</span><span class="p">):</span>
-                            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+    <span class="c1"># actually upload the file</span>
+    <span class="k">if</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;http&#39;</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;http from </span><span class="si">%s</span><span class="s1"> to </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">local</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">_d</span><span class="p">():</span>
+            <span class="k">with</span> <span class="n">_http_helper</span><span class="p">(</span><span class="n">options</span><span class="p">)</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">local</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="n">m</span> <span class="o">=</span> <span class="n">MultipartEncoder</span><span class="p">(</span>
+                        <span class="n">fields</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;field0&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;filename&#39;</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="s1">&#39;text/plain&#39;</span><span class="p">)}</span>
+                        <span class="p">)</span>
+                    <span class="n">r</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">m</span><span class="p">,</span>
+                               <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">content_type</span><span class="p">})</span>
                     <span class="n">r</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
-                    <span class="k">if</span> <span class="n">sha512sum</span><span class="p">(</span><span class="n">local</span><span class="o">+</span><span class="s">&#39;.tmp&#39;</span><span class="p">)</span> <span class="o">!=</span> <span class="n">chksum</span><span class="p">:</span>
-                        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;http checksum error&#39;</span><span class="p">)</span>
-                <span class="k">finally</span><span class="p">:</span>
-                    <span class="n">removedirs</span><span class="p">(</span><span class="n">local</span><span class="o">+</span><span class="s">&#39;.tmp&#39;</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;file:&#39;</span><span class="p">):</span>
-        <span class="c"># use copy command</span>
+                    <span class="c1"># get checksum</span>
+                    <span class="n">r</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">local</span><span class="o">+</span><span class="s1">&#39;.tmp&#39;</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                            <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">r</span><span class="o">.</span><span class="n">iter_content</span><span class="p">(</span><span class="mi">65536</span><span class="p">):</span>
+                                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+                        <span class="n">r</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+                        <span class="k">if</span> <span class="n">sha512sum</span><span class="p">(</span><span class="n">local</span><span class="o">+</span><span class="s1">&#39;.tmp&#39;</span><span class="p">)</span> <span class="o">!=</span> <span class="n">chksum</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;http checksum error&#39;</span><span class="p">)</span>
+                    <span class="k">finally</span><span class="p">:</span>
+                        <span class="n">removedirs</span><span class="p">(</span><span class="n">local</span><span class="o">+</span><span class="s1">&#39;.tmp&#39;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span><span class="o">.</span><span class="n">run_in_executor</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">_d</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;file:&#39;</span><span class="p">):</span>
+        <span class="c1"># use copy command</span>
         <span class="n">url</span> <span class="o">=</span> <span class="n">url</span><span class="p">[</span><span class="mi">5</span><span class="p">:]</span>
-        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;put: file already exists. overwriting!&#39;</span><span class="p">)</span>
-            <span class="n">removedirs</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
-        <span class="n">copy</span><span class="p">(</span><span class="n">local</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">sha512sum</span><span class="p">(</span><span class="n">url</span><span class="p">)</span> <span class="o">!=</span> <span class="n">chksum</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;file checksum error&#39;</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;gsiftp:&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;ftp:&#39;</span><span class="p">):</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">GridFTP</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">local</span><span class="p">)</span>
-        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-            <span class="c"># because d-cache doesn&#39;t allow overwriting, try deletion</span>
-            <span class="n">GridFTP</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">local</span><span class="p">)</span>
-            <span class="n">GridFTP</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">local</span><span class="p">)</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="n">GridFTP</span><span class="o">.</span><span class="n">sha512sum</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">ret</span> <span class="o">!=</span> <span class="n">chksum</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;gridftp checksum error&#39;</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">_c</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;put: file already exists. overwriting!&#39;</span><span class="p">)</span>
+                <span class="n">removedirs</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+            <span class="n">copy</span><span class="p">(</span><span class="n">local</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">sha512sum</span><span class="p">(</span><span class="n">url</span><span class="p">)</span> <span class="o">!=</span> <span class="n">chksum</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;file checksum error&#39;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span><span class="o">.</span><span class="n">run_in_executor</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">_c</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;gsiftp:&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;ftp:&#39;</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">_g</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">GridFTP</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">local</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="c1"># because d-cache doesn&#39;t allow overwriting, try deletion</span>
+                <span class="n">GridFTP</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+                <span class="n">GridFTP</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">local</span><span class="p">)</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">GridFTP</span><span class="o">.</span><span class="n">sha512sum</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ret</span> <span class="o">!=</span> <span class="n">chksum</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;gridftp checksum error&#39;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span><span class="o">.</span><span class="n">run_in_executor</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">_g</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;unsupported protocol %s&quot;</span> <span class="o">%</span> <span class="n">url</span><span class="p">)</span></div>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;unsupported protocol </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">url</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="delete"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.delete">[docs]</a><span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">{}):</span>
     <span class="sd">&quot;&quot;&quot;Delete a url or file&quot;&quot;&quot;</span>
     <span class="n">url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
     <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">isurl</span><span class="p">(</span><span class="n">url</span><span class="p">))</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
-        <span class="n">url</span> <span class="o">=</span> <span class="s">&#39;file:&#39;</span><span class="o">+</span><span class="n">url</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="s1">&#39;file:&#39;</span><span class="o">+</span><span class="n">url</span>
 
-    <span class="k">if</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;http&#39;</span><span class="p">):</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;delete http: %s&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;http&#39;</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;delete http: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
         <span class="k">with</span> <span class="n">_http_helper</span><span class="p">(</span><span class="n">options</span><span class="p">)</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
             <span class="n">r</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
             <span class="n">r</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
-    <span class="k">elif</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;file:&#39;</span><span class="p">):</span>
+    <span class="k">elif</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;file:&#39;</span><span class="p">):</span>
         <span class="n">url</span> <span class="o">=</span> <span class="n">url</span><span class="p">[</span><span class="mi">5</span><span class="p">:]</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;delete file: %r&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;delete file: </span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
             <span class="n">removedirs</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;gsiftp:&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;ftp:&#39;</span><span class="p">):</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;delete gsiftp: %r&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;gsiftp:&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;ftp:&#39;</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;delete gsiftp: </span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
         <span class="n">GridFTP</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;unsupported protocol %s&quot;</span> <span class="o">%</span> <span class="n">url</span><span class="p">)</span></div>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;unsupported protocol </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">url</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="isurl"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.isurl">[docs]</a><span class="k">def</span> <span class="nf">isurl</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Determine if this is a supported protocol&quot;&quot;&quot;</span>
-    <span class="n">prefixes</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;file:&#39;</span><span class="p">,</span><span class="s">&#39;http:&#39;</span><span class="p">,</span><span class="s">&#39;https:&#39;</span><span class="p">,</span><span class="s">&#39;ftp:&#39;</span><span class="p">,</span><span class="s">&#39;ftps:&#39;</span><span class="p">,</span><span class="s">&#39;gsiftp:&#39;</span><span class="p">)</span>
+    <span class="n">prefixes</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;file:&#39;</span><span class="p">,</span><span class="s1">&#39;http:&#39;</span><span class="p">,</span><span class="s1">&#39;https:&#39;</span><span class="p">,</span><span class="s1">&#39;ftp:&#39;</span><span class="p">,</span><span class="s1">&#39;ftps:&#39;</span><span class="p">,</span><span class="s1">&#39;gsiftp:&#39;</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">prefixes</span><span class="p">)</span>
-    <span class="k">except</span><span class="p">:</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">:</span> <span class="n">a</span> <span class="ow">or</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">b</span><span class="p">),</span> <span class="n">prefixes</span><span class="p">,</span> <span class="k">False</span><span class="p">)</span>
-        <span class="k">except</span><span class="p">:</span>
-            <span class="k">return</span> <span class="k">False</span></div>
+            <span class="k">return</span> <span class="n">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">:</span> <span class="n">a</span> <span class="ow">or</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">b</span><span class="p">),</span> <span class="n">prefixes</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
 </pre></div>
 
+           </div>
+           <div class="articleComments">
+            
            </div>
           </div>
           <footer>
@@ -606,15 +731,17 @@
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
             VERSION:'master',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
@@ -623,14 +750,13 @@
     <script type="text/javascript" src="../../../_static/js/theme.js"></script>
   
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

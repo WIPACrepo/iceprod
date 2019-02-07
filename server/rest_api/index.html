@@ -1,0 +1,797 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>IceProd REST API &mdash; IceProd master documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+  
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../genindex.html"/>
+        <link rel="search" title="Search" href="../../search.html"/>
+    <link rel="top" title="IceProd master documentation" href="../../index.html"/>
+        <link rel="up" title="IceProd Server" href="../index.html"/>
+        <link rel="next" title="REST API - Datasets" href="datasets.html"/>
+        <link rel="prev" title="User Accounts" href="../details/user_accounts.html"/> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> IceProd
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.5.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../guide/index.html">User’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/login.html">Login</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/submission.html">Dataset Submission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/datasets.html">Dataset Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/tasks.html">Task Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/restapi.html">REST API Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/manually.html">Running Manually</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../admin/index.html">Administrator’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../admin/startup.html">Server Startup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../admin/common.html">Common Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../admin/extra_details.html">Extras</a></li>
+</ul>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../core/index.html">IceProd Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/i3exec.html">I3Exec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/exe.html">Execution Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/exe_helper.html">Execution Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/exe_json.html">JSONRPC Calls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/jsonRPCclient.html">JSON-RPC Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/jsonUtil.html">JSON Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/init.html">Core Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/dataclasses.html">Dataclasses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/parser.html">Meta-Language Parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/serialization.html">Serialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/gridftp.html">GridFTP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/util.html">Utilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">IceProd Server</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../details/index.html">Server Details</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../details/submit_to_queue.html">From Submission to Queue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/task_relationships.html">Task Relationships</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/lifecycles.html">Lifecycles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/global_queueing.html">Global Queueing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/async.html">Asynchronous Programming</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/website.html">Website</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/auth.html">REST Authorization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../details/user_accounts.html">User Accounts</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">REST API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="datasets.html">Datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="config.html">Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="jobs.html">Jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tasks.html">Tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="task_stats.html">Task Stats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="logs.html">Logs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="grids.html">Grids</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pilots.html">Pilots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="auth.html">Auth</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../auth.html">Token Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config.html">Detailed Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dbmethods.html">DB Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../file_io.html">File IO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../globus.html">Globus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../grid.html">Grid Queueing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../init.html">Server Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../module.html">Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nginx.html">Nginx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../schedule.html">Schedule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server.html">Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../squid.html">Squid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tornado.html">Tornado Web Utilities</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">IceProd</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">IceProd Server</a> &raquo;</li>
+        
+      <li>IceProd REST API</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/server/rest_api/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="iceprod-rest-api">
+<h1>IceProd REST API<a class="headerlink" href="#iceprod-rest-api" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+<div class="section" id="datasets">
+<h2><a class="reference internal" href="datasets.html"><span class="doc">Datasets</span></a><a class="headerlink" href="#datasets" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="5%" />
+<col width="39%" />
+<col width="56%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Method</th>
+<th class="head">Path</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>GET</td>
+<td>/datasets</td>
+<td>get a dict of datasets</td>
+</tr>
+<tr class="row-odd"><td>POST</td>
+<td>/datasets</td>
+<td>create new dataset</td>
+</tr>
+<tr class="row-even"><td>GET</td>
+<td>/datasets/&lt;dataset_id&gt;</td>
+<td>get a dataset</td>
+</tr>
+<tr class="row-odd"><td>PUT</td>
+<td>/datasets/&lt;dataset_id&gt;/status</td>
+<td>update dataset status</td>
+</tr>
+<tr class="row-even"><td>PUT</td>
+<td>/datasets/&lt;dataset_id&gt;/description</td>
+<td>update dataset description</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="config">
+<h2><a class="reference internal" href="config.html"><span class="doc">Config</span></a><a class="headerlink" href="#config" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="5%" />
+<col width="39%" />
+<col width="56%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Method</th>
+<th class="head">Path</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>GET</td>
+<td>/config/&lt;dataset_id&gt;</td>
+<td>get a config</td>
+</tr>
+<tr class="row-odd"><td>PUT</td>
+<td>/config/&lt;dataset_id&gt;</td>
+<td>create/update a config</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="jobs">
+<h2><a class="reference internal" href="jobs.html"><span class="doc">Jobs</span></a><a class="headerlink" href="#jobs" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="5%" />
+<col width="39%" />
+<col width="56%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Method</th>
+<th class="head">Path</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>GET</td>
+<td>/datasets/&lt;dataset_id&gt;/jobs</td>
+<td>get a list of jobs, filtered by dataset_id</td>
+</tr>
+<tr class="row-odd"><td>GET</td>
+<td>/datasets/&lt;dataset_id&gt;/jobs/&lt;job_id&gt;</td>
+<td>get a job</td>
+</tr>
+<tr class="row-even"><td>PUT</td>
+<td>/datasets/&lt;dataset_id&gt;/jobs/&lt;job_id&gt;/status</td>
+<td>set a job status</td>
+</tr>
+<tr class="row-odd"><td>GET</td>
+<td>/datasets/&lt;dataset_id&gt;/job_summaries/status</td>
+<td>get a summary of jobs grouped by status</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="jobs-internal-use-only">
+<h3>Jobs (internal use only)<a class="headerlink" href="#jobs-internal-use-only" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="5%" />
+<col width="39%" />
+<col width="56%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Method</th>
+<th class="head">Path</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>POST</td>
+<td>/jobs</td>
+<td>create a job</td>
+</tr>
+<tr class="row-odd"><td>GET</td>
+<td>/jobs/&lt;job_id&gt;</td>
+<td>get a job</td>
+</tr>
+<tr class="row-even"><td>PATCH</td>
+<td>/jobs/&lt;job_id&gt;</td>
+<td>update a job</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="tasks">
+<h2><a class="reference internal" href="tasks.html"><span class="doc">Tasks</span></a><a class="headerlink" href="#tasks" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="5%" />
+<col width="39%" />
+<col width="56%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Method</th>
+<th class="head">Path</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>GET</td>
+<td>/datasets/&lt;dataset_id&gt;/tasks</td>
+<td>get a list of tasks, filtered by dataset_id, job_id, grid_id</td>
+</tr>
+<tr class="row-odd"><td>GET</td>
+<td>/datasets/&lt;dataset_id&gt;/tasks/&lt;task_id&gt;</td>
+<td>get a task</td>
+</tr>
+<tr class="row-even"><td>PUT</td>
+<td>/datasets/&lt;dataset_id&gt;/tasks/&lt;task_id&gt;/status</td>
+<td>set a task status</td>
+</tr>
+<tr class="row-odd"><td>GET</td>
+<td>/datasets/&lt;dataset_id&gt;/task_summaries/status</td>
+<td>get a summary of tasks grouped by status</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="tasks-internal-use-only">
+<h3>Tasks (internal use only)<a class="headerlink" href="#tasks-internal-use-only" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="5%" />
+<col width="39%" />
+<col width="56%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Method</th>
+<th class="head">Path</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>POST</td>
+<td>/tasks</td>
+<td>create a task</td>
+</tr>
+<tr class="row-odd"><td>GET</td>
+<td>/tasks/&lt;task_id&gt;</td>
+<td>get a task</td>
+</tr>
+<tr class="row-even"><td>PATCH</td>
+<td>/tasks/&lt;task_id&gt;</td>
+<td>update a task</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="task-stats">
+<h2><a class="reference internal" href="task_stats.html"><span class="doc">Task Stats</span></a><a class="headerlink" href="#task-stats" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="4%" />
+<col width="49%" />
+<col width="47%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Method</th>
+<th class="head">Path</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>GET</td>
+<td>/datasets/&lt;dataset_id&gt;/tasks/&lt;task_id&gt;/task_stats</td>
+<td>get a list of task stats</td>
+</tr>
+<tr class="row-odd"><td>GET</td>
+<td>/datasets/&lt;dataset_id&gt;/tasks/&lt;task_id&gt;/task_stats/&lt;task_stat_id&gt;</td>
+<td>get a task stat</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="task-stats-internal-use-only">
+<h3>Task Stats (internal use only)<a class="headerlink" href="#task-stats-internal-use-only" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="5%" />
+<col width="39%" />
+<col width="56%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Method</th>
+<th class="head">Path</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>POST</td>
+<td>/tasks/&lt;task_id&gt;/task_stats</td>
+<td>create a task stat</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="logs">
+<h2><a class="reference internal" href="logs.html"><span class="doc">Logs</span></a><a class="headerlink" href="#logs" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="5%" />
+<col width="39%" />
+<col width="56%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Method</th>
+<th class="head">Path</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>POST</td>
+<td>/datasets/&lt;dataset_id&gt;/logs</td>
+<td>create a log</td>
+</tr>
+<tr class="row-odd"><td>GET</td>
+<td>/datasets/&lt;dataset_id&gt;/logs/&lt;log_id&gt;</td>
+<td>get a log</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="logs-internal-use-only">
+<h3>Logs (internal use only)<a class="headerlink" href="#logs-internal-use-only" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="5%" />
+<col width="39%" />
+<col width="56%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Method</th>
+<th class="head">Path</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>POST</td>
+<td>/logs</td>
+<td>create a log</td>
+</tr>
+<tr class="row-odd"><td>GET</td>
+<td>/logs/&lt;log_id&gt;</td>
+<td>get a log</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="grids">
+<h2><a class="reference internal" href="grids.html"><span class="doc">Grids</span></a><a class="headerlink" href="#grids" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="5%" />
+<col width="39%" />
+<col width="56%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Method</th>
+<th class="head">Path</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>GET</td>
+<td>/grids</td>
+<td>get a list of grids</td>
+</tr>
+<tr class="row-odd"><td>POST</td>
+<td>/grids</td>
+<td>create a new grid</td>
+</tr>
+<tr class="row-even"><td>GET</td>
+<td>/grids/&lt;grid_id&gt;</td>
+<td>get a grid</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="pilots">
+<h2><a class="reference internal" href="pilots.html"><span class="doc">Pilots</span></a><a class="headerlink" href="#pilots" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="5%" />
+<col width="39%" />
+<col width="56%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Method</th>
+<th class="head">Path</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>GET</td>
+<td>/pilots</td>
+<td>get a list of pilots, filtered by grid_id</td>
+</tr>
+<tr class="row-odd"><td>POST</td>
+<td>/pilots</td>
+<td>create a pilot</td>
+</tr>
+<tr class="row-even"><td>GET</td>
+<td>/pilots/&lt;pilot_id&gt;</td>
+<td>get a pilot</td>
+</tr>
+<tr class="row-odd"><td>DELETE</td>
+<td>/pilots/&lt;pilot_id&gt;</td>
+<td>delete a pilot</td>
+</tr>
+<tr class="row-even"><td>PUT</td>
+<td>/pilots/&lt;pilot_id&gt;/tasks</td>
+<td>set all tasks in the pilot</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="auth">
+<h2><a class="reference internal" href="auth.html"><span class="doc">Auth</span></a><a class="headerlink" href="#auth" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="5%" />
+<col width="39%" />
+<col width="56%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Method</th>
+<th class="head">Path</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>GET</td>
+<td>/roles</td>
+<td>get a list of roles</td>
+</tr>
+<tr class="row-odd"><td>PUT</td>
+<td>/roles/&lt;role_name&gt;</td>
+<td>create a role</td>
+</tr>
+<tr class="row-even"><td>GET</td>
+<td>/roles/&lt;role_name&gt;</td>
+<td>get a role</td>
+</tr>
+<tr class="row-odd"><td>DELETE</td>
+<td>/roles/&lt;role_name&gt;</td>
+<td>delete a role</td>
+</tr>
+<tr class="row-even"><td>GET</td>
+<td>/groups</td>
+<td>get a list of groups</td>
+</tr>
+<tr class="row-odd"><td>POST</td>
+<td>/groups</td>
+<td>add a group</td>
+</tr>
+<tr class="row-even"><td>GET</td>
+<td>/groups/&lt;group_id&gt;</td>
+<td>get a group</td>
+</tr>
+<tr class="row-odd"><td>DELETE</td>
+<td>/groups/&lt;group_id&gt;</td>
+<td>delete a group</td>
+</tr>
+<tr class="row-even"><td>GET</td>
+<td>/users</td>
+<td>get a list of users</td>
+</tr>
+<tr class="row-odd"><td>POST</td>
+<td>/users</td>
+<td>add a user</td>
+</tr>
+<tr class="row-even"><td>GET</td>
+<td>/users/&lt;user_id&gt;</td>
+<td>get a user</td>
+</tr>
+<tr class="row-odd"><td>DELETE</td>
+<td>/users/&lt;user_id&gt;</td>
+<td>delete a user</td>
+</tr>
+<tr class="row-even"><td>GET</td>
+<td>/users/&lt;user_id&gt;/groups</td>
+<td>get the groups for a user</td>
+</tr>
+<tr class="row-odd"><td>POST</td>
+<td>/users/&lt;user_id&gt;/groups</td>
+<td>add a group to a user</td>
+</tr>
+<tr class="row-even"><td>PUT</td>
+<td>/users/&lt;user_id&gt;/groups</td>
+<td>set the groups for a user</td>
+</tr>
+<tr class="row-odd"><td>PUT</td>
+<td>/users/&lt;user_id&gt;/roles</td>
+<td>set the roles for a user</td>
+</tr>
+<tr class="row-even"><td>POST</td>
+<td>/ldap</td>
+<td>create a token from an LDAP username/password lookup</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="internal-auth">
+<h3>Internal auth<a class="headerlink" href="#internal-auth" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="5%" />
+<col width="39%" />
+<col width="56%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Method</th>
+<th class="head">Path</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>PUT</td>
+<td>/auths/&lt;dataset_id&gt;</td>
+<td>set authorization rules for dataset</td>
+</tr>
+<tr class="row-odd"><td>GET</td>
+<td>/auths/&lt;dataset_id&gt;</td>
+<td>get authorization rules for dataset</td>
+</tr>
+<tr class="row-even"><td>GET</td>
+<td>/auths/&lt;dataset_id&gt;/actions/read</td>
+<td>does the current token have read access to this dataset?</td>
+</tr>
+<tr class="row-odd"><td>GET</td>
+<td>/auths/&lt;dataset_id&gt;/actions/write</td>
+<td>does the current token have write access to this dataset?</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="datasets.html" class="btn btn-neutral float-right" title="REST API - Datasets" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../details/user_accounts.html" class="btn btn-neutral" title="User Accounts" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, IceCube Collaboration.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'master',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
+      });
+  </script> 
+
+</body>
+</html>

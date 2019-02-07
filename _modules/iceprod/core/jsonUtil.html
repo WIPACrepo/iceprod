@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -24,12 +26,17 @@
 
   
   
-    <link rel="stylesheet" href="../../../_static/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+  
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  
   
 
   
-
-  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
     <link rel="top" title="IceProd master documentation" href="../../../index.html"/>
         <link rel="up" title="iceprod.core" href="../core.html"/> 
 
@@ -60,7 +67,7 @@
             
             
               <div class="version">
-                master
+                2.5.0
               </div>
             
           
@@ -81,14 +88,84 @@
           
             
             
-                <ul>
+              
+            
+            
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../admin/index.html">Administrator&#8217;s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/login.html">Login</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/submission.html">Dataset Submission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/datasets.html">Dataset Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/tasks.html">Task Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/restapi.html">REST API Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../guide/manually.html">Running Manually</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../admin/index.html">Administrator’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../admin/startup.html">Server Startup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../admin/common.html">Common Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../admin/extra_details.html">Extras</a></li>
+</ul>
+</li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../core/index.html">IceProd Core</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../server/index.html">IceProd Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/index.html">IceProd Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/i3exec.html">I3Exec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/exe.html">Execution Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/exe_helper.html">Execution Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/exe_json.html">JSONRPC Calls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/jsonRPCclient.html">JSON-RPC Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/jsonUtil.html">JSON Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/init.html">Core Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/dataclasses.html">Dataclasses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/parser.html">Meta-Language Parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/serialization.html">Serialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/gridftp.html">GridFTP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../core/util.html">Utilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../server/index.html">IceProd Server</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/details/index.html">Server Details</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/submit_to_queue.html">From Submission to Queue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/task_relationships.html">Task Relationships</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/lifecycles.html">Lifecycles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/global_queueing.html">Global Queueing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/async.html">Asynchronous Programming</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/website.html">Website</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/auth.html">REST Authorization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/details/user_accounts.html">User Accounts</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/rest_api/index.html">REST API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/datasets.html">Datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/config.html">Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/jobs.html">Jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/tasks.html">Tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/task_stats.html">Task Stats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/logs.html">Logs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/grids.html">Grids</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/pilots.html">Pilots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../server/rest_api/auth.html">Auth</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/auth.html">Token Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/config.html">Detailed Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/dbmethods.html">DB Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/file_io.html">File IO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/globus.html">Globus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/grid.html">Grid Queueing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/init.html">Server Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/module.html">Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/nginx.html">Nginx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/schedule.html">Schedule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/server.html">Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/squid.html">Squid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../server/tornado.html">Tornado Web Utilities</a></li>
+</ul>
+</li>
 </ul>
 
             
@@ -110,15 +187,52 @@
 
       
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div style="float:right">
-            <a href="https://github.com/WIPACrepo/iceprod" class="fa fa-github"> Edit on GitHub</a>
-          </div>
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../core.html">iceprod.core</a> &raquo;</li>
+        
+      <li>iceprod.core.jsonUtil</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
   <h1>Source code for iceprod.core.jsonUtil</h1><div class="highlight"><pre>
-<span class="sd">&quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Some JSON encoding and decoding utilities.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
@@ -130,173 +244,175 @@
 <span class="kn">import</span> <span class="nn">zlib</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;jsonUtil&#39;</span><span class="p">)</span>
 
 <div class="viewcode-block" id="json_compressor"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.json_compressor">[docs]</a><span class="k">class</span> <span class="nc">json_compressor</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Used for files and other large things sent over json.</span>
 <span class="sd">       Great for log files.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="nd">@staticmethod</span>
-<div class="viewcode-block" id="json_compressor.compress"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.json_compressor.compress">[docs]</a>    <span class="k">def</span> <span class="nf">compress</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">zlib</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span> <span class="k">if</span> <span class="n">obj</span> <span class="k">else</span> <span class="s">&#39;&#39;</span></div>
-    <span class="nd">@staticmethod</span>
-<div class="viewcode-block" id="json_compressor.uncompress"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.json_compressor.uncompress">[docs]</a>    <span class="k">def</span> <span class="nf">uncompress</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">zlib</span><span class="o">.</span><span class="n">decompress</span><span class="p">(</span><span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span> <span class="k">if</span> <span class="n">obj</span> <span class="k">else</span> <span class="s">&#39;&#39;</span></div></div>
+<div class="viewcode-block" id="json_compressor.compress"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.json_compressor.compress">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">compress</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">zlib</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span> <span class="k">if</span> <span class="n">obj</span> <span class="k">else</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span></div>
+<div class="viewcode-block" id="json_compressor.uncompress"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.json_compressor.uncompress">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">uncompress</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">zlib</span><span class="o">.</span><span class="n">decompress</span><span class="p">(</span><span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">obj</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span></div></div>
 
 
 <div class="viewcode-block" id="datetime_converter"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.datetime_converter">[docs]</a><span class="k">class</span> <span class="nc">datetime_converter</span><span class="p">:</span>
-    <span class="nd">@staticmethod</span>
-<div class="viewcode-block" id="datetime_converter.dumps"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.datetime_converter.dumps">[docs]</a>    <span class="k">def</span> <span class="nf">dumps</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+<div class="viewcode-block" id="datetime_converter.dumps"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.datetime_converter.dumps">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">dumps</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span></div>
-    <span class="nd">@staticmethod</span>
-<div class="viewcode-block" id="datetime_converter.loads"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.datetime_converter.loads">[docs]</a>    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
-        <span class="k">if</span> <span class="s">&#39;:&#39;</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
-            <span class="k">if</span> <span class="s">&#39;T&#39;</span> <span class="ow">in</span> <span class="n">obj</span> <span class="ow">or</span> <span class="s">&#39; &#39;</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
-                <span class="n">center</span> <span class="o">=</span> <span class="s">&#39; &#39;</span>
-                <span class="k">if</span> <span class="s">&#39;T&#39;</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
-                    <span class="n">center</span> <span class="o">=</span> <span class="s">&#39;T&#39;</span>
-                <span class="c"># must be datetime</span>
-                <span class="k">if</span> <span class="s">&#39;.&#39;</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
-                    <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span> <span class="n">obj</span><span class="p">,</span> <span class="s">&quot;%Y-%m-%d&quot;</span><span class="o">+</span><span class="n">center</span><span class="o">+</span><span class="s">&quot;%H:%M:%S.%f&quot;</span><span class="p">)</span>
+<div class="viewcode-block" id="datetime_converter.loads"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.datetime_converter.loads">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s1">&#39;:&#39;</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s1">&#39;T&#39;</span> <span class="ow">in</span> <span class="n">obj</span> <span class="ow">or</span> <span class="s1">&#39; &#39;</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
+                <span class="n">center</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span>
+                <span class="k">if</span> <span class="s1">&#39;T&#39;</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
+                    <span class="n">center</span> <span class="o">=</span> <span class="s1">&#39;T&#39;</span>
+                <span class="c1"># must be datetime</span>
+                <span class="k">if</span> <span class="s1">&#39;.&#39;</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span> <span class="n">obj</span><span class="p">,</span> <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="o">+</span><span class="n">center</span><span class="o">+</span><span class="s2">&quot;%H:%M:%S.</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span> <span class="n">obj</span><span class="p">,</span> <span class="s">&quot;%Y-%m-%d&quot;</span><span class="o">+</span><span class="n">center</span><span class="o">+</span><span class="s">&quot;%H:%M:%S&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span> <span class="n">obj</span><span class="p">,</span> <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="o">+</span><span class="n">center</span><span class="o">+</span><span class="s2">&quot;%H:%M:%S&quot;</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="c"># must be time</span>
-                <span class="k">if</span> <span class="s">&#39;.&#39;</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
-                    <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span> <span class="n">obj</span><span class="p">,</span> <span class="s">&quot;%H:%M:%S.%f&quot;</span><span class="p">)</span>
+                <span class="c1"># must be time</span>
+                <span class="k">if</span> <span class="s1">&#39;.&#39;</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span> <span class="n">obj</span><span class="p">,</span> <span class="s2">&quot;%H:%M:%S.</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span> <span class="n">obj</span><span class="p">,</span> <span class="s">&quot;%H:%M:%S&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span> <span class="n">obj</span><span class="p">,</span> <span class="s2">&quot;%H:%M:%S&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="c"># must be date</span>
-            <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span> <span class="n">obj</span><span class="p">,</span> <span class="s">&quot;%Y-%m-%d&quot;</span><span class="p">)</span></div></div>
+            <span class="c1"># must be date</span>
+            <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span> <span class="n">obj</span><span class="p">,</span> <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">)</span></div></div>
 
 <div class="viewcode-block" id="date_converter"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.date_converter">[docs]</a><span class="k">class</span> <span class="nc">date_converter</span><span class="p">(</span><span class="n">datetime_converter</span><span class="p">):</span>
-    <span class="nd">@staticmethod</span>
-<div class="viewcode-block" id="date_converter.loads"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.date_converter.loads">[docs]</a>    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+<div class="viewcode-block" id="date_converter.loads"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.date_converter.loads">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="n">d</span> <span class="o">=</span> <span class="n">datetime_converter</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">date</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">year</span><span class="p">,</span><span class="n">d</span><span class="o">.</span><span class="n">month</span><span class="p">,</span><span class="n">d</span><span class="o">.</span><span class="n">day</span><span class="p">)</span></div></div>
 
 <div class="viewcode-block" id="time_converter"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.time_converter">[docs]</a><span class="k">class</span> <span class="nc">time_converter</span><span class="p">(</span><span class="n">datetime_converter</span><span class="p">):</span>
-    <span class="nd">@staticmethod</span>
-<div class="viewcode-block" id="time_converter.loads"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.time_converter.loads">[docs]</a>    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+<div class="viewcode-block" id="time_converter.loads"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.time_converter.loads">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="n">d</span> <span class="o">=</span> <span class="n">datetime_converter</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">time</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">hour</span><span class="p">,</span><span class="n">d</span><span class="o">.</span><span class="n">minute</span><span class="p">,</span><span class="n">d</span><span class="o">.</span><span class="n">second</span><span class="p">,</span><span class="n">d</span><span class="o">.</span><span class="n">microsecond</span><span class="p">)</span></div></div>
 
 <div class="viewcode-block" id="binary_converter"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.binary_converter">[docs]</a><span class="k">class</span> <span class="nc">binary_converter</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;note that is is really only for decode of json, since python bytes are strings&quot;&quot;&quot;</span>
-    <span class="nd">@staticmethod</span>
-<div class="viewcode-block" id="binary_converter.dumps"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.binary_converter.dumps">[docs]</a>    <span class="k">def</span> <span class="nf">dumps</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+<div class="viewcode-block" id="binary_converter.dumps"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.binary_converter.dumps">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">dumps</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span></div>
-    <span class="nd">@staticmethod</span>
-<div class="viewcode-block" id="binary_converter.loads"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.binary_converter.loads">[docs]</a>    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span></div></div>
+<div class="viewcode-block" id="binary_converter.loads"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.binary_converter.loads">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span></div></div>
 
 <div class="viewcode-block" id="bytearray_converter"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.bytearray_converter">[docs]</a><span class="k">class</span> <span class="nc">bytearray_converter</span><span class="p">:</span>
-    <span class="nd">@staticmethod</span>
-<div class="viewcode-block" id="bytearray_converter.dumps"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.bytearray_converter.dumps">[docs]</a>    <span class="k">def</span> <span class="nf">dumps</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+<div class="viewcode-block" id="bytearray_converter.dumps"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.bytearray_converter.dumps">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">dumps</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span></div>
-    <span class="nd">@staticmethod</span>
-<div class="viewcode-block" id="bytearray_converter.loads"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.bytearray_converter.loads">[docs]</a>    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+<div class="viewcode-block" id="bytearray_converter.loads"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.bytearray_converter.loads">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">bytearray</span><span class="p">(</span><span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span></div></div>
 
 <div class="viewcode-block" id="set_converter"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.set_converter">[docs]</a><span class="k">class</span> <span class="nc">set_converter</span><span class="p">:</span>
-    <span class="nd">@staticmethod</span>
-<div class="viewcode-block" id="set_converter.dumps"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.set_converter.dumps">[docs]</a>    <span class="k">def</span> <span class="nf">dumps</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+<div class="viewcode-block" id="set_converter.dumps"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.set_converter.dumps">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">dumps</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span></div>
-    <span class="nd">@staticmethod</span>
-<div class="viewcode-block" id="set_converter.loads"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.set_converter.loads">[docs]</a>    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+<div class="viewcode-block" id="set_converter.loads"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.set_converter.loads">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span></div></div>
 
-<span class="c"># do some dataclass json conversions</span>
+<span class="c1"># do some dataclass json conversions</span>
 <span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">dataclasses</span>
 
 <div class="viewcode-block" id="var_converter"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.var_converter">[docs]</a><span class="k">class</span> <span class="nc">var_converter</span><span class="p">:</span>
-    <span class="nd">@staticmethod</span>
-<div class="viewcode-block" id="var_converter.dumps"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.var_converter.dumps">[docs]</a>    <span class="k">def</span> <span class="nf">dumps</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">__dict__</span></div>
-    <span class="nd">@staticmethod</span>
-<div class="viewcode-block" id="var_converter.loads"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.var_converter.loads">[docs]</a>    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+<div class="viewcode-block" id="var_converter.dumps"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.var_converter.dumps">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">dumps</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="vm">__dict__</span></div>
+<div class="viewcode-block" id="var_converter.loads"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.var_converter.loads">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">dataclasses</span><span class="p">,</span><span class="n">name</span><span class="p">)()</span>
         <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
             <span class="nb">setattr</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="n">obj</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">ret</span></div></div>
 
-<span class="c"># convert the IFace</span>
+<span class="c1"># convert the IFace</span>
 <span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">util</span>
 
 <div class="viewcode-block" id="iface_converter"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.iface_converter">[docs]</a><span class="k">class</span> <span class="nc">iface_converter</span><span class="p">:</span>
-    <span class="nd">@staticmethod</span>
-<div class="viewcode-block" id="iface_converter.dumps"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.iface_converter.dumps">[docs]</a>    <span class="k">def</span> <span class="nf">dumps</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">__dict__</span></div>
-    <span class="nd">@staticmethod</span>
-<div class="viewcode-block" id="iface_converter.loads"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.iface_converter.loads">[docs]</a>    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+<div class="viewcode-block" id="iface_converter.dumps"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.iface_converter.dumps">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">dumps</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="vm">__dict__</span></div>
+<div class="viewcode-block" id="iface_converter.loads"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.iface_converter.loads">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">IFace</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
             <span class="nb">setattr</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="n">obj</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">ret</span></div></div>
 
-<span class="c"># do some default conversions</span>
-<span class="c"># for things like OrderedDict</span>
+<span class="c1"># do some default conversions</span>
+<span class="c1"># for things like OrderedDict</span>
 <span class="kn">import</span> <span class="nn">ast</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
 
 <div class="viewcode-block" id="repr_converter"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.repr_converter">[docs]</a><span class="k">class</span> <span class="nc">repr_converter</span><span class="p">:</span>
-    <span class="nd">@staticmethod</span>
-<div class="viewcode-block" id="repr_converter.dumps"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.repr_converter.dumps">[docs]</a>    <span class="k">def</span> <span class="nf">dumps</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+<div class="viewcode-block" id="repr_converter.dumps"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.repr_converter.dumps">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">dumps</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span></div>
-    <span class="nd">@staticmethod</span>
-<div class="viewcode-block" id="repr_converter.loads"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.repr_converter.loads">[docs]</a>    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
-        <span class="n">parts</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;(&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<div class="viewcode-block" id="repr_converter.loads"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.repr_converter.loads">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;(&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
         <span class="nb">type</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">if</span> <span class="nb">type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">globals</span><span class="p">():</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">()</span>
-        <span class="n">parts2</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s">&#39;)&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">parts2</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s1">&#39;)&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
         <span class="n">args</span> <span class="o">=</span> <span class="n">ast</span><span class="o">.</span><span class="n">literal_eval</span><span class="p">(</span><span class="n">parts2</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">,</span><span class="nb">tuple</span><span class="p">):</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="nb">globals</span><span class="p">()[</span><span class="s">&#39;type&#39;</span><span class="p">](</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="nb">globals</span><span class="p">()[</span><span class="s1">&#39;type&#39;</span><span class="p">](</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="nb">globals</span><span class="p">()[</span><span class="s">&#39;type&#39;</span><span class="p">](</span><span class="n">args</span><span class="p">)</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="nb">globals</span><span class="p">()[</span><span class="s1">&#39;type&#39;</span><span class="p">](</span><span class="n">args</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">ret</span></div></div>
 
 <span class="n">JSONConverters</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s">&#39;datetime&#39;</span><span class="p">:</span><span class="n">datetime_converter</span><span class="p">,</span>
-    <span class="s">&#39;date&#39;</span><span class="p">:</span><span class="n">date_converter</span><span class="p">,</span>
-    <span class="s">&#39;time&#39;</span><span class="p">:</span><span class="n">time_converter</span><span class="p">,</span>
-    <span class="s">&#39;binary&#39;</span><span class="p">:</span><span class="n">binary_converter</span><span class="p">,</span>
-    <span class="s">&#39;bytearray&#39;</span><span class="p">:</span><span class="n">bytearray_converter</span><span class="p">,</span>
-    <span class="s">&#39;OrderedDict&#39;</span><span class="p">:</span><span class="n">repr_converter</span><span class="p">,</span>
-    <span class="s">&#39;set&#39;</span><span class="p">:</span><span class="n">set_converter</span><span class="p">,</span>
-    <span class="s">&#39;IFace&#39;</span><span class="p">:</span><span class="n">iface_converter</span><span class="p">,</span>
+    <span class="s1">&#39;datetime&#39;</span><span class="p">:</span><span class="n">datetime_converter</span><span class="p">,</span>
+    <span class="s1">&#39;date&#39;</span><span class="p">:</span><span class="n">date_converter</span><span class="p">,</span>
+    <span class="s1">&#39;time&#39;</span><span class="p">:</span><span class="n">time_converter</span><span class="p">,</span>
+    <span class="s1">&#39;binary&#39;</span><span class="p">:</span><span class="n">binary_converter</span><span class="p">,</span>
+    <span class="s1">&#39;bytearray&#39;</span><span class="p">:</span><span class="n">bytearray_converter</span><span class="p">,</span>
+    <span class="s1">&#39;OrderedDict&#39;</span><span class="p">:</span><span class="n">repr_converter</span><span class="p">,</span>
+    <span class="s1">&#39;set&#39;</span><span class="p">:</span><span class="n">set_converter</span><span class="p">,</span>
+    <span class="s1">&#39;IFace&#39;</span><span class="p">:</span><span class="n">iface_converter</span><span class="p">,</span>
 <span class="p">}</span>
 <span class="kn">import</span> <span class="nn">inspect</span>
 <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">dict</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">getmembers</span><span class="p">(</span><span class="n">dataclasses</span><span class="p">,</span><span class="n">inspect</span><span class="o">.</span><span class="n">isclass</span><span class="p">)):</span>
     <span class="n">JSONConverters</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">var_converter</span>
 
 <div class="viewcode-block" id="objToJSON"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.objToJSON">[docs]</a><span class="k">def</span> <span class="nf">objToJSON</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,(</span><span class="nb">dict</span><span class="p">,</span><span class="nb">list</span><span class="p">,</span><span class="nb">tuple</span><span class="p">,</span><span class="nb">str</span><span class="p">,</span><span class="nb">int</span><span class="p">,</span><span class="nb">float</span><span class="p">,</span><span class="nb">bool</span><span class="p">))</span> <span class="ow">or</span> <span class="n">obj</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,(</span><span class="nb">dict</span><span class="p">,</span><span class="nb">list</span><span class="p">,</span><span class="nb">tuple</span><span class="p">,</span><span class="nb">str</span><span class="p">,</span><span class="nb">int</span><span class="p">,</span><span class="nb">float</span><span class="p">,</span><span class="nb">bool</span><span class="p">))</span> <span class="ow">or</span> <span class="n">obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">obj</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">name</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
         <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">JSONConverters</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">{</span><span class="s">&#39;__jsonclass__&#39;</span><span class="p">:[</span><span class="n">name</span><span class="p">,</span><span class="n">JSONConverters</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">obj</span><span class="p">)]}</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;__jsonclass__&#39;</span><span class="p">:[</span><span class="n">name</span><span class="p">,</span><span class="n">JSONConverters</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">obj</span><span class="p">)]}</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Cannot encode %s class to JSON&#39;</span><span class="o">%</span><span class="n">name</span><span class="p">)</span></div>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;name: </span><span class="si">%s</span><span class="s1">, obj: </span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Cannot encode </span><span class="si">%s</span><span class="s1"> class to JSON&#39;</span><span class="o">%</span><span class="n">name</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="JSONToObj"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.JSONToObj">[docs]</a><span class="k">def</span> <span class="nf">JSONToObj</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
     <span class="n">ret</span> <span class="o">=</span> <span class="n">obj</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="s">&#39;__jsonclass__&#39;</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;try unpacking class&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="s1">&#39;__jsonclass__&#39;</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;try unpacking class&#39;</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">name</span> <span class="o">=</span> <span class="n">obj</span><span class="p">[</span><span class="s">&#39;__jsonclass__&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">obj</span><span class="p">[</span><span class="s1">&#39;__jsonclass__&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">JSONConverters</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;class %r not found in converters&#39;</span><span class="o">%</span><span class="n">name</span><span class="p">)</span>
-            <span class="n">obj_repr</span> <span class="o">=</span> <span class="n">obj</span><span class="p">[</span><span class="s">&#39;__jsonclass__&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;class </span><span class="si">%r</span><span class="s1"> not found in converters&#39;</span><span class="o">%</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">obj_repr</span> <span class="o">=</span> <span class="n">obj</span><span class="p">[</span><span class="s1">&#39;__jsonclass__&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
             <span class="n">ret</span> <span class="o">=</span> <span class="n">JSONConverters</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">obj_repr</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;error making json class: %r&#39;</span><span class="p">,</span><span class="n">e</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;error making json class: </span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">e</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">ret</span></div>
 
 
-<span class="c"># copied from tornado.escape so we don&#39;t have to include that project</span>
+<span class="c1"># copied from tornado.escape so we don&#39;t have to include that project</span>
 <div class="viewcode-block" id="recursive_unicode"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.recursive_unicode">[docs]</a><span class="k">def</span> <span class="nf">recursive_unicode</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Walks a simple data structure, converting byte strings to unicode.</span>
 
@@ -311,20 +427,23 @@
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">recursive_unicode</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">)</span>
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">obj</span></div>
 
 
-<div class="viewcode-block" id="json_encode"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.json_encode">[docs]</a><span class="k">def</span> <span class="nf">json_encode</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+<div class="viewcode-block" id="json_encode"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.json_encode">[docs]</a><span class="k">def</span> <span class="nf">json_encode</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;JSON-encodes the given Python object.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">recursive_unicode</span><span class="p">(</span><span class="n">value</span><span class="p">),</span><span class="n">default</span><span class="o">=</span><span class="n">objToJSON</span><span class="p">,</span><span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span><span class="s">&#39;:&#39;</span><span class="p">),</span> <span class="n">indent</span><span class="o">=</span><span class="n">indent</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&quot;&lt;/&quot;</span><span class="p">,</span> <span class="s">&quot;&lt;</span><span class="se">\\</span><span class="s">/&quot;</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">recursive_unicode</span><span class="p">(</span><span class="n">value</span><span class="p">),</span><span class="n">default</span><span class="o">=</span><span class="n">objToJSON</span><span class="p">,</span><span class="n">separators</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span><span class="s1">&#39;:&#39;</span><span class="p">),</span> <span class="n">indent</span><span class="o">=</span><span class="n">indent</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;&lt;/&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;</span><span class="se">\\</span><span class="s2">/&quot;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="json_decode"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.json_decode">[docs]</a><span class="k">def</span> <span class="nf">json_decode</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Returns Python objects for the given JSON string.&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="n">object_hook</span><span class="o">=</span><span class="n">JSONToObj</span><span class="p">)</span></div>
 </pre></div>
 
+           </div>
+           <div class="articleComments">
+            
            </div>
           </div>
           <footer>
@@ -357,15 +476,17 @@
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
             VERSION:'master',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
@@ -374,14 +495,13 @@
     <script type="text/javascript" src="../../../_static/js/theme.js"></script>
   
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

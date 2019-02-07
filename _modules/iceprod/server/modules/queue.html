@@ -1,0 +1,513 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>iceprod.server.modules.queue &mdash; IceProd master documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+  
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+  
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../../search.html"/>
+    <link rel="top" title="IceProd master documentation" href="../../../../index.html"/>
+        <link rel="up" title="iceprod.server" href="../../server.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> IceProd
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.5.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../guide/index.html">User’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guide/login.html">Login</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guide/submission.html">Dataset Submission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guide/datasets.html">Dataset Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guide/tasks.html">Task Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guide/restapi.html">REST API Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guide/manually.html">Running Manually</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../admin/index.html">Administrator’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../admin/startup.html">Server Startup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../admin/common.html">Common Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../admin/extra_details.html">Extras</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../core/index.html">IceProd Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/i3exec.html">I3Exec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/exe.html">Execution Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/exe_helper.html">Execution Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/exe_json.html">JSONRPC Calls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/jsonRPCclient.html">JSON-RPC Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/jsonUtil.html">JSON Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/init.html">Core Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/dataclasses.html">Dataclasses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/parser.html">Meta-Language Parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/serialization.html">Serialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/gridftp.html">GridFTP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/util.html">Utilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../server/index.html">IceProd Server</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/details/index.html">Server Details</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/details/submit_to_queue.html">From Submission to Queue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/details/task_relationships.html">Task Relationships</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/details/lifecycles.html">Lifecycles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/details/global_queueing.html">Global Queueing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/details/async.html">Asynchronous Programming</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/details/website.html">Website</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/details/auth.html">REST Authorization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/details/user_accounts.html">User Accounts</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/rest_api/index.html">REST API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/datasets.html">Datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/config.html">Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/jobs.html">Jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/tasks.html">Tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/task_stats.html">Task Stats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/logs.html">Logs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/grids.html">Grids</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/pilots.html">Pilots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/auth.html">Auth</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/auth.html">Token Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/config.html">Detailed Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/dbmethods.html">DB Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/file_io.html">File IO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/globus.html">Globus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/grid.html">Grid Queueing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/init.html">Server Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/module.html">Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/nginx.html">Nginx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/schedule.html">Schedule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/server.html">Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/squid.html">Squid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/tornado.html">Tornado Web Utilities</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">IceProd</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../server.html">iceprod.server</a> &raquo;</li>
+        
+      <li>iceprod.server.modules.queue</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for iceprod.server.modules.queue</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">The queue module is responsible for interacting with the local batch or</span>
+<span class="sd">queueing system, putting tasks on the queue and removing them as necessary.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">contextmanager</span>
+<span class="kn">import</span> <span class="nn">socket</span>
+
+<span class="kn">import</span> <span class="nn">tornado.httpclient</span>
+<span class="kn">import</span> <span class="nn">tornado.gen</span>
+<span class="kn">from</span> <span class="nn">tornado.concurrent</span> <span class="k">import</span> <span class="n">run_on_executor</span>
+<span class="kn">import</span> <span class="nn">certifi</span>
+
+<span class="kn">import</span> <span class="nn">iceprod</span>
+<span class="kn">import</span> <span class="nn">iceprod.server</span>
+<span class="kn">from</span> <span class="nn">iceprod.server</span> <span class="k">import</span> <span class="n">module</span>
+<span class="kn">from</span> <span class="nn">iceprod.server.globus</span> <span class="k">import</span> <span class="n">SiteGlobusProxy</span>
+<span class="kn">import</span> <span class="nn">iceprod.core.functions</span>
+
+<div class="viewcode-block" id="StopException"><a class="viewcode-back" href="../../../../server/modules/queue.html#iceprod.server.modules.queue.StopException">[docs]</a><span class="k">class</span> <span class="nc">StopException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;modules_queue&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="queue"><a class="viewcode-back" href="../../../../server/modules/queue.html#iceprod.server.modules.queue.queue">[docs]</a><span class="k">class</span> <span class="nc">queue</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Run the queue module, which queues jobs onto the local grid system(s).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># run default init</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">queue</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">proxy</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_duration</span> <span class="o">=</span> <span class="mi">3600</span><span class="o">*</span><span class="mi">12</span>
+
+<div class="viewcode-block" id="queue.start"><a class="viewcode-back" href="../../../../server/modules/queue.html#iceprod.server.modules.queue.queue.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Start the queue&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">queue</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+        <span class="c1"># set up x509 proxy</span>
+        <span class="n">proxy_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="s1">&#39;gridftp_cfgfile&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;queue&#39;</span><span class="p">]:</span>
+            <span class="n">proxy_kwargs</span><span class="p">[</span><span class="s1">&#39;cfgfile&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;queue&#39;</span><span class="p">][</span><span class="s1">&#39;gridftp_cfgfile&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proxy</span> <span class="o">=</span> <span class="n">SiteGlobusProxy</span><span class="p">(</span><span class="o">**</span><span class="n">proxy_kwargs</span><span class="p">)</span>
+
+        <span class="c1"># set up job cacert</span>
+        <span class="n">use_ssl</span> <span class="o">=</span> <span class="s1">&#39;system&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="ow">and</span> <span class="s1">&#39;ssl&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;system&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;system&#39;</span><span class="p">][</span><span class="s1">&#39;ssl&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">use_ssl</span> <span class="ow">and</span> <span class="s1">&#39;cert&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;system&#39;</span><span class="p">][</span><span class="s1">&#39;ssl&#39;</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="s1">&#39;I3PROD&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+                <span class="n">remote_cacert</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;$I3PROD&#39;</span><span class="p">,</span><span class="s1">&#39;etc&#39;</span><span class="p">,</span><span class="s1">&#39;remote_cacert&#39;</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">remote_cacert</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;$PWD&#39;</span><span class="p">,</span><span class="s1">&#39;remote_cacert&#39;</span><span class="p">))</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">remote_cacert</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">certifi</span><span class="o">.</span><span class="n">where</span><span class="p">())</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1"># IceProd local cert</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;system&#39;</span><span class="p">][</span><span class="s1">&#39;ssl&#39;</span><span class="p">][</span><span class="s1">&#39;cert&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;system&#39;</span><span class="p">][</span><span class="s1">&#39;remote_cacert&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">remote_cacert</span>
+
+        <span class="c1"># some setup</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plugins</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">plugin_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;queue&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;queue&#39;</span><span class="p">][</span><span class="n">x</span><span class="p">],</span><span class="nb">dict</span><span class="p">)]</span>
+        <span class="n">plugin_cfg</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;queue&#39;</span><span class="p">][</span><span class="n">x</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">plugin_names</span><span class="p">]</span>
+        <span class="n">plugin_types</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">plugin_cfg</span><span class="p">]</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;queueing plugins in cfg: </span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,{</span><span class="n">x</span><span class="p">:</span><span class="n">y</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span><span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">plugin_names</span><span class="p">,</span><span class="n">plugin_types</span><span class="p">)})</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">plugin_names</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;queue&#39;</span><span class="p">])</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;no queueing plugins found. deactivating queue&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+            <span class="k">return</span>
+
+        <span class="c1"># try to find plugins</span>
+        <span class="n">raw_types</span> <span class="o">=</span> <span class="n">iceprod</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">listmodules</span><span class="p">(</span><span class="s1">&#39;iceprod.server.plugins&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;available modules: </span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">raw_types</span><span class="p">)</span>
+        <span class="n">plugins_tmp</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">t</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">plugin_types</span><span class="p">):</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">raw_types</span><span class="p">:</span>
+                <span class="n">r_name</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">r_name</span> <span class="o">==</span> <span class="n">t</span><span class="p">:</span>
+                    <span class="c1"># exact match</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;exact plugin match - </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">r</span><span class="p">)</span>
+                    <span class="n">p</span> <span class="o">=</span> <span class="n">r</span>
+                    <span class="k">break</span>
+                <span class="k">elif</span> <span class="n">t</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">r_name</span><span class="p">):</span>
+                    <span class="c1"># partial match</span>
+                    <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;partial plugin match - </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">r</span><span class="p">)</span>
+                        <span class="n">p</span> <span class="o">=</span> <span class="n">r</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">name2</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">r_name</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">name2</span><span class="p">):</span>
+                            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;better plugin match - </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">r</span><span class="p">)</span>
+                            <span class="n">p</span> <span class="o">=</span> <span class="n">r</span>
+            <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">plugins_tmp</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">p</span><span class="p">,</span><span class="n">plugin_names</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">plugin_cfg</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;Cannot find plugin for grid </span><span class="si">%s</span><span class="s1"> of type </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">plugin_names</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">t</span><span class="p">)</span>
+
+        <span class="c1"># instantiate all plugins that are required</span>
+        <span class="n">gridspec_types</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="s1">&#39;max_task_queued_time&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;queue&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">max_duration</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;queue&#39;</span><span class="p">][</span><span class="s1">&#39;max_task_queued_time&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s1">&#39;max_task_processing_time&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;queue&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">max_duration</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;queue&#39;</span><span class="p">][</span><span class="s1">&#39;max_task_processing_time&#39;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">p</span><span class="p">,</span><span class="n">p_name</span><span class="p">,</span><span class="n">p_cfg</span> <span class="ow">in</span> <span class="n">plugins_tmp</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;queueing plugin found: </span><span class="si">%s</span><span class="s1"> = </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">p_name</span><span class="p">,</span> <span class="n">p_cfg</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">])</span>
+            <span class="c1"># try instantiating the plugin</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;site_id&#39;</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;.&#39;</span><span class="o">+</span><span class="n">p_name</span><span class="p">,</span> <span class="n">p_cfg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">executor</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">statsd</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">rest_client</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">plugins</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">iceprod</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">run_module</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;Error importing plugin&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">desc</span> <span class="o">=</span> <span class="n">p_cfg</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;description&#39;</span> <span class="ow">in</span> <span class="n">p_cfg</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+                <span class="n">gridspec_types</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;site_id&#39;</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;.&#39;</span><span class="o">+</span><span class="n">p_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">p_cfg</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">],</span>
+                        <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="n">desc</span><span class="p">,</span>
+                <span class="p">}</span>
+                <span class="n">duration</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">if</span> <span class="s1">&#39;max_task_queued_time&#39;</span> <span class="ow">in</span> <span class="n">p_cfg</span><span class="p">:</span>
+                    <span class="n">duration</span> <span class="o">+=</span> <span class="n">p_cfg</span><span class="p">[</span><span class="s1">&#39;max_task_queued_time&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="s1">&#39;max_task_processing_time&#39;</span> <span class="ow">in</span> <span class="n">p_cfg</span><span class="p">:</span>
+                    <span class="n">duration</span> <span class="o">+=</span> <span class="n">p_cfg</span><span class="p">[</span><span class="s1">&#39;max_task_processing_time&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">duration</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_duration</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">max_duration</span> <span class="o">=</span> <span class="n">duration</span>
+
+        <span class="c1"># add gridspec and types to the db</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;host&#39;</span><span class="p">:</span> <span class="n">socket</span><span class="o">.</span><span class="n">getfqdn</span><span class="p">(),</span>
+            <span class="s1">&#39;queues&#39;</span><span class="p">:</span> <span class="p">{</span><span class="n">p_name</span><span class="p">:</span><span class="n">p_cfg</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span><span class="p">,</span><span class="n">p_name</span><span class="p">,</span><span class="n">p_cfg</span> <span class="ow">in</span> <span class="n">plugins_tmp</span><span class="p">},</span>
+            <span class="s1">&#39;version&#39;</span><span class="p">:</span> <span class="n">iceprod</span><span class="o">.</span><span class="n">__version__</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="s1">&#39;grid_id&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;grid_id&#39;</span><span class="p">]:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">rest_client</span><span class="o">.</span><span class="n">request_seq</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;/grids/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;grid_id&#39;</span><span class="p">]))</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;grid_id </span><span class="si">%s</span><span class="s1"> not present in DB&#39;</span><span class="p">,</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;grid_id&#39;</span><span class="p">],</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;grid_id&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s1">&#39;grid_id&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">:</span>
+            <span class="c1"># register grid</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rest_client</span><span class="o">.</span><span class="n">request_seq</span><span class="p">(</span><span class="s1">&#39;POST&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;/grids&#39;</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;grid_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;result&#39;</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s1">&#39;cannot register grid in DB&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="k">raise</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># update grid</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rest_client</span><span class="o">.</span><span class="n">request_seq</span><span class="p">(</span><span class="s1">&#39;PATCH&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;/grids/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;grid_id&#39;</span><span class="p">]),</span> <span class="n">args</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;error updating grid in DB&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span><span class="o">.</span><span class="n">add_callback</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">queue_loop</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="queue.queue_loop"><a class="viewcode-back" href="../../../../server/modules/queue.html#iceprod.server.modules.queue.queue.queue_loop">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">queue_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Run the queueing loop&quot;&quot;&quot;</span>
+        <span class="c1"># check and clean grids</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">plugins</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">p</span><span class="o">.</span><span class="n">check_and_clean</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;plugin </span><span class="si">%s</span><span class="s1">.check_and_clean() raised exception&#39;</span><span class="p">,</span>
+                             <span class="n">p</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># check proxy cert</span>
+        <span class="k">try</span><span class="p">:</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">check_proxy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_duration</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;error checking proxy&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># queue tasks to grids</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">plugins</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">p</span><span class="o">.</span><span class="n">queue</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;plugin </span><span class="si">%s</span><span class="s1">.queue() raised exception&#39;</span><span class="p">,</span>
+                             <span class="n">p</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># set timeout</span>
+        <span class="k">if</span> <span class="s1">&#39;queue&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="ow">and</span> <span class="s1">&#39;queue_interval&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;queue&#39;</span><span class="p">]:</span>
+            <span class="n">timeout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;queue&#39;</span><span class="p">][</span><span class="s1">&#39;queue_interval&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">timeout</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">timeout</span> <span class="o">=</span> <span class="mi">300</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">timeout</span> <span class="o">=</span> <span class="mi">300</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span><span class="o">.</span><span class="n">call_later</span><span class="p">(</span><span class="n">timeout</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_loop</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="queue.check_proxy"><a class="viewcode-back" href="../../../../server/modules/queue.html#iceprod.server.modules.queue.queue.check_proxy">[docs]</a>    <span class="k">def</span> <span class="nf">check_proxy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check the x509 proxy.</span>
+
+<span class="sd">        Blocking function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">duration</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">proxy</span><span class="o">.</span><span class="n">set_duration</span><span class="p">(</span><span class="n">duration</span><span class="o">//</span><span class="mi">3600</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">proxy</span><span class="o">.</span><span class="n">update_proxy</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;queue&#39;</span><span class="p">][</span><span class="s1">&#39;x509proxy&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proxy</span><span class="o">.</span><span class="n">get_proxy</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;cannot setup x509 proxy&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, IceCube Collaboration.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'master',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
+      });
+  </script> 
+
+</body>
+</html>

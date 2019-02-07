@@ -8,9 +8,11 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>RPC Authorization &mdash; IceProd master documentation</title>
+  <title>REST Authorization &mdash; IceProd master documentation</title>
   
 
+  
+  
   
   
 
@@ -24,15 +26,20 @@
 
   
   
-    <link rel="stylesheet" href="../../_static/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+  
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  
   
 
   
-
-  
+        <link rel="index" title="Index"
+              href="../../genindex.html"/>
+        <link rel="search" title="Search" href="../../search.html"/>
     <link rel="top" title="IceProd master documentation" href="../../index.html"/>
         <link rel="up" title="IceProd Server Details" href="index.html"/>
-        <link rel="next" title="Roles" href="roles.html"/>
+        <link rel="next" title="User Accounts" href="user_accounts.html"/>
         <link rel="prev" title="Website" href="website.html"/> 
 
   
@@ -62,7 +69,7 @@
             
             
               <div class="version">
-                master
+                2.5.0
               </div>
             
           
@@ -83,32 +90,69 @@
           
             
             
-                <ul>
+              
+            
+            
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../admin/index.html">Administrator&#8217;s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../guide/index.html">User’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/login.html">Login</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/submission.html">Dataset Submission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/datasets.html">Dataset Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/tasks.html">Task Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/restapi.html">REST API Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/manually.html">Running Manually</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../admin/index.html">Administrator’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../admin/startup.html">Server Startup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../admin/common.html">Common Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../admin/extra_details.html">Extras</a></li>
+</ul>
+</li>
 </ul>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../../core/index.html">IceProd Core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/index.html">IceProd Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/i3exec.html">I3Exec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/exe.html">Execution Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/exe_helper.html">Execution Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/exe_json.html">JSONRPC Calls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/jsonRPCclient.html">JSON-RPC Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/jsonUtil.html">JSON Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/init.html">Core Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/dataclasses.html">Dataclasses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/parser.html">Meta-Language Parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/serialization.html">Serialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/gridftp.html">GridFTP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/util.html">Utilities</a></li>
+</ul>
+</li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">IceProd Server</a><ul class="current">
-<li class="toctree-l2 current"><a class="reference internal" href="index.html">IceProd Server Details</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Server Details</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="submit_to_queue.html">From Submission to Queue</a></li>
 <li class="toctree-l3"><a class="reference internal" href="task_relationships.html">Task Relationships</a></li>
 <li class="toctree-l3"><a class="reference internal" href="lifecycles.html">Lifecycles</a></li>
 <li class="toctree-l3"><a class="reference internal" href="global_queueing.html">Global Queueing</a></li>
 <li class="toctree-l3"><a class="reference internal" href="async.html">Asynchronous Programming</a></li>
 <li class="toctree-l3"><a class="reference internal" href="website.html">Website</a></li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">RPC Authorization</a></li>
-<li class="toctree-l3"><a class="reference internal" href="roles.html">Roles</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">REST Authorization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="user_accounts.html">User Accounts</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../modules/db.html">Database Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules/master_updater.html">Master Updater Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules/proxy.html">Proxy Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules/queue.html">Queueing Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules/schedule.html">Schedule Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules/website.html">Website Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../plugins/condor.html">Condor Plugin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rest_api/index.html">REST API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/datasets.html">Datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/config.html">Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/jobs.html">Jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/tasks.html">Tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/task_stats.html">Task Stats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/logs.html">Logs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/grids.html">Grids</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/pilots.html">Pilots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/auth.html">Auth</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../auth.html">Token Authentication</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../config.html">Detailed Configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../dbmethods.html">DB Methods</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../file_io.html">File IO</a></li>
@@ -121,6 +165,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../server.html">Server</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../squid.html">Squid</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tornado.html">Tornado Web Utilities</a></li>
 </ul>
 </li>
 </ul>
@@ -144,159 +189,129 @@
 
       
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div style="float:right">
-            <a href="https://github.com/WIPACrepo/iceprod" class="fa fa-github"> Edit on GitHub</a>
-          </div>
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">IceProd Server</a> &raquo;</li>
+        
+          <li><a href="index.html">IceProd Server Details</a> &raquo;</li>
+        
+      <li>REST Authorization</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/server/details/auth.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="rpc-authorization">
-<h1>RPC Authorization<a class="headerlink" href="#rpc-authorization" title="Permalink to this headline">¶</a></h1>
-<p>After we&#8217;ve been authenticated, we need to be authorized.  This happens
-at the rpc method level.  There are several general categories,
-including public, login, user, role, etc.</p>
+  <div class="section" id="rest-authorization">
+<h1>REST Authorization<a class="headerlink" href="#rest-authorization" title="Permalink to this headline">¶</a></h1>
+<p>After a token has been authenticated, it needs to be authorized.  This happens
+at the method level.  There are two main categories of authorization:</p>
 <dl class="docutils">
-<dt>Public Access</dt>
-<dd>Public rpc methods can be accessed by anyone.  These are usually read-only
-and provide basic access.</dd>
-<dt>Login Access</dt>
-<dd>Methods that can be accessed by anyone with an account.  So everyone but
-the general public.  A very minor security bar.</dd>
-<dt>User Access</dt>
-<dd>Match against a user. Typically for modifying your own user account
-information.</dd>
-<dt>Role Access</dt>
-<dd>These rpc methods depend on the logged in user being a member of a role.
-Typically this is because a dataset has been marked private and is
-restricted to the role that submitted it.</dd>
-<dt>Site Access</dt>
-<dd>Another site (usually a slave instance) calling the method.
-Sites have special passkeys to allow this access.</dd>
+<dt>Role Based Access Control</dt>
+<dd>These methods depend on the token having a certain role.  This is most
+often used for admin-only methods, or for internal IceProd usage
+that is not meant for user access.</dd>
+<dt>Attribute Based Access Control</dt>
+<dd>These methods match a dataset’s attributes against the token’s
+attributes - specifically the groups of both.  If a token belongs
+to the same group (or a higher level group containing this sub-group)
+as the dataset, it has permission.
+Note that datasets have separate read and write access, so a dataset
+can be marked as public readable and group-only writable.</dd>
 </dl>
+<p>Both of these access controls can be combined on a single method, allowing
+a certain role complete access, as well as tokens that match an attribute.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Public access isn’t mentioned directly.  Instead, it is the lack of either
+access control protection that marks a method as public.</p>
+</div>
 <div class="section" id="authorization-implementation">
 <h2>Authorization Implementation<a class="headerlink" href="#authorization-implementation" title="Permalink to this headline">¶</a></h2>
 <p>A decorator for RPC methods is used.  For example, a public access:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="c"># public method</span>
-<span class="k">def</span> <span class="nf">rpc_public_foo</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># public method</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">rpc_public_foo</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="k">pass</span>
 </pre></div>
 </div>
 <p>If you only need a logged in user, access is set up as:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="nd">@authorization</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">rpc_logged_in</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;user&#39;</span><span class="p">])</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">rpc_logged_in</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="k">pass</span>
 </pre></div>
 </div>
-<p>Specifc user ids can also be used:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="nd">@authorization</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;123&#39;</span><span class="p">])</span>
-<span class="k">def</span> <span class="nf">rpc_logged_in</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<p>Other role based access is similarly easy:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">]):</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">rpc_admin_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="k">pass</span>
 </pre></div>
 </div>
-<p>Role based access is similarly easy:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="nd">@authorization</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;admin&#39;</span><span class="p">]):</span>
-<span class="k">def</span> <span class="nf">rpc_admin_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<p>Internal IceProd access can be enabled with a role.  Note that
+the <cite>client</cite> role is for IceProd clients that run scheduled tasks,
+while <cite>pilot</cite> is for pilot workers.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;client&#39;</span><span class="p">,</span><span class="s1">&#39;pilot&#39;</span><span class="p">])</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">rpc_site_foo</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="k">pass</span>
 </pre></div>
 </div>
-<p>Site access can be enabled with a flag:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="nd">@authorization</span><span class="p">(</span><span class="n">site</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">rpc_site_foo</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<p>For dataset attributes, access is like:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="nd">@authorization</span><span class="p">(</span><span class="n">attrs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;dataset_id:read&#39;</span><span class="p">])</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">rpc_get_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_id</span><span class="p">,</span> <span class="n">task_id</span><span class="p">):</span>
     <span class="k">pass</span>
 </pre></div>
 </div>
-<div class="section" id="dynamic-matching">
-<h3>Dynamic Matching<a class="headerlink" href="#dynamic-matching" title="Permalink to this headline">¶</a></h3>
-<p>Non-static mappings are more difficult. A two-step solution is needed:</p>
-<ol class="arabic simple">
-<li>Get logged in user/role.</li>
-<li>Verify that credential against the database.</li>
-</ol>
-<p>This can&#8217;t all be done in the decorator, so we need a helper function:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="k">def</span> <span class="nf">_rpc_set_user_email_helper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">auth_user</span><span class="p">,</span> <span class="n">user_id</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Args:</span>
-<span class="sd">        auth_user (str): the user_id of the logged in user</span>
-<span class="sd">        user_id (str): an argument to the original function</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">auth_user</span> <span class="o">==</span> <span class="n">user_id</span>
-
-<span class="nd">@authorization</span><span class="p">(</span><span class="n">auth_user</span><span class="o">=</span><span class="n">_rpc_set_user_email_helper</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">rpc_set_user_email</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">,</span> <span class="n">email</span><span class="p">):</span>
-    <span class="c"># set email address</span>
-</pre></div>
-</div>
-<p>Role checks are generally more difficult, involving a database lookup:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
-<span class="k">def</span> <span class="nf">_rpc_edit_dataset_helper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">auth_roles</span><span class="p">,</span> <span class="n">dataset_id</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Args:</span>
-<span class="sd">        auth_roles (list): role_ids of logged in user</span>
-<span class="sd">        dataset_id (str): dataset to modify</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select group_id from dataset where dataset_id = ?&#39;</span>
-    <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataset_id</span><span class="p">,)</span>
-    <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
-    <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select name from groups where groups_id = ?&#39;</span>
-    <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],)</span>
-    <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
-    <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select groups_prefix from role where role_id in (&#39;</span>
-    <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;?&#39;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">auth_roles</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;)&#39;</span>
-    <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">auth_roles</span><span class="p">)</span>
-    <span class="n">ret2</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
-    <span class="n">success</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret2</span><span class="p">)</span>
-    <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">success</span><span class="p">)</span>
-
-<span class="nd">@authorization</span><span class="p">(</span><span class="n">auth_role</span><span class="o">=</span><span class="n">_rpc_edit_dataset_helper</span><span class="p">)</span>
-<span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
-<span class="k">def</span> <span class="nf">rpc_edit_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_id</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
-    <span class="c"># edit dataset config</span>
-</pre></div>
-</div>
-</div>
-<div class="section" id="coroutines">
-<h3>Coroutines<a class="headerlink" href="#coroutines" title="Permalink to this headline">¶</a></h3>
-<p>Note in the above examples that we have occasionally used
-<span class="xref std std-ref">tornado.gen.coroutine</span> as a decorator.  Authorization can handle
-either normal functions or coroutines.  One key point is when the function
-to be authorized is a couroutine.  The coroutine decorator must go below
-the authorization decorator:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="nd">@authorization</span><span class="p">(</span><span class="n">auth_role</span><span class="o">=</span><span class="s">&#39;admin&#39;</span><span class="p">)</span>
-<span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
-<span class="k">def</span> <span class="nf">rpc_edit_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_id</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
-    <span class="c"># edit dataset config</span>
-</pre></div>
-</div>
-</div>
-</div>
-<div class="section" id="authorization-expression">
-<h2>Authorization Expression<a class="headerlink" href="#authorization-expression" title="Permalink to this headline">¶</a></h2>
-<p>If more than one condition is needed, the authorization expression comes
-into play:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="nd">@authorization</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="k">True</span><span class="p">,</span> <span class="n">site</span><span class="o">=</span><span class="k">True</span><span class="p">,</span> <span class="n">expression</span><span class="o">=</span><span class="s">&#39;user or site&#39;</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">rpc_user_or_site</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="k">pass</span>
-</pre></div>
-</div>
-<p>The expression replaces the keywords <cite>user</cite>, <cite>role</cite>, <cite>site</cite> with the
-evaluated authorizations, then evaluates the expression.  Since this is
-directly evaludated in python, no user input should ever go into this.</p>
-<p>The default expression is any supplied authorization and-ed together.</p>
 </div>
 </div>
 
 
+           </div>
+           <div class="articleComments">
+            
            </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="roles.html" class="btn btn-neutral float-right" title="Roles" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="user_accounts.html" class="btn btn-neutral float-right" title="User Accounts" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="website.html" class="btn btn-neutral" title="Website" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="website.html" class="btn btn-neutral" title="Website" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -328,15 +343,17 @@ directly evaludated in python, no user input should ever go into this.</p>
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../',
             VERSION:'master',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
@@ -345,14 +362,13 @@ directly evaludated in python, no user input should ever go into this.</p>
     <script type="text/javascript" src="../../_static/js/theme.js"></script>
   
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

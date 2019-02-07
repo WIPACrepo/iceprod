@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -24,12 +26,17 @@
 
   
   
-    <link rel="stylesheet" href="../_static/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+  
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  
   
 
   
-
-  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
     <link rel="top" title="IceProd master documentation" href="../index.html"/>
         <link rel="up" title="IceProd Server" href="index.html"/>
         <link rel="next" title="Module" href="module.html"/>
@@ -62,7 +69,7 @@
             
             
               <div class="version">
-                master
+                2.5.0
               </div>
             
           
@@ -83,22 +90,69 @@
           
             
             
-                <ul>
+              
+            
+            
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../admin/index.html">Administrator&#8217;s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../guide/login.html">Login</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/submission.html">Dataset Submission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/datasets.html">Dataset Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/tasks.html">Task Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/restapi.html">REST API Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/manually.html">Running Manually</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../admin/index.html">Administrator’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../admin/startup.html">Server Startup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../admin/common.html">Common Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../admin/extra_details.html">Extras</a></li>
+</ul>
+</li>
 </ul>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../core/index.html">IceProd Core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/index.html">IceProd Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../core/i3exec.html">I3Exec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/exe.html">Execution Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/exe_helper.html">Execution Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/exe_json.html">JSONRPC Calls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/jsonRPCclient.html">JSON-RPC Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/jsonUtil.html">JSON Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/init.html">Core Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/dataclasses.html">Dataclasses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/parser.html">Meta-Language Parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/serialization.html">Serialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/gridftp.html">GridFTP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../core/util.html">Utilities</a></li>
+</ul>
+</li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">IceProd Server</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="details/index.html">IceProd Server Details</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modules/db.html">Database Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modules/master_updater.html">Master Updater Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modules/proxy.html">Proxy Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modules/queue.html">Queueing Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modules/schedule.html">Schedule Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modules/website.html">Website Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="plugins/condor.html">Condor Plugin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="details/index.html">Server Details</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="details/submit_to_queue.html">From Submission to Queue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="details/task_relationships.html">Task Relationships</a></li>
+<li class="toctree-l3"><a class="reference internal" href="details/lifecycles.html">Lifecycles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="details/global_queueing.html">Global Queueing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="details/async.html">Asynchronous Programming</a></li>
+<li class="toctree-l3"><a class="reference internal" href="details/website.html">Website</a></li>
+<li class="toctree-l3"><a class="reference internal" href="details/auth.html">REST Authorization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="details/user_accounts.html">User Accounts</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rest_api/index.html">REST API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rest_api/datasets.html">Datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rest_api/config.html">Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rest_api/jobs.html">Jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rest_api/tasks.html">Tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rest_api/task_stats.html">Task Stats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rest_api/logs.html">Logs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rest_api/grids.html">Grids</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rest_api/pilots.html">Pilots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rest_api/auth.html">Auth</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="auth.html">Token Authentication</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config.html">Detailed Configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="dbmethods.html">DB Methods</a></li>
 <li class="toctree-l2"><a class="reference internal" href="file_io.html">File IO</a></li>
@@ -111,6 +165,7 @@
 <li class="toctree-l2"><a class="reference internal" href="server.html">Server</a></li>
 <li class="toctree-l2"><a class="reference internal" href="squid.html">Squid</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tornado.html">Tornado Web Utilities</a></li>
 </ul>
 </li>
 </ul>
@@ -134,10 +189,49 @@
 
       
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div style="float:right">
-            <a href="https://github.com/WIPACrepo/iceprod" class="fa fa-github"> Edit on GitHub</a>
-          </div>
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">IceProd Server</a> &raquo;</li>
+        
+      <li>Server Init</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/server/init.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
@@ -147,7 +241,7 @@
 <dl class="function">
 <dt id="iceprod.server.find_module_recursive">
 <code class="descclassname">iceprod.server.</code><code class="descname">find_module_recursive</code><span class="sig-paren">(</span><em>name</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server.html#find_module_recursive"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.find_module_recursive" title="Permalink to this definition">¶</a></dt>
-<dd><p>Recursively search for submodule. Submodules must be separated with a &#8216;.&#8217;</p>
+<dd><p>Recursively search for submodule. Submodules must be separated with a ‘.’</p>
 </dd></dl>
 
 <dl class="function">
@@ -178,7 +272,7 @@
 
 <dl class="attribute">
 <dt id="iceprod.server.GlobalID.INTS_DICT">
-<code class="descname">INTS_DICT</code><em class="property"> = {'1': 53, '0': 52, '3': 55, '2': 54, '5': 57, '4': 56, '7': 59, '6': 58, '9': 61, '8': 60, 'A': 26, 'C': 28, 'B': 27, 'E': 30, 'D': 29, 'G': 32, 'F': 31, 'I': 34, 'H': 33, 'K': 36, 'J': 35, 'M': 38, 'L': 37, 'O': 40, 'N': 39, 'Q': 42, 'P': 41, 'S': 44, 'R': 43, 'U': 46, 'T': 45, 'W': 48, 'V': 47, 'Y': 50, 'X': 49, 'Z': 51, 'a': 0, 'c': 2, 'b': 1, 'e': 4, 'd': 3, 'g': 6, 'f': 5, 'i': 8, 'h': 7, 'k': 10, 'j': 9, 'm': 12, 'l': 11, 'o': 14, 'n': 13, 'q': 16, 'p': 15, 's': 18, 'r': 17, 'u': 20, 't': 19, 'w': 22, 'v': 21, 'y': 24, 'x': 23, 'z': 25}</em><a class="headerlink" href="#iceprod.server.GlobalID.INTS_DICT" title="Permalink to this definition">¶</a></dt>
+<code class="descname">INTS_DICT</code><em class="property"> = {'a': 0, 'b': 1, 'c': 2, 'd': 3, 'e': 4, 'f': 5, 'g': 6, 'h': 7, 'i': 8, 'j': 9, 'k': 10, 'l': 11, 'm': 12, 'n': 13, 'o': 14, 'p': 15, 'q': 16, 'r': 17, 's': 18, 't': 19, 'u': 20, 'v': 21, 'w': 22, 'x': 23, 'y': 24, 'z': 25, 'A': 26, 'B': 27, 'C': 28, 'D': 29, 'E': 30, 'F': 31, 'G': 32, 'H': 33, 'I': 34, 'J': 35, 'K': 36, 'L': 37, 'M': 38, 'N': 39, 'O': 40, 'P': 41, 'Q': 42, 'R': 43, 'S': 44, 'T': 45, 'U': 46, 'V': 47, 'W': 48, 'X': 49, 'Y': 50, 'Z': 51, '0': 52, '1': 53, '2': 54, '3': 55, '4': 56, '5': 57, '6': 58, '7': 59, '8': 60, '9': 61}</em><a class="headerlink" href="#iceprod.server.GlobalID.INTS_DICT" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
@@ -232,7 +326,7 @@
 
 <dl class="attribute">
 <dt id="iceprod.server.GlobalID.string">
-<code class="descname">string</code><em class="property"> = &lt;module 'string' from '/usr/lib/python2.7/string.pyc'&gt;</em><a class="headerlink" href="#iceprod.server.GlobalID.string" title="Permalink to this definition">¶</a></dt>
+<code class="descname">string</code><em class="property"> = &lt;module 'string' from '/usr/local/lib/python3.6/string.py'&gt;</em><a class="headerlink" href="#iceprod.server.GlobalID.string" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -270,15 +364,18 @@
 
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="module.html" class="btn btn-neutral float-right" title="Module" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="module.html" class="btn btn-neutral float-right" title="Module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="grid.html" class="btn btn-neutral" title="Grid Queueing" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="grid.html" class="btn btn-neutral" title="Grid Queueing" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -310,15 +407,17 @@
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
             VERSION:'master',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
@@ -327,14 +426,13 @@
     <script type="text/javascript" src="../_static/js/theme.js"></script>
   
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

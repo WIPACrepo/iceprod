@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -24,12 +26,17 @@
 
   
   
-    <link rel="stylesheet" href="../_static/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+  
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  
   
 
   
-
-  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
     <link rel="top" title="IceProd master documentation" href="../index.html"/>
         <link rel="up" title="IceProd Core" href="index.html"/>
         <link rel="next" title="Meta-Language Parser" href="parser.html"/>
@@ -62,7 +69,7 @@
             
             
               <div class="version">
-                master
+                2.5.0
               </div>
             
           
@@ -83,10 +90,26 @@
           
             
             
-                <ul>
+              
+            
+            
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../admin/index.html">Administrator&#8217;s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../guide/login.html">Login</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/submission.html">Dataset Submission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/datasets.html">Dataset Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/tasks.html">Task Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/restapi.html">REST API Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/manually.html">Running Manually</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../admin/index.html">Administrator’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../admin/startup.html">Server Startup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../admin/common.html">Common Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../admin/extra_details.html">Extras</a></li>
+</ul>
+</li>
 </ul>
 <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">IceProd Core</a><ul class="current">
@@ -105,7 +128,46 @@
 <li class="toctree-l2"><a class="reference internal" href="util.html">Utilities</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../server/index.html">IceProd Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../server/index.html">IceProd Server</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../server/details/index.html">Server Details</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/submit_to_queue.html">From Submission to Queue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/task_relationships.html">Task Relationships</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/lifecycles.html">Lifecycles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/global_queueing.html">Global Queueing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/async.html">Asynchronous Programming</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/website.html">Website</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/auth.html">REST Authorization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/user_accounts.html">User Accounts</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../server/rest_api/index.html">REST API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/datasets.html">Datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/config.html">Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/jobs.html">Jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/tasks.html">Tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/task_stats.html">Task Stats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/logs.html">Logs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/grids.html">Grids</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/pilots.html">Pilots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/auth.html">Auth</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../server/auth.html">Token Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/config.html">Detailed Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/dbmethods.html">DB Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/file_io.html">File IO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/globus.html">Globus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/grid.html">Grid Queueing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/init.html">Server Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/module.html">Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/nginx.html">Nginx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/schedule.html">Schedule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/server.html">Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/squid.html">Squid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/tornado.html">Tornado Web Utilities</a></li>
+</ul>
+</li>
 </ul>
 
             
@@ -127,10 +189,49 @@
 
       
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div style="float:right">
-            <a href="https://github.com/WIPACrepo/iceprod" class="fa fa-github"> Edit on GitHub</a>
-          </div>
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">IceProd Core</a> &raquo;</li>
+        
+      <li>Dataclasses</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/core/dataclasses.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
@@ -160,16 +261,16 @@ configuration.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
-<li><strong>dataset</strong> &#8211; 0</li>
-<li><strong>parent_id</strong> &#8211; 0</li>
-<li><strong>version</strong> &#8211; 3</li>
-<li><strong>options</strong> &#8211; {} &#8211; a dict of parameters to pass to the task runner</li>
-<li><strong>steering</strong> &#8211; None</li>
-<li><strong>tasks</strong> &#8211; []</li>
-<li><strong>difplus</strong> &#8211; None</li>
-<li><strong>description</strong> &#8211; <p>&#8220;&#8221;</p>
+<li><strong>dataset</strong> – 0</li>
+<li><strong>parent_id</strong> – 0</li>
+<li><strong>version</strong> – 3</li>
+<li><strong>options</strong> – {} – a dict of parameters to pass to the task runner</li>
+<li><strong>steering</strong> – None</li>
+<li><a class="reference internal" href="../server/rest_api/tasks.html#module-iceprod.server.rest.tasks" title="iceprod.server.rest.tasks"><strong>tasks</strong></a> – []</li>
+<li><strong>difplus</strong> – None</li>
+<li><strong>description</strong> – <p>”“</p>
 </li>
-<li><strong>categories</strong> &#8211; []</li>
+<li><strong>categories</strong> – []</li>
 </ul>
 </td>
 </tr>
@@ -208,11 +309,11 @@ new objects.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
-<li><strong>parameters</strong> &#8211; {}</li>
-<li><strong>batchsys</strong> &#8211; None</li>
-<li><strong>system</strong> &#8211; {} &#8211; just specialized parameters</li>
-<li><strong>resources</strong> &#8211; []</li>
-<li><strong>data</strong> &#8211; []</li>
+<li><strong>parameters</strong> – {}</li>
+<li><strong>batchsys</strong> – None</li>
+<li><strong>system</strong> – {} – just specialized parameters</li>
+<li><strong>resources</strong> – []</li>
+<li><strong>data</strong> – []</li>
 </ul>
 </td>
 </tr>
@@ -251,12 +352,12 @@ new objects.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
-<li><strong>name</strong> &#8211; <p>&#8216;&#8217;</p>
+<li><strong>name</strong> – <p>’‘</p>
 </li>
-<li><strong>resources</strong> &#8211; []</li>
-<li><strong>data</strong> &#8211; []</li>
-<li><strong>classes</strong> &#8211; []</li>
-<li><strong>parameters</strong> &#8211; {}</li>
+<li><strong>resources</strong> – []</li>
+<li><strong>data</strong> – []</li>
+<li><strong>classes</strong> – []</li>
+<li><strong>parameters</strong> – {}</li>
 </ul>
 </td>
 </tr>
@@ -284,10 +385,11 @@ new objects.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
-<li><strong>depends</strong> &#8211; [] &#8211; a list of task names</li>
-<li><strong>batchsys</strong> &#8211; None</li>
-<li><strong>trays</strong> &#8211; []</li>
-<li><strong>requirements</strong> &#8211; {} &#8211; a dict of requirements</li>
+<li><strong>depends</strong> – [] – a list of task names</li>
+<li><strong>batchsys</strong> – None</li>
+<li><strong>trays</strong> – []</li>
+<li><strong>requirements</strong> – {} – a dict of requirements</li>
+<li><a class="reference internal" href="exe_json.html#iceprod.core.exe_json.ServerComms.task_files" title="iceprod.core.exe_json.ServerComms.task_files"><strong>task_files</strong></a> – False – whether to use the task files API</li>
 </ul>
 </td>
 </tr>
@@ -327,8 +429,8 @@ new objects.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
-<li><strong>iterations</strong> &#8211; 1</li>
-<li><strong>modules</strong> &#8211; []</li>
+<li><strong>iterations</strong> – 1</li>
+<li><strong>modules</strong> – []</li>
 </ul>
 </td>
 </tr>
@@ -368,11 +470,11 @@ new objects.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
-<li><strong>running_class</strong> &#8211; None &#8211; the python class or function to call</li>
-<li><strong>src</strong> &#8211; None &#8211; src of class or script</li>
-<li><strong>args</strong> &#8211; None &#8211; args to give to class or src if not an iceprod module</li>
-<li><strong>env_shell</strong> &#8211; None &#8211; src of script which sets env and calls arg</li>
-<li><strong>env_clear</strong> &#8211; False &#8211; clear the env before calling the module
+<li><strong>running_class</strong> – None – the python class or function to call</li>
+<li><strong>src</strong> – None – src of class or script</li>
+<li><strong>args</strong> – None – args to give to class or src if not an iceprod module</li>
+<li><strong>env_shell</strong> – None – src of script which sets env and calls arg</li>
+<li><strong>env_clear</strong> – True – clear the env before calling the module
 (calls env_shell after clearing, if defined)</li>
 </ul>
 </td>
@@ -414,12 +516,12 @@ new objects.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
-<li><strong>name</strong> &#8211; None &#8211; required</li>
-<li><strong>src</strong> &#8211; None &#8211; if downloaded from url</li>
-<li><strong>resource_name</strong> &#8211; None &#8211; if present in resource object</li>
-<li><strong>recursive</strong> &#8211; False</li>
-<li><strong>libs</strong> &#8211; None &#8211; if more than default lib directory</li>
-<li><strong>env_vars</strong> &#8211; None</li>
+<li><strong>name</strong> – None – required</li>
+<li><strong>src</strong> – None – if downloaded from url</li>
+<li><strong>resource_name</strong> – None – if present in resource object</li>
+<li><strong>recursive</strong> – False</li>
+<li><strong>libs</strong> – None – if more than default lib directory</li>
+<li><strong>env_vars</strong> – None</li>
 </ul>
 </td>
 </tr>
@@ -458,11 +560,11 @@ new objects.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
-<li><strong>remote</strong> &#8211; <p>&#8216;&#8217;</p>
+<li><strong>remote</strong> – <p>’‘</p>
 </li>
-<li><strong>local</strong> &#8211; <p>&#8216;&#8217;</p>
+<li><strong>local</strong> – <p>’‘</p>
 </li>
-<li><strong>compression</strong> &#8211; False</li>
+<li><strong>compression</strong> – False</li>
 </ul>
 </td>
 </tr>
@@ -483,6 +585,12 @@ new objects.</p>
 <code class="descname">valid</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#_ResourceCommon.valid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses._ResourceCommon.valid" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="method">
+<dt id="iceprod.core.dataclasses._ResourceCommon.do_transfer">
+<code class="descname">do_transfer</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#_ResourceCommon.do_transfer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses._ResourceCommon.do_transfer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Test if we should actually transfer the file.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="class">
@@ -494,7 +602,7 @@ new objects.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><strong>arch</strong> &#8211; None</td>
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><strong>arch</strong> – None</td>
 </tr>
 </tbody>
 </table>
@@ -532,8 +640,8 @@ new objects.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
-<li><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#type" title="(in Python v3.6)"><strong>type</strong></a> &#8211; &#8216;permanent&#8217; &#8211; required</li>
-<li><strong>movement</strong> &#8211; &#8216;both&#8217; &#8211; required</li>
+<li><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#type" title="(in Python v3.6)"><strong>type</strong></a> – ‘permanent’ – required</li>
+<li><strong>movement</strong> – ‘both’ – required</li>
 </ul>
 </td>
 </tr>
@@ -579,7 +687,7 @@ new objects.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>env</strong> &#8211; environment</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>env</strong> – environment</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">storage location as a string, or raises Exception</td>
 </tr>
@@ -595,7 +703,7 @@ new objects.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>env</strong> &#8211; environment</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>env</strong> – environment</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">FileCatalog object, or raises Exception</td>
 </tr>
@@ -618,8 +726,8 @@ new objects.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
-<li><strong>dif</strong> &#8211; None</li>
-<li><strong>plus</strong> &#8211; None</li>
+<li><strong>dif</strong> – None</li>
+<li><strong>plus</strong> – None</li>
 </ul>
 </td>
 </tr>
@@ -659,18 +767,18 @@ new objects.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
-<li><strong>entry_id</strong> &#8211; None</li>
-<li><strong>entry_title</strong> &#8211; None</li>
-<li><strong>parameters</strong> &#8211; &#8216; &#8216;</li>
-<li><strong>iso_topic_category</strong> &#8211; &#8216;geoscientificinformation&#8217;</li>
-<li><strong>data_ceter</strong> &#8211; None</li>
-<li><strong>summary</strong> &#8211; &#8216; &#8216;</li>
-<li><strong>metadata_name</strong> &#8211; &#8216;[CEOS IDN DIF]&#8217;</li>
-<li><strong>metadata_version</strong> &#8211; &#8216;9.4&#8217;</li>
-<li><strong>personnel</strong> &#8211; []</li>
-<li><strong>sensor_name</strong> &#8211; &#8216;ICECUBE&#8217;</li>
-<li><strong>source_name</strong> &#8211; &#8216;SIMULATION&#8217;</li>
-<li><strong>dif_creation_date</strong> &#8211; time.strftime(&#8220;%Y-%m-%d&#8221;)</li>
+<li><strong>entry_id</strong> – None</li>
+<li><strong>entry_title</strong> – None</li>
+<li><strong>parameters</strong> – ‘ ‘</li>
+<li><strong>iso_topic_category</strong> – ‘geoscientificinformation’</li>
+<li><strong>data_ceter</strong> – None</li>
+<li><strong>summary</strong> – ‘ ‘</li>
+<li><strong>metadata_name</strong> – ‘[CEOS IDN DIF]’</li>
+<li><strong>metadata_version</strong> – ‘9.4’</li>
+<li><strong>personnel</strong> – []</li>
+<li><strong>sensor_name</strong> – ‘ICECUBE’</li>
+<li><strong>source_name</strong> – ‘SIMULATION’</li>
+<li><strong>dif_creation_date</strong> – time.strftime(“%Y-%m-%d”)</li>
 </ul>
 </td>
 </tr>
@@ -688,12 +796,12 @@ new objects.</p>
 
 <dl class="attribute">
 <dt id="iceprod.core.dataclasses.Dif.valid_source_name">
-<code class="descname">valid_source_name</code><em class="property"> = {'EXPERIMENTAL': 'Data with an instrumentation based source', 'SIMULATION': 'Data which are numerically generated'}</em><a class="headerlink" href="#iceprod.core.dataclasses.Dif.valid_source_name" title="Permalink to this definition">¶</a></dt>
+<code class="descname">valid_source_name</code><em class="property"> = {'SIMULATION': 'Data which are numerically generated', 'EXPERIMENTAL': 'Data with an instrumentation based source'}</em><a class="headerlink" href="#iceprod.core.dataclasses.Dif.valid_source_name" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="iceprod.core.dataclasses.Dif.valid_sensor_name">
-<code class="descname">valid_sensor_name</code><em class="property"> = {'AMANDA-A': 'Prototype Antarctic Muon and Neutrino Detector Array', 'SPASE-2': 'South Pole Air Shower Experiment 2', 'EHWD': 'Enhanced Hot Water Drill', 'SPASE-1': 'South Pole Air Shower Experiment 1', 'VULCAN': 'South Pole Air-Cherenkov Telescope', 'ICETOP': 'IceTop', 'GASP': 'Gamma Astronomy-South Pole', 'SPTR': 'South Pole TDRSS Relay', 'RPSC-MET': 'Raytheon Polar Services Corporation Meteorology', 'ICECUBE': 'IceCube', 'RICE': 'Radio Ice Cherenkov Experiment', 'AMANDA': 'Antarctic Muon and Neutrino Detector Array'}</em><a class="headerlink" href="#iceprod.core.dataclasses.Dif.valid_sensor_name" title="Permalink to this definition">¶</a></dt>
+<code class="descname">valid_sensor_name</code><em class="property"> = {'AMANDA-A': 'Prototype Antarctic Muon and Neutrino Detector Array', 'AMANDA': 'Antarctic Muon and Neutrino Detector Array', 'SPASE-1': 'South Pole Air Shower Experiment 1', 'SPASE-2': 'South Pole Air Shower Experiment 2', 'VULCAN': 'South Pole Air-Cherenkov Telescope', 'RICE': 'Radio Ice Cherenkov Experiment', 'GASP': 'Gamma Astronomy-South Pole', 'ICECUBE': 'IceCube', 'ICETOP': 'IceTop', 'EHWD': 'Enhanced Hot Water Drill', 'SPTR': 'South Pole TDRSS Relay', 'RPSC-MET': 'Raytheon Polar Services Corporation Meteorology'}</em><a class="headerlink" href="#iceprod.core.dataclasses.Dif.valid_sensor_name" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -725,17 +833,17 @@ new objects.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
-<li><a class="reference internal" href="../server/modules/proxy.html#iceprod.server.modules.proxy.proxy.start" title="iceprod.server.modules.proxy.proxy.start"><strong>start</strong></a> &#8211; None</li>
-<li><strong>end</strong> &#8211; None</li>
-<li><strong>category</strong> &#8211; None</li>
-<li><strong>subcategory</strong> &#8211; None</li>
-<li><strong>run_number</strong> &#8211; None</li>
-<li><strong>i3db_key</strong> &#8211; None</li>
-<li><strong>simdb_key</strong> &#8211; None</li>
-<li><strong>project</strong> &#8211; [] &#8211; [{name: version}]</li>
-<li><strong>steering_file</strong> &#8211; None</li>
-<li><strong>log_file</strong> &#8211; None</li>
-<li><strong>command_line</strong> &#8211; None</li>
+<li><a class="reference internal" href="../server/module.html#iceprod.server.module.module.start" title="iceprod.server.module.module.start"><strong>start</strong></a> – None</li>
+<li><strong>end</strong> – None</li>
+<li><strong>category</strong> – None</li>
+<li><strong>subcategory</strong> – None</li>
+<li><strong>run_number</strong> – None</li>
+<li><strong>i3db_key</strong> – None</li>
+<li><strong>simdb_key</strong> – None</li>
+<li><strong>project</strong> – [] – [{name: version}]</li>
+<li><strong>steering_file</strong> – None</li>
+<li><strong>log_file</strong> – None</li>
+<li><strong>command_line</strong> – None</li>
 </ul>
 </td>
 </tr>
@@ -780,10 +888,10 @@ new objects.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
-<li><strong>role</strong> &#8211; None</li>
-<li><strong>first_name</strong> &#8211; None</li>
-<li><strong>last_name</strong> &#8211; None</li>
-<li><a class="reference external" href="https://docs.python.org/3.6/library/email.html#module-email" title="(in Python v3.6)"><strong>email</strong></a> &#8211; None</li>
+<li><strong>role</strong> – None</li>
+<li><strong>first_name</strong> – None</li>
+<li><strong>last_name</strong> – None</li>
+<li><a class="reference external" href="https://docs.python.org/3.6/library/email.html#module-email" title="(in Python v3.6)"><strong>email</strong></a> – None</li>
 </ul>
 </td>
 </tr>
@@ -823,8 +931,8 @@ new objects.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
-<li><strong>name</strong> &#8211; None</li>
-<li><strong>personnel</strong> &#8211; []</li>
+<li><strong>name</strong> – None</li>
+<li><strong>personnel</strong> – []</li>
 </ul>
 </td>
 </tr>
@@ -864,15 +972,18 @@ new objects.</p>
 
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="parser.html" class="btn btn-neutral float-right" title="Meta-Language Parser" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="parser.html" class="btn btn-neutral float-right" title="Meta-Language Parser" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="init.html" class="btn btn-neutral" title="Core Init" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="init.html" class="btn btn-neutral" title="Core Init" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -904,15 +1015,17 @@ new objects.</p>
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
             VERSION:'master',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
@@ -921,14 +1034,13 @@ new objects.</p>
     <script type="text/javascript" src="../_static/js/theme.js"></script>
   
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

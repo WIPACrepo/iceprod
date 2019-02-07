@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -24,12 +26,17 @@
 
   
   
-    <link rel="stylesheet" href="../../_static/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+  
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  
   
 
   
-
-  
+        <link rel="index" title="Index"
+              href="../../genindex.html"/>
+        <link rel="search" title="Search" href="../../search.html"/>
     <link rel="top" title="IceProd master documentation" href="../../index.html"/>
         <link rel="up" title="IceProd Server Details" href="index.html"/>
         <link rel="next" title="Website" href="website.html"/>
@@ -62,7 +69,7 @@
             
             
               <div class="version">
-                master
+                2.5.0
               </div>
             
           
@@ -83,32 +90,69 @@
           
             
             
-                <ul>
+              
+            
+            
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../admin/index.html">Administrator&#8217;s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../guide/index.html">User’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/login.html">Login</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/submission.html">Dataset Submission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/datasets.html">Dataset Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/tasks.html">Task Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/restapi.html">REST API Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guide/manually.html">Running Manually</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../admin/index.html">Administrator’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../admin/startup.html">Server Startup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../admin/common.html">Common Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../admin/extra_details.html">Extras</a></li>
+</ul>
+</li>
 </ul>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../../core/index.html">IceProd Core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core/index.html">IceProd Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../core/i3exec.html">I3Exec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/exe.html">Execution Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/exe_helper.html">Execution Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/exe_json.html">JSONRPC Calls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/jsonRPCclient.html">JSON-RPC Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/jsonUtil.html">JSON Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/init.html">Core Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/dataclasses.html">Dataclasses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/parser.html">Meta-Language Parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/serialization.html">Serialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/gridftp.html">GridFTP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../core/util.html">Utilities</a></li>
+</ul>
+</li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">IceProd Server</a><ul class="current">
-<li class="toctree-l2 current"><a class="reference internal" href="index.html">IceProd Server Details</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Server Details</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="submit_to_queue.html">From Submission to Queue</a></li>
 <li class="toctree-l3"><a class="reference internal" href="task_relationships.html">Task Relationships</a></li>
 <li class="toctree-l3"><a class="reference internal" href="lifecycles.html">Lifecycles</a></li>
 <li class="toctree-l3"><a class="reference internal" href="global_queueing.html">Global Queueing</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Asynchronous Programming</a></li>
 <li class="toctree-l3"><a class="reference internal" href="website.html">Website</a></li>
-<li class="toctree-l3"><a class="reference internal" href="auth.html">RPC Authorization</a></li>
-<li class="toctree-l3"><a class="reference internal" href="roles.html">Roles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="auth.html">REST Authorization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="user_accounts.html">User Accounts</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../modules/db.html">Database Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules/master_updater.html">Master Updater Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules/proxy.html">Proxy Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules/queue.html">Queueing Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules/schedule.html">Schedule Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../modules/website.html">Website Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../plugins/condor.html">Condor Plugin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rest_api/index.html">REST API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/datasets.html">Datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/config.html">Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/jobs.html">Jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/tasks.html">Tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/task_stats.html">Task Stats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/logs.html">Logs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/grids.html">Grids</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/pilots.html">Pilots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rest_api/auth.html">Auth</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../auth.html">Token Authentication</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../config.html">Detailed Configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../dbmethods.html">DB Methods</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../file_io.html">File IO</a></li>
@@ -121,6 +165,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../server.html">Server</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../squid.html">Squid</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tornado.html">Tornado Web Utilities</a></li>
 </ul>
 </li>
 </ul>
@@ -144,10 +189,51 @@
 
       
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div style="float:right">
-            <a href="https://github.com/WIPACrepo/iceprod" class="fa fa-github"> Edit on GitHub</a>
-          </div>
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">IceProd Server</a> &raquo;</li>
+        
+          <li><a href="index.html">IceProd Server Details</a> &raquo;</li>
+        
+      <li>Asynchronous Programming</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/server/details/async.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
@@ -181,7 +267,7 @@ of control. By contrast, with explicitly asynchronous code, it is safe to
 assume that you have sole access to shared data structures between
 suspension points.</p>
 </div></blockquote>
-<p>Thus the focus on explicit yield points, which grants &#8220;locks&#8221; on data without
+<p>Thus the focus on explicit yield points, which grants “locks” on data without
 worrying about the complexities of thread safety.</p>
 </li>
 </ul>
@@ -190,7 +276,7 @@ of the primary goals, so making sure servers can handle thousands of requests
 per second is important. The rest of this documentation will focus on that.</p>
 <p>Whatever the method of getting asynchronous, the goal is to allow the main
 thread to continue processing additional requests while the current request is
-processed (or waiting) somewhere else. While this doesn&#8217;t work well for
+processed (or waiting) somewhere else. While this doesn’t work well for
 compute-bound applications, network I/O lends itself very well to this because
 of the high latencies between network events.  Thus, as long as the main
 thread can check for a new request every few microseconds, it can also run a
@@ -201,7 +287,7 @@ cycles waiting for a return value, but can now do useful work in the meantime.</
 </div>
 <div class="section" id="notes">
 <h3>Notes<a class="headerlink" href="#notes" title="Permalink to this headline">¶</a></h3>
-<p>For some deeper reading, see <a class="reference external" href="http://python-notes.curiousefficiency.org/en/latest/pep_ideas/async_programming.html">Nick Coghlan&#8217;s thoughts</a>.</p>
+<p>For some deeper reading, see <a class="reference external" href="http://python-notes.curiousefficiency.org/en/latest/pep_ideas/async_programming.html">Nick Coghlan’s thoughts</a>.</p>
 <p>Official PEP: <a class="reference external" href="http://python.org/dev/peps/pep-3156">3156</a>.</p>
 <p>Documentation: <a class="reference external" href="http://docs.python.org/dev/library/asyncio.html">asyncio</a>.</p>
 </div>
@@ -216,24 +302,24 @@ callback and returns immediately. Eventually the original action will be
 finished and call the callback.</p>
 <div class="section" id="tornado">
 <h4>Tornado<a class="headerlink" href="#tornado" title="Permalink to this headline">¶</a></h4>
-<p>IceProd&#8217;s main access to asynchronous I/O is through <a class="reference external" href="http://www.tornadoweb.org">Tornado</a>.
+<p>IceProd’s main access to asynchronous I/O is through <a class="reference external" href="http://www.tornadoweb.org">Tornado</a>.
 This is the basic framework for the website, and provides utility functions
 for asynchronous sockets that are used in several other places.  Tornado
 also allows us to make http downloads asynchronously.</p>
 <p>A basic Hello World example is:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
 <span class="kn">from</span> <span class="nn">tornado.ioloop</span> <span class="k">import</span> <span class="n">IOLoop</span>
 
 <span class="k">def</span> <span class="nf">hello_world</span><span class="p">(</span><span class="n">loop</span><span class="p">):</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s">&#39;Hello World&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Hello World&#39;</span><span class="p">)</span>
     <span class="n">loop</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
 
 <span class="n">loop</span> <span class="o">=</span> <span class="n">IOLoop</span><span class="o">.</span><span class="n">instance</span><span class="p">()</span>
 
-<span class="c"># Schedule a call to hello_world()</span>
+<span class="c1"># Schedule a call to hello_world()</span>
 <span class="n">loop</span><span class="o">.</span><span class="n">add_callback</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="n">hello_world</span><span class="p">,</span><span class="n">loop</span><span class="p">))</span>
 
-<span class="c"># Blocking call interrupted by loop.stop()</span>
+<span class="c1"># Blocking call interrupted by loop.stop()</span>
 <span class="n">loop</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
 <span class="n">loop</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </pre></div>
@@ -243,15 +329,15 @@ also allows us to make http downloads asynchronously.</p>
 <h4>GridFTP<a class="headerlink" href="#gridftp" title="Permalink to this headline">¶</a></h4>
 <p>Using the C API for the <a class="reference external" href="http://www.globus.org/toolkit">Globus Toolkit</a>
 allows us to use GridFTP asynchronously as well.  This has been integrated
-into Tornado&#8217;s callback mechanism in Python with mostly complete pybindings
+into Tornado’s callback mechanism in Python with mostly complete pybindings
 for ease of use.</p>
 </div>
 </div>
 <div class="section" id="callback-details">
 <h3>Callback Details<a class="headerlink" href="#callback-details" title="Permalink to this headline">¶</a></h3>
 <p>Functions that accept callbacks generally take the form of:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span><span class="n">arg2</span><span class="p">,</span><span class="n">callback</span><span class="p">):</span>
-    <span class="c"># do some work</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span><span class="n">arg2</span><span class="p">,</span><span class="n">callback</span><span class="p">):</span>
+    <span class="c1"># do some work</span>
     <span class="n">callback</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -262,12 +348,12 @@ callback function.  There are two approaches:</p>
 <ol class="arabic">
 <li><p class="first">Quick and Dirty:</p>
 <blockquote>
-<div><div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span><span class="n">callback</span><span class="p">,</span><span class="n">callback_args</span><span class="p">):</span>
-    <span class="c"># do work</span>
+<div><div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span><span class="n">callback</span><span class="p">,</span><span class="n">callback_args</span><span class="p">):</span>
+    <span class="c1"># do work</span>
     <span class="n">callback</span><span class="p">(</span><span class="n">result</span><span class="p">,</span><span class="n">callback_args</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">cb</span><span class="p">(</span><span class="n">result</span><span class="p">,</span><span class="n">args</span><span class="p">):</span>
-    <span class="c"># handle result</span>
-<span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">cb</span><span class="p">,{</span><span class="s">&#39;handle&#39;</span><span class="p">:</span><span class="bp">None</span><span class="p">})</span>
+    <span class="c1"># handle result</span>
+<span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">cb</span><span class="p">,{</span><span class="s1">&#39;handle&#39;</span><span class="p">:</span><span class="bp">None</span><span class="p">})</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -282,12 +368,12 @@ callback function.  There are two approaches:</p>
 <ol class="arabic" start="2">
 <li><p class="first">Functional Programming:</p>
 <blockquote>
-<div><div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span><span class="n">callback</span><span class="p">):</span>
-    <span class="c"># do work</span>
+<div><div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span><span class="n">callback</span><span class="p">):</span>
+    <span class="c1"># do work</span>
     <span class="n">callback</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">cb</span><span class="p">(</span><span class="n">result</span><span class="p">,</span><span class="n">args</span><span class="o">=</span><span class="p">{}):</span>
-    <span class="c"># handle result</span>
-<span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">partial</span><span class="p">(</span><span class="n">cb</span><span class="p">,</span><span class="n">args</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;handle&#39;</span><span class="p">:</span><span class="bp">None</span><span class="p">}))</span>
+    <span class="c1"># handle result</span>
+<span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">partial</span><span class="p">(</span><span class="n">cb</span><span class="p">,</span><span class="n">args</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;handle&#39;</span><span class="p">:</span><span class="bp">None</span><span class="p">}))</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -307,8 +393,8 @@ style, though there is some of the first style in the GridFTP python bindings.</
 <h2>Futures<a class="headerlink" href="#futures" title="Permalink to this headline">¶</a></h2>
 <p>Starting in python 3.2, and available as a backport with the <code class="docutils literal"><span class="pre">futures</span></code>
 package, asynchronous actions have more official support:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="c"># Run slow operations in parallel using threads.</span>
-<span class="c"># Instead of taking 5 seconds, this should only take 1 second.</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Run slow operations in parallel using threads.</span>
+<span class="c1"># Instead of taking 5 seconds, this should only take 1 second.</span>
 
 <span class="kn">import</span> <span class="nn">time</span>
 <span class="kn">import</span> <span class="nn">concurrent.futures</span>
@@ -316,13 +402,13 @@ package, asynchronous actions have more official support:</p>
 <span class="k">def</span> <span class="nf">slow_operation</span><span class="p">():</span>
     <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
-<span class="c"># make a futures executor that launches 5 worker threads</span>
+<span class="c1"># make a futures executor that launches 5 worker threads</span>
 <span class="k">with</span> <span class="n">concurrent</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
-    <span class="c"># queue the operations</span>
+    <span class="c1"># queue the operations</span>
     <span class="n">queue_operations</span> <span class="o">=</span> <span class="p">[</span><span class="n">executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">slow_operation</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">)]</span>
     <span class="k">for</span> <span class="n">future</span> <span class="ow">in</span> <span class="n">queue_operations</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="c"># wait for this one to finish</span>
+            <span class="c1"># wait for this one to finish</span>
             <span class="n">future</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="k">pass</span>
@@ -333,8 +419,8 @@ package, asynchronous actions have more official support:</p>
 <p>In the Tornado request handler, where the get or post method is usually
 defined, <code class="docutils literal"><span class="pre">tornado.gen.coroutine</span></code> and <code class="docutils literal"><span class="pre">tornado.concurrent.run_on_executor</span></code>
 can be used to provide a yield-like syntax for callback functions:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="c"># Using Tornado, run slow operations in parallel using threads.</span>
-<span class="c"># Instead of taking 5 seconds, this should only take 1 second.</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Using Tornado, run slow operations in parallel using threads.</span>
+<span class="c1"># Instead of taking 5 seconds, this should only take 1 second.</span>
 <span class="kn">import</span> <span class="nn">time</span>
 <span class="kn">import</span> <span class="nn">concurrent.futures</span>
 <span class="kn">import</span> <span class="nn">tornado.web</span>
@@ -346,37 +432,37 @@ can be used to provide a yield-like syntax for callback functions:</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">executor</span> <span class="o">=</span> <span class="n">concurrent</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span> <span class="o">=</span> <span class="n">tornado</span><span class="o">.</span><span class="n">ioloop</span><span class="o">.</span><span class="n">IOLoop</span><span class="o">.</span><span class="n">instance</span><span class="p">()</span>
 
-    <span class="c"># wrap this function such that it returns a Future</span>
+    <span class="c1"># wrap this function such that it returns a Future</span>
     <span class="nd">@tornado</span><span class="o">.</span><span class="n">concurrent</span><span class="o">.</span><span class="n">run_on_executor</span>
     <span class="k">def</span> <span class="nf">slow_operation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-        <span class="k">return</span> <span class="k">True</span>
+        <span class="k">return</span> <span class="kc">True</span>
 
 <span class="k">class</span> <span class="nc">MyHandler</span><span class="p">(</span><span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">RequestHandler</span><span class="p">):</span>
-    <span class="c"># get the global slop_op instance</span>
+    <span class="c1"># get the global slop_op instance</span>
     <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ops</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ops</span> <span class="o">=</span> <span class="n">ops</span>
 
-    <span class="c"># handle Futures inline with yield</span>
+    <span class="c1"># handle Futures inline with yield</span>
     <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
     <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">slow_operation</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ret</span><span class="p">))</span>
 
 
-<span class="c"># make a futures executor that launches 5 worker threads</span>
+<span class="c1"># make a futures executor that launches 5 worker threads</span>
 <span class="k">with</span> <span class="n">concurrent</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
 
-    <span class="c"># launch tornado</span>
+    <span class="c1"># launch tornado</span>
     <span class="n">app</span> <span class="o">=</span> <span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">Application</span><span class="p">([</span>
-        <span class="p">(</span><span class="s">r&quot;/.*&quot;</span><span class="p">,</span> <span class="n">MyHandler</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;ops&#39;</span><span class="p">:</span><span class="n">slow_op</span><span class="p">()}),</span>
+        <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;/.*&quot;</span><span class="p">,</span> <span class="n">MyHandler</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;ops&#39;</span><span class="p">:</span><span class="n">slow_op</span><span class="p">()}),</span>
     <span class="p">])</span>
     <span class="n">app</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="mi">8888</span><span class="p">)</span>
     <span class="n">tornado</span><span class="o">.</span><span class="n">ioloop</span><span class="o">.</span><span class="n">IOLoop</span><span class="o">.</span><span class="n">instance</span><span class="p">()</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
 </pre></div>
 </div>
 <p>Test this with:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span class="nb">time</span> <span class="o">(</span>curl http://localhost:8888 <span class="p">&amp;</span> curl http://localhost:8888 <span class="p">&amp;</span> curl http://localhost:8888 <span class="p">&amp;</span> curl http://localhost:8888 <span class="p">&amp;</span> curl http://localhost:8888 <span class="p">&amp;</span> <span class="nb">wait</span><span class="o">)</span>
+<div class="highlight-bash"><div class="highlight"><pre><span></span><span class="nb">time</span> <span class="o">(</span>curl http://localhost:8888 <span class="p">&amp;</span> curl http://localhost:8888 <span class="p">&amp;</span> curl http://localhost:8888 <span class="p">&amp;</span> curl http://localhost:8888 <span class="p">&amp;</span> curl http://localhost:8888 <span class="p">&amp;</span> <span class="nb">wait</span><span class="o">)</span>
 </pre></div>
 </div>
 <p>Or, if you already have an asynchronous function with a callback, you can use
@@ -390,18 +476,18 @@ the result to be returned in the callback whenever it happens.</p>
 <p>Starting in python 3.4 an asynchronous I/O library has been included in
 python. This takes the place of <code class="docutils literal"><span class="pre">tornado</span></code> in some of the previous examples.
 A basic Hello World example is:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">asyncio</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">asyncio</span>
 
 <span class="k">def</span> <span class="nf">hello_world</span><span class="p">(</span><span class="n">loop</span><span class="p">):</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s">&#39;Hello World&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Hello World&#39;</span><span class="p">)</span>
     <span class="n">loop</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
 
 <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span>
 
-<span class="c"># Schedule a call to hello_world()</span>
+<span class="c1"># Schedule a call to hello_world()</span>
 <span class="n">loop</span><span class="o">.</span><span class="n">call_soon</span><span class="p">(</span><span class="n">hello_world</span><span class="p">,</span> <span class="n">loop</span><span class="p">)</span>
 
-<span class="c"># Blocking call interrupted by loop.stop()</span>
+<span class="c1"># Blocking call interrupted by loop.stop()</span>
 <span class="n">loop</span><span class="o">.</span><span class="n">run_forever</span><span class="p">()</span>
 <span class="n">loop</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </pre></div>
@@ -411,15 +497,18 @@ A basic Hello World example is:</p>
 
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="website.html" class="btn btn-neutral float-right" title="Website" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="website.html" class="btn btn-neutral float-right" title="Website" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="global_queueing.html" class="btn btn-neutral" title="Global Queueing" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="global_queueing.html" class="btn btn-neutral" title="Global Queueing" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -451,15 +540,17 @@ A basic Hello World example is:</p>
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../',
             VERSION:'master',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
@@ -468,14 +559,13 @@ A basic Hello World example is:</p>
     <script type="text/javascript" src="../../_static/js/theme.js"></script>
   
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

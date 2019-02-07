@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -24,12 +26,17 @@
 
   
   
-    <link rel="stylesheet" href="../_static/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+  
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  
   
 
   
-
-  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
     <link rel="top" title="IceProd master documentation" href="../index.html"/>
         <link rel="up" title="IceProd Core" href="index.html"/>
         <link rel="next" title="JSON Utilities" href="jsonUtil.html"/>
@@ -62,7 +69,7 @@
             
             
               <div class="version">
-                master
+                2.5.0
               </div>
             
           
@@ -83,10 +90,26 @@
           
             
             
-                <ul>
+              
+            
+            
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../admin/index.html">Administrator&#8217;s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../guide/login.html">Login</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/submission.html">Dataset Submission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/datasets.html">Dataset Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/tasks.html">Task Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/restapi.html">REST API Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/manually.html">Running Manually</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../admin/index.html">Administrator’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../admin/startup.html">Server Startup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../admin/common.html">Common Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../admin/extra_details.html">Extras</a></li>
+</ul>
+</li>
 </ul>
 <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">IceProd Core</a><ul class="current">
@@ -105,7 +128,46 @@
 <li class="toctree-l2"><a class="reference internal" href="util.html">Utilities</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../server/index.html">IceProd Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../server/index.html">IceProd Server</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../server/details/index.html">Server Details</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/submit_to_queue.html">From Submission to Queue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/task_relationships.html">Task Relationships</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/lifecycles.html">Lifecycles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/global_queueing.html">Global Queueing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/async.html">Asynchronous Programming</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/website.html">Website</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/auth.html">REST Authorization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/user_accounts.html">User Accounts</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../server/rest_api/index.html">REST API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/datasets.html">Datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/config.html">Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/jobs.html">Jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/tasks.html">Tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/task_stats.html">Task Stats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/logs.html">Logs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/grids.html">Grids</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/pilots.html">Pilots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/auth.html">Auth</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../server/auth.html">Token Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/config.html">Detailed Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/dbmethods.html">DB Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/file_io.html">File IO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/globus.html">Globus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/grid.html">Grid Queueing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/init.html">Server Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/module.html">Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/nginx.html">Nginx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/schedule.html">Schedule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/server.html">Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/squid.html">Squid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/tornado.html">Tornado Web Utilities</a></li>
+</ul>
+</li>
 </ul>
 
             
@@ -127,96 +189,70 @@
 
       
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div style="float:right">
-            <a href="https://github.com/WIPACrepo/iceprod" class="fa fa-github"> Edit on GitHub</a>
-          </div>
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">IceProd Core</a> &raquo;</li>
+        
+      <li>JSON-RPC Client</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/core/jsonRPCclient.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module-iceprod.core.jsonRPCclient">
-<span id="json-rpc-client"></span><h1>JSON-RPC Client<a class="headerlink" href="#module-iceprod.core.jsonRPCclient" title="Permalink to this headline">¶</a></h1>
-<p>A simple <a class="reference external" href="http://www.jsonrpc.org/specification">JSON-RPC</a> client using <a class="reference external" href="http://docs.python-requests.org">requests</a> for the http connection.</p>
-<p>The RPC protocol is built on http(s), with the body containing
-a json-encoded dictionary:</p>
-<p>Request Object:</p>
-<ul class="simple">
-<li>method (string) - Name of the method to be invoked.</li>
-<li>params (dict) - Keyword arguments to the method.</li>
-</ul>
-<p>Response Object:</p>
-<ul class="simple">
-<li>result (object) - The returned result from the method. This is REQUIRED on
-success, and MUST NOT exist if there was an error.</li>
-<li>error (object) - A description of the error, likely an Exception object.
-This is REQUIRED on error and MUST NOT exist on success.</li>
-</ul>
-<dl class="class">
-<dt id="iceprod.core.jsonRPCclient.JSONRPC">
-<em class="property">class </em><code class="descclassname">iceprod.core.jsonRPCclient.</code><code class="descname">JSONRPC</code><a class="reference internal" href="../_modules/iceprod/core/jsonRPCclient.html#JSONRPC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonRPCclient.JSONRPC" title="Permalink to this definition">¶</a></dt>
-<dd><p><a class="reference external" href="http://www.jsonrpc.org/specification">JSON-RPC</a> client connection.</p>
-<p>Call RPC functions as regular function calls.</p>
-<p>Example:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">JSONRPC</span><span class="o">.</span><span class="n">set_task_status</span><span class="p">(</span><span class="n">task_id</span><span class="p">,</span><span class="s">&#39;waiting&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-<dl class="classmethod">
-<dt id="iceprod.core.jsonRPCclient.JSONRPC.MetaJSONRPC.start">
-<em class="property">classmethod </em><code class="descclassname">MetaJSONRPC.</code><code class="descname">start</code><span class="sig-paren">(</span><em>timeout=None</em>, <em>address=None</em>, <em>passkey=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iceprod.core.jsonRPCclient.JSONRPC.MetaJSONRPC.start" title="Permalink to this definition">¶</a></dt>
-<dd><p>Start the JSONRPC Client.</p>
-</dd></dl>
-
-<dl class="classmethod">
-<dt id="iceprod.core.jsonRPCclient.JSONRPC.MetaJSONRPC.stop">
-<em class="property">classmethod </em><code class="descclassname">MetaJSONRPC.</code><code class="descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iceprod.core.jsonRPCclient.JSONRPC.MetaJSONRPC.stop" title="Permalink to this definition">¶</a></dt>
-<dd><p>Stop the JSONRPC Client.</p>
-</dd></dl>
-
-<dl class="classmethod">
-<dt id="iceprod.core.jsonRPCclient.JSONRPC.MetaJSONRPC.restart">
-<em class="property">classmethod </em><code class="descclassname">MetaJSONRPC.</code><code class="descname">restart</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iceprod.core.jsonRPCclient.JSONRPC.MetaJSONRPC.restart" title="Permalink to this definition">¶</a></dt>
-<dd><p>Restart the JSONRPC Client.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="iceprod.core.jsonRPCclient.Client">
-<em class="property">class </em><code class="descclassname">iceprod.core.jsonRPCclient.</code><code class="descname">Client</code><span class="sig-paren">(</span><em>timeout=60.0</em>, <em>address=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonRPCclient.html#Client"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonRPCclient.Client" title="Permalink to this definition">¶</a></dt>
-<dd><p>Raw JSONRPC client object</p>
-<dl class="method">
-<dt id="iceprod.core.jsonRPCclient.Client.open">
-<code class="descname">open</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonRPCclient.html#Client.open"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonRPCclient.Client.open" title="Permalink to this definition">¶</a></dt>
-<dd><p>Open the http session</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.core.jsonRPCclient.Client.close">
-<code class="descname">close</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonRPCclient.html#Client.close"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonRPCclient.Client.close" title="Permalink to this definition">¶</a></dt>
-<dd><p>Close the http session</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.core.jsonRPCclient.Client.request">
-<code class="descname">request</code><span class="sig-paren">(</span><em>methodname</em>, <em>kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonRPCclient.html#Client.request"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonRPCclient.Client.request" title="Permalink to this definition">¶</a></dt>
-<dd><p>Send request to RPC Server</p>
-</dd></dl>
-
-</dd></dl>
-
+  <div class="section" id="json-rpc-client">
+<h1>JSON-RPC Client<a class="headerlink" href="#json-rpc-client" title="Permalink to this headline">¶</a></h1>
 </div>
 
 
+           </div>
+           <div class="articleComments">
+            
            </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="jsonUtil.html" class="btn btn-neutral float-right" title="JSON Utilities" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="jsonUtil.html" class="btn btn-neutral float-right" title="JSON Utilities" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="exe_json.html" class="btn btn-neutral" title="JSONRPC Calls" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="exe_json.html" class="btn btn-neutral" title="JSONRPC Calls" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -248,15 +284,17 @@ This is REQUIRED on error and MUST NOT exist on success.</li>
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
             VERSION:'master',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
@@ -265,14 +303,13 @@ This is REQUIRED on error and MUST NOT exist on success.</li>
     <script type="text/javascript" src="../_static/js/theme.js"></script>
   
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

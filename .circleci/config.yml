@@ -1,0 +1,187 @@
+version: 2
+jobs:
+    checkout_code:
+        docker:
+            - image: circleci/python:3.6.8
+        working_directory: ~/iceprod
+        steps:
+            - checkout
+            - save_cache:
+                key: code-{{ .Environment.CIRCLE_SHA1 }}
+                paths:
+                    - ~/iceprod
+    build:
+        docker:
+            - image: circleci/python:3.6.8  
+        working_directory: ~/iceprod
+        steps:
+            - restore_cache:
+                keys:
+                    - code-{{ .Environment.CIRCLE_SHA1 }}
+            - restore_cache:
+                keys:
+                    - venv-{{ .Branch }}-{{ checksum "requirements.txt" }}
+            - run: |
+                virtualenv env &&
+                . env/bin/activate &&
+                pip install -r requirements.txt
+            - save_cache:
+                key: venv-{{ .Branch }}-{{ checksum "requirements.txt" }}
+                paths:
+                    - "env"
+
+    test_server:
+        docker:
+            - image: circleci/python:3.6.8
+              environment:
+                TEST_DATABASE_URL: localhost:27017
+            - image: circleci/mongo:3.7.9-ram
+        working_directory: ~/iceprod
+        steps:
+            - restore_cache:
+                keys:
+                    - code-{{ .Environment.CIRCLE_SHA1 }}
+            - restore_cache:
+                keys:
+                    - venv-{{ .Branch }}-{{ checksum "requirements.txt" }}
+            - run: |
+                . env/bin/activate &&
+                ./coverage.sh --server &&
+                mv .coverage .coverage-server
+            - save_cache:
+                key: coverage-server-{{ .Environment.CIRCLE_SHA1 }}
+                paths:
+                    - ~/iceprod/.coverage-server
+            - store_artifacts:
+                path: tests.log
+
+    test_core:
+        docker:
+            - image: circleci/python:3.6.8
+        working_directory: ~/iceprod
+        steps:
+            - restore_cache:
+                keys:
+                    - code-{{ .Environment.CIRCLE_SHA1 }}
+            - restore_cache:
+                keys:
+                    - venv-{{ .Branch }}-{{ checksum "requirements.txt" }}
+            - run: |
+                . env/bin/activate &&
+                ./coverage.sh --core &&
+                mv .coverage .coverage-core
+            - save_cache:
+                key: coverage-core-{{ .Environment.CIRCLE_SHA1 }}
+                paths:
+                    - ~/iceprod/.coverage-core
+
+    combine_coverage:
+        docker:
+            - image: circleci/python:3.6.8
+        working_directory: ~/iceprod
+        steps:
+            - restore_cache:
+                keys:
+                    - code-{{ .Environment.CIRCLE_SHA1 }}
+            - restore_cache:
+                keys:
+                    - venv-{{ .Branch }}-{{ checksum "requirements.txt" }}
+            - restore_cache:
+                keys:
+                    - coverage-server-{{ .Environment.CIRCLE_SHA1 }}
+            - restore_cache:
+                keys:
+                    - coverage-core-{{ .Environment.CIRCLE_SHA1 }}
+            - run: |
+                coverage combine .coverage-server .coverage-core &&
+                coverage html -i -d /tmp/htmlcov
+            - store_artifacts:
+                path: /tmp/htmlcov
+
+    docs_build:
+        docker:
+            - image: circleci/python:3.6.8
+        working_directory: ~/iceprod
+        environment:
+            - SOURCE_BRANCH: master
+            - TARGET_BRANCH: gh-pages
+        steps:
+            - checkout
+            - add_ssh_keys:
+                fingerprints:
+                    - "ae:b2:cc:f6:26:21:35:d6:9d:2e:03:cd:ed:a3:5c:3d"
+            - restore_cache:
+                keys:
+                    - code-{{ .Environment.CIRCLE_SHA1 }}
+            - restore_cache:
+                keys:
+                    - venv-{{ .Branch }}-{{ checksum "requirements.txt" }}
+            - run: |
+                . env/bin/activate &&
+                make -C docs
+            - deploy:
+                name: Deploy
+                command: |
+                    if [ $CIRCLE_BRANCH == $SOURCE_BRANCH ]; then
+                      git config --global user.email $GH_EMAIL
+                      git config --global user.name $GH_NAME
+
+                      git clone $CIRCLE_REPOSITORY_URL out
+
+                      cd out
+                      git checkout $TARGET_BRANCH || git checkout --orphan $TARGET_BRANCH
+                      git rm -rf *
+                      cd ..
+
+                      cp -a docs/build/html/. out/.
+
+                      mkdir -p out/.circleci && cp -a .circleci/. out/.circleci/.
+                      cd out
+
+                      git add -A
+                      git commit -m "Automated deployment to GitHub Pages: ${CIRCLE_SHA1}" --allow-empty
+
+                      git push origin $TARGET_BRANCH
+                    fi
+
+workflows:
+    version: 2
+    build_and_test:
+        jobs:
+            - checkout_code
+            - build:
+                requires:
+                    - checkout_code
+                filters:
+                    branches:
+                      ignore:
+                        - gh-pages
+            - test_server:
+                requires:
+                    - build
+                filters:
+                    branches:
+                      ignore:
+                        - gh-pages
+            - test_core:
+                requires:
+                    - build
+                filters:
+                    branches:
+                      ignore:
+                        - gh-pages
+            - combine_coverage:
+                requires:
+                    - test_server
+                    - test_core
+                filters:
+                    branches:
+                      ignore:
+                        - gh-pages
+            - docs_build:
+                requires:
+                    - build
+                filters:
+                    branches:
+                      only:
+                        - master

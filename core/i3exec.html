@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -24,12 +26,17 @@
 
   
   
-    <link rel="stylesheet" href="../_static/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+  
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  
   
 
   
-
-  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
     <link rel="top" title="IceProd master documentation" href="../index.html"/>
         <link rel="up" title="IceProd Core" href="index.html"/>
         <link rel="next" title="Execution Functions" href="exe.html"/>
@@ -62,7 +69,7 @@
             
             
               <div class="version">
-                master
+                2.5.0
               </div>
             
           
@@ -83,10 +90,26 @@
           
             
             
-                <ul>
+              
+            
+            
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../admin/index.html">Administrator&#8217;s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../guide/login.html">Login</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/submission.html">Dataset Submission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/datasets.html">Dataset Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/tasks.html">Task Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/restapi.html">REST API Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/manually.html">Running Manually</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../admin/index.html">Administrator’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../admin/startup.html">Server Startup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../admin/common.html">Common Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../admin/extra_details.html">Extras</a></li>
+</ul>
+</li>
 </ul>
 <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">IceProd Core</a><ul class="current">
@@ -105,7 +128,46 @@
 <li class="toctree-l2"><a class="reference internal" href="util.html">Utilities</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../server/index.html">IceProd Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../server/index.html">IceProd Server</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../server/details/index.html">Server Details</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/submit_to_queue.html">From Submission to Queue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/task_relationships.html">Task Relationships</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/lifecycles.html">Lifecycles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/global_queueing.html">Global Queueing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/async.html">Asynchronous Programming</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/website.html">Website</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/auth.html">REST Authorization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/details/user_accounts.html">User Accounts</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../server/rest_api/index.html">REST API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/datasets.html">Datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/config.html">Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/jobs.html">Jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/tasks.html">Tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/task_stats.html">Task Stats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/logs.html">Logs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/grids.html">Grids</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/pilots.html">Pilots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../server/rest_api/auth.html">Auth</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../server/auth.html">Token Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/config.html">Detailed Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/dbmethods.html">DB Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/file_io.html">File IO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/globus.html">Globus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/grid.html">Grid Queueing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/init.html">Server Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/module.html">Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/nginx.html">Nginx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/schedule.html">Schedule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/server.html">Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/squid.html">Squid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../server/tornado.html">Tornado Web Utilities</a></li>
+</ul>
+</li>
 </ul>
 
             
@@ -127,10 +189,49 @@
 
       
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div style="float:right">
-            <a href="https://github.com/WIPACrepo/iceprod" class="fa fa-github"> Edit on GitHub</a>
-          </div>
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">IceProd Core</a> &raquo;</li>
+        
+      <li>I3Exec</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/core/i3exec.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
@@ -140,7 +241,7 @@
 <p>Run it with <cite>python -m iceprod.core.i3exec</cite>.</p>
 <dl class="docutils">
 <dt>optional arguments:</dt>
-<dd><table class="first last docutils option-list" frame="void" rules="none">
+<dd><table class="first docutils option-list" frame="void" rules="none">
 <col class="option" />
 <col class="description" />
 <tbody valign="top">
@@ -150,29 +251,39 @@
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">-f <var>CFGFILE</var></span>, <span class="option">--cfgfile <var>CFGFILE</var></span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>Specify config file</td></tr>
+<tr><td>&#160;</td><td>Specify config file</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">-u <var>URL</var></span>, <span class="option">--url <var>URL</var></span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>URL of the iceprod server</td></tr>
+<tr><td>&#160;</td><td>URL of the iceprod server</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">-p <var>PASSKEY</var></span>, <span class="option">--passkey <var>PASSKEY</var></span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>passkey for communcation with iceprod server</td></tr>
+<tr><td>&#160;</td><td>passkey for communcation with iceprod server</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--pilot_id <var>PILOTID</var></span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>ID of the pilot (if this is a pilot)</td></tr>
+<tr><td>&#160;</td><td>ID of the pilot (if this is a pilot)</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">-d</span>, <span class="option">--debug</span></kbd></td>
 <td>Enable debug actions and logging</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--offline</span></kbd></td>
-<td>Enable offline mode (don&#8217;t talk with server)</td></tr>
+<td>Enable offline mode (don’t talk with server)</td></tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>–offline_transfer True/False</dt>
+<dd>Enable offline file transfer</dd>
+</dl>
+<table class="last docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--logfile <var>LOGFILE</var></span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>Specify the logfile to use</td></tr>
+<tr><td>&#160;</td><td>Specify the logfile to use</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--job <var>JOB</var></span></kbd></td>
 <td>Index of the job to run</td></tr>
@@ -184,12 +295,6 @@
 </dd>
 </dl>
 <dl class="function">
-<dt id="iceprod.core.i3exec.handler">
-<code class="descclassname">iceprod.core.i3exec.</code><code class="descname">handler</code><span class="sig-paren">(</span><em>signum</em>, <em>frame</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/i3exec.html#handler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.i3exec.handler" title="Permalink to this definition">¶</a></dt>
-<dd><p>Signal handler. Exit on SIGQUIT or SIGINT.</p>
-</dd></dl>
-
-<dl class="function">
 <dt id="iceprod.core.i3exec.load_config">
 <code class="descclassname">iceprod.core.i3exec.</code><code class="descname">load_config</code><span class="sig-paren">(</span><em>cfgfile</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/i3exec.html#load_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.i3exec.load_config" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load a config from file, serialized string, dictionary, etc</p>
@@ -197,13 +302,13 @@
 
 <dl class="function">
 <dt id="iceprod.core.i3exec.main">
-<code class="descclassname">iceprod.core.i3exec.</code><code class="descname">main</code><span class="sig-paren">(</span><em>cfgfile=None</em>, <em>logfile=None</em>, <em>url=None</em>, <em>debug=False</em>, <em>passkey=''</em>, <em>pilot_id=None</em>, <em>offline=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/i3exec.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.i3exec.main" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">iceprod.core.i3exec.</code><code class="descname">main</code><span class="sig-paren">(</span><em>cfgfile=None</em>, <em>logfile=None</em>, <em>url=None</em>, <em>debug=False</em>, <em>passkey=''</em>, <em>pilot_id=None</em>, <em>offline=False</em>, <em>offline_transfer=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/i3exec.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.i3exec.main" title="Permalink to this definition">¶</a></dt>
 <dd><p>Main task runner for iceprod</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="iceprod.core.i3exec.runner">
-<code class="descclassname">iceprod.core.i3exec.</code><code class="descname">runner</code><span class="sig-paren">(</span><em>config</em>, <em>url</em>, <em>debug=False</em>, <em>offline=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/i3exec.html#runner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.i3exec.runner" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">iceprod.core.i3exec.</code><code class="descname">runner</code><span class="sig-paren">(</span><em>config</em>, <em>rpc=None</em>, <em>debug=False</em>, <em>offline=False</em>, <em>offline_transfer=False</em>, <em>resources=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/i3exec.html#runner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.i3exec.runner" title="Permalink to this definition">¶</a></dt>
 <dd><p>Run a config.</p>
 <ol class="arabic">
 <li><p class="first">Set some default options if not set in configuration.</p>
@@ -232,10 +337,12 @@ they were written.</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>config</strong> (<cite>iceprod.core.dataclasses.Job</cite>) &#8211; Dataset configuration</li>
-<li><strong>url</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; URL to server</li>
-<li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; (optional) turn on debug logging</li>
-<li><strong>offline</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; (optional) enable offline mode</li>
+<li><strong>config</strong> (<cite>iceprod.core.dataclasses.Job</cite>) – Dataset configuration</li>
+<li><strong>rpc</strong> (<a class="reference internal" href="exe_json.html#iceprod.core.exe_json.ServerComms" title="iceprod.core.exe_json.ServerComms"><code class="xref py py-class docutils literal"><span class="pre">iceprod.core.exe_json.ServerComms</span></code></a>) – RPC object</li>
+<li><strong>debug</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) – (optional) turn on debug logging</li>
+<li><strong>offline</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) – (optional) enable offline mode</li>
+<li><strong>offline_transfer</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) – (optional) enable/disable offline data transfers</li>
+<li><strong>resources</strong> (<code class="xref py py-class docutils literal"><span class="pre">iceprod.core.resources.Resources</span></code>) – (optional) Resources object</li>
 </ul>
 </td>
 </tr>
@@ -247,15 +354,18 @@ they were written.</li>
 
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="exe.html" class="btn btn-neutral float-right" title="Execution Functions" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="exe.html" class="btn btn-neutral float-right" title="Execution Functions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="index.html" class="btn btn-neutral" title="IceProd Core" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="index.html" class="btn btn-neutral" title="IceProd Core" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -287,15 +397,17 @@ they were written.</li>
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
             VERSION:'master',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
@@ -304,14 +416,13 @@ they were written.</li>
     <script type="text/javascript" src="../_static/js/theme.js"></script>
   
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

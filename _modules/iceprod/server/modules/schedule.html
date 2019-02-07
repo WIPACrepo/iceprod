@@ -13,6 +13,8 @@
 
   
   
+  
+  
 
   
 
@@ -24,12 +26,17 @@
 
   
   
-    <link rel="stylesheet" href="../../../../_static/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+  
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+  
   
 
   
-
-  
+        <link rel="index" title="Index"
+              href="../../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../../search.html"/>
     <link rel="top" title="IceProd master documentation" href="../../../../index.html"/>
         <link rel="up" title="iceprod.server" href="../../server.html"/> 
 
@@ -60,7 +67,7 @@
             
             
               <div class="version">
-                master
+                2.5.0
               </div>
             
           
@@ -81,14 +88,84 @@
           
             
             
-                <ul>
+              
+            
+            
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../../overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../admin/index.html">Administrator&#8217;s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../guide/index.html">User’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guide/login.html">Login</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guide/submission.html">Dataset Submission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guide/datasets.html">Dataset Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guide/tasks.html">Task Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guide/restapi.html">REST API Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../guide/manually.html">Running Manually</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../admin/index.html">Administrator’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../admin/startup.html">Server Startup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../admin/common.html">Common Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../admin/extra_details.html">Extras</a></li>
+</ul>
+</li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../../core/index.html">IceProd Core</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../server/index.html">IceProd Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../core/index.html">IceProd Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/i3exec.html">I3Exec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/exe.html">Execution Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/exe_helper.html">Execution Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/exe_json.html">JSONRPC Calls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/jsonRPCclient.html">JSON-RPC Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/jsonUtil.html">JSON Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/init.html">Core Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/dataclasses.html">Dataclasses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/parser.html">Meta-Language Parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/serialization.html">Serialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/gridftp.html">GridFTP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../core/util.html">Utilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../server/index.html">IceProd Server</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/details/index.html">Server Details</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/details/submit_to_queue.html">From Submission to Queue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/details/task_relationships.html">Task Relationships</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/details/lifecycles.html">Lifecycles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/details/global_queueing.html">Global Queueing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/details/async.html">Asynchronous Programming</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/details/website.html">Website</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/details/auth.html">REST Authorization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/details/user_accounts.html">User Accounts</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/rest_api/index.html">REST API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/datasets.html">Datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/config.html">Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/jobs.html">Jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/tasks.html">Tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/task_stats.html">Task Stats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/logs.html">Logs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/grids.html">Grids</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/pilots.html">Pilots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../server/rest_api/auth.html">Auth</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/auth.html">Token Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/config.html">Detailed Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/dbmethods.html">DB Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/file_io.html">File IO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/globus.html">Globus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/grid.html">Grid Queueing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/init.html">Server Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/module.html">Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/nginx.html">Nginx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/schedule.html">Schedule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/server.html">Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/squid.html">Squid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../server/tornado.html">Tornado Web Utilities</a></li>
+</ul>
+</li>
 </ul>
 
             
@@ -110,128 +187,91 @@
 
       
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div style="float:right">
-            <a href="https://github.com/WIPACrepo/iceprod" class="fa fa-github"> Edit on GitHub</a>
-          </div>
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../server.html">iceprod.server</a> &raquo;</li>
+        
+      <li>iceprod.server.modules.schedule</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
   <h1>Source code for iceprod.server.modules.schedule</h1><div class="highlight"><pre>
-<span class="sd">&quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">The schedule module is a basic cron for IceProd, executing tasks</span>
 <span class="sd">at various intervals or fixed times.</span>
 <span class="sd">&quot;&quot;&quot;</span>
-
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span>
-
-<span class="kn">import</span> <span class="nn">time</span>
-<span class="kn">from</span> <span class="nn">threading</span> <span class="k">import</span> <span class="n">Thread</span><span class="p">,</span><span class="n">Event</span><span class="p">,</span><span class="n">Condition</span>
 <span class="kn">import</span> <span class="nn">logging</span>
-<span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
-<span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">contextmanager</span>
-<span class="kn">from</span> <span class="nn">itertools</span> <span class="k">import</span> <span class="n">izip</span>
-
-<span class="kn">import</span> <span class="nn">tornado.gen</span>
 
 <span class="kn">import</span> <span class="nn">iceprod.server</span>
 <span class="kn">from</span> <span class="nn">iceprod.server</span> <span class="k">import</span> <span class="n">module</span>
-<span class="kn">from</span> <span class="nn">iceprod.server.schedule</span> <span class="k">import</span> <span class="n">Scheduler</span>
 <span class="kn">from</span> <span class="nn">iceprod.server.globus</span> <span class="k">import</span> <span class="n">SiteGlobusProxy</span>
 
-<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;modules_schedule&#39;</span><span class="p">)</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;modules_schedule&#39;</span><span class="p">)</span>
 
 <div class="viewcode-block" id="schedule"><a class="viewcode-back" href="../../../../server/modules/schedule.html#iceprod.server.modules.schedule.schedule">[docs]</a><span class="k">class</span> <span class="nc">schedule</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">module</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Run the schedule module, which handles periodic tasks.</span>
+
+<span class="sd">    Tasks live in individual modules in `iceprod.server.scheduled_tasks.*`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="c"># run default init</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">schedule</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span> <span class="o">=</span> <span class="k">None</span>
-
 <div class="viewcode-block" id="schedule.start"><a class="viewcode-back" href="../../../../server/modules/schedule.html#iceprod.server.modules.schedule.schedule.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Start schedule&quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">schedule</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="p">:</span>
-            <span class="c"># make Scheduler</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span> <span class="o">=</span> <span class="n">Scheduler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span><span class="p">)</span>
-            <span class="k">def</span> <span class="nf">cb</span><span class="p">():</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_make_schedule</span><span class="p">()</span>
-                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;error making schedule&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span><span class="o">.</span><span class="n">add_callback</span><span class="p">(</span><span class="n">cb</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">start</span><span class="p">()</span></div>
-
-<div class="viewcode-block" id="schedule.stop"><a class="viewcode-back" href="../../../../server/modules/schedule.html#iceprod.server.modules.schedule.schedule.stop">[docs]</a>    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Stop schedule&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span> <span class="o">=</span> <span class="k">None</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">schedule</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div>
-
-<div class="viewcode-block" id="schedule.kill"><a class="viewcode-back" href="../../../../server/modules/schedule.html#iceprod.server.modules.schedule.schedule.kill">[docs]</a>    <span class="k">def</span> <span class="nf">kill</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Kill thread&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span> <span class="o">=</span> <span class="k">None</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">schedule</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span></div>
-
-    <span class="k">def</span> <span class="nf">_make_schedule</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Make the default schedule&quot;&quot;&quot;</span>
-
-        <span class="n">config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;schedule&#39;</span><span class="p">]</span>
-
-        <span class="c"># mark datasets complete</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;dataset_completion&#39;</span><span class="p">],</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;cron_dataset_completion&#39;</span><span class="p">])</span>
-
-        <span class="c"># mark jobs complete</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;job_completion&#39;</span><span class="p">],</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;cron_job_completion&#39;</span><span class="p">])</span>
-
-        <span class="c"># collate node resources</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;collate_resources&#39;</span><span class="p">],</span>
-                <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;node_collate_resources&#39;</span><span class="p">],</span>
-                        <span class="n">site_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;site_id&#39;</span><span class="p">]))</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;remove_old_passkeys&#39;</span><span class="p">],</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;cron_remove_old_passkeys&#39;</span><span class="p">])</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;generate_web_graphs&#39;</span><span class="p">],</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;cron_generate_web_graphs&#39;</span><span class="p">])</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;pilot_monitoring&#39;</span><span class="p">],</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;cron_pilot_monitoring&#39;</span><span class="p">])</span>
-
-        <span class="k">if</span> <span class="p">(</span><span class="s">&#39;master&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="ow">and</span> <span class="s">&#39;status&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;master&#39;</span><span class="p">]</span> <span class="ow">and</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;master&#39;</span><span class="p">][</span><span class="s">&#39;status&#39;</span><span class="p">]):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_master_schedule</span><span class="p">()</span>
-
-    <span class="k">def</span> <span class="nf">_master_schedule</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="c"># fake a grid, so we can do grid-like things</span>
-        <span class="kn">from</span> <span class="nn">iceprod.server.grid</span> <span class="k">import</span> <span class="n">BaseGrid</span>
-        <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="k">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;queue&#39;</span><span class="p">][</span><span class="s">&#39;*&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">executor</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">statsd</span><span class="p">]</span>
-        <span class="n">master_grid</span> <span class="o">=</span> <span class="n">BaseGrid</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
-
-        <span class="n">config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;schedule&#39;</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;buffer_jobs_tasks&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;queue_buffer_jobs_tasks&#39;</span><span class="p">])</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;check_iceprod&#39;</span><span class="p">],</span> <span class="n">master_grid</span><span class="o">.</span><span class="n">check_iceprod</span><span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="c"># make sure the gridftp proxy is set up</span>
+            <span class="c1"># make sure the gridftp proxy is set up</span>
             <span class="n">proxy_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="k">if</span> <span class="s">&#39;gridftp_cfgfile&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;queue&#39;</span><span class="p">]:</span>
-                <span class="n">proxy_kwargs</span><span class="p">[</span><span class="s">&#39;cfgfile&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;queue&#39;</span><span class="p">][</span><span class="s">&#39;gridftp_cfgfile&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s1">&#39;gridftp_cfgfile&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;queue&#39;</span><span class="p">]:</span>
+                <span class="n">proxy_kwargs</span><span class="p">[</span><span class="s1">&#39;cfgfile&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;queue&#39;</span><span class="p">][</span><span class="s1">&#39;gridftp_cfgfile&#39;</span><span class="p">]</span>
             <span class="n">proxy</span> <span class="o">=</span> <span class="n">SiteGlobusProxy</span><span class="p">(</span><span class="o">**</span><span class="n">proxy_kwargs</span><span class="p">)</span>
             <span class="n">proxy</span><span class="o">.</span><span class="n">update_proxy</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;clean_completed_jobs&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;cron_clean_completed_jobs&#39;</span><span class="p">])</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Failed to schedule clean_completed_jobs&#39;</span><span class="p">)</span></div>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Failed to get gridftp proxy&#39;</span><span class="p">)</span>
+
+        <span class="c1"># find scheduled tasks, which register with the ioloop</span>
+        <span class="c1"># and will run at built-in delays</span>
+        <span class="n">task_names</span> <span class="o">=</span> <span class="n">iceprod</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">listmodules</span><span class="p">(</span><span class="s1">&#39;iceprod.server.scheduled_tasks&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">iceprod</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">run_module</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">task_names</span><span class="p">]</span></div></div>
 </pre></div>
 
+           </div>
+           <div class="articleComments">
+            
            </div>
           </div>
           <footer>
@@ -264,15 +304,17 @@
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
             VERSION:'master',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="../../../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
@@ -281,14 +323,13 @@
     <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
   
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

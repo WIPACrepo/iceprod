@@ -14,6 +14,8 @@
 
   
   
+  
+  
 
   
 
@@ -25,12 +27,17 @@
 
   
   
-    <link rel="stylesheet" href="_static/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+  
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  
   
 
   
-
-  
+        <link rel="index" title="Index"
+              href="#"/>
+        <link rel="search" title="Search" href="search.html"/>
     <link rel="top" title="IceProd master documentation" href="index.html"/> 
 
   
@@ -60,7 +67,7 @@
             
             
               <div class="version">
-                master
+                2.5.0
               </div>
             
           
@@ -81,14 +88,84 @@
           
             
             
-                <ul>
+              
+            
+            
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="admin/index.html">Administrator&#8217;s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/index.html">User’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide/login.html">Login</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/submission.html">Dataset Submission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/datasets.html">Dataset Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/tasks.html">Task Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/restapi.html">REST API Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/manually.html">Running Manually</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="admin/index.html">Administrator’s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="admin/startup.html">Server Startup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="admin/common.html">Common Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="admin/extra_details.html">Extras</a></li>
+</ul>
+</li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="core/index.html">IceProd Core</a></li>
-<li class="toctree-l1"><a class="reference internal" href="server/index.html">IceProd Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/index.html">IceProd Core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="core/i3exec.html">I3Exec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core/exe.html">Execution Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core/exe_helper.html">Execution Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core/exe_json.html">JSONRPC Calls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core/jsonRPCclient.html">JSON-RPC Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core/jsonUtil.html">JSON Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core/init.html">Core Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core/dataclasses.html">Dataclasses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core/parser.html">Meta-Language Parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core/functions.html">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core/serialization.html">Serialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core/gridftp.html">GridFTP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core/util.html">Utilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="server/index.html">IceProd Server</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="server/details/index.html">Server Details</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="server/details/submit_to_queue.html">From Submission to Queue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/details/task_relationships.html">Task Relationships</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/details/lifecycles.html">Lifecycles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/details/global_queueing.html">Global Queueing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/details/async.html">Asynchronous Programming</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/details/website.html">Website</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/details/auth.html">REST Authorization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/details/user_accounts.html">User Accounts</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="server/rest_api/index.html">REST API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="server/rest_api/datasets.html">Datasets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/rest_api/config.html">Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/rest_api/jobs.html">Jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/rest_api/tasks.html">Tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/rest_api/task_stats.html">Task Stats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/rest_api/logs.html">Logs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/rest_api/grids.html">Grids</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/rest_api/pilots.html">Pilots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server/rest_api/auth.html">Auth</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="server/auth.html">Token Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/config.html">Detailed Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/dbmethods.html">DB Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/file_io.html">File IO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/globus.html">Globus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/grid.html">Grid Queueing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/init.html">Server Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/module.html">Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/nginx.html">Nginx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/schedule.html">Schedule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/server.html">Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/squid.html">Squid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/tornado.html">Tornado Web Utilities</a></li>
+</ul>
+</li>
 </ul>
 
             
@@ -110,10 +187,45 @@
 
       
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div style="float:right">
-            <a href="https://github.com/WIPACrepo/iceprod" class="fa fa-github"> Edit on GitHub</a>
-          </div>
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Index</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
@@ -149,2478 +261,1329 @@
 </div>
 <h2 id="_">_</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses._ResourceCommon">_ResourceCommon (class in iceprod.core.dataclasses)</a>
-  </dt>
-
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses._TaskCommon">_TaskCommon (class in iceprod.core.dataclasses)</a>
-  </dt>
-
-  </dl></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses._ResourceCommon">_ResourceCommon (class in iceprod.core.dataclasses)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses._TaskCommon">_TaskCommon (class in iceprod.core.dataclasses)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="A">A</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="server/modules/db.html#iceprod.server.modules.db.DBAPI.acquire_lock">acquire_lock() (iceprod.server.modules.db.DBAPI method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.auth.auth.add_site_to_master">add_site_to_master() (iceprod.server.dbmethods.auth.auth method)</a>
-  </dt>
-
-      
-  <dt><a href="server/grid.html#iceprod.server.grid.BaseGrid.add_tasks_to_pilot_lookup">add_tasks_to_pilot_lookup() (iceprod.server.grid.BaseGrid method)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/db.html#iceprod.server.modules.db.DBAPI.archive_tables">archive_tables (iceprod.server.modules.db.DBAPI attribute)</a>
-  </dt>
-
-      
-  <dt><a href="server/file_io.html#iceprod.server.file_io.AsyncFileIO">AsyncFileIO (class in iceprod.server.file_io)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.auth.auth">auth (class in iceprod.server.dbmethods.auth)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.auth.auth.auth_authorize_site">auth_authorize_site() (iceprod.server.dbmethods.auth.auth method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.auth.auth.auth_authorize_task">auth_authorize_task() (iceprod.server.dbmethods.auth.auth method)</a>
-  </dt>
-
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.auth.auth.auth_get_passkey">auth_get_passkey() (iceprod.server.dbmethods.auth.auth method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.auth.auth.auth_get_site_auth">auth_get_site_auth() (iceprod.server.dbmethods.auth.auth method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.auth.auth.auth_new_passkey">auth_new_passkey() (iceprod.server.dbmethods.auth.auth method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.auth.auth.auth_user">auth_user() (iceprod.server.dbmethods.auth.auth method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.auth.auth.auth_user_create">auth_user_create() (iceprod.server.dbmethods.auth.auth method)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.authenticated_secure">authenticated_secure() (in module iceprod.server.modules.website)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.authorization">authorization() (in module iceprod.server.dbmethods)</a>
-  </dt>
-
-  </dl></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/auth.html#index-0">auth</a>
+</li>
+      <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.AuthDatasetActionHandler">AuthDatasetActionHandler (class in iceprod.server.rest.auth)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.AuthDatasetHandler">AuthDatasetHandler (class in iceprod.server.rest.auth)</a>
+</li>
+      <li><a href="server/modules/website.html#iceprod.server.modules.website.authenticated_secure">authenticated_secure() (in module iceprod.server.modules.website)</a>
+</li>
+      <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.AuthHandler">AuthHandler (class in iceprod.server.rest.auth)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="B">B</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="server/grid.html#iceprod.server.grid.BaseGrid">BaseGrid (class in iceprod.server.grid)</a>
-  </dt>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/grid.html#iceprod.server.grid.BaseGrid">BaseGrid (class in iceprod.server.grid)</a>
+</li>
+      <li><a href="server/rest_api/datasets.html#iceprod.server.rest.datasets.BaseHandler">BaseHandler (class in iceprod.server.rest.datasets)</a>
 
-      
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.binary_converter">binary_converter (class in iceprod.core.jsonUtil)</a>
-  </dt>
-
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.bytearray_converter">bytearray_converter (class in iceprod.core.jsonUtil)</a>
-  </dt>
-
-  </dl></td>
+      <ul>
+        <li><a href="server/rest_api/grids.html#iceprod.server.rest.grids.BaseHandler">(class in iceprod.server.rest.grids)</a>
+</li>
+        <li><a href="server/rest_api/jobs.html#iceprod.server.rest.jobs.BaseHandler">(class in iceprod.server.rest.jobs)</a>
+</li>
+        <li><a href="server/rest_api/logs.html#iceprod.server.rest.logs.BaseHandler">(class in iceprod.server.rest.logs)</a>
+</li>
+        <li><a href="server/rest_api/pilots.html#iceprod.server.rest.pilots.BaseHandler">(class in iceprod.server.rest.pilots)</a>
+</li>
+        <li><a href="server/rest_api/task_stats.html#iceprod.server.rest.task_stats.BaseHandler">(class in iceprod.server.rest.task_stats)</a>
+</li>
+        <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.BaseHandler">(class in iceprod.server.rest.tasks)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.binary_converter">binary_converter (class in iceprod.core.jsonUtil)</a>
+</li>
+      <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.bytearray_converter">bytearray_converter (class in iceprod.core.jsonUtil)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="C">C</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.CacheInfo">CacheInfo (class in iceprod.server.dbmethods)</a>
-  </dt>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/modules/website.html#iceprod.server.modules.website.catch_error">catch_error() (in module iceprod.server.modules.website)</a>
+</li>
+      <li><a href="server/init.html#iceprod.server.GlobalID.char2int">char2int() (iceprod.server.GlobalID class method)</a>
+</li>
+      <li><a href="server/init.html#iceprod.server.GlobalID.CHARS">CHARS (iceprod.server.GlobalID attribute)</a>
+</li>
+      <li><a href="server/init.html#iceprod.server.GlobalID.CHARS_LEN">CHARS_LEN (iceprod.server.GlobalID attribute)</a>
+</li>
+      <li><a href="server/grid.html#iceprod.server.grid.BaseGrid.check_and_clean">check_and_clean() (iceprod.server.grid.BaseGrid method)</a>
+</li>
+      <li><a href="server/plugins/condor.html#iceprod.server.plugins.condor.check_call_clean_env">check_call_clean_env() (in module iceprod.server.plugins.condor)</a>
+</li>
+      <li><a href="core/functions.html#iceprod.core.functions.check_cksm">check_cksm() (in module iceprod.core.functions)</a>
+</li>
+      <li><a href="core/functions.html#iceprod.core.functions.check_md5sum">check_md5sum() (in module iceprod.core.functions)</a>
+</li>
+      <li><a href="server/plugins/condor.html#iceprod.server.plugins.condor.check_output_clean_env">check_output_clean_env() (in module iceprod.server.plugins.condor)</a>
+</li>
+      <li><a href="server/modules/queue.html#iceprod.server.modules.queue.queue.check_proxy">check_proxy() (iceprod.server.modules.queue.queue method)</a>
+</li>
+      <li><a href="core/functions.html#iceprod.core.functions.check_sha1sum">check_sha1sum() (in module iceprod.core.functions)</a>
+</li>
+      <li><a href="core/functions.html#iceprod.core.functions.check_sha256sum">check_sha256sum() (in module iceprod.core.functions)</a>
+</li>
+      <li><a href="core/functions.html#iceprod.core.functions.check_sha512sum">check_sha512sum() (in module iceprod.core.functions)</a>
+</li>
+      <li><a href="core/functions.html#iceprod.core.functions.cksm">cksm() (in module iceprod.core.functions)</a>
+</li>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Class">Class (class in iceprod.core.dataclasses)</a>
+</li>
+      <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.json_compressor.compress">compress() (iceprod.core.jsonUtil.json_compressor static method)</a>
 
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.catch_error">catch_error() (in module iceprod.server.modules.website)</a>
-  </dt>
+      <ul>
+        <li><a href="core/functions.html#iceprod.core.functions.compress">(in module iceprod.core.functions)</a>
+</li>
+      </ul></li>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses._ResourceCommon.compression_options">compression_options (iceprod.core.dataclasses._ResourceCommon attribute)</a>
+</li>
+      <li><a href="server/plugins/condor.html#iceprod.server.plugins.condor.condor">condor (class in iceprod.server.plugins.condor)</a>
+</li>
+      <li><a href="server/plugins/condor.html#iceprod.server.plugins.condor.condor_os_reqs">condor_os_reqs() (in module iceprod.server.plugins.condor)</a>
+</li>
+      <li><a href="server/config.html#index-0">config</a>
+</li>
+      <li><a href="core/exe.html#iceprod.core.exe.Config">Config (class in iceprod.core.exe)</a>
 
-      
-  <dt><a href="server/init.html#iceprod.server.GlobalID.char2int">char2int() (iceprod.server.GlobalID class method)</a>
-  </dt>
+      <ul>
+        <li><a href="server/modules/website.html#iceprod.server.modules.website.Config">(class in iceprod.server.modules.website)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/rest_api/config.html#iceprod.server.rest.config.ConfigHandler">ConfigHandler (class in iceprod.server.rest.config)</a>
+</li>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses._ResourceCommon.convert">convert() (iceprod.core.dataclasses._ResourceCommon method)</a>
 
-      
-  <dt><a href="server/init.html#iceprod.server.GlobalID.CHARS">CHARS (iceprod.server.GlobalID attribute)</a>
-  </dt>
-
-      
-  <dt><a href="server/init.html#iceprod.server.GlobalID.CHARS_LEN">CHARS_LEN (iceprod.server.GlobalID attribute)</a>
-  </dt>
-
-      
-  <dt><a href="server/grid.html#iceprod.server.grid.BaseGrid.check_and_clean">check_and_clean() (iceprod.server.grid.BaseGrid method)</a>
-  </dt>
-
-      
-  <dt><a href="core/functions.html#iceprod.core.functions.check_cksm">check_cksm() (in module iceprod.core.functions)</a>
-  </dt>
-
-      
-  <dt><a href="server/grid.html#iceprod.server.grid.BaseGrid.check_grid">check_grid() (iceprod.server.grid.BaseGrid method)</a>
-  </dt>
-
-      
-  <dt><a href="server/grid.html#iceprod.server.grid.BaseGrid.check_iceprod">check_iceprod() (iceprod.server.grid.BaseGrid method)</a>
-  </dt>
-
-      
-  <dt><a href="core/functions.html#iceprod.core.functions.check_md5sum">check_md5sum() (in module iceprod.core.functions)</a>
-  </dt>
-
-      
-  <dt><a href="core/functions.html#iceprod.core.functions.check_sha1sum">check_sha1sum() (in module iceprod.core.functions)</a>
-  </dt>
-
-      
-  <dt><a href="core/functions.html#iceprod.core.functions.check_sha256sum">check_sha256sum() (in module iceprod.core.functions)</a>
-  </dt>
-
-      
-  <dt><a href="core/functions.html#iceprod.core.functions.check_sha512sum">check_sha512sum() (in module iceprod.core.functions)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.JSONRPCHandler.check_xsrf_cookie">check_xsrf_cookie() (iceprod.server.modules.website.JSONRPCHandler method)</a>
-  </dt>
-
-      
-  <dt><a href="core/functions.html#iceprod.core.functions.cksm">cksm() (in module iceprod.core.functions)</a>
-  </dt>
-
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Class">Class (class in iceprod.core.dataclasses)</a>
-  </dt>
-
-      
-  <dt><a href="core/jsonRPCclient.html#iceprod.core.jsonRPCclient.Client">Client (class in iceprod.core.jsonRPCclient)</a>
-  </dt>
-
-      
-  <dt><a href="core/jsonRPCclient.html#iceprod.core.jsonRPCclient.Client.close">close() (iceprod.core.jsonRPCclient.Client method)</a>
-  </dt>
-
-      <dd><dl>
-        
-  <dt><a href="server/file_io.html#iceprod.server.file_io.AsyncFileIO.close">(iceprod.server.file_io.AsyncFileIO method)</a>
-  </dt>
-
-      </dl></dd>
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.json_compressor.compress">compress() (iceprod.core.jsonUtil.json_compressor static method)</a>
-  </dt>
-
-      <dd><dl>
-        
-  <dt><a href="core/functions.html#iceprod.core.functions.compress">(in module iceprod.core.functions)</a>
-  </dt>
-
-      </dl></dd>
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses._ResourceCommon.compression_options">compression_options (iceprod.core.dataclasses._ResourceCommon attribute)</a>
-  </dt>
-
-      
-  <dt><a href="server/plugins/condor.html#iceprod.server.plugins.condor.condor">condor (class in iceprod.server.plugins.condor)</a>
-  </dt>
-
-      
-  <dt><a href="server/config.html#index-0">config</a>
-  </dt>
-
-      
-  <dt><a href="core/exe.html#iceprod.core.exe.Config">Config (class in iceprod.core.exe)</a>
-  </dt>
-
-      <dd><dl>
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Config">(class in iceprod.server.modules.website)</a>
-  </dt>
-
-      </dl></dd>
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses._ResourceCommon.convert">convert() (iceprod.core.dataclasses._ResourceCommon method)</a>
-  </dt>
-
-      <dd><dl>
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Class.convert">(iceprod.core.dataclasses.Class method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Data.convert">(iceprod.core.dataclasses.Data method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.DataCenter.convert">(iceprod.core.dataclasses.DataCenter method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Dif.convert">(iceprod.core.dataclasses.Dif method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.DifPlus.convert">(iceprod.core.dataclasses.DifPlus method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Job.convert">(iceprod.core.dataclasses.Job method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Module.convert">(iceprod.core.dataclasses.Module method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Personnel.convert">(iceprod.core.dataclasses.Personnel method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Plus.convert">(iceprod.core.dataclasses.Plus method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Resource.convert">(iceprod.core.dataclasses.Resource method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Steering.convert">(iceprod.core.dataclasses.Steering method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Task.convert">(iceprod.core.dataclasses.Task method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Tray.convert">(iceprod.core.dataclasses.Tray method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses._TaskCommon.convert">(iceprod.core.dataclasses._TaskCommon method)</a>
-  </dt>
-
-      </dl></dd>
-      
-  <dt><a href="core/functions.html#iceprod.core.functions.copy">copy() (in module iceprod.core.functions)</a>
-  </dt>
-
-      
-  <dt><a href="core/init.html#index-0">core_init</a>
-  </dt>
-
-      
-  <dt><a href="server/ssl_cert.html#iceprod.server.ssl_cert.create_ca">create_ca() (in module iceprod.server.ssl_cert)</a>
-  </dt>
-
-      
-  <dt><a href="server/ssl_cert.html#iceprod.server.ssl_cert.create_cert">create_cert() (in module iceprod.server.ssl_cert)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.cron.cron">cron (class in iceprod.server.dbmethods.cron)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.cron.cron.cron_clean_completed_jobs">cron_clean_completed_jobs() (iceprod.server.dbmethods.cron.cron method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.cron.cron.cron_dataset_completion">cron_dataset_completion() (iceprod.server.dbmethods.cron.cron method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.cron.cron.cron_generate_web_graphs">cron_generate_web_graphs() (iceprod.server.dbmethods.cron.cron method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.cron.cron.cron_job_completion">cron_job_completion() (iceprod.server.dbmethods.cron.cron method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.cron.cron.cron_pilot_monitoring">cron_pilot_monitoring() (iceprod.server.dbmethods.cron.cron method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.cron.cron.cron_remove_old_passkeys">cron_remove_old_passkeys() (iceprod.server.dbmethods.cron.cron method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.CacheInfo.currsize">currsize (iceprod.server.dbmethods.CacheInfo attribute)</a>
-  </dt>
-
-  </dl></td>
+      <ul>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Class.convert">(iceprod.core.dataclasses.Class method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Data.convert">(iceprod.core.dataclasses.Data method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.DataCenter.convert">(iceprod.core.dataclasses.DataCenter method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Dif.convert">(iceprod.core.dataclasses.Dif method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.DifPlus.convert">(iceprod.core.dataclasses.DifPlus method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Job.convert">(iceprod.core.dataclasses.Job method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Module.convert">(iceprod.core.dataclasses.Module method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Personnel.convert">(iceprod.core.dataclasses.Personnel method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Plus.convert">(iceprod.core.dataclasses.Plus method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Resource.convert">(iceprod.core.dataclasses.Resource method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Steering.convert">(iceprod.core.dataclasses.Steering method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Task.convert">(iceprod.core.dataclasses.Task method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Tray.convert">(iceprod.core.dataclasses.Tray method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses._TaskCommon.convert">(iceprod.core.dataclasses._TaskCommon method)</a>
+</li>
+      </ul></li>
+      <li><a href="core/functions.html#iceprod.core.functions.copy">copy() (in module iceprod.core.functions)</a>
+</li>
+      <li><a href="core/init.html#index-0">core_init</a>
+</li>
+      <li><a href="server/ssl_cert.html#iceprod.server.ssl_cert.create_ca">create_ca() (in module iceprod.server.ssl_cert)</a>
+</li>
+      <li><a href="server/ssl_cert.html#iceprod.server.ssl_cert.create_cert">create_cert() (in module iceprod.server.ssl_cert)</a>
+</li>
+      <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.CreateTokenHandler">CreateTokenHandler (class in iceprod.server.rest.auth)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="D">D</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Data">Data (class in iceprod.core.dataclasses)</a>
-  </dt>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Data">Data (class in iceprod.core.dataclasses)</a>
+</li>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses.DataCenter">DataCenter (class in iceprod.core.dataclasses)</a>
+</li>
+      <li><a href="server/modules/website.html#iceprod.server.modules.website.Dataset">Dataset (class in iceprod.server.modules.website)</a>
+</li>
+      <li><a href="server/modules/website.html#iceprod.server.modules.website.DatasetBrowse">DatasetBrowse (class in iceprod.server.modules.website)</a>
+</li>
+      <li><a href="server/rest_api/datasets.html#iceprod.server.rest.datasets.DatasetDescriptionHandler">DatasetDescriptionHandler (class in iceprod.server.rest.datasets)</a>
+</li>
+      <li><a href="server/rest_api/datasets.html#iceprod.server.rest.datasets.DatasetHandler">DatasetHandler (class in iceprod.server.rest.datasets)</a>
+</li>
+      <li><a href="server/rest_api/jobs.html#iceprod.server.rest.jobs.DatasetJobCountsStatusHandler">DatasetJobCountsStatusHandler (class in iceprod.server.rest.jobs)</a>
+</li>
+      <li><a href="server/rest_api/jobs.html#iceprod.server.rest.jobs.DatasetJobsHandler">DatasetJobsHandler (class in iceprod.server.rest.jobs)</a>
+</li>
+      <li><a href="server/rest_api/jobs.html#iceprod.server.rest.jobs.DatasetJobsStatusHandler">DatasetJobsStatusHandler (class in iceprod.server.rest.jobs)</a>
+</li>
+      <li><a href="server/rest_api/jobs.html#iceprod.server.rest.jobs.DatasetJobSummariesStatusHandler">DatasetJobSummariesStatusHandler (class in iceprod.server.rest.jobs)</a>
+</li>
+      <li><a href="server/rest_api/logs.html#iceprod.server.rest.logs.DatasetLogsHandler">DatasetLogsHandler (class in iceprod.server.rest.logs)</a>
+</li>
+      <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.DatasetMultiFilesHandler">DatasetMultiFilesHandler (class in iceprod.server.rest.tasks)</a>
+</li>
+      <li><a href="server/rest_api/jobs.html#iceprod.server.rest.jobs.DatasetMultiJobsHandler">DatasetMultiJobsHandler (class in iceprod.server.rest.jobs)</a>
+</li>
+      <li><a href="server/rest_api/logs.html#iceprod.server.rest.logs.DatasetMultiLogsHandler">DatasetMultiLogsHandler (class in iceprod.server.rest.logs)</a>
+</li>
+      <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.DatasetMultiTasksHandler">DatasetMultiTasksHandler (class in iceprod.server.rest.tasks)</a>
+</li>
+      <li><a href="server/rest_api/task_stats.html#iceprod.server.rest.task_stats.DatasetsMultiTaskStatsHandler">DatasetsMultiTaskStatsHandler (class in iceprod.server.rest.task_stats)</a>
+</li>
+      <li><a href="server/rest_api/task_stats.html#iceprod.server.rest.task_stats.DatasetsTaskStatsHandler">DatasetsTaskStatsHandler (class in iceprod.server.rest.task_stats)</a>
+</li>
+      <li><a href="server/rest_api/datasets.html#iceprod.server.rest.datasets.DatasetStatusHandler">DatasetStatusHandler (class in iceprod.server.rest.datasets)</a>
+</li>
+      <li><a href="server/rest_api/datasets.html#iceprod.server.rest.datasets.DatasetSummariesStatusHandler">DatasetSummariesStatusHandler (class in iceprod.server.rest.datasets)</a>
+</li>
+      <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.DatasetTaskBulkRequirementsHandler">DatasetTaskBulkRequirementsHandler (class in iceprod.server.rest.tasks)</a>
+</li>
+      <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.DatasetTaskBulkStatusHandler">DatasetTaskBulkStatusHandler (class in iceprod.server.rest.tasks)</a>
+</li>
+      <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.DatasetTaskCountsNameStatusHandler">DatasetTaskCountsNameStatusHandler (class in iceprod.server.rest.tasks)</a>
+</li>
+      <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.DatasetTaskCountsStatusHandler">DatasetTaskCountsStatusHandler (class in iceprod.server.rest.tasks)</a>
+</li>
+      <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.DatasetTaskFilesHandler">DatasetTaskFilesHandler (class in iceprod.server.rest.tasks)</a>
+</li>
+      <li><a href="server/rest_api/logs.html#iceprod.server.rest.logs.DatasetTaskLogsHandler">DatasetTaskLogsHandler (class in iceprod.server.rest.logs)</a>
+</li>
+      <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.DatasetTasksHandler">DatasetTasksHandler (class in iceprod.server.rest.tasks)</a>
+</li>
+      <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.DatasetTasksStatusHandler">DatasetTasksStatusHandler (class in iceprod.server.rest.tasks)</a>
+</li>
+      <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.DatasetTaskStatsHandler">DatasetTaskStatsHandler (class in iceprod.server.rest.tasks)</a>
+</li>
+      <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.DatasetTaskSummaryStatusHandler">DatasetTaskSummaryStatusHandler (class in iceprod.server.rest.tasks)</a>
+</li>
+      <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.date_converter">date_converter (class in iceprod.core.jsonUtil)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.datetime_converter">datetime_converter (class in iceprod.core.jsonUtil)</a>
+</li>
+      <li><a href="server/dbmethods.html#index-0">dbmethods</a>
+</li>
+      <li><a href="server/modules/db.html#index-0">dbmodule</a>
+</li>
+      <li><a href="server/modules/website.html#iceprod.server.modules.website.Default">Default (class in iceprod.server.modules.website)</a>
+</li>
+      <li><a href="server/config.html#iceprod.server.config.IceProdConfig.defaults">defaults() (iceprod.server.config.IceProdConfig method)</a>
+</li>
+      <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.GroupHandler.delete">delete() (iceprod.server.rest.auth.GroupHandler method)</a>
 
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.DataCenter">DataCenter (class in iceprod.core.dataclasses)</a>
-  </dt>
+      <ul>
+        <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.RoleHandler.delete">(iceprod.server.rest.auth.RoleHandler method)</a>
+</li>
+        <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.UserHandler.delete">(iceprod.server.rest.auth.UserHandler method)</a>
+</li>
+        <li><a href="server/rest_api/pilots.html#iceprod.server.rest.pilots.PilotsHandler.delete">(iceprod.server.rest.pilots.PilotsHandler method)</a>
+</li>
+        <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.DatasetTaskFilesHandler.delete">(iceprod.server.rest.tasks.DatasetTaskFilesHandler method)</a>
+</li>
+        <li><a href="core/functions.html#iceprod.core.functions.delete">(in module iceprod.core.functions)</a>
+</li>
+      </ul></li>
+      <li><a href="core/serialization.html#iceprod.core.serialization.dict_to_dataclasses">dict_to_dataclasses() (in module iceprod.core.serialization)</a>
+</li>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Dif">Dif (class in iceprod.core.dataclasses)</a>
+</li>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses.DifPlus">DifPlus (class in iceprod.core.dataclasses)</a>
+</li>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses._ResourceCommon.do_transfer">do_transfer() (iceprod.core.dataclasses._ResourceCommon method)</a>
+</li>
+      <li><a href="server/config.html#iceprod.server.config.IceProdConfig.do_validate">do_validate() (iceprod.server.config.IceProdConfig method)</a>
+</li>
+      <li><a href="server/modules/website.html#iceprod.server.modules.website.Documentation">Documentation (class in iceprod.server.modules.website)</a>
+</li>
+      <li><a href="core/functions.html#iceprod.core.functions.download">download() (in module iceprod.core.functions)</a>
+</li>
+      <li><a href="core/exe_json.html#iceprod.core.exe_json.ServerComms.download_task">download_task() (iceprod.core.exe_json.ServerComms method)</a>
+</li>
+      <li><a href="core/exe.html#iceprod.core.exe.downloadData">downloadData() (in module iceprod.core.exe)</a>
+</li>
+      <li><a href="core/exe.html#iceprod.core.exe.downloadResource">downloadResource() (in module iceprod.core.exe)</a>
+</li>
+      <li><a href="core/serialization.html#iceprod.core.serialization.serialize_json.dump">dump() (iceprod.core.serialization.serialize_json static method)</a>
+</li>
+      <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.binary_converter.dumps">dumps() (iceprod.core.jsonUtil.binary_converter static method)</a>
 
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Dataset">Dataset (class in iceprod.server.modules.website)</a>
-  </dt>
-
-      
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.date_converter">date_converter (class in iceprod.core.jsonUtil)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.datetime2str">datetime2str() (in module iceprod.server.dbmethods)</a>
-  </dt>
-
-      
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.datetime_converter">datetime_converter (class in iceprod.core.jsonUtil)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/db.html#iceprod.server.modules.db.db">db (class in iceprod.server.modules.db)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.MyHandler.db_call">db_call() (iceprod.server.modules.website.MyHandler method)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/db.html#iceprod.server.modules.db.DBAPI">DBAPI (class in iceprod.server.modules.db)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.dbmethod">dbmethod() (in module iceprod.server.dbmethods)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#index-0">dbmethods</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/db.html#index-0">dbmodule</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/db.html#iceprod.server.modules.db.DBResetError">DBResetError</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Default">Default (class in iceprod.server.modules.website)</a>
-  </dt>
-
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="server/config.html#iceprod.server.config.IceProdConfig.defaults">defaults() (iceprod.server.config.IceProdConfig method)</a>
-  </dt>
-
-      
-  <dt><a href="core/functions.html#iceprod.core.functions.delete">delete() (in module iceprod.core.functions)</a>
-  </dt>
-
-      
-  <dt><a href="server/nginx.html#iceprod.server.nginx.deleteoldlogs">deleteoldlogs() (in module iceprod.server.nginx)</a>
-  </dt>
-
-      
-  <dt><a href="core/serialization.html#iceprod.core.serialization.dict_to_dataclasses">dict_to_dataclasses() (in module iceprod.core.serialization)</a>
-  </dt>
-
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Dif">Dif (class in iceprod.core.dataclasses)</a>
-  </dt>
-
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.DifPlus">DifPlus (class in iceprod.core.dataclasses)</a>
-  </dt>
-
-      
-  <dt><a href="server/config.html#iceprod.server.config.IceProdConfig.do_validate">do_validate() (iceprod.server.config.IceProdConfig method)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Documentation">Documentation (class in iceprod.server.modules.website)</a>
-  </dt>
-
-      
-  <dt><a href="core/functions.html#iceprod.core.functions.download">download() (in module iceprod.core.functions)</a>
-  </dt>
-
-      
-  <dt><a href="core/exe.html#iceprod.core.exe.downloadData">downloadData() (in module iceprod.core.exe)</a>
-  </dt>
-
-      
-  <dt><a href="core/exe.html#iceprod.core.exe.downloadResource">downloadResource() (in module iceprod.core.exe)</a>
-  </dt>
-
-      
-  <dt><a href="core/exe_json.html#iceprod.core.exe_json.downloadtask">downloadtask() (in module iceprod.core.exe_json)</a>
-  </dt>
-
-      
-  <dt><a href="core/serialization.html#iceprod.core.serialization.serialize_json.dump">dump() (iceprod.core.serialization.serialize_json static method)</a>
-  </dt>
-
-      
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.binary_converter.dumps">dumps() (iceprod.core.jsonUtil.binary_converter static method)</a>
-  </dt>
-
-      <dd><dl>
-        
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.bytearray_converter.dumps">(iceprod.core.jsonUtil.bytearray_converter static method)</a>
-  </dt>
-
-        
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.datetime_converter.dumps">(iceprod.core.jsonUtil.datetime_converter static method)</a>
-  </dt>
-
-        
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.iface_converter.dumps">(iceprod.core.jsonUtil.iface_converter static method)</a>
-  </dt>
-
-        
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.repr_converter.dumps">(iceprod.core.jsonUtil.repr_converter static method)</a>
-  </dt>
-
-        
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.set_converter.dumps">(iceprod.core.jsonUtil.set_converter static method)</a>
-  </dt>
-
-        
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.var_converter.dumps">(iceprod.core.jsonUtil.var_converter static method)</a>
-  </dt>
-
-        
-  <dt><a href="core/serialization.html#iceprod.core.serialization.serialize_json.dumps">(iceprod.core.serialization.serialize_json static method)</a>
-  </dt>
-
-      </dl></dd>
-  </dl></td>
+      <ul>
+        <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.bytearray_converter.dumps">(iceprod.core.jsonUtil.bytearray_converter static method)</a>
+</li>
+        <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.datetime_converter.dumps">(iceprod.core.jsonUtil.datetime_converter static method)</a>
+</li>
+        <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.iface_converter.dumps">(iceprod.core.jsonUtil.iface_converter static method)</a>
+</li>
+        <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.repr_converter.dumps">(iceprod.core.jsonUtil.repr_converter static method)</a>
+</li>
+        <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.set_converter.dumps">(iceprod.core.jsonUtil.set_converter static method)</a>
+</li>
+        <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.var_converter.dumps">(iceprod.core.jsonUtil.var_converter static method)</a>
+</li>
+        <li><a href="core/serialization.html#iceprod.core.serialization.serialize_json.dumps">(iceprod.core.serialization.serialize_json static method)</a>
+</li>
+      </ul></li>
+  </ul></td>
 </tr></table>
 
 <h2 id="E">E</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="server/module.html#iceprod.server.module.ElasticClient">ElasticClient (class in iceprod.server.module)</a>
-  </dt>
-
-      
-  <dt><a href="core/parser.html#iceprod.core.parser.safe_eval.eval">eval() (iceprod.core.parser.safe_eval class method)</a>
-  </dt>
-
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="core/exe_json.html#index-0">ExeJSON</a>
-  </dt>
-
-      
-  <dt><a href="core/parser.html#iceprod.core.parser.ExpParser">ExpParser (class in iceprod.core.parser)</a>
-  </dt>
-
-  </dl></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/module.html#iceprod.server.module.ElasticClient">ElasticClient (class in iceprod.server.module)</a>
+</li>
+      <li><a href="core/parser.html#iceprod.core.parser.safe_eval.eval">eval() (iceprod.core.parser.safe_eval class method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="core/exe_json.html#index-0">ExeJSON</a>
+</li>
+      <li><a href="core/parser.html#iceprod.core.parser.ExpParser">ExpParser (class in iceprod.core.parser)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="F">F</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="server/module.html#iceprod.server.module.FakeStatsClient">FakeStatsClient (class in iceprod.server.module)</a>
-  </dt>
-
-      
-  <dt><a href="server/file_io.html#index-0">file_io</a>
-  </dt>
-
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Data.filecatalog">filecatalog() (iceprod.core.dataclasses.Data method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.filtered_input">filtered_input() (in module iceprod.server.dbmethods)</a>
-  </dt>
-
-      
-  <dt><a href="server/nginx.html#iceprod.server.nginx.find_mime">find_mime() (in module iceprod.server.nginx)</a>
-  </dt>
-
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="server/init.html#iceprod.server.find_module_recursive">find_module_recursive() (in module iceprod.server)</a>
-  </dt>
-
-      
-  <dt><a href="server/nginx.html#iceprod.server.nginx.find_nginx">find_nginx() (in module iceprod.server.nginx)</a>
-  </dt>
-
-      
-  <dt><a href="core/exe_json.html#iceprod.core.exe_json.finishtask">finishtask() (in module iceprod.core.exe_json)</a>
-  </dt>
-
-      
-  <dt><a href="core/exe.html#iceprod.core.exe.fork_module">fork_module() (in module iceprod.core.exe)</a>
-  </dt>
-
-      
-  <dt><a href="core/functions.html#index-0">Functions</a>
-  </dt>
-
-  </dl></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/module.html#iceprod.server.module.FakeStatsClient">FakeStatsClient (class in iceprod.server.module)</a>
+</li>
+      <li><a href="server/file_io.html#index-0">file_io</a>
+</li>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Data.filecatalog">filecatalog() (iceprod.core.dataclasses.Data method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/init.html#iceprod.server.find_module_recursive">find_module_recursive() (in module iceprod.server)</a>
+</li>
+      <li><a href="core/exe_json.html#iceprod.core.exe_json.ServerComms.finish_task">finish_task() (iceprod.core.exe_json.ServerComms method)</a>
+</li>
+      <li><a href="core/functions.html#index-0">Functions</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="G">G</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="server/grid.html#iceprod.server.grid.BaseGrid.generate_submit_file">generate_submit_file() (iceprod.server.grid.BaseGrid method)</a>
-  </dt>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/grid.html#iceprod.server.grid.BaseGrid.generate_submit_file">generate_submit_file() (iceprod.server.grid.BaseGrid method)</a>
 
-      <dd><dl>
-        
-  <dt><a href="server/plugins/condor.html#iceprod.server.plugins.condor.condor.generate_submit_file">(iceprod.server.plugins.condor.condor method)</a>
-  </dt>
+      <ul>
+        <li><a href="server/plugins/condor.html#iceprod.server.plugins.condor.condor.generate_submit_file">(iceprod.server.plugins.condor.condor method)</a>
+</li>
+      </ul></li>
+      <li><a href="server/module.html#iceprod.server.module.ElasticClient.get">get() (iceprod.server.module.ElasticClient method)</a>
 
-      </dl></dd>
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Config.get">get() (iceprod.server.modules.website.Config method)</a>
-  </dt>
+      <ul>
+        <li><a href="server/modules/website.html#iceprod.server.modules.website.Config.get">(iceprod.server.modules.website.Config method)</a>
+</li>
+        <li><a href="server/modules/website.html#iceprod.server.modules.website.Dataset.get">(iceprod.server.modules.website.Dataset method)</a>
+</li>
+        <li><a href="server/modules/website.html#iceprod.server.modules.website.DatasetBrowse.get">(iceprod.server.modules.website.DatasetBrowse method)</a>
+</li>
+        <li><a href="server/modules/website.html#iceprod.server.modules.website.Default.get">(iceprod.server.modules.website.Default method)</a>
+</li>
+        <li><a href="server/modules/website.html#iceprod.server.modules.website.Documentation.get">(iceprod.server.modules.website.Documentation method)</a>
+</li>
+        <li><a href="server/modules/website.html#iceprod.server.modules.website.Help.get">(iceprod.server.modules.website.Help method)</a>
+</li>
+        <li><a href="server/modules/website.html#iceprod.server.modules.website.Job.get">(iceprod.server.modules.website.Job method)</a>
+</li>
+        <li><a href="server/modules/website.html#iceprod.server.modules.website.JobBrowse.get">(iceprod.server.modules.website.JobBrowse method)</a>
+</li>
+        <li><a href="server/modules/website.html#iceprod.server.modules.website.Log.get">(iceprod.server.modules.website.Log method)</a>
+</li>
+        <li><a href="server/modules/website.html#iceprod.server.modules.website.Login.get">(iceprod.server.modules.website.Login method)</a>
+</li>
+        <li><a href="server/modules/website.html#iceprod.server.modules.website.Logout.get">(iceprod.server.modules.website.Logout method)</a>
+</li>
+        <li><a href="server/modules/website.html#iceprod.server.modules.website.Other.get">(iceprod.server.modules.website.Other method)</a>
+</li>
+        <li><a href="server/modules/website.html#iceprod.server.modules.website.Profile.get">(iceprod.server.modules.website.Profile method)</a>
+</li>
+        <li><a href="server/modules/website.html#iceprod.server.modules.website.Submit.get">(iceprod.server.modules.website.Submit method)</a>
+</li>
+        <li><a href="server/modules/website.html#iceprod.server.modules.website.Task.get">(iceprod.server.modules.website.Task method)</a>
+</li>
+        <li><a href="server/modules/website.html#iceprod.server.modules.website.TaskBrowse.get">(iceprod.server.modules.website.TaskBrowse method)</a>
+</li>
+        <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.AuthDatasetActionHandler.get">(iceprod.server.rest.auth.AuthDatasetActionHandler method)</a>
+</li>
+        <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.AuthDatasetHandler.get">(iceprod.server.rest.auth.AuthDatasetHandler method)</a>
+</li>
+        <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.GroupHandler.get">(iceprod.server.rest.auth.GroupHandler method)</a>
+</li>
+        <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.MultiGroupHandler.get">(iceprod.server.rest.auth.MultiGroupHandler method)</a>
+</li>
+        <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.MultiRoleHandler.get">(iceprod.server.rest.auth.MultiRoleHandler method)</a>
+</li>
+        <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.MultiUserHandler.get">(iceprod.server.rest.auth.MultiUserHandler method)</a>
+</li>
+        <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.RoleHandler.get">(iceprod.server.rest.auth.RoleHandler method)</a>
+</li>
+        <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.UserGroupsHandler.get">(iceprod.server.rest.auth.UserGroupsHandler method)</a>
+</li>
+        <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.UserHandler.get">(iceprod.server.rest.auth.UserHandler method)</a>
+</li>
+        <li><a href="server/rest_api/config.html#iceprod.server.rest.config.ConfigHandler.get">(iceprod.server.rest.config.ConfigHandler method)</a>
+</li>
+        <li><a href="server/rest_api/datasets.html#iceprod.server.rest.datasets.DatasetHandler.get">(iceprod.server.rest.datasets.DatasetHandler method)</a>
+</li>
+        <li><a href="server/rest_api/datasets.html#iceprod.server.rest.datasets.DatasetSummariesStatusHandler.get">(iceprod.server.rest.datasets.DatasetSummariesStatusHandler method)</a>
+</li>
+        <li><a href="server/rest_api/datasets.html#iceprod.server.rest.datasets.MultiDatasetHandler.get">(iceprod.server.rest.datasets.MultiDatasetHandler method)</a>
+</li>
+        <li><a href="server/rest_api/grids.html#iceprod.server.rest.grids.GridsHandler.get">(iceprod.server.rest.grids.GridsHandler method)</a>
+</li>
+        <li><a href="server/rest_api/grids.html#iceprod.server.rest.grids.MultiGridsHandler.get">(iceprod.server.rest.grids.MultiGridsHandler method)</a>
+</li>
+        <li><a href="server/rest_api/jobs.html#iceprod.server.rest.jobs.DatasetJobCountsStatusHandler.get">(iceprod.server.rest.jobs.DatasetJobCountsStatusHandler method)</a>
+</li>
+        <li><a href="server/rest_api/jobs.html#iceprod.server.rest.jobs.DatasetJobSummariesStatusHandler.get">(iceprod.server.rest.jobs.DatasetJobSummariesStatusHandler method)</a>
+</li>
+        <li><a href="server/rest_api/jobs.html#iceprod.server.rest.jobs.DatasetJobsHandler.get">(iceprod.server.rest.jobs.DatasetJobsHandler method)</a>
+</li>
+        <li><a href="server/rest_api/jobs.html#iceprod.server.rest.jobs.DatasetMultiJobsHandler.get">(iceprod.server.rest.jobs.DatasetMultiJobsHandler method)</a>
+</li>
+        <li><a href="server/rest_api/jobs.html#iceprod.server.rest.jobs.JobsHandler.get">(iceprod.server.rest.jobs.JobsHandler method)</a>
+</li>
+        <li><a href="server/rest_api/logs.html#iceprod.server.rest.logs.DatasetLogsHandler.get">(iceprod.server.rest.logs.DatasetLogsHandler method)</a>
+</li>
+        <li><a href="server/rest_api/logs.html#iceprod.server.rest.logs.DatasetTaskLogsHandler.get">(iceprod.server.rest.logs.DatasetTaskLogsHandler method)</a>
+</li>
+        <li><a href="server/rest_api/logs.html#iceprod.server.rest.logs.LogsHandler.get">(iceprod.server.rest.logs.LogsHandler method)</a>
+</li>
+        <li><a href="server/rest_api/logs.html#iceprod.server.rest.logs.S3.get">(iceprod.server.rest.logs.S3 method)</a>
+</li>
+        <li><a href="server/rest_api/pilots.html#iceprod.server.rest.pilots.MultiPilotsHandler.get">(iceprod.server.rest.pilots.MultiPilotsHandler method)</a>
+</li>
+        <li><a href="server/rest_api/pilots.html#iceprod.server.rest.pilots.PilotsHandler.get">(iceprod.server.rest.pilots.PilotsHandler method)</a>
+</li>
+        <li><a href="server/rest_api/task_stats.html#iceprod.server.rest.task_stats.DatasetsMultiTaskStatsHandler.get">(iceprod.server.rest.task_stats.DatasetsMultiTaskStatsHandler method)</a>
+</li>
+        <li><a href="server/rest_api/task_stats.html#iceprod.server.rest.task_stats.DatasetsTaskStatsHandler.get">(iceprod.server.rest.task_stats.DatasetsTaskStatsHandler method)</a>
+</li>
+        <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.DatasetMultiFilesHandler.get">(iceprod.server.rest.tasks.DatasetMultiFilesHandler method)</a>
+</li>
+        <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.DatasetMultiTasksHandler.get">(iceprod.server.rest.tasks.DatasetMultiTasksHandler method)</a>
+</li>
+        <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.DatasetTaskCountsNameStatusHandler.get">(iceprod.server.rest.tasks.DatasetTaskCountsNameStatusHandler method)</a>
+</li>
+        <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.DatasetTaskCountsStatusHandler.get">(iceprod.server.rest.tasks.DatasetTaskCountsStatusHandler method)</a>
+</li>
+        <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.DatasetTaskFilesHandler.get">(iceprod.server.rest.tasks.DatasetTaskFilesHandler method)</a>
+</li>
+        <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.DatasetTaskStatsHandler.get">(iceprod.server.rest.tasks.DatasetTaskStatsHandler method)</a>
+</li>
+        <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.DatasetTaskSummaryStatusHandler.get">(iceprod.server.rest.tasks.DatasetTaskSummaryStatusHandler method)</a>
+</li>
+        <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.DatasetTasksHandler.get">(iceprod.server.rest.tasks.DatasetTasksHandler method)</a>
+</li>
+        <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.MultiTasksHandler.get">(iceprod.server.rest.tasks.MultiTasksHandler method)</a>
+</li>
+        <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.TasksHandler.get">(iceprod.server.rest.tasks.TasksHandler method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="core/exe_helper.html#iceprod.core.exe_helper.get_args">get_args() (in module iceprod.core.exe_helper)</a>
+</li>
+      <li><a href="server/grid.html#iceprod.server.grid.BaseGrid.get_grid_status">get_grid_status() (iceprod.server.grid.BaseGrid method)</a>
 
-      <dd><dl>
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Dataset.get">(iceprod.server.modules.website.Dataset method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Default.get">(iceprod.server.modules.website.Default method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Documentation.get">(iceprod.server.modules.website.Documentation method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.GroupsHandler.get">(iceprod.server.modules.website.GroupsHandler method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Help.get">(iceprod.server.modules.website.Help method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Job.get">(iceprod.server.modules.website.Job method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.LibHandler.get">(iceprod.server.modules.website.LibHandler method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Log.get">(iceprod.server.modules.website.Log method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Login.get">(iceprod.server.modules.website.Login method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Logout.get">(iceprod.server.modules.website.Logout method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.MyHandler.get">(iceprod.server.modules.website.MyHandler method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Other.get">(iceprod.server.modules.website.Other method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Site.get">(iceprod.server.modules.website.Site method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Submit.get">(iceprod.server.modules.website.Submit method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Task.get">(iceprod.server.modules.website.Task method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.UserAccount.get">(iceprod.server.modules.website.UserAccount method)</a>
-  </dt>
-
-      </dl></dd>
-      
-  <dt><a href="core/exe_helper.html#iceprod.core.exe_helper.get_args">get_args() (in module iceprod.core.exe_helper)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.PublicHandler.get_current_user">get_current_user() (iceprod.server.modules.website.PublicHandler method)</a>
-  </dt>
-
-      
-  <dt><a href="server/grid.html#iceprod.server.grid.BaseGrid.get_grid_status">get_grid_status() (iceprod.server.grid.BaseGrid method)</a>
-  </dt>
-
-      <dd><dl>
-        
-  <dt><a href="server/plugins/condor.html#iceprod.server.plugins.condor.condor.get_grid_status">(iceprod.server.plugins.condor.condor method)</a>
-  </dt>
-
-      </dl></dd>
-      
-  <dt><a href="core/functions.html#iceprod.core.functions.get_local_ip_address">get_local_ip_address() (in module iceprod.core.functions)</a>
-  </dt>
-
-      
-  <dt><a href="server/init.html#iceprod.server.get_pkg_binary">get_pkg_binary() (in module iceprod.server)</a>
-  </dt>
-
-      
-  <dt><a href="server/init.html#iceprod.server.get_pkgdata_filename">get_pkgdata_filename() (in module iceprod.server)</a>
-  </dt>
-
-      
-  <dt><a href="server/globus.html#iceprod.server.globus.SiteGlobusProxy.get_proxy">get_proxy() (iceprod.server.globus.SiteGlobusProxy method)</a>
-  </dt>
-
-      
-  <dt><a href="server/grid.html#iceprod.server.grid.BaseGrid.get_submit_args">get_submit_args() (iceprod.server.grid.BaseGrid method)</a>
-  </dt>
-
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.PublicHandler.get_template_namespace">get_template_namespace() (iceprod.server.modules.website.PublicHandler method)</a>
-  </dt>
-
-      
-  <dt><a href="core/functions.html#iceprod.core.functions.gethostname">gethostname() (in module iceprod.core.functions)</a>
-  </dt>
-
-      
-  <dt><a href="core/functions.html#iceprod.core.functions.getInterfaces">getInterfaces() (in module iceprod.core.functions)</a>
-  </dt>
-
-      
-  <dt><a href="server/details/global_queueing.html#index-0">Global_Queueing</a>
-  </dt>
-
-      
-  <dt><a href="server/init.html#iceprod.server.GlobalID">GlobalID (class in iceprod.server)</a>
-  </dt>
-
-      
-  <dt><a href="server/init.html#iceprod.server.GlobalID.globalID_gen">globalID_gen() (iceprod.server.GlobalID class method)</a>
-  </dt>
-
-      
-  <dt><a href="server/grid.html#index-0">grid</a>
-  </dt>
-
-      
-  <dt><a href="server/grid.html#iceprod.server.grid.BaseGrid.GRID_STATES">GRID_STATES (iceprod.server.grid.BaseGrid attribute)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.GroupsHandler">GroupsHandler (class in iceprod.server.modules.website)</a>
-  </dt>
-
-  </dl></td>
+      <ul>
+        <li><a href="server/plugins/condor.html#iceprod.server.plugins.condor.condor.get_grid_status">(iceprod.server.plugins.condor.condor method)</a>
+</li>
+      </ul></li>
+      <li><a href="core/functions.html#iceprod.core.functions.get_local_ip_address">get_local_ip_address() (in module iceprod.core.functions)</a>
+</li>
+      <li><a href="server/init.html#iceprod.server.get_pkg_binary">get_pkg_binary() (in module iceprod.server)</a>
+</li>
+      <li><a href="server/init.html#iceprod.server.get_pkgdata_filename">get_pkgdata_filename() (in module iceprod.server)</a>
+</li>
+      <li><a href="server/globus.html#iceprod.server.globus.SiteGlobusProxy.get_proxy">get_proxy() (iceprod.server.globus.SiteGlobusProxy method)</a>
+</li>
+      <li><a href="server/grid.html#iceprod.server.grid.BaseGrid.get_submit_args">get_submit_args() (iceprod.server.grid.BaseGrid method)</a>
+</li>
+      <li><a href="server/modules/website.html#iceprod.server.modules.website.PublicHandler.get_template_namespace">get_template_namespace() (iceprod.server.modules.website.PublicHandler method)</a>
+</li>
+      <li><a href="core/functions.html#iceprod.core.functions.gethostname">gethostname() (in module iceprod.core.functions)</a>
+</li>
+      <li><a href="core/functions.html#iceprod.core.functions.getInterfaces">getInterfaces() (in module iceprod.core.functions)</a>
+</li>
+      <li><a href="server/details/global_queueing.html#index-0">Global_Queueing</a>
+</li>
+      <li><a href="server/init.html#iceprod.server.GlobalID">GlobalID (class in iceprod.server)</a>
+</li>
+      <li><a href="server/init.html#iceprod.server.GlobalID.globalID_gen">globalID_gen() (iceprod.server.GlobalID class method)</a>
+</li>
+      <li><a href="server/grid.html#index-0">grid</a>
+</li>
+      <li><a href="server/grid.html#iceprod.server.grid.BaseGrid.GRID_STATES">GRID_STATES (iceprod.server.grid.BaseGrid attribute)</a>
+</li>
+      <li><a href="server/rest_api/grids.html#iceprod.server.rest.grids.GridsHandler">GridsHandler (class in iceprod.server.rest.grids)</a>
+</li>
+      <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.GroupHandler">GroupHandler (class in iceprod.server.rest.auth)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="H">H</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="core/i3exec.html#iceprod.core.i3exec.handler">handler() (in module iceprod.core.i3exec)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Help">Help (class in iceprod.server.modules.website)</a>
-  </dt>
-
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.CacheInfo.hits">hits (iceprod.server.dbmethods.CacheInfo attribute)</a>
-  </dt>
-
-  </dl></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/module.html#iceprod.server.module.ElasticClient.head">head() (iceprod.server.module.ElasticClient method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/modules/website.html#iceprod.server.modules.website.Help">Help (class in iceprod.server.modules.website)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="core/init.html#module-iceprod.core">iceprod.core (module)</a>
-  </dt>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="core/init.html#module-iceprod.core">iceprod.core (module)</a>
+</li>
+      <li><a href="core/dataclasses.html#module-iceprod.core.dataclasses">iceprod.core.dataclasses (module)</a>
+</li>
+      <li><a href="core/exe.html#module-iceprod.core.exe">iceprod.core.exe (module)</a>
+</li>
+      <li><a href="core/exe_helper.html#module-iceprod.core.exe_helper">iceprod.core.exe_helper (module)</a>
+</li>
+      <li><a href="core/exe_json.html#module-iceprod.core.exe_json">iceprod.core.exe_json (module)</a>
+</li>
+      <li><a href="core/functions.html#module-iceprod.core.functions">iceprod.core.functions (module)</a>
+</li>
+      <li><a href="core/i3exec.html#module-iceprod.core.i3exec">iceprod.core.i3exec (module)</a>
+</li>
+      <li><a href="core/jsonUtil.html#module-iceprod.core.jsonUtil">iceprod.core.jsonUtil (module)</a>
+</li>
+      <li><a href="core/parser.html#module-iceprod.core.parser">iceprod.core.parser (module)</a>
+</li>
+      <li><a href="core/serialization.html#module-iceprod.core.serialization">iceprod.core.serialization (module)</a>
+</li>
+      <li><a href="core/util.html#module-iceprod.core.util">iceprod.core.util (module)</a>
+</li>
+      <li><a href="server/init.html#module-iceprod.server">iceprod.server (module)</a>
+</li>
+      <li><a href="server/config.html#module-iceprod.server.config">iceprod.server.config (module)</a>
+</li>
+      <li><a href="server/globus.html#module-iceprod.server.globus">iceprod.server.globus (module)</a>
+</li>
+      <li><a href="server/grid.html#module-iceprod.server.grid">iceprod.server.grid (module)</a>
+</li>
+      <li><a href="server/module.html#module-iceprod.server.module">iceprod.server.module (module)</a>
+</li>
+      <li><a href="server/modules/queue.html#module-iceprod.server.modules.queue">iceprod.server.modules.queue (module)</a>
+</li>
+      <li><a href="server/modules/schedule.html#module-iceprod.server.modules.schedule">iceprod.server.modules.schedule (module)</a>
+</li>
+      <li><a href="server/modules/website.html#module-iceprod.server.modules.website">iceprod.server.modules.website (module)</a>
+</li>
+      <li><a href="server/plugins/condor.html#module-iceprod.server.plugins.condor">iceprod.server.plugins.condor (module)</a>
+</li>
+      <li><a href="server/rest_api/auth.html#module-iceprod.server.rest.auth">iceprod.server.rest.auth (module)</a>
+</li>
+      <li><a href="server/rest_api/config.html#module-iceprod.server.rest.config">iceprod.server.rest.config (module)</a>
+</li>
+      <li><a href="server/rest_api/datasets.html#module-iceprod.server.rest.datasets">iceprod.server.rest.datasets (module)</a>
+</li>
+      <li><a href="server/rest_api/grids.html#module-iceprod.server.rest.grids">iceprod.server.rest.grids (module)</a>
+</li>
+      <li><a href="server/rest_api/jobs.html#module-iceprod.server.rest.jobs">iceprod.server.rest.jobs (module)</a>
+</li>
+      <li><a href="server/rest_api/logs.html#module-iceprod.server.rest.logs">iceprod.server.rest.logs (module)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/rest_api/pilots.html#module-iceprod.server.rest.pilots">iceprod.server.rest.pilots (module)</a>
+</li>
+      <li><a href="server/rest_api/task_stats.html#module-iceprod.server.rest.task_stats">iceprod.server.rest.task_stats (module)</a>
+</li>
+      <li><a href="server/rest_api/tasks.html#module-iceprod.server.rest.tasks">iceprod.server.rest.tasks (module)</a>
+</li>
+      <li><a href="server/server.html#module-iceprod.server.server">iceprod.server.server (module)</a>
+</li>
+      <li><a href="server/ssl_cert.html#module-iceprod.server.ssl_cert">iceprod.server.ssl_cert (module)</a>
+</li>
+      <li><a href="server/config.html#iceprod.server.config.IceProdConfig">IceProdConfig (class in iceprod.server.config)</a>
+</li>
+      <li><a href="server/index.html#index-0">IceProdServer</a>
+</li>
+      <li><a href="server/init.html#iceprod.server.GlobalID.IDLEN">IDLEN (iceprod.server.GlobalID attribute)</a>
+</li>
+      <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.iface_converter">iface_converter (class in iceprod.core.jsonUtil)</a>
+</li>
+      <li><a href="server/modules/website.html#iceprod.server.modules.website.Login.initialize">initialize() (iceprod.server.modules.website.Login method)</a>
 
-      
-  <dt><a href="core/dataclasses.html#module-iceprod.core.dataclasses">iceprod.core.dataclasses (module)</a>
-  </dt>
-
-      
-  <dt><a href="core/exe.html#module-iceprod.core.exe">iceprod.core.exe (module)</a>
-  </dt>
-
-      
-  <dt><a href="core/exe_helper.html#module-iceprod.core.exe_helper">iceprod.core.exe_helper (module)</a>
-  </dt>
-
-      
-  <dt><a href="core/exe_json.html#module-iceprod.core.exe_json">iceprod.core.exe_json (module)</a>
-  </dt>
-
-      
-  <dt><a href="core/functions.html#module-iceprod.core.functions">iceprod.core.functions (module)</a>
-  </dt>
-
-      
-  <dt><a href="core/i3exec.html#module-iceprod.core.i3exec">iceprod.core.i3exec (module)</a>
-  </dt>
-
-      
-  <dt><a href="core/jsonRPCclient.html#module-iceprod.core.jsonRPCclient">iceprod.core.jsonRPCclient (module)</a>
-  </dt>
-
-      
-  <dt><a href="core/jsonUtil.html#module-iceprod.core.jsonUtil">iceprod.core.jsonUtil (module)</a>
-  </dt>
-
-      
-  <dt><a href="core/parser.html#module-iceprod.core.parser">iceprod.core.parser (module)</a>
-  </dt>
-
-      
-  <dt><a href="core/serialization.html#module-iceprod.core.serialization">iceprod.core.serialization (module)</a>
-  </dt>
-
-      
-  <dt><a href="core/util.html#module-iceprod.core.util">iceprod.core.util (module)</a>
-  </dt>
-
-      
-  <dt><a href="server/init.html#module-iceprod.server">iceprod.server (module)</a>
-  </dt>
-
-      
-  <dt><a href="server/config.html#module-iceprod.server.config">iceprod.server.config (module)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#module-iceprod.server.dbmethods">iceprod.server.dbmethods (module)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#module-iceprod.server.dbmethods.auth">iceprod.server.dbmethods.auth (module)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#module-iceprod.server.dbmethods.cron">iceprod.server.dbmethods.cron (module)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#module-iceprod.server.dbmethods.misc">iceprod.server.dbmethods.misc (module)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#module-iceprod.server.dbmethods.node">iceprod.server.dbmethods.node (module)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#module-iceprod.server.dbmethods.queue">iceprod.server.dbmethods.queue (module)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#module-iceprod.server.dbmethods.rpc">iceprod.server.dbmethods.rpc (module)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#module-iceprod.server.dbmethods.web">iceprod.server.dbmethods.web (module)</a>
-  </dt>
-
-      
-  <dt><a href="server/file_io.html#module-iceprod.server.file_io">iceprod.server.file_io (module)</a>
-  </dt>
-
-      
-  <dt><a href="server/globus.html#module-iceprod.server.globus">iceprod.server.globus (module)</a>
-  </dt>
-
-      
-  <dt><a href="server/grid.html#module-iceprod.server.grid">iceprod.server.grid (module)</a>
-  </dt>
-
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="server/module.html#module-iceprod.server.module">iceprod.server.module (module)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/db.html#module-iceprod.server.modules.db">iceprod.server.modules.db (module)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/proxy.html#module-iceprod.server.modules.proxy">iceprod.server.modules.proxy (module)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/schedule.html#module-iceprod.server.modules.schedule">iceprod.server.modules.schedule (module)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/website.html#module-iceprod.server.modules.website">iceprod.server.modules.website (module)</a>
-  </dt>
-
-      
-  <dt><a href="server/nginx.html#module-iceprod.server.nginx">iceprod.server.nginx (module)</a>
-  </dt>
-
-      
-  <dt><a href="server/plugins/condor.html#module-iceprod.server.plugins.condor">iceprod.server.plugins.condor (module)</a>
-  </dt>
-
-      
-  <dt><a href="server/server.html#module-iceprod.server.server">iceprod.server.server (module)</a>
-  </dt>
-
-      
-  <dt><a href="server/squid.html#module-iceprod.server.squid">iceprod.server.squid (module)</a>
-  </dt>
-
-      
-  <dt><a href="server/ssl_cert.html#module-iceprod.server.ssl_cert">iceprod.server.ssl_cert (module)</a>
-  </dt>
-
-      
-  <dt><a href="server/config.html#iceprod.server.config.IceProdConfig">IceProdConfig (class in iceprod.server.config)</a>
-  </dt>
-
-      
-  <dt><a href="modules/index.html#index-0">IceProdModules</a>
-  </dt>
-
-      
-  <dt><a href="server/index.html#index-0">IceProdServer</a>
-  </dt>
-
-      
-  <dt><a href="server/init.html#iceprod.server.GlobalID.IDLEN">IDLEN (iceprod.server.GlobalID attribute)</a>
-  </dt>
-
-      
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.iface_converter">iface_converter (class in iceprod.core.jsonUtil)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/db.html#iceprod.server.modules.db.DBAPI.increment_id">increment_id() (iceprod.server.modules.db.DBAPI method)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/db.html#iceprod.server.modules.db.DBAPI.indices">indices (iceprod.server.modules.db.DBAPI attribute)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/db.html#iceprod.server.modules.db.DBAPI.init">init() (iceprod.server.modules.db.DBAPI method)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.LibHandler.initialize">initialize() (iceprod.server.modules.website.LibHandler method)</a>
-  </dt>
-
-      <dd><dl>
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.MyHandler.initialize">(iceprod.server.modules.website.MyHandler method)</a>
-  </dt>
-
-      </dl></dd>
-      
-  <dt><a href="server/init.html#iceprod.server.GlobalID.int2char">int2char() (iceprod.server.GlobalID class method)</a>
-  </dt>
-
-      
-  <dt><a href="server/init.html#iceprod.server.GlobalID.INTS_DICT">INTS_DICT (iceprod.server.GlobalID attribute)</a>
-  </dt>
-
-      
-  <dt><a href="core/functions.html#iceprod.core.functions.iscompressed">iscompressed() (in module iceprod.core.functions)</a>
-  </dt>
-
-      
-  <dt><a href="core/functions.html#iceprod.core.functions.istarred">istarred() (in module iceprod.core.functions)</a>
-  </dt>
-
-      
-  <dt><a href="core/functions.html#iceprod.core.functions.isurl">isurl() (in module iceprod.core.functions)</a>
-  </dt>
-
-  </dl></td>
+      <ul>
+        <li><a href="server/modules/website.html#iceprod.server.modules.website.PublicHandler.initialize">(iceprod.server.modules.website.PublicHandler method)</a>
+</li>
+        <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.AuthHandler.initialize">(iceprod.server.rest.auth.AuthHandler method)</a>
+</li>
+        <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.LDAPHandler.initialize">(iceprod.server.rest.auth.LDAPHandler method)</a>
+</li>
+        <li><a href="server/rest_api/config.html#iceprod.server.rest.config.ConfigHandler.initialize">(iceprod.server.rest.config.ConfigHandler method)</a>
+</li>
+        <li><a href="server/rest_api/datasets.html#iceprod.server.rest.datasets.BaseHandler.initialize">(iceprod.server.rest.datasets.BaseHandler method)</a>
+</li>
+        <li><a href="server/rest_api/grids.html#iceprod.server.rest.grids.BaseHandler.initialize">(iceprod.server.rest.grids.BaseHandler method)</a>
+</li>
+        <li><a href="server/rest_api/jobs.html#iceprod.server.rest.jobs.BaseHandler.initialize">(iceprod.server.rest.jobs.BaseHandler method)</a>
+</li>
+        <li><a href="server/rest_api/logs.html#iceprod.server.rest.logs.BaseHandler.initialize">(iceprod.server.rest.logs.BaseHandler method)</a>
+</li>
+        <li><a href="server/rest_api/pilots.html#iceprod.server.rest.pilots.BaseHandler.initialize">(iceprod.server.rest.pilots.BaseHandler method)</a>
+</li>
+        <li><a href="server/rest_api/task_stats.html#iceprod.server.rest.task_stats.BaseHandler.initialize">(iceprod.server.rest.task_stats.BaseHandler method)</a>
+</li>
+        <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.BaseHandler.initialize">(iceprod.server.rest.tasks.BaseHandler method)</a>
+</li>
+      </ul></li>
+      <li><a href="server/init.html#iceprod.server.GlobalID.int2char">int2char() (iceprod.server.GlobalID class method)</a>
+</li>
+      <li><a href="server/init.html#iceprod.server.GlobalID.INTS_DICT">INTS_DICT (iceprod.server.GlobalID attribute)</a>
+</li>
+      <li><a href="core/functions.html#iceprod.core.functions.iscompressed">iscompressed() (in module iceprod.core.functions)</a>
+</li>
+      <li><a href="core/functions.html#iceprod.core.functions.istarred">istarred() (in module iceprod.core.functions)</a>
+</li>
+      <li><a href="core/functions.html#iceprod.core.functions.isurl">isurl() (in module iceprod.core.functions)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="J">J</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Job">Job (class in iceprod.core.dataclasses)</a>
-  </dt>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Job">Job (class in iceprod.core.dataclasses)</a>
 
-      <dd><dl>
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Job">(class in iceprod.server.modules.website)</a>
-  </dt>
-
-      </dl></dd>
-      
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.json_compressor">json_compressor (class in iceprod.core.jsonUtil)</a>
-  </dt>
-
-      
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.json_decode">json_decode() (in module iceprod.core.jsonUtil)</a>
-  </dt>
-
-      
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.json_encode">json_encode() (in module iceprod.core.jsonUtil)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.JSONRPCHandler.json_error">json_error() (iceprod.server.modules.website.JSONRPCHandler method)</a>
-  </dt>
-
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="core/jsonRPCclient.html#iceprod.core.jsonRPCclient.JSONRPC">JSONRPC (class in iceprod.core.jsonRPCclient)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.JSONRPCHandler">JSONRPCHandler (class in iceprod.server.modules.website)</a>
-  </dt>
-
-      
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.JSONToObj">JSONToObj() (in module iceprod.core.jsonUtil)</a>
-  </dt>
-
-      
-  <dt><a href="core/jsonUtil.html#index-0">jsonUtil</a>
-  </dt>
-
-  </dl></td>
+      <ul>
+        <li><a href="server/modules/website.html#iceprod.server.modules.website.Job">(class in iceprod.server.modules.website)</a>
+</li>
+      </ul></li>
+      <li><a href="server/modules/website.html#iceprod.server.modules.website.JobBrowse">JobBrowse (class in iceprod.server.modules.website)</a>
+</li>
+      <li><a href="server/rest_api/jobs.html#iceprod.server.rest.jobs.JobsHandler">JobsHandler (class in iceprod.server.rest.jobs)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.json_compressor">json_compressor (class in iceprod.core.jsonUtil)</a>
+</li>
+      <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.json_decode">json_decode() (in module iceprod.core.jsonUtil)</a>
+</li>
+      <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.json_encode">json_encode() (in module iceprod.core.jsonUtil)</a>
+</li>
+      <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.JSONToObj">JSONToObj() (in module iceprod.core.jsonUtil)</a>
+</li>
+      <li><a href="core/jsonUtil.html#index-0">jsonUtil</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="K">K</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="server/module.html#iceprod.server.module.module.kill">kill() (iceprod.server.module.module method)</a>
-  </dt>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/module.html#iceprod.server.module.module.kill">kill() (iceprod.server.module.module method)</a>
 
-      <dd><dl>
-        
-  <dt><a href="server/modules/db.html#iceprod.server.modules.db.db.kill">(iceprod.server.modules.db.db method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/proxy.html#iceprod.server.modules.proxy.proxy.kill">(iceprod.server.modules.proxy.proxy method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/schedule.html#iceprod.server.modules.schedule.schedule.kill">(iceprod.server.modules.schedule.schedule method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.website.kill">(iceprod.server.modules.website.website method)</a>
-  </dt>
-
-        
-  <dt><a href="server/nginx.html#iceprod.server.nginx.Nginx.kill">(iceprod.server.nginx.Nginx method)</a>
-  </dt>
-
-        
-  <dt><a href="server/server.html#iceprod.server.server.Server.kill">(iceprod.server.server.Server method)</a>
-  </dt>
-
-        
-  <dt><a href="server/squid.html#iceprod.server.squid.Squid.kill">(iceprod.server.squid.Squid method)</a>
-  </dt>
-
-      </dl></dd>
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="server/init.html#iceprod.server.KwargConfig">KwargConfig (class in iceprod.server)</a>
-  </dt>
-
-  </dl></td>
+      <ul>
+        <li><a href="server/server.html#iceprod.server.server.Server.kill">(iceprod.server.server.Server method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/init.html#iceprod.server.KwargConfig">KwargConfig (class in iceprod.server)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="L">L</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.LibHandler">LibHandler (class in iceprod.server.modules.website)</a>
-  </dt>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.LDAPHandler">LDAPHandler (class in iceprod.server.rest.auth)</a>
+</li>
+      <li><a href="server/details/lifecycles.html#index-0">Lifecycles</a>
+</li>
+      <li><a href="server/init.html#iceprod.server.listmodules">listmodules() (in module iceprod.server)</a>
+</li>
+      <li><a href="core/serialization.html#iceprod.core.serialization.serialize_json.load">load() (iceprod.core.serialization.serialize_json static method)</a>
 
-      
-  <dt><a href="server/details/lifecycles.html#index-0">Lifecycles</a>
-  </dt>
+      <ul>
+        <li><a href="server/config.html#iceprod.server.config.IceProdConfig.load">(iceprod.server.config.IceProdConfig method)</a>
+</li>
+      </ul></li>
+      <li><a href="core/functions.html#iceprod.core.functions.load_cksm">load_cksm() (in module iceprod.core.functions)</a>
+</li>
+      <li><a href="core/i3exec.html#iceprod.core.i3exec.load_config">load_config() (in module iceprod.core.i3exec)</a>
+</li>
+      <li><a href="server/config.html#iceprod.server.config.IceProdConfig.load_string">load_string() (iceprod.server.config.IceProdConfig method)</a>
+</li>
+      <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.binary_converter.loads">loads() (iceprod.core.jsonUtil.binary_converter static method)</a>
 
-      
-  <dt><a href="server/init.html#iceprod.server.listmodules">listmodules() (in module iceprod.server)</a>
-  </dt>
-
-      
-  <dt><a href="core/serialization.html#iceprod.core.serialization.serialize_json.load">load() (iceprod.core.serialization.serialize_json static method)</a>
-  </dt>
-
-      <dd><dl>
-        
-  <dt><a href="server/config.html#iceprod.server.config.IceProdConfig.load">(iceprod.server.config.IceProdConfig method)</a>
-  </dt>
-
-      </dl></dd>
-      
-  <dt><a href="core/functions.html#iceprod.core.functions.load_cksm">load_cksm() (in module iceprod.core.functions)</a>
-  </dt>
-
-      
-  <dt><a href="core/i3exec.html#iceprod.core.i3exec.load_config">load_config() (in module iceprod.core.i3exec)</a>
-  </dt>
-
-      
-  <dt><a href="server/config.html#iceprod.server.config.IceProdConfig.load_string">load_string() (iceprod.server.config.IceProdConfig method)</a>
-  </dt>
-
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.binary_converter.loads">loads() (iceprod.core.jsonUtil.binary_converter static method)</a>
-  </dt>
-
-      <dd><dl>
-        
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.bytearray_converter.loads">(iceprod.core.jsonUtil.bytearray_converter static method)</a>
-  </dt>
-
-        
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.date_converter.loads">(iceprod.core.jsonUtil.date_converter static method)</a>
-  </dt>
-
-        
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.datetime_converter.loads">(iceprod.core.jsonUtil.datetime_converter static method)</a>
-  </dt>
-
-        
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.iface_converter.loads">(iceprod.core.jsonUtil.iface_converter static method)</a>
-  </dt>
-
-        
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.repr_converter.loads">(iceprod.core.jsonUtil.repr_converter static method)</a>
-  </dt>
-
-        
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.set_converter.loads">(iceprod.core.jsonUtil.set_converter static method)</a>
-  </dt>
-
-        
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.time_converter.loads">(iceprod.core.jsonUtil.time_converter static method)</a>
-  </dt>
-
-        
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.var_converter.loads">(iceprod.core.jsonUtil.var_converter static method)</a>
-  </dt>
-
-        
-  <dt><a href="core/serialization.html#iceprod.core.serialization.serialize_json.loads">(iceprod.core.serialization.serialize_json static method)</a>
-  </dt>
-
-      </dl></dd>
-      
-  <dt><a href="server/init.html#iceprod.server.GlobalID.localID_ret">localID_ret() (iceprod.server.GlobalID class method)</a>
-  </dt>
-
-      
-  <dt><a href="server/config.html#iceprod.server.config.locateconfig">locateconfig() (in module iceprod.server.config)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Log">Log (class in iceprod.server.modules.website)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Login">Login (class in iceprod.server.modules.website)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Logout">Logout (class in iceprod.server.modules.website)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.website.logrotate">logrotate() (iceprod.server.modules.website.website method)</a>
-  </dt>
-
-      <dd><dl>
-        
-  <dt><a href="server/nginx.html#iceprod.server.nginx.Nginx.logrotate">(iceprod.server.nginx.Nginx method)</a>
-  </dt>
-
-        
-  <dt><a href="server/squid.html#iceprod.server.squid.Squid.logrotate">(iceprod.server.squid.Squid method)</a>
-  </dt>
-
-      </dl></dd>
-  </dl></td>
+      <ul>
+        <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.bytearray_converter.loads">(iceprod.core.jsonUtil.bytearray_converter static method)</a>
+</li>
+        <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.date_converter.loads">(iceprod.core.jsonUtil.date_converter static method)</a>
+</li>
+        <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.datetime_converter.loads">(iceprod.core.jsonUtil.datetime_converter static method)</a>
+</li>
+        <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.iface_converter.loads">(iceprod.core.jsonUtil.iface_converter static method)</a>
+</li>
+        <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.repr_converter.loads">(iceprod.core.jsonUtil.repr_converter static method)</a>
+</li>
+        <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.set_converter.loads">(iceprod.core.jsonUtil.set_converter static method)</a>
+</li>
+        <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.time_converter.loads">(iceprod.core.jsonUtil.time_converter static method)</a>
+</li>
+        <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.var_converter.loads">(iceprod.core.jsonUtil.var_converter static method)</a>
+</li>
+        <li><a href="core/serialization.html#iceprod.core.serialization.serialize_json.loads">(iceprod.core.serialization.serialize_json static method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/init.html#iceprod.server.GlobalID.localID_ret">localID_ret() (iceprod.server.GlobalID class method)</a>
+</li>
+      <li><a href="server/config.html#iceprod.server.config.locateconfig">locateconfig() (in module iceprod.server.config)</a>
+</li>
+      <li><a href="server/modules/website.html#iceprod.server.modules.website.Log">Log (class in iceprod.server.modules.website)</a>
+</li>
+      <li><a href="server/modules/website.html#iceprod.server.modules.website.Login">Login (class in iceprod.server.modules.website)</a>
+</li>
+      <li><a href="server/modules/website.html#iceprod.server.modules.website.Logout">Logout (class in iceprod.server.modules.website)</a>
+</li>
+      <li><a href="server/rest_api/logs.html#iceprod.server.rest.logs.LogsHandler">LogsHandler (class in iceprod.server.rest.logs)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="M">M</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="core/exe_helper.html#iceprod.core.exe_helper.main">main() (in module iceprod.core.exe_helper)</a>
-  </dt>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="core/exe_helper.html#iceprod.core.exe_helper.main">main() (in module iceprod.core.exe_helper)</a>
 
-      <dd><dl>
-        
-  <dt><a href="core/i3exec.html#iceprod.core.i3exec.main">(in module iceprod.core.i3exec)</a>
-  </dt>
-
-      </dl></dd>
-      
-  <dt><a href="server/modules/master_updater.html#index-0">master_updater_module</a>
-  </dt>
-
-      
-  <dt><a href="server/init.html#iceprod.server.GlobalID.MAXLOCALID">MAXLOCALID (iceprod.server.GlobalID attribute)</a>
-  </dt>
-
-      
-  <dt><a href="server/init.html#iceprod.server.GlobalID.MAXSITEID">MAXSITEID (iceprod.server.GlobalID attribute)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.CacheInfo.maxsize">maxsize (iceprod.server.dbmethods.CacheInfo attribute)</a>
-  </dt>
-
-      
-  <dt><a href="server/schedule.html#iceprod.server.schedule.Scheduler.MAXWAIT">MAXWAIT (iceprod.server.schedule.Scheduler attribute)</a>
-  </dt>
-
-      
-  <dt><a href="core/functions.html#iceprod.core.functions.md5sum">md5sum() (in module iceprod.core.functions)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.memcache">memcache() (in module iceprod.server.dbmethods)</a>
-  </dt>
-
-      
-  <dt><a href="server/grid.html#iceprod.server.grid.BaseGrid.metrics">metrics() (iceprod.server.grid.BaseGrid method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.misc.misc">misc (class in iceprod.server.dbmethods.misc)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.misc.misc.misc_get_tables_for_task">misc_get_tables_for_task() (iceprod.server.dbmethods.misc.misc method)</a>
-  </dt>
-
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.misc.misc.misc_site_to_site_upload">misc_site_to_site_upload() (iceprod.server.dbmethods.misc.misc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.misc.misc.misc_update_master_db">misc_update_master_db() (iceprod.server.dbmethods.misc.misc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.misc.misc.misc_update_tables">misc_update_tables() (iceprod.server.dbmethods.misc.misc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.CacheInfo.misses">misses (iceprod.server.dbmethods.CacheInfo attribute)</a>
-  </dt>
-
-      
-  <dt><a href="server/module.html#index-0">module</a>
-  </dt>
-
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Module">Module (class in iceprod.core.dataclasses)</a>
-  </dt>
-
-      
-  <dt><a href="server/module.html#iceprod.server.module.module">module (class in iceprod.server.module)</a>
-  </dt>
-
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Data.movement_options">movement_options (iceprod.core.dataclasses.Data attribute)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.MyHandler">MyHandler (class in iceprod.server.modules.website)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.misc.MySQLdb">MySQLdb (class in iceprod.server.dbmethods.misc)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.misc.MySQLdb.Error">MySQLdb.Error</a>
-  </dt>
-
-  </dl></td>
+      <ul>
+        <li><a href="core/i3exec.html#iceprod.core.i3exec.main">(in module iceprod.core.i3exec)</a>
+</li>
+      </ul></li>
+      <li><a href="server/modules/master_updater.html#index-0">master_updater_module</a>
+</li>
+      <li><a href="server/init.html#iceprod.server.GlobalID.MAXLOCALID">MAXLOCALID (iceprod.server.GlobalID attribute)</a>
+</li>
+      <li><a href="server/init.html#iceprod.server.GlobalID.MAXSITEID">MAXSITEID (iceprod.server.GlobalID attribute)</a>
+</li>
+      <li><a href="core/functions.html#iceprod.core.functions.md5sum">md5sum() (in module iceprod.core.functions)</a>
+</li>
+      <li><a href="server/module.html#index-0">module</a>
+</li>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Module">Module (class in iceprod.core.dataclasses)</a>
+</li>
+      <li><a href="server/module.html#iceprod.server.module.module">module (class in iceprod.server.module)</a>
+</li>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Data.movement_options">movement_options (iceprod.core.dataclasses.Data attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/rest_api/datasets.html#iceprod.server.rest.datasets.MultiDatasetHandler">MultiDatasetHandler (class in iceprod.server.rest.datasets)</a>
+</li>
+      <li><a href="server/rest_api/grids.html#iceprod.server.rest.grids.MultiGridsHandler">MultiGridsHandler (class in iceprod.server.rest.grids)</a>
+</li>
+      <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.MultiGroupHandler">MultiGroupHandler (class in iceprod.server.rest.auth)</a>
+</li>
+      <li><a href="server/rest_api/jobs.html#iceprod.server.rest.jobs.MultiJobsHandler">MultiJobsHandler (class in iceprod.server.rest.jobs)</a>
+</li>
+      <li><a href="server/rest_api/logs.html#iceprod.server.rest.logs.MultiLogsHandler">MultiLogsHandler (class in iceprod.server.rest.logs)</a>
+</li>
+      <li><a href="server/rest_api/pilots.html#iceprod.server.rest.pilots.MultiPilotsHandler">MultiPilotsHandler (class in iceprod.server.rest.pilots)</a>
+</li>
+      <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.MultiRoleHandler">MultiRoleHandler (class in iceprod.server.rest.auth)</a>
+</li>
+      <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.MultiTasksHandler">MultiTasksHandler (class in iceprod.server.rest.tasks)</a>
+</li>
+      <li><a href="server/rest_api/task_stats.html#iceprod.server.rest.task_stats.MultiTaskStatsHandler">MultiTaskStatsHandler (class in iceprod.server.rest.task_stats)</a>
+</li>
+      <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.MultiUserHandler">MultiUserHandler (class in iceprod.server.rest.auth)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="N">N</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="server/nginx.html#index-0">nginx</a>
-  </dt>
-
-      
-  <dt><a href="server/nginx.html#iceprod.server.nginx.Nginx">Nginx (class in iceprod.server.nginx)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.node.node">node (class in iceprod.server.dbmethods.node)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.node.node.node_collate_resources">node_collate_resources() (iceprod.server.dbmethods.node.node method)</a>
-  </dt>
-
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.node.node.node_get_site_resources">node_get_site_resources() (iceprod.server.dbmethods.node.node method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.node.node.node_update">node_update() (iceprod.server.dbmethods.node.node method)</a>
-  </dt>
-
-      
-  <dt><a href="core/util.html#iceprod.core.util.NoncriticalError">NoncriticalError</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.nowstr">nowstr() (in module iceprod.server.dbmethods)</a>
-  </dt>
-
-  </dl></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/nginx.html#index-0">nginx</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="core/util.html#iceprod.core.util.NoncriticalError">NoncriticalError</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="O">O</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.objToJSON">objToJSON() (in module iceprod.core.jsonUtil)</a>
-  </dt>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.objToJSON">objToJSON() (in module iceprod.core.jsonUtil)</a>
+</li>
+      <li><a href="server/modules/website.html#iceprod.server.modules.website.Other">Other (class in iceprod.server.modules.website)</a>
+</li>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Class.output">output() (iceprod.core.dataclasses.Class method)</a>
 
-      
-  <dt><a href="core/jsonRPCclient.html#iceprod.core.jsonRPCclient.Client.open">open() (iceprod.core.jsonRPCclient.Client method)</a>
-  </dt>
-
-      <dd><dl>
-        
-  <dt><a href="server/file_io.html#iceprod.server.file_io.AsyncFileIO.open">(iceprod.server.file_io.AsyncFileIO method)</a>
-  </dt>
-
-      </dl></dd>
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Other">Other (class in iceprod.server.modules.website)</a>
-  </dt>
-
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Class.output">output() (iceprod.core.dataclasses.Class method)</a>
-  </dt>
-
-      <dd><dl>
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Data.output">(iceprod.core.dataclasses.Data method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.DataCenter.output">(iceprod.core.dataclasses.DataCenter method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Dif.output">(iceprod.core.dataclasses.Dif method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.DifPlus.output">(iceprod.core.dataclasses.DifPlus method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Job.output">(iceprod.core.dataclasses.Job method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Module.output">(iceprod.core.dataclasses.Module method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Personnel.output">(iceprod.core.dataclasses.Personnel method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Plus.output">(iceprod.core.dataclasses.Plus method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Resource.output">(iceprod.core.dataclasses.Resource method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Steering.output">(iceprod.core.dataclasses.Steering method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Task.output">(iceprod.core.dataclasses.Task method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Tray.output">(iceprod.core.dataclasses.Tray method)</a>
-  </dt>
-
-      </dl></dd>
-  </dl></td>
+      <ul>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Data.output">(iceprod.core.dataclasses.Data method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.DataCenter.output">(iceprod.core.dataclasses.DataCenter method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Dif.output">(iceprod.core.dataclasses.Dif method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.DifPlus.output">(iceprod.core.dataclasses.DifPlus method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Job.output">(iceprod.core.dataclasses.Job method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Module.output">(iceprod.core.dataclasses.Module method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Personnel.output">(iceprod.core.dataclasses.Personnel method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Plus.output">(iceprod.core.dataclasses.Plus method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Resource.output">(iceprod.core.dataclasses.Resource method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Steering.output">(iceprod.core.dataclasses.Steering method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Task.output">(iceprod.core.dataclasses.Task method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Tray.output">(iceprod.core.dataclasses.Tray method)</a>
+</li>
+      </ul></li>
+  </ul></td>
 </tr></table>
 
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="core/parser.html#iceprod.core.parser.ExpParser.parse">parse() (iceprod.core.parser.ExpParser method)</a>
-  </dt>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="core/parser.html#iceprod.core.parser.ExpParser.parse">parse() (iceprod.core.parser.ExpParser method)</a>
+</li>
+      <li><a href="core/exe.html#iceprod.core.exe.Config.parseObject">parseObject() (iceprod.core.exe.Config method)</a>
+</li>
+      <li><a href="core/exe.html#iceprod.core.exe.Config.parseValue">parseValue() (iceprod.core.exe.Config method)</a>
+</li>
+      <li><a href="server/rest_api/grids.html#iceprod.server.rest.grids.GridsHandler.patch">patch() (iceprod.server.rest.grids.GridsHandler method)</a>
 
-      
-  <dt><a href="server/schedule.html#iceprod.server.schedule.Scheduler.parsecron">parsecron() (iceprod.server.schedule.Scheduler static method)</a>
-  </dt>
+      <ul>
+        <li><a href="server/rest_api/jobs.html#iceprod.server.rest.jobs.JobsHandler.patch">(iceprod.server.rest.jobs.JobsHandler method)</a>
+</li>
+        <li><a href="server/rest_api/pilots.html#iceprod.server.rest.pilots.PilotsHandler.patch">(iceprod.server.rest.pilots.PilotsHandler method)</a>
+</li>
+        <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.DatasetTaskBulkRequirementsHandler.patch">(iceprod.server.rest.tasks.DatasetTaskBulkRequirementsHandler method)</a>
+</li>
+        <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.TasksHandler.patch">(iceprod.server.rest.tasks.TasksHandler method)</a>
+</li>
+      </ul></li>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Personnel">Personnel (class in iceprod.core.dataclasses)</a>
+</li>
+      <li><a href="server/rest_api/pilots.html#iceprod.server.rest.pilots.PilotsHandler">PilotsHandler (class in iceprod.server.rest.pilots)</a>
+</li>
+      <li><a href="server/plugins/condor.html#index-0">plugins_condor</a>
+</li>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Class.plural">plural (iceprod.core.dataclasses.Class attribute)</a>
 
-      
-  <dt><a href="core/exe.html#iceprod.core.exe.Config.parseObject">parseObject() (iceprod.core.exe.Config method)</a>
-  </dt>
+      <ul>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Data.plural">(iceprod.core.dataclasses.Data attribute)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.DataCenter.plural">(iceprod.core.dataclasses.DataCenter attribute)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Dif.plural">(iceprod.core.dataclasses.Dif attribute)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.DifPlus.plural">(iceprod.core.dataclasses.DifPlus attribute)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Job.plural">(iceprod.core.dataclasses.Job attribute)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Module.plural">(iceprod.core.dataclasses.Module attribute)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Personnel.plural">(iceprod.core.dataclasses.Personnel attribute)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Plus.plural">(iceprod.core.dataclasses.Plus attribute)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Resource.plural">(iceprod.core.dataclasses.Resource attribute)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Steering.plural">(iceprod.core.dataclasses.Steering attribute)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Task.plural">(iceprod.core.dataclasses.Task attribute)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Tray.plural">(iceprod.core.dataclasses.Tray attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Plus">Plus (class in iceprod.core.dataclasses)</a>
+</li>
+      <li><a href="server/module.html#iceprod.server.module.ElasticClient.post">post() (iceprod.server.module.ElasticClient method)</a>
 
-      
-  <dt><a href="core/exe.html#iceprod.core.exe.Config.parseValue">parseValue() (iceprod.core.exe.Config method)</a>
-  </dt>
+      <ul>
+        <li><a href="server/modules/website.html#iceprod.server.modules.website.Login.post">(iceprod.server.modules.website.Login method)</a>
+</li>
+        <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.CreateTokenHandler.post">(iceprod.server.rest.auth.CreateTokenHandler method)</a>
+</li>
+        <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.LDAPHandler.post">(iceprod.server.rest.auth.LDAPHandler method)</a>
+</li>
+        <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.MultiUserHandler.post">(iceprod.server.rest.auth.MultiUserHandler method)</a>
+</li>
+        <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.UserGroupsHandler.post">(iceprod.server.rest.auth.UserGroupsHandler method)</a>
+</li>
+        <li><a href="server/rest_api/datasets.html#iceprod.server.rest.datasets.MultiDatasetHandler.post">(iceprod.server.rest.datasets.MultiDatasetHandler method)</a>
+</li>
+        <li><a href="server/rest_api/grids.html#iceprod.server.rest.grids.MultiGridsHandler.post">(iceprod.server.rest.grids.MultiGridsHandler method)</a>
+</li>
+        <li><a href="server/rest_api/jobs.html#iceprod.server.rest.jobs.MultiJobsHandler.post">(iceprod.server.rest.jobs.MultiJobsHandler method)</a>
+</li>
+        <li><a href="server/rest_api/logs.html#iceprod.server.rest.logs.DatasetMultiLogsHandler.post">(iceprod.server.rest.logs.DatasetMultiLogsHandler method)</a>
+</li>
+        <li><a href="server/rest_api/logs.html#iceprod.server.rest.logs.MultiLogsHandler.post">(iceprod.server.rest.logs.MultiLogsHandler method)</a>
+</li>
+        <li><a href="server/rest_api/pilots.html#iceprod.server.rest.pilots.MultiPilotsHandler.post">(iceprod.server.rest.pilots.MultiPilotsHandler method)</a>
+</li>
+        <li><a href="server/rest_api/task_stats.html#iceprod.server.rest.task_stats.MultiTaskStatsHandler.post">(iceprod.server.rest.task_stats.MultiTaskStatsHandler method)</a>
+</li>
+        <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.DatasetMultiFilesHandler.post">(iceprod.server.rest.tasks.DatasetMultiFilesHandler method)</a>
+</li>
+        <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.DatasetTaskBulkStatusHandler.post">(iceprod.server.rest.tasks.DatasetTaskBulkStatusHandler method)</a>
+</li>
+        <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.DatasetTaskFilesHandler.post">(iceprod.server.rest.tasks.DatasetTaskFilesHandler method)</a>
+</li>
+        <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.MultiTasksHandler.post">(iceprod.server.rest.tasks.MultiTasksHandler method)</a>
+</li>
+        <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.TasksActionsCompleteHandler.post">(iceprod.server.rest.tasks.TasksActionsCompleteHandler method)</a>
+</li>
+        <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.TasksActionsErrorHandler.post">(iceprod.server.rest.tasks.TasksActionsErrorHandler method)</a>
+</li>
+        <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.TasksActionsProcessingHandler.post">(iceprod.server.rest.tasks.TasksActionsProcessingHandler method)</a>
+</li>
+        <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.TasksActionsQueueHandler.post">(iceprod.server.rest.tasks.TasksActionsQueueHandler method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/modules/website.html#iceprod.server.modules.website.PublicHandler.prepare">prepare() (iceprod.server.modules.website.PublicHandler method)</a>
+</li>
+      <li><a href="core/exe_json.html#iceprod.core.exe_json.ServerComms.processing">processing() (iceprod.core.exe_json.ServerComms method)</a>
+</li>
+      <li><a href="server/modules/website.html#iceprod.server.modules.website.Profile">Profile (class in iceprod.server.modules.website)</a>
+</li>
+      <li><a href="server/modules/proxy.html#index-0">proxy_module</a>
+</li>
+      <li><a href="server/modules/website.html#iceprod.server.modules.website.PublicHandler">PublicHandler (class in iceprod.server.modules.website)</a>
+</li>
+      <li><a href="server/module.html#iceprod.server.module.ElasticClient.put">put() (iceprod.server.module.ElasticClient method)</a>
 
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Personnel">Personnel (class in iceprod.core.dataclasses)</a>
-  </dt>
-
-      
-  <dt><a href="server/plugins/condor.html#index-0">plugins_condor</a>
-  </dt>
-
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Class.plural">plural (iceprod.core.dataclasses.Class attribute)</a>
-  </dt>
-
-      <dd><dl>
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Data.plural">(iceprod.core.dataclasses.Data attribute)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.DataCenter.plural">(iceprod.core.dataclasses.DataCenter attribute)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Dif.plural">(iceprod.core.dataclasses.Dif attribute)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.DifPlus.plural">(iceprod.core.dataclasses.DifPlus attribute)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Job.plural">(iceprod.core.dataclasses.Job attribute)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Module.plural">(iceprod.core.dataclasses.Module attribute)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Personnel.plural">(iceprod.core.dataclasses.Personnel attribute)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Plus.plural">(iceprod.core.dataclasses.Plus attribute)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Resource.plural">(iceprod.core.dataclasses.Resource attribute)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Steering.plural">(iceprod.core.dataclasses.Steering attribute)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Task.plural">(iceprod.core.dataclasses.Task attribute)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Tray.plural">(iceprod.core.dataclasses.Tray attribute)</a>
-  </dt>
-
-      </dl></dd>
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Plus">Plus (class in iceprod.core.dataclasses)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.JSONRPCHandler.post">post() (iceprod.server.modules.website.JSONRPCHandler method)</a>
-  </dt>
-
-      <dd><dl>
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Login.post">(iceprod.server.modules.website.Login method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.MyHandler.post">(iceprod.server.modules.website.MyHandler method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.UserAccount.post">(iceprod.server.modules.website.UserAccount method)</a>
-  </dt>
-
-      </dl></dd>
-      
-  <dt><a href="core/exe_json.html#iceprod.core.exe_json.processing">processing() (in module iceprod.core.exe_json)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/proxy.html#iceprod.server.modules.proxy.proxy">proxy (class in iceprod.server.modules.proxy)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/proxy.html#index-0">proxy_module</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.PublicHandler">PublicHandler (class in iceprod.server.modules.website)</a>
-  </dt>
-
-      
-  <dt><a href="server/module.html#iceprod.server.module.ElasticClient.put">put() (iceprod.server.module.ElasticClient method)</a>
-  </dt>
-
-  </dl></td>
+      <ul>
+        <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.AuthDatasetHandler.put">(iceprod.server.rest.auth.AuthDatasetHandler method)</a>
+</li>
+        <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.GroupHandler.put">(iceprod.server.rest.auth.GroupHandler method)</a>
+</li>
+        <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.RoleHandler.put">(iceprod.server.rest.auth.RoleHandler method)</a>
+</li>
+        <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.UserGroupsHandler.put">(iceprod.server.rest.auth.UserGroupsHandler method)</a>
+</li>
+        <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.UserRolesHandler.put">(iceprod.server.rest.auth.UserRolesHandler method)</a>
+</li>
+        <li><a href="server/rest_api/config.html#iceprod.server.rest.config.ConfigHandler.put">(iceprod.server.rest.config.ConfigHandler method)</a>
+</li>
+        <li><a href="server/rest_api/datasets.html#iceprod.server.rest.datasets.DatasetDescriptionHandler.put">(iceprod.server.rest.datasets.DatasetDescriptionHandler method)</a>
+</li>
+        <li><a href="server/rest_api/datasets.html#iceprod.server.rest.datasets.DatasetStatusHandler.put">(iceprod.server.rest.datasets.DatasetStatusHandler method)</a>
+</li>
+        <li><a href="server/rest_api/jobs.html#iceprod.server.rest.jobs.DatasetJobsStatusHandler.put">(iceprod.server.rest.jobs.DatasetJobsStatusHandler method)</a>
+</li>
+        <li><a href="server/rest_api/logs.html#iceprod.server.rest.logs.S3.put">(iceprod.server.rest.logs.S3 method)</a>
+</li>
+        <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.DatasetTasksStatusHandler.put">(iceprod.server.rest.tasks.DatasetTasksStatusHandler method)</a>
+</li>
+        <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.TasksStatusHandler.put">(iceprod.server.rest.tasks.TasksStatusHandler method)</a>
+</li>
+      </ul></li>
+  </ul></td>
 </tr></table>
 
 <h2 id="Q">Q</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="server/modules/db.html#iceprod.server.modules.db.DBAPI.query">query() (iceprod.server.modules.db.DBAPI method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.queue.queue">queue (class in iceprod.server.dbmethods.queue)</a>
-  </dt>
-
-      
-  <dt><a href="server/grid.html#iceprod.server.grid.BaseGrid.queue">queue() (iceprod.server.grid.BaseGrid method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.queue.queue.queue_add_pilot">queue_add_pilot() (iceprod.server.dbmethods.queue.queue method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.queue.queue.queue_add_task_lookup">queue_add_task_lookup() (iceprod.server.dbmethods.queue.queue method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.queue.queue.queue_buffer_jobs_tasks">queue_buffer_jobs_tasks() (iceprod.server.dbmethods.queue.queue method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.queue.queue.queue_del_pilots">queue_del_pilots() (iceprod.server.dbmethods.queue.queue method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.queue.queue.queue_get_active_dataset_tasks">queue_get_active_dataset_tasks() (iceprod.server.dbmethods.queue.queue method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.queue.queue.queue_get_active_tasks">queue_get_active_tasks() (iceprod.server.dbmethods.queue.queue method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.queue.queue.queue_get_cfg_for_dataset">queue_get_cfg_for_dataset() (iceprod.server.dbmethods.queue.queue method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.queue.queue.queue_get_cfg_for_task">queue_get_cfg_for_task() (iceprod.server.dbmethods.queue.queue method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.queue.queue.queue_get_grid_tasks">queue_get_grid_tasks() (iceprod.server.dbmethods.queue.queue method)</a>
-  </dt>
-
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.queue.queue.queue_get_pilots">queue_get_pilots() (iceprod.server.dbmethods.queue.queue method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.queue.queue.queue_get_queueing_datasets">queue_get_queueing_datasets() (iceprod.server.dbmethods.queue.queue method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.queue.queue.queue_get_queueing_tasks">queue_get_queueing_tasks() (iceprod.server.dbmethods.queue.queue method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.queue.queue.queue_get_task">queue_get_task() (iceprod.server.dbmethods.queue.queue method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.queue.queue.queue_get_task_by_grid_queue_id">queue_get_task_by_grid_queue_id() (iceprod.server.dbmethods.queue.queue method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.queue.queue.queue_get_task_lookup">queue_get_task_lookup() (iceprod.server.dbmethods.queue.queue method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.queue.queue.queue_new_pilot_ids">queue_new_pilot_ids() (iceprod.server.dbmethods.queue.queue method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.queue.queue.queue_reset_tasks">queue_reset_tasks() (iceprod.server.dbmethods.queue.queue method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.queue.queue.queue_set_site_queues">queue_set_site_queues() (iceprod.server.dbmethods.queue.queue method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.queue.queue.queue_set_submit_dir">queue_set_submit_dir() (iceprod.server.dbmethods.queue.queue method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.queue.queue.queue_set_task_status">queue_set_task_status() (iceprod.server.dbmethods.queue.queue method)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/queue.html#index-0">queueing_module</a>
-  </dt>
-
-  </dl></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/modules/queue.html#iceprod.server.modules.queue.queue">queue (class in iceprod.server.modules.queue)</a>
+</li>
+      <li><a href="server/grid.html#iceprod.server.grid.BaseGrid.queue">queue() (iceprod.server.grid.BaseGrid method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/modules/queue.html#iceprod.server.modules.queue.queue.queue_loop">queue_loop() (iceprod.server.modules.queue.queue method)</a>
+</li>
+      <li><a href="server/modules/queue.html#index-0">queueing_module</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="server/file_io.html#iceprod.server.file_io.AsyncFileIO.read">read() (iceprod.server.file_io.AsyncFileIO method)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/db.html#iceprod.server.modules.db.read_db_conf">read_db_conf() (in module iceprod.server.modules.db)</a>
-  </dt>
-
-      
-  <dt><a href="server/file_io.html#iceprod.server.file_io.AsyncFileIO.readline">readline() (iceprod.server.file_io.AsyncFileIO method)</a>
-  </dt>
-
-      
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.recursive_unicode">recursive_unicode() (in module iceprod.core.jsonUtil)</a>
-  </dt>
-
-      
-  <dt><a href="server/server.html#iceprod.server.server.Server.reload">reload() (iceprod.server.server.Server method)</a>
-  </dt>
-
-      
-  <dt><a href="server/grid.html#iceprod.server.grid.BaseGrid.remove">remove() (iceprod.server.grid.BaseGrid method)</a>
-  </dt>
-
-      <dd><dl>
-        
-  <dt><a href="server/plugins/condor.html#iceprod.server.plugins.condor.condor.remove">(iceprod.server.plugins.condor.condor method)</a>
-  </dt>
-
-      </dl></dd>
-      
-  <dt><a href="core/functions.html#iceprod.core.functions.removedirs">removedirs() (in module iceprod.core.functions)</a>
-  </dt>
-
-      
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.repr_converter">repr_converter (class in iceprod.core.jsonUtil)</a>
-  </dt>
-
-      
-  <dt><a href="core/jsonRPCclient.html#iceprod.core.jsonRPCclient.Client.request">request() (iceprod.core.jsonRPCclient.Client method)</a>
-  </dt>
-
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Resource">Resource (class in iceprod.core.dataclasses)</a>
-  </dt>
-
-      
-  <dt><a href="core/jsonRPCclient.html#iceprod.core.jsonRPCclient.JSONRPC.MetaJSONRPC.restart">restart() (iceprod.core.jsonRPCclient.JSONRPC.MetaJSONRPC class method)</a>
-  </dt>
-
-      <dd><dl>
-        
-  <dt><a href="server/server.html#iceprod.server.server.Server.restart">(iceprod.server.server.Server method)</a>
-  </dt>
-
-        
-  <dt><a href="server/squid.html#iceprod.server.squid.Squid.restart">(iceprod.server.squid.Squid method)</a>
-  </dt>
-
-      </dl></dd>
-      
-  <dt><a href="server/nginx.html#iceprod.server.nginx.rotate">rotate() (in module iceprod.server.nginx)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc">rpc (class in iceprod.server.dbmethods.rpc)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_echo">rpc_echo() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_finish_task">rpc_finish_task() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_get_groups">rpc_get_groups() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_get_user_roles">rpc_get_user_roles() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_hard_reset_dataset">rpc_hard_reset_dataset() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_hard_reset_job">rpc_hard_reset_job() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_master_update">rpc_master_update() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_new_task">rpc_new_task() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_public_get_all_config">rpc_public_get_all_config() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_public_get_all_dataset_completion">rpc_public_get_all_dataset_completion() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_public_get_config">rpc_public_get_config() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_public_get_cpu_gpu_usage">rpc_public_get_cpu_gpu_usage() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_public_get_dataset_completion">rpc_public_get_dataset_completion() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_public_get_dataset_description">rpc_public_get_dataset_description() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_public_get_dataset_steering">rpc_public_get_dataset_steering() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_public_get_datasets_by_status">rpc_public_get_datasets_by_status() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_public_get_graphs">rpc_public_get_graphs() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_public_get_number_of_tasks_in_each_state">rpc_public_get_number_of_tasks_in_each_state() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_public_get_site_id">rpc_public_get_site_id() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_public_get_task_ids">rpc_public_get_task_ids() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_public_get_task_stats">rpc_public_get_task_stats() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_public_get_task_walltime">rpc_public_get_task_walltime() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_public_get_tasks_by_name">rpc_public_get_tasks_by_name() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_public_get_tasks_by_requirements">rpc_public_get_tasks_by_requirements() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_queue_master">rpc_queue_master() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_reset_dataset">rpc_reset_dataset() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_reset_job">rpc_reset_job() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_reset_task">rpc_reset_task() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_resume_task">rpc_resume_task() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_set_groups">rpc_set_groups() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_set_processing">rpc_set_processing() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_set_user_roles">rpc_set_user_roles() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_start_module">rpc_start_module() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_stillrunning">rpc_stillrunning() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_stop_module">rpc_stop_module() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_submit_dataset">rpc_submit_dataset() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_suspend_dataset">rpc_suspend_dataset() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_suspend_job">rpc_suspend_job() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_suspend_task">rpc_suspend_task() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_task_error">rpc_task_error() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_truncate_dataset">rpc_truncate_dataset() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_update_config">rpc_update_config() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_update_dataset_config">rpc_update_dataset_config() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_update_pilot">rpc_update_pilot() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_upload_logfile">rpc_upload_logfile() (iceprod.server.dbmethods.rpc.rpc method)</a>
-  </dt>
-
-      
-  <dt><a href="server/schedule.html#iceprod.server.schedule.Scheduler.run">run() (iceprod.server.schedule.Scheduler method)</a>
-  </dt>
-
-      <dd><dl>
-        
-  <dt><a href="server/server.html#iceprod.server.server.Server.run">(iceprod.server.server.Server method)</a>
-  </dt>
-
-        
-  <dt><a href="core/exe_helper.html#iceprod.core.exe_helper.run">(in module iceprod.core.exe_helper)</a>
-  </dt>
-
-      </dl></dd>
-      
-  <dt><a href="server/init.html#iceprod.server.run_module">run_module() (in module iceprod.server)</a>
-  </dt>
-
-      
-  <dt><a href="core/exe.html#iceprod.core.exe.runmodule">runmodule() (in module iceprod.core.exe)</a>
-  </dt>
-
-      
-  <dt><a href="core/i3exec.html#iceprod.core.i3exec.runner">runner() (in module iceprod.core.i3exec)</a>
-  </dt>
-
-      
-  <dt><a href="core/exe.html#iceprod.core.exe.runtask">runtask() (in module iceprod.core.exe)</a>
-  </dt>
-
-      
-  <dt><a href="core/exe.html#iceprod.core.exe.runtray">runtray() (in module iceprod.core.exe)</a>
-  </dt>
-
-  </dl></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.recursive_unicode">recursive_unicode() (in module iceprod.core.jsonUtil)</a>
+</li>
+      <li><a href="server/server.html#iceprod.server.server.Server.reload">reload() (iceprod.server.server.Server method)</a>
+</li>
+      <li><a href="server/grid.html#iceprod.server.grid.BaseGrid.remove">remove() (iceprod.server.grid.BaseGrid method)</a>
+
+      <ul>
+        <li><a href="server/plugins/condor.html#iceprod.server.plugins.condor.condor.remove">(iceprod.server.plugins.condor.condor method)</a>
+</li>
+      </ul></li>
+      <li><a href="core/functions.html#iceprod.core.functions.removedirs">removedirs() (in module iceprod.core.functions)</a>
+</li>
+      <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.repr_converter">repr_converter (class in iceprod.core.jsonUtil)</a>
+</li>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Resource">Resource (class in iceprod.core.dataclasses)</a>
+</li>
+      <li><a href="server/server.html#iceprod.server.server.Server.restart">restart() (iceprod.server.server.Server method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.RoleHandler">RoleHandler (class in iceprod.server.rest.auth)</a>
+</li>
+      <li><a href="server/server.html#iceprod.server.server.Server.run">run() (iceprod.server.server.Server method)</a>
+
+      <ul>
+        <li><a href="core/exe_helper.html#iceprod.core.exe_helper.run">(in module iceprod.core.exe_helper)</a>
+</li>
+      </ul></li>
+      <li><a href="server/init.html#iceprod.server.run_module">run_module() (in module iceprod.server)</a>
+</li>
+      <li><a href="core/exe.html#iceprod.core.exe.runmodule">runmodule() (in module iceprod.core.exe)</a>
+</li>
+      <li><a href="core/i3exec.html#iceprod.core.i3exec.runner">runner() (in module iceprod.core.i3exec)</a>
+</li>
+      <li><a href="core/exe.html#iceprod.core.exe.runtask">runtask() (in module iceprod.core.exe)</a>
+</li>
+      <li><a href="core/exe.html#iceprod.core.exe.runtray">runtray() (in module iceprod.core.exe)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="server/init.html#iceprod.server.salt">salt() (in module iceprod.server)</a>
-  </dt>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/rest_api/logs.html#iceprod.server.rest.logs.S3">S3 (class in iceprod.server.rest.logs)</a>
+</li>
+      <li><a href="server/init.html#iceprod.server.salt">salt() (in module iceprod.server)</a>
+</li>
+      <li><a href="server/config.html#iceprod.server.config.IceProdConfig.save">save() (iceprod.server.config.IceProdConfig method)</a>
+</li>
+      <li><a href="server/config.html#iceprod.server.config.IceProdConfig.save_to_string">save_to_string() (iceprod.server.config.IceProdConfig method)</a>
+</li>
+      <li><a href="server/schedule.html#index-0">schedule</a>
 
-      
-  <dt><a href="server/config.html#iceprod.server.config.IceProdConfig.save">save() (iceprod.server.config.IceProdConfig method)</a>
-  </dt>
+      <ul>
+        <li><a href="server/modules/schedule.html#iceprod.server.modules.schedule.schedule">(class in iceprod.server.modules.schedule)</a>
+</li>
+      </ul></li>
+      <li><a href="server/modules/schedule.html#index-0">schedule_module</a>
+</li>
+      <li><a href="core/serialization.html#iceprod.core.serialization.SerializationError">SerializationError</a>
+</li>
+      <li><a href="core/serialization.html#iceprod.core.serialization.serialize_json">serialize_json (class in iceprod.core.serialization)</a>
+</li>
+      <li><a href="server/server.html#iceprod.server.server.Server">Server (class in iceprod.server.server)</a>
+</li>
+      <li><a href="server/init.html#index-0">server_init</a>
+</li>
+      <li><a href="server/server.html#index-0">server_server</a>
+</li>
+      <li><a href="core/exe_json.html#iceprod.core.exe_json.ServerComms">ServerComms (class in iceprod.core.exe_json)</a>
+</li>
+      <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.set_converter">set_converter (class in iceprod.core.jsonUtil)</a>
+</li>
+      <li><a href="server/modules/website.html#iceprod.server.modules.website.PublicHandler.set_default_headers">set_default_headers() (iceprod.server.modules.website.PublicHandler method)</a>
+</li>
+      <li><a href="server/globus.html#iceprod.server.globus.SiteGlobusProxy.set_duration">set_duration() (iceprod.server.globus.SiteGlobusProxy method)</a>
+</li>
+      <li><a href="server/globus.html#iceprod.server.globus.SiteGlobusProxy.set_passphrase">set_passphrase() (iceprod.server.globus.SiteGlobusProxy method)</a>
+</li>
+      <li><a href="server/globus.html#iceprod.server.globus.SiteGlobusProxy.set_voms_role">set_voms_role() (iceprod.server.globus.SiteGlobusProxy method)</a>
+</li>
+      <li><a href="server/globus.html#iceprod.server.globus.SiteGlobusProxy.set_voms_vo">set_voms_vo() (iceprod.server.globus.SiteGlobusProxy method)</a>
+</li>
+      <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.setup">setup() (in module iceprod.server.rest.auth)</a>
 
-      
-  <dt><a href="server/config.html#iceprod.server.config.IceProdConfig.save_to_string">save_to_string() (iceprod.server.config.IceProdConfig method)</a>
-  </dt>
+      <ul>
+        <li><a href="server/rest_api/config.html#iceprod.server.rest.config.setup">(in module iceprod.server.rest.config)</a>
+</li>
+        <li><a href="server/rest_api/datasets.html#iceprod.server.rest.datasets.setup">(in module iceprod.server.rest.datasets)</a>
+</li>
+        <li><a href="server/rest_api/grids.html#iceprod.server.rest.grids.setup">(in module iceprod.server.rest.grids)</a>
+</li>
+        <li><a href="server/rest_api/jobs.html#iceprod.server.rest.jobs.setup">(in module iceprod.server.rest.jobs)</a>
+</li>
+        <li><a href="server/rest_api/logs.html#iceprod.server.rest.logs.setup">(in module iceprod.server.rest.logs)</a>
+</li>
+        <li><a href="server/rest_api/pilots.html#iceprod.server.rest.pilots.setup">(in module iceprod.server.rest.pilots)</a>
+</li>
+        <li><a href="server/rest_api/task_stats.html#iceprod.server.rest.task_stats.setup">(in module iceprod.server.rest.task_stats)</a>
+</li>
+        <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.setup">(in module iceprod.server.rest.tasks)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/grid.html#iceprod.server.grid.BaseGrid.setup_pilots">setup_pilots() (iceprod.server.grid.BaseGrid method)</a>
+</li>
+      <li><a href="server/grid.html#iceprod.server.grid.BaseGrid.setup_submit_directory">setup_submit_directory() (iceprod.server.grid.BaseGrid method)</a>
+</li>
+      <li><a href="core/exe.html#iceprod.core.exe.setupClass">setupClass() (in module iceprod.core.exe)</a>
+</li>
+      <li><a href="core/functions.html#iceprod.core.functions.sha1sum">sha1sum() (in module iceprod.core.functions)</a>
+</li>
+      <li><a href="core/functions.html#iceprod.core.functions.sha256sum">sha256sum() (in module iceprod.core.functions)</a>
+</li>
+      <li><a href="core/functions.html#iceprod.core.functions.sha512sum">sha512sum() (in module iceprod.core.functions)</a>
+</li>
+      <li><a href="server/globus.html#iceprod.server.globus.SiteGlobusProxy">SiteGlobusProxy (class in iceprod.server.globus)</a>
+</li>
+      <li><a href="server/init.html#iceprod.server.GlobalID.siteID_gen">siteID_gen() (iceprod.server.GlobalID class method)</a>
+</li>
+      <li><a href="server/init.html#iceprod.server.GlobalID.siteID_ret">siteID_ret() (iceprod.server.GlobalID class method)</a>
+</li>
+      <li><a href="server/squid.html#index-0">squid</a>
+</li>
+      <li><a href="server/ssl_cert.html#index-0">ssl_cert</a>
+</li>
+      <li><a href="server/module.html#iceprod.server.module.module.start">start() (iceprod.server.module.module method)</a>
 
-      
-  <dt><a href="server/schedule.html#index-0">schedule</a>
-  </dt>
+      <ul>
+        <li><a href="server/modules/queue.html#iceprod.server.modules.queue.queue.start">(iceprod.server.modules.queue.queue method)</a>
+</li>
+        <li><a href="server/modules/schedule.html#iceprod.server.modules.schedule.schedule.start">(iceprod.server.modules.schedule.schedule method)</a>
+</li>
+        <li><a href="server/modules/website.html#iceprod.server.modules.website.website.start">(iceprod.server.modules.website.website method)</a>
+</li>
+      </ul></li>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Steering">Steering (class in iceprod.core.dataclasses)</a>
+</li>
+      <li><a href="core/exe_json.html#iceprod.core.exe_json.ServerComms.still_running">still_running() (iceprod.core.exe_json.ServerComms method)</a>
+</li>
+      <li><a href="server/module.html#iceprod.server.module.module.stop">stop() (iceprod.server.module.module method)</a>
 
-      <dd><dl>
-        
-  <dt><a href="server/modules/schedule.html#iceprod.server.modules.schedule.schedule">(class in iceprod.server.modules.schedule)</a>
-  </dt>
+      <ul>
+        <li><a href="server/modules/website.html#iceprod.server.modules.website.website.stop">(iceprod.server.modules.website.website method)</a>
+</li>
+        <li><a href="server/server.html#iceprod.server.server.Server.stop">(iceprod.server.server.Server method)</a>
+</li>
+      </ul></li>
+      <li><a href="server/modules/queue.html#iceprod.server.modules.queue.StopException">StopException</a>
+</li>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Data.storage_location">storage_location() (iceprod.core.dataclasses.Data method)</a>
+</li>
+      <li><a href="server/init.html#iceprod.server.GlobalID.string">string (iceprod.server.GlobalID attribute)</a>
+</li>
+      <li><a href="server/modules/website.html#iceprod.server.modules.website.Submit">Submit (class in iceprod.server.modules.website)</a>
+</li>
+      <li><a href="server/grid.html#iceprod.server.grid.BaseGrid.submit">submit() (iceprod.server.grid.BaseGrid method)</a>
 
-      </dl></dd>
-      
-  <dt><a href="server/schedule.html#iceprod.server.schedule.Scheduler.schedule">schedule() (iceprod.server.schedule.Scheduler method)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/schedule.html#index-0">schedule_module</a>
-  </dt>
-
-      
-  <dt><a href="server/schedule.html#iceprod.server.schedule.Scheduler">Scheduler (class in iceprod.server.schedule)</a>
-  </dt>
-
-      
-  <dt><a href="core/exe_json.html#iceprod.core.exe_json.send_through_pilot">send_through_pilot() (in module iceprod.core.exe_json)</a>
-  </dt>
-
-      
-  <dt><a href="core/serialization.html#iceprod.core.serialization.SerializationError">SerializationError</a>
-  </dt>
-
-      
-  <dt><a href="core/serialization.html#iceprod.core.serialization.serialize_json">serialize_json (class in iceprod.core.serialization)</a>
-  </dt>
-
-      
-  <dt><a href="server/server.html#iceprod.server.server.Server">Server (class in iceprod.server.server)</a>
-  </dt>
-
-      
-  <dt><a href="server/init.html#index-0">server_init</a>
-  </dt>
-
-      
-  <dt><a href="server/server.html#index-0">server_server</a>
-  </dt>
-
-      
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.set_converter">set_converter (class in iceprod.core.jsonUtil)</a>
-  </dt>
-
-      
-  <dt><a href="server/globus.html#iceprod.server.globus.SiteGlobusProxy.set_duration">set_duration() (iceprod.server.globus.SiteGlobusProxy method)</a>
-  </dt>
-
-      
-  <dt><a href="server/globus.html#iceprod.server.globus.SiteGlobusProxy.set_passphrase">set_passphrase() (iceprod.server.globus.SiteGlobusProxy method)</a>
-  </dt>
-
-      
-  <dt><a href="server/globus.html#iceprod.server.globus.SiteGlobusProxy.set_voms_role">set_voms_role() (iceprod.server.globus.SiteGlobusProxy method)</a>
-  </dt>
-
-      
-  <dt><a href="server/globus.html#iceprod.server.globus.SiteGlobusProxy.set_voms_vo">set_voms_vo() (iceprod.server.globus.SiteGlobusProxy method)</a>
-  </dt>
-
-      
-  <dt><a href="server/grid.html#iceprod.server.grid.BaseGrid.setup_pilots">setup_pilots() (iceprod.server.grid.BaseGrid method)</a>
-  </dt>
-
-      
-  <dt><a href="server/grid.html#iceprod.server.grid.BaseGrid.setup_submit_directory">setup_submit_directory() (iceprod.server.grid.BaseGrid method)</a>
-  </dt>
-
-      
-  <dt><a href="core/exe.html#iceprod.core.exe.setupClass">setupClass() (in module iceprod.core.exe)</a>
-  </dt>
-
-      
-  <dt><a href="core/exe.html#iceprod.core.exe.setupenv">setupenv() (in module iceprod.core.exe)</a>
-  </dt>
-
-      
-  <dt><a href="core/exe_json.html#iceprod.core.exe_json.setupjsonRPC">setupjsonRPC() (in module iceprod.core.exe_json)</a>
-  </dt>
-
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="core/functions.html#iceprod.core.functions.sha1sum">sha1sum() (in module iceprod.core.functions)</a>
-  </dt>
-
-      
-  <dt><a href="core/functions.html#iceprod.core.functions.sha256sum">sha256sum() (in module iceprod.core.functions)</a>
-  </dt>
-
-      
-  <dt><a href="core/functions.html#iceprod.core.functions.sha512sum">sha512sum() (in module iceprod.core.functions)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Site">Site (class in iceprod.server.modules.website)</a>
-  </dt>
-
-      
-  <dt><a href="server/globus.html#iceprod.server.globus.SiteGlobusProxy">SiteGlobusProxy (class in iceprod.server.globus)</a>
-  </dt>
-
-      
-  <dt><a href="server/init.html#iceprod.server.GlobalID.siteID_gen">siteID_gen() (iceprod.server.GlobalID class method)</a>
-  </dt>
-
-      
-  <dt><a href="server/init.html#iceprod.server.GlobalID.siteID_ret">siteID_ret() (iceprod.server.GlobalID class method)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/db.html#iceprod.server.modules.db.SQLite">SQLite (class in iceprod.server.modules.db)</a>
-  </dt>
-
-      
-  <dt><a href="server/squid.html#index-0">squid</a>
-  </dt>
-
-      
-  <dt><a href="server/squid.html#iceprod.server.squid.Squid">Squid (class in iceprod.server.squid)</a>
-  </dt>
-
-      
-  <dt><a href="server/ssl_cert.html#index-0">ssl_cert</a>
-  </dt>
-
-      
-  <dt><a href="core/jsonRPCclient.html#iceprod.core.jsonRPCclient.JSONRPC.MetaJSONRPC.start">start() (iceprod.core.jsonRPCclient.JSONRPC.MetaJSONRPC class method)</a>
-  </dt>
-
-      <dd><dl>
-        
-  <dt><a href="server/module.html#iceprod.server.module.module.start">(iceprod.server.module.module method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/db.html#iceprod.server.modules.db.db.start">(iceprod.server.modules.db.db method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/proxy.html#iceprod.server.modules.proxy.proxy.start">(iceprod.server.modules.proxy.proxy method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/schedule.html#iceprod.server.modules.schedule.schedule.start">(iceprod.server.modules.schedule.schedule method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.website.start">(iceprod.server.modules.website.website method)</a>
-  </dt>
-
-        
-  <dt><a href="server/nginx.html#iceprod.server.nginx.Nginx.start">(iceprod.server.nginx.Nginx method)</a>
-  </dt>
-
-        
-  <dt><a href="server/schedule.html#iceprod.server.schedule.Scheduler.start">(iceprod.server.schedule.Scheduler method)</a>
-  </dt>
-
-        
-  <dt><a href="server/squid.html#iceprod.server.squid.Squid.start">(iceprod.server.squid.Squid method)</a>
-  </dt>
-
-      </dl></dd>
-      
-  <dt><a href="server/modules/db.html#iceprod.server.modules.db.DBAPI.status_options">status_options (iceprod.server.modules.db.DBAPI attribute)</a>
-  </dt>
-
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Steering">Steering (class in iceprod.core.dataclasses)</a>
-  </dt>
-
-      
-  <dt><a href="core/exe_json.html#iceprod.core.exe_json.stillrunning">stillrunning() (in module iceprod.core.exe_json)</a>
-  </dt>
-
-      
-  <dt><a href="core/jsonRPCclient.html#iceprod.core.jsonRPCclient.JSONRPC.MetaJSONRPC.stop">stop() (iceprod.core.jsonRPCclient.JSONRPC.MetaJSONRPC class method)</a>
-  </dt>
-
-      <dd><dl>
-        
-  <dt><a href="server/module.html#iceprod.server.module.module.stop">(iceprod.server.module.module method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/db.html#iceprod.server.modules.db.db.stop">(iceprod.server.modules.db.db method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/proxy.html#iceprod.server.modules.proxy.proxy.stop">(iceprod.server.modules.proxy.proxy method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/schedule.html#iceprod.server.modules.schedule.schedule.stop">(iceprod.server.modules.schedule.schedule method)</a>
-  </dt>
-
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.website.stop">(iceprod.server.modules.website.website method)</a>
-  </dt>
-
-        
-  <dt><a href="server/nginx.html#iceprod.server.nginx.Nginx.stop">(iceprod.server.nginx.Nginx method)</a>
-  </dt>
-
-        
-  <dt><a href="server/server.html#iceprod.server.server.Server.stop">(iceprod.server.server.Server method)</a>
-  </dt>
-
-        
-  <dt><a href="server/squid.html#iceprod.server.squid.Squid.stop">(iceprod.server.squid.Squid method)</a>
-  </dt>
-
-      </dl></dd>
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Data.storage_location">storage_location() (iceprod.core.dataclasses.Data method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.str2datetime">str2datetime() (in module iceprod.server.dbmethods)</a>
-  </dt>
-
-      
-  <dt><a href="server/init.html#iceprod.server.GlobalID.string">string (iceprod.server.GlobalID attribute)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Submit">Submit (class in iceprod.server.modules.website)</a>
-  </dt>
-
-      
-  <dt><a href="server/grid.html#iceprod.server.grid.BaseGrid.submit">submit() (iceprod.server.grid.BaseGrid method)</a>
-  </dt>
-
-      <dd><dl>
-        
-  <dt><a href="server/plugins/condor.html#iceprod.server.plugins.condor.condor.submit">(iceprod.server.plugins.condor.condor method)</a>
-  </dt>
-
-      </dl></dd>
-      
-  <dt><a href="server/details/submit_to_queue.html#index-0">submit_to_queue</a>
-  </dt>
-
-  </dl></td>
+      <ul>
+        <li><a href="server/plugins/condor.html#iceprod.server.plugins.condor.condor.submit">(iceprod.server.plugins.condor.condor method)</a>
+</li>
+      </ul></li>
+      <li><a href="server/details/submit_to_queue.html#index-0">submit_to_queue</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Task">Task (class in iceprod.core.dataclasses)</a>
-  </dt>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Task">Task (class in iceprod.core.dataclasses)</a>
 
-      <dd><dl>
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.Task">(class in iceprod.server.modules.website)</a>
-  </dt>
-
-      </dl></dd>
-      
-  <dt><a href="core/exe_json.html#iceprod.core.exe_json.task_kill">task_kill() (in module iceprod.core.exe_json)</a>
-  </dt>
-
-      
-  <dt><a href="server/details/task_relationships.html#index-0">task_relationships</a>
-  </dt>
-
-      
-  <dt><a href="core/exe_json.html#iceprod.core.exe_json.taskerror">taskerror() (in module iceprod.core.exe_json)</a>
-  </dt>
-
-      
-  <dt><a href="admin/extra_details.html#index-0">Technical_Extras</a>
-  </dt>
-
-      
-  <dt><a href="server/details/index.html#index-0">Technical_Server</a>
-  </dt>
-
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.time_converter">time_converter (class in iceprod.core.jsonUtil)</a>
-  </dt>
-
-      
-  <dt><a href="core/init.html#iceprod.core.to_file">to_file() (in module iceprod.core)</a>
-  </dt>
-
-      
-  <dt><a href="core/init.html#iceprod.core.to_log">to_log() (in module iceprod.core)</a>
-  </dt>
-
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Tray">Tray (class in iceprod.core.dataclasses)</a>
-  </dt>
-
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Data.type_options">type_options (iceprod.core.dataclasses.Data attribute)</a>
-  </dt>
-
-  </dl></td>
+      <ul>
+        <li><a href="server/modules/website.html#iceprod.server.modules.website.Task">(class in iceprod.server.modules.website)</a>
+</li>
+      </ul></li>
+      <li><a href="core/exe_json.html#iceprod.core.exe_json.ServerComms.task_error">task_error() (iceprod.core.exe_json.ServerComms method)</a>
+</li>
+      <li><a href="core/exe_json.html#iceprod.core.exe_json.ServerComms.task_files">task_files() (iceprod.core.exe_json.ServerComms method)</a>
+</li>
+      <li><a href="core/exe_json.html#iceprod.core.exe_json.ServerComms.task_kill">task_kill() (iceprod.core.exe_json.ServerComms method)</a>
+</li>
+      <li><a href="core/exe_json.html#iceprod.core.exe_json.ServerComms.task_kill_sync">task_kill_sync() (iceprod.core.exe_json.ServerComms method)</a>
+</li>
+      <li><a href="server/details/task_relationships.html#index-0">task_relationships</a>
+</li>
+      <li><a href="server/modules/website.html#iceprod.server.modules.website.TaskBrowse">TaskBrowse (class in iceprod.server.modules.website)</a>
+</li>
+      <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.TasksActionsCompleteHandler">TasksActionsCompleteHandler (class in iceprod.server.rest.tasks)</a>
+</li>
+      <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.TasksActionsErrorHandler">TasksActionsErrorHandler (class in iceprod.server.rest.tasks)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.TasksActionsProcessingHandler">TasksActionsProcessingHandler (class in iceprod.server.rest.tasks)</a>
+</li>
+      <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.TasksActionsQueueHandler">TasksActionsQueueHandler (class in iceprod.server.rest.tasks)</a>
+</li>
+      <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.TasksHandler">TasksHandler (class in iceprod.server.rest.tasks)</a>
+</li>
+      <li><a href="server/rest_api/tasks.html#iceprod.server.rest.tasks.TasksStatusHandler">TasksStatusHandler (class in iceprod.server.rest.tasks)</a>
+</li>
+      <li><a href="admin/extra_details.html#index-0">Technical_Extras</a>
+</li>
+      <li><a href="server/details/index.html#index-0">Technical_Server</a>
+</li>
+      <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.time_converter">time_converter (class in iceprod.core.jsonUtil)</a>
+</li>
+      <li><a href="core/init.html#iceprod.core.to_file">to_file() (in module iceprod.core)</a>
+</li>
+      <li><a href="core/init.html#iceprod.core.to_log">to_log() (in module iceprod.core)</a>
+</li>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Tray">Tray (class in iceprod.core.dataclasses)</a>
+</li>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Data.type_options">type_options (iceprod.core.dataclasses.Data attribute)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="U">U</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.json_compressor.uncompress">uncompress() (iceprod.core.jsonUtil.json_compressor static method)</a>
-  </dt>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.json_compressor.uncompress">uncompress() (iceprod.core.jsonUtil.json_compressor static method)</a>
 
-      <dd><dl>
-        
-  <dt><a href="core/functions.html#iceprod.core.functions.uncompress">(in module iceprod.core.functions)</a>
-  </dt>
-
-      </dl></dd>
-      
-  <dt><a href="core/exe_helper.html#iceprod.core.exe_helper.unicode_to_ascii">unicode_to_ascii() (in module iceprod.core.exe_helper)</a>
-  </dt>
-
-      
-  <dt><a href="server/squid.html#iceprod.server.squid.Squid.update">update() (iceprod.server.squid.Squid method)</a>
-  </dt>
-
-      
-  <dt><a href="core/exe_json.html#iceprod.core.exe_json.update_pilot">update_pilot() (in module iceprod.core.exe_json)</a>
-  </dt>
-
-      
-  <dt><a href="server/globus.html#iceprod.server.globus.SiteGlobusProxy.update_proxy">update_proxy() (iceprod.server.globus.SiteGlobusProxy method)</a>
-  </dt>
-
-      
-  <dt><a href="core/functions.html#iceprod.core.functions.upload">upload() (in module iceprod.core.functions)</a>
-  </dt>
-
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="core/exe.html#iceprod.core.exe.uploadData">uploadData() (in module iceprod.core.exe)</a>
-  </dt>
-
-      
-  <dt><a href="core/exe_json.html#iceprod.core.exe_json.uploadErr">uploadErr() (in module iceprod.core.exe_json)</a>
-  </dt>
-
-      
-  <dt><a href="core/exe_json.html#iceprod.core.exe_json.uploadLog">uploadLog() (in module iceprod.core.exe_json)</a>
-  </dt>
-
-      
-  <dt><a href="core/exe_json.html#iceprod.core.exe_json.uploadOut">uploadOut() (in module iceprod.core.exe_json)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.UserAccount">UserAccount (class in iceprod.server.modules.website)</a>
-  </dt>
-
-  </dl></td>
+      <ul>
+        <li><a href="core/functions.html#iceprod.core.functions.uncompress">(in module iceprod.core.functions)</a>
+</li>
+      </ul></li>
+      <li><a href="core/exe_helper.html#iceprod.core.exe_helper.unicode_to_ascii">unicode_to_ascii() (in module iceprod.core.exe_helper)</a>
+</li>
+      <li><a href="core/exe_json.html#iceprod.core.exe_json.ServerComms.update_pilot">update_pilot() (iceprod.core.exe_json.ServerComms method)</a>
+</li>
+      <li><a href="core/exe_json.html#iceprod.core.exe_json.ServerComms.update_pilot_sync">update_pilot_sync() (iceprod.core.exe_json.ServerComms method)</a>
+</li>
+      <li><a href="server/globus.html#iceprod.server.globus.SiteGlobusProxy.update_proxy">update_proxy() (iceprod.server.globus.SiteGlobusProxy method)</a>
+</li>
+      <li><a href="core/functions.html#iceprod.core.functions.upload">upload() (in module iceprod.core.functions)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="core/exe.html#iceprod.core.exe.uploadData">uploadData() (in module iceprod.core.exe)</a>
+</li>
+      <li><a href="core/exe_json.html#iceprod.core.exe_json.ServerComms.uploadErr">uploadErr() (iceprod.core.exe_json.ServerComms method)</a>
+</li>
+      <li><a href="core/exe_json.html#iceprod.core.exe_json.ServerComms.uploadLog">uploadLog() (iceprod.core.exe_json.ServerComms method)</a>
+</li>
+      <li><a href="core/exe_json.html#iceprod.core.exe_json.ServerComms.uploadOut">uploadOut() (iceprod.core.exe_json.ServerComms method)</a>
+</li>
+      <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.UserGroupsHandler">UserGroupsHandler (class in iceprod.server.rest.auth)</a>
+</li>
+      <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.UserHandler">UserHandler (class in iceprod.server.rest.auth)</a>
+</li>
+      <li><a href="server/rest_api/auth.html#iceprod.server.rest.auth.UserRolesHandler">UserRolesHandler (class in iceprod.server.rest.auth)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="V">V</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses._ResourceCommon.valid">valid() (iceprod.core.dataclasses._ResourceCommon method)</a>
-  </dt>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses._ResourceCommon.valid">valid() (iceprod.core.dataclasses._ResourceCommon method)</a>
 
-      <dd><dl>
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Class.valid">(iceprod.core.dataclasses.Class method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Data.valid">(iceprod.core.dataclasses.Data method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.DataCenter.valid">(iceprod.core.dataclasses.DataCenter method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Dif.valid">(iceprod.core.dataclasses.Dif method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.DifPlus.valid">(iceprod.core.dataclasses.DifPlus method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Job.valid">(iceprod.core.dataclasses.Job method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Module.valid">(iceprod.core.dataclasses.Module method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Personnel.valid">(iceprod.core.dataclasses.Personnel method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Plus.valid">(iceprod.core.dataclasses.Plus method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Resource.valid">(iceprod.core.dataclasses.Resource method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Steering.valid">(iceprod.core.dataclasses.Steering method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Task.valid">(iceprod.core.dataclasses.Task method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Tray.valid">(iceprod.core.dataclasses.Tray method)</a>
-  </dt>
-
-        
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses._TaskCommon.valid">(iceprod.core.dataclasses._TaskCommon method)</a>
-  </dt>
-
-      </dl></dd>
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Plus.valid_category">valid_category (iceprod.core.dataclasses.Plus attribute)</a>
-  </dt>
-
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.DataCenter.valid_names">valid_names (iceprod.core.dataclasses.DataCenter attribute)</a>
-  </dt>
-
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Dif.valid_parameters">valid_parameters (iceprod.core.dataclasses.Dif attribute)</a>
-  </dt>
-
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Dif.valid_sensor_name">valid_sensor_name (iceprod.core.dataclasses.Dif attribute)</a>
-  </dt>
-
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="core/dataclasses.html#iceprod.core.dataclasses.Dif.valid_source_name">valid_source_name (iceprod.core.dataclasses.Dif attribute)</a>
-  </dt>
-
-      
-  <dt><a href="server/init.html#iceprod.server.KwargConfig.validate">validate() (iceprod.server.KwargConfig method)</a>
-  </dt>
-
-      
-  <dt><a href="core/jsonUtil.html#iceprod.core.jsonUtil.var_converter">var_converter (class in iceprod.core.jsonUtil)</a>
-  </dt>
-
-      
-  <dt><a href="server/ssl_cert.html#iceprod.server.ssl_cert.verify_cert">verify_cert() (in module iceprod.server.ssl_cert)</a>
-  </dt>
-
-  </dl></td>
+      <ul>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Class.valid">(iceprod.core.dataclasses.Class method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Data.valid">(iceprod.core.dataclasses.Data method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.DataCenter.valid">(iceprod.core.dataclasses.DataCenter method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Dif.valid">(iceprod.core.dataclasses.Dif method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.DifPlus.valid">(iceprod.core.dataclasses.DifPlus method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Job.valid">(iceprod.core.dataclasses.Job method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Module.valid">(iceprod.core.dataclasses.Module method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Personnel.valid">(iceprod.core.dataclasses.Personnel method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Plus.valid">(iceprod.core.dataclasses.Plus method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Resource.valid">(iceprod.core.dataclasses.Resource method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Steering.valid">(iceprod.core.dataclasses.Steering method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Task.valid">(iceprod.core.dataclasses.Task method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Tray.valid">(iceprod.core.dataclasses.Tray method)</a>
+</li>
+        <li><a href="core/dataclasses.html#iceprod.core.dataclasses._TaskCommon.valid">(iceprod.core.dataclasses._TaskCommon method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Plus.valid_category">valid_category (iceprod.core.dataclasses.Plus attribute)</a>
+</li>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses.DataCenter.valid_names">valid_names (iceprod.core.dataclasses.DataCenter attribute)</a>
+</li>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Dif.valid_parameters">valid_parameters (iceprod.core.dataclasses.Dif attribute)</a>
+</li>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Dif.valid_sensor_name">valid_sensor_name (iceprod.core.dataclasses.Dif attribute)</a>
+</li>
+      <li><a href="core/dataclasses.html#iceprod.core.dataclasses.Dif.valid_source_name">valid_source_name (iceprod.core.dataclasses.Dif attribute)</a>
+</li>
+      <li><a href="server/init.html#iceprod.server.KwargConfig.validate">validate() (iceprod.server.KwargConfig method)</a>
+</li>
+      <li><a href="core/jsonUtil.html#iceprod.core.jsonUtil.var_converter">var_converter (class in iceprod.core.jsonUtil)</a>
+</li>
+      <li><a href="server/ssl_cert.html#iceprod.server.ssl_cert.verify_cert">verify_cert() (in module iceprod.server.ssl_cert)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="W">W</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.web.web">web (class in iceprod.server.dbmethods.web)</a>
-  </dt>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/modules/website.html#index-0">website</a>
 
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.web.web.web_get_dataset_by_name">web_get_dataset_by_name() (iceprod.server.dbmethods.web.web method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.web.web.web_get_datasets">web_get_datasets() (iceprod.server.dbmethods.web.web method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.web.web.web_get_datasets_details">web_get_datasets_details() (iceprod.server.dbmethods.web.web method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.web.web.web_get_gridspec">web_get_gridspec() (iceprod.server.dbmethods.web.web method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.web.web.web_get_job_counts_by_status">web_get_job_counts_by_status() (iceprod.server.dbmethods.web.web method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.web.web.web_get_jobs_by_status">web_get_jobs_by_status() (iceprod.server.dbmethods.web.web method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.web.web.web_get_jobs_details">web_get_jobs_details() (iceprod.server.dbmethods.web.web method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.web.web.web_get_logs">web_get_logs() (iceprod.server.dbmethods.web.web method)</a>
-  </dt>
-
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.web.web.web_get_sites">web_get_sites() (iceprod.server.dbmethods.web.web method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.web.web.web_get_task_completion_stats">web_get_task_completion_stats() (iceprod.server.dbmethods.web.web method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.web.web.web_get_tasks_by_status">web_get_tasks_by_status() (iceprod.server.dbmethods.web.web method)</a>
-  </dt>
-
-      
-  <dt><a href="server/dbmethods.html#iceprod.server.dbmethods.web.web.web_get_tasks_details">web_get_tasks_details() (iceprod.server.dbmethods.web.web method)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/website.html#index-0">website</a>
-  </dt>
-
-      <dd><dl>
-        
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.website">(class in iceprod.server.modules.website)</a>
-  </dt>
-
-      </dl></dd>
-      
-  <dt><a href="server/file_io.html#iceprod.server.file_io.AsyncFileIO.write">write() (iceprod.server.file_io.AsyncFileIO method)</a>
-  </dt>
-
-      
-  <dt><a href="server/grid.html#iceprod.server.grid.BaseGrid.write_cfg">write_cfg() (iceprod.server.grid.BaseGrid method)</a>
-  </dt>
-
-      
-  <dt><a href="server/modules/website.html#iceprod.server.modules.website.PublicHandler.write_error">write_error() (iceprod.server.modules.website.PublicHandler method)</a>
-  </dt>
-
-  </dl></td>
+      <ul>
+        <li><a href="server/modules/website.html#iceprod.server.modules.website.website">(class in iceprod.server.modules.website)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="server/grid.html#iceprod.server.grid.BaseGrid.write_cfg">write_cfg() (iceprod.server.grid.BaseGrid method)</a>
+</li>
+      <li><a href="server/modules/website.html#iceprod.server.modules.website.PublicHandler.write_error">write_error() (iceprod.server.modules.website.PublicHandler method)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 
 
+           </div>
+           <div class="articleComments">
+            
            </div>
           </div>
           <footer>
@@ -2653,15 +1616,17 @@
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
             VERSION:'master',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
@@ -2670,14 +1635,13 @@
     <script type="text/javascript" src="_static/js/theme.js"></script>
   
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>
