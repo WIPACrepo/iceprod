@@ -1,9 +1,6 @@
 version: 2
 jobs:
     checkout_code:
-        branches:
-          ignore:
-            - gh-pages
         docker:
             - image: circleci/python:3.6.8
         working_directory: ~/iceprod
@@ -14,9 +11,6 @@ jobs:
                 paths:
                     - ~/iceprod
     build:
-        branches:
-          ignore:
-            - gh-pages
         docker:
             - image: circleci/python:3.6.8  
         working_directory: ~/iceprod
@@ -37,9 +31,6 @@ jobs:
                     - "env"
 
     test_server:
-        branches:
-          ignore:
-            - gh-pages
         docker:
             - image: circleci/python:3.6.8
               environment:
@@ -65,9 +56,6 @@ jobs:
                 path: tests.log
 
     test_core:
-        branches:
-          ignore:
-            - gh-pages
         docker:
             - image: circleci/python:3.6.8
         working_directory: ~/iceprod
@@ -88,9 +76,6 @@ jobs:
                     - ~/iceprod/.coverage-core
 
     combine_coverage:
-        branches:
-          ignore:
-            - gh-pages
         docker:
             - image: circleci/python:3.6.8
         working_directory: ~/iceprod
@@ -114,9 +99,6 @@ jobs:
                 path: /tmp/htmlcov
 
     docs_build:
-        branches:
-          only:
-            - master
         docker:
             - image: circleci/python:3.6.8
         working_directory: ~/iceprod
@@ -166,16 +148,36 @@ workflows:
             - build:
                 requires:
                     - checkout_code
+                filters:
+                    branches:
+                      ignore:
+                        - gh-pages
             - test_server:
                 requires:
                     - build
+                filters:
+                    branches:
+                      ignore:
+                        - gh-pages
             - test_core:
                 requires:
                     - build
+                filters:
+                    branches:
+                      ignore:
+                        - gh-pages
             - combine_coverage:
                 requires:
                     - test_server
                     - test_core
+                filters:
+                    branches:
+                      ignore:
+                        - gh-pages
             - docs_build:
                 requires:
                     - build
+                filters:
+                    branches:
+                      only:
+                        - master
