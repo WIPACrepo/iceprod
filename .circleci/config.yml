@@ -1,6 +1,9 @@
 version: 2
 jobs:
     checkout_code:
+        branches:
+          ignore:
+            - gh-pages
         docker:
             - image: circleci/python:3.6.8
         working_directory: ~/iceprod
@@ -11,6 +14,9 @@ jobs:
                 paths:
                     - ~/iceprod
     build:
+        branches:
+          ignore:
+            - gh-pages
         docker:
             - image: circleci/python:3.6.8  
         working_directory: ~/iceprod
@@ -31,6 +37,9 @@ jobs:
                     - "env"
 
     test_server:
+        branches:
+          ignore:
+            - gh-pages
         docker:
             - image: circleci/python:3.6.8
               environment:
@@ -56,6 +65,9 @@ jobs:
                 path: tests.log
 
     test_core:
+        branches:
+          ignore:
+            - gh-pages
         docker:
             - image: circleci/python:3.6.8
         working_directory: ~/iceprod
@@ -76,6 +88,9 @@ jobs:
                     - ~/iceprod/.coverage-core
 
     combine_coverage:
+        branches:
+          ignore:
+            - gh-pages
         docker:
             - image: circleci/python:3.6.8
         working_directory: ~/iceprod
@@ -98,6 +113,51 @@ jobs:
             - store_artifacts:
                 path: /tmp/htmlcov
 
+    docs_build:
+        branches:
+          only:
+            - master
+        docker:
+            - image: circleci/python:3.6.8
+        working_directory: ~/iceprod
+        environment:
+            - SOURCE_BRANCH: master
+            - TARGET_BRANCH: gh-pages
+        steps:
+            - restore_cache:
+                keys:
+                    - code-{{ .Environment.CIRCLE_SHA1 }}
+            - restore_cache:
+                keys:
+                    - venv-{{ .Branch }}-{{ checksum "requirements.txt" }}
+            - run: |
+                . env/bin/activate &&
+                make -C docs
+            - deploy:
+                name: Deploy
+                command: |
+                    if [ $CIRCLE_BRANCH == $SOURCE_BRANCH ]; then
+                      git config --global user.email $GH_EMAIL
+                      git config --global user.name $GH_NAME
+
+                      git clone $CIRCLE_REPOSITORY_URL out
+
+                      cd out
+                      git checkout $TARGET_BRANCH || git checkout --orphan $TARGET_BRANCH
+                      git rm -rf *
+                      cd ..
+
+                      cp -a docs/build/html/. out/.
+
+                      mkdir -p out/.circleci && cp -a .circleci/. out/.circleci/.
+                      cd out
+
+                      git add -A
+                      git commit -m "Automated deployment to GitHub Pages: ${CIRCLE_SHA1}" --allow-empty
+
+                      git push origin $TARGET_BRANCH
+                    fi
+
 workflows:
     version: 2
     build_and_test:
@@ -116,3 +176,6 @@ workflows:
                 requires:
                     - test_server
                     - test_core
+            - docs_build:
+                requires:
+                    - build
