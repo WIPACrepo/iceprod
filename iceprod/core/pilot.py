@@ -12,13 +12,14 @@ import shutil
 import random
 from functools import partial
 from collections import namedtuple
-from datetime import timedelta
+from datetime import datetime, timedelta
 from glob import glob
 import signal
 import traceback
 import asyncio
 import concurrent.futures
 
+import iceprod
 from iceprod.core.functions import gethostname
 from iceprod.core import to_file, constants
 from iceprod.core import exe_json
@@ -96,9 +97,16 @@ class Pilot:
                 os.environ[name] = str(v)
         self.resources = Resources(debug=self.debug)
 
-        self.start_time = time.time()      
+        self.start_time = time.time()
         
     async def __aenter__(self):
+        # update pilot status
+        await self.rpc.update_pilot(self.pilot_id, tasks=[],
+                host=self.hostname, version=iceprod.__version__,
+                start_date=datetime.utcnow().isoformat(),
+                resources_available=self.resources.get_available(),
+                resources_claimed=self.resources.get_claimed())  
+
         loop = asyncio.get_event_loop()
         # set up resource monitor
         if psutil:

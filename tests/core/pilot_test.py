@@ -108,10 +108,7 @@ class pilot_test(TestBase):
         async with pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, **self.pilot_args) as p:
             await p.run()
         self.assertTrue(runner.called)
-        self.assertEqual(update_args[0][0], ('a',))
-        self.assertEqual(update_args[0][1]['tasks'], ['a'])
-        self.assertEqual(update_args[1][0], ('a',))
-        self.assertEqual(update_args[1][1]['tasks'], [])
+        self.assertTrue(any(['a'] == args[1]['tasks'] for args in update_args))
 
     @unittest_reporter(name='Pilot.run() split resources')
     async def test_013_pilot_resources(self):
@@ -241,10 +238,7 @@ class pilot_multi_test(TestBase):
         async with pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=2.1, debug=True) as p:
             await p.run()
         self.assertTrue(runner.called)
-        self.assertEqual(update_args[0][0], ('a',))
-        self.assertEqual(update_args[0][1]['tasks'], ['a'])
-        self.assertEqual(update_args[1][0], ('a',))
-        self.assertEqual(update_args[1][1]['tasks'], [])
+        self.assertTrue(any(['a'] == args[1]['tasks'] for args in update_args))
 
     @unittest_reporter(name='Pilot.monitor() over limit')
     async def test_102_pilot_monitor_over_limit(self):

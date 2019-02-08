@@ -91,9 +91,9 @@ class MultiPilotsHandler(BaseHandler):
 
         # set some fields
         data['pilot_id'] = uuid.uuid1().hex
-        data['submit_time'] = nowstr()
-        data['start_date'] = nowstr()
-        data['last_update'] = data['start_date']
+        data['submit_date'] = nowstr()
+        data['start_date'] = ''
+        data['last_update'] = data['submit_date']
         if 'tasks' not in data:
             data['tasks'] = []
         if 'host' not in data:
@@ -102,8 +102,8 @@ class MultiPilotsHandler(BaseHandler):
             data['version'] = ''
         if 'grid_queue_id' not in data:
             data['grid_queue_id'] = ''
-        data['available'] = {}
-        data['claimed'] = {}
+        data['resources_available'] = {}
+        data['resources_claimed'] = {}
 
         ret = await self.db.pilots.insert_one(data)
         self.set_status(201)
