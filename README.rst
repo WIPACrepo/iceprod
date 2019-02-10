@@ -1,6 +1,9 @@
 IceProd
 =======
 
+.. image:: https://zenodo.org/badge/58235078.svg
+   :target: https://zenodo.org/badge/latestdoi/58235078
+
 IceProd is a Python framework for distributed management of batch jobs.
 It runs as a layer on top of other batch middleware, such as HTCondor,
 and can pool together resources from different batch systems.
