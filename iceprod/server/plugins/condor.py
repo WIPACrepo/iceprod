@@ -167,7 +167,7 @@ class condor(grid.BaseGrid):
                 if 'time' in task['reqs'] and task['reqs']['time']:
                     # extra 10 min for pilot
                     p('+OriginalTime = {}'.format(int(task['reqs']['time'])*3600+600))
-                    p('+TargetTime = (!isUndefind(Target.PYGLIDEIN_TIME_TO_LIVE) ? Target.PYGLIDEIN_TIME_TO_LIVE : Target.TimeToLive)')
+                    p('+TargetTime = (!isUndefined(Target.PYGLIDEIN_TIME_TO_LIVE) ? Target.PYGLIDEIN_TIME_TO_LIVE : Target.TimeToLive)
                     p('Rank = Rank + (TargetTime - OriginalTime)/86400')
                     requirements.append('TargetTime > OriginalTime')
                 if 'os' in task['reqs'] and task['reqs']['os']:
