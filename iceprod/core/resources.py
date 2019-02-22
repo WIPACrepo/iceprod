@@ -521,7 +521,7 @@ class Resources:
                 s = s.replace('CUDA','')
             elif s.startswith('OCL'):
                 s = s.replace('OCL','')
-            return ret
+            return s
         if 'gpu' in resources and resources['gpu']:
             val = ','.join(replace(x) for x in set(resources['gpu']))
             env['CUDA_VISIBLE_DEVICES'] = val
