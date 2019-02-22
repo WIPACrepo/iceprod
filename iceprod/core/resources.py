@@ -516,8 +516,14 @@ class Resources:
             resources (dict): Resources to set
             env (dict): Environ to update (default: os.environ)
         """
+        def replace(s):
+            if s.startswith('CUDA'):
+                s = s.replace('CUDA','')
+            elif s.startswith('OCL'):
+                s = s.replace('OCL','')
+            return ret
         if 'gpu' in resources and resources['gpu']:
-            val = ','.join(x.replace('CUDA','') if x.startswith('CUDA') else x for x in set(resources['gpu']))
+            val = ','.join(replace(x) for x in set(resources['gpu']))
             env['CUDA_VISIBLE_DEVICES'] = val
             env['GPU_DEVICE_ORDINAL'] = val
         else:
