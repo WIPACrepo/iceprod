@@ -373,6 +373,7 @@ class Pilot:
                                 task = await f.__anext__()
                             except StopAsyncIteration:
                                 # the normal exit for a successful task
+                                logger.warning('task %s finished', task_id)
                                 clean = True
                             except Exception:
                                 # an internal iceprod error, but should be
@@ -381,13 +382,14 @@ class Pilot:
                                                exc_info=True)
                                 clean = True
                             else:
+                                logger.warning('task %s yielded again', task_id)
                                 self.tasks[task_id] = task
                     else:
                         # check if the DB has killed a task
                         try:
                             await self.rpc.still_running(task_id)
                         except Exception:
-                            # task is killed
+                            logger.warning('task %s killed by db', task_id)
                             kwargs = {
                                 'reason': 'server kill',
                                 'message': 'The server has marked the task as no longer running',

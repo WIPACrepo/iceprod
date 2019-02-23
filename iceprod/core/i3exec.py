@@ -305,6 +305,7 @@ async def runner(config, rpc=None, debug=False, offline=False,
                         raise Exception('cannot find specified task')
                     # finish task
                     if not offline:
+                        logger.warning('task finishing')
                         await rpc.finish_task(config['options']['task_id'],
                                 dataset_id=config['options']['dataset_id'],
                                 stats=env['stats'], start_time=start_time,
@@ -349,6 +350,7 @@ async def runner(config, rpc=None, debug=False, offline=False,
         # upload log files to server
         try:
             if (not offline) and 'upload' in config['options']:
+                logger.warning('uploading logfiles')
                 if isinstance(config['options']['upload'],
                               iceprod.core.dataclasses.String):
                     upload = config['options']['upload'].lower().split('|')
