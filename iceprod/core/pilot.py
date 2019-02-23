@@ -208,23 +208,27 @@ class Pilot:
                 logger.debug('pilot monitor - checking resource usage')
                 start_time = time.time()
 
-                overages = self.resources.check_claims()
-                for task_id in overages:
-                    used_resources = self.resources.get_peak(task_id)
-                    logger.warning('kill %r for going over resources: %r',
-                                task_id, used_resources)
-                    self.clean_task(task_id)
-                    message = overages[task_id]
-                    message += '\n\npilot_id: {}'.format(self.pilot_id)
-                    message += '\nhostname: {}'.format(self.hostname)
-                    kwargs = {
-                        'resources': used_resources,
-                        'reason': overages[task_id],
-                        'message': message,
-                    }
-                    if 'dataset_id' in self.tasks[task_id]['config']['options']:
-                        kwargs['dataset_id'] = self.tasks[task_id]['config']['options']['dataset_id']
-                    await self.rpc.task_kill(task_id, **kwargs)
+                try:
+                    overages = self.resources.check_claims()
+                    for task_id in overages:
+                        used_resources = self.resources.get_peak(task_id)
+                        logger.warning('kill %r for going over resources: %r',
+                                    task_id, used_resources)
+                        message = overages[task_id]
+                        message += '\n\npilot_id: {}'.format(self.pilot_id)
+                        message += '\nhostname: {}'.format(self.hostname)
+                        kwargs = {
+                            'resources': used_resources,
+                            'reason': overages[task_id],
+                            'message': message,
+                        }
+                        if 'dataset_id' in self.tasks[task_id]['config']['options']:
+                            kwargs['dataset_id'] = self.tasks[task_id]['config']['options']['dataset_id']
+
+                        self.clean_task(task_id)
+                        await self.rpc.task_kill(task_id, **kwargs)
+                except Exception:
+                    logger.error('error in resource_monitor', exc_info=True)
 
                 duration = time.time()-start_time
                 logger.debug('sleep_time %.2f, duration %.2f',sleep_time,duration)
@@ -232,7 +236,6 @@ class Pilot:
                     await asyncio.sleep(sleep_time-duration)
         except Exception:
             logger.error('pilot monitor died', exc_info=True)
-            raise
         logger.warning('pilot monitor exiting')
 
     async def run(self):
@@ -369,6 +372,7 @@ class Pilot:
                             task_errors -= 1
                             clean = True
                         else:
+                            f = self.tasks[task_id]['iter']
                             try:
                                 task = await f.__anext__()
                             except StopAsyncIteration:
@@ -383,6 +387,7 @@ class Pilot:
                                 clean = True
                             else:
                                 logger.warning('task %s yielded again', task_id)
+                                task['iter'] = f
                                 self.tasks[task_id] = task
                     else:
                         # check if the DB has killed a task
