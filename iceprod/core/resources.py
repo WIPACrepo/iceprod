@@ -103,9 +103,9 @@ class Resources:
         if debug:
             self.lookup_intervals = {
                 'children':10,
-                'cpu':0.1,
-                'gpu':1,
-                'memory':0.1,
+                'cpu':1,
+                'gpu':30,
+                'memory':1,
                 'disk':30,
                 'time':1,
             }
@@ -113,11 +113,11 @@ class Resources:
             #: time intervals when to check resources, vs using cached values
             self.lookup_intervals = {
                 'children':60,
-                'cpu':1,
-                'gpu':30,
-                'memory':1,
+                'cpu':10,
+                'gpu':300,
+                'memory':10,
                 'disk':180,
-                'time':1,
+                'time':10,
             }
 
         #: start time for resource tracking
@@ -335,11 +335,11 @@ class Resources:
                 usage = self.get_usage(task_id, force=force)
                 logging.debug('%s is using %r', task_id, usage)
             except psutil.NoSuchProcess:
-                logging.warning('process has exited for %r', task_id)
+                logging.info('process has exited for %r', task_id)
                 continue
             except Exception:
-                logging.warning('error getting usage for %r', task_id,
-                            exc_info=True)
+                logging.info('error getting usage for %r', task_id,
+                             exc_info=True)
                 continue
             for r in usage:
                 if r == 'gpu':
@@ -435,15 +435,16 @@ class Resources:
         processes = [process]+task['children']
         mem = 0
         cpu = 0
-        for p in processes:
-            try:
-                with p.oneshot():
-                    if lookups['cpu']:
-                        cpu += p.cpu_percent()
-                    if lookups['memory']:
-                        mem += p.memory_info().rss
-            except Exception:
-                pass
+        if lookups['cpu'] or lookups['memory']:
+            for p in processes:
+                try:
+                    with p.oneshot():
+                        if lookups['cpu']:
+                            cpu += p.cpu_percent()
+                        if lookups['memory']:
+                            mem += p.memory_info().rss
+                except Exception:
+                    pass
         gpu = 0
         if lookups['gpu']:
             for gpu_id in set(self.claimed[task_id]['resources']['gpu']):
