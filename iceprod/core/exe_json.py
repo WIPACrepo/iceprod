@@ -355,6 +355,15 @@ class ServerComms:
         """
         await self.rest.request('PATCH', '/pilots/{}'.format(pilot_id), kwargs)
 
+    async def delete_pilot(self, pilot_id, **kwargs):
+        """
+        Delete the pilot.
+
+        Args:
+            pilot_id (str): pilot id
+        """
+        await self.rest.request('DELETE', '/pilots/{}'.format(pilot_id))
+
 
     # --- synchronous versions to be used from a signal handler
     # --- or other non-async code
@@ -432,3 +441,12 @@ class ServerComms:
             **kwargs: passed through to rpc function
         """
         self.rest.request_seq('PATCH', '/pilots/{}'.format(pilot_id), kwargs)
+
+    def delete_pilot_sync(self, pilot_id, **kwargs):
+        """
+        Delete the pilot (synchronous version).
+
+        Args:
+            pilot_id (str): pilot id
+        """
+        self.rest.request_seq('DELETE', '/pilots/{}'.format(pilot_id))

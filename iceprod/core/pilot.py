@@ -124,20 +124,25 @@ class Pilot:
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
-        # make sure any child processes are dead
-        self.hard_kill()
+        try:
+            # make sure any child processes are dead
+            self.hard_kill()
 
-        if self.debug:
-            # append out, err, log
-            for dirs in glob('tmp*'):
-                for filename in (constants['stdout'], constants['stderr'],
-                                 constants['stdlog']):
-                    if os.path.exists(os.path.join(dirs,filename)):
-                        with open(filename,'a') as f:
-                            print('', file=f)
-                            print('----',dirs,'----', file=f)
-                            with open(os.path.join(dirs,filename)) as f2:
-                                print(f2.read(), file=f)
+            if self.debug:
+                # append out, err, log
+                for dirs in glob('tmp*'):
+                    for filename in (constants['stdout'], constants['stderr'],
+                                     constants['stdlog']):
+                        if os.path.exists(os.path.join(dirs,filename)):
+                            with open(filename,'a') as f:
+                                print('', file=f)
+                                print('----',dirs,'----', file=f)
+                                with open(os.path.join(dirs,filename)) as f2:
+                                    print(f2.read(), file=f)
+
+            await self.rpc.delete_pilot(self.pilot_id)
+        except Exception:
+            logger.error('error in aexit', exc_info=True)
 
         # restore previous signal handler
         signal.signal(signal.SIGTERM, self.prev_signal)
@@ -174,7 +179,7 @@ class Pilot:
 
         # stop the pilot
         try:
-            self.rpc.update_pilot_sync(self.pilot_id, tasks=[])
+            self.rpc.delete_pilot_sync(self.pilot_id)
         except Exception:
             pass
         sys.exit(1)
