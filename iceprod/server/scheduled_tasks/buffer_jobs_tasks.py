@@ -20,6 +20,8 @@ from iceprod.core.resources import Resources
 
 logger = logging.getLogger('buffer_jobs_tasks')
 
+NJOBS = 20000
+
 def buffer_jobs_tasks(module):
     """
     Initial entrypoint.
@@ -45,10 +47,10 @@ async def run(rest_client, debug=False):
             try:
                 dataset = await rest_client.request('GET', '/datasets/{}'.format(dataset_id))
                 tasks = await rest_client.request('GET', '/datasets/{}/task_counts/status'.format(dataset_id))
-                if 'waiting' not in tasks or tasks['waiting'] < 10000:
+                if 'waiting' not in tasks or tasks['waiting'] < NJOBS:
                     # buffer for this dataset
                     jobs = await rest_client.request('GET', '/datasets/{}/jobs'.format(dataset_id))
-                    jobs_to_buffer = min(10000, dataset['jobs_submitted'] - len(jobs))
+                    jobs_to_buffer = min(NJOBS, dataset['jobs_submitted'] - len(jobs))
                     if jobs_to_buffer > 0:
                         config = await rest_client.request('GET', '/config/{}'.format(dataset_id))
                         parser = ExpParser()
