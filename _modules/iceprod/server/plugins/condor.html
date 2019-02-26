@@ -67,7 +67,7 @@
             
             
               <div class="version">
-                2.5.0
+                2.5.1
               </div>
             
           
@@ -401,8 +401,9 @@
                 <span class="k">if</span> <span class="s1">&#39;time&#39;</span> <span class="ow">in</span> <span class="n">task</span><span class="p">[</span><span class="s1">&#39;reqs&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">task</span><span class="p">[</span><span class="s1">&#39;reqs&#39;</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">]:</span>
                     <span class="c1"># extra 10 min for pilot</span>
                     <span class="n">p</span><span class="p">(</span><span class="s1">&#39;+OriginalTime = </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">task</span><span class="p">[</span><span class="s1">&#39;reqs&#39;</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">])</span><span class="o">*</span><span class="mi">3600</span><span class="o">+</span><span class="mi">600</span><span class="p">))</span>
-                    <span class="n">p</span><span class="p">(</span><span class="s1">&#39;Rank = Rank + (Target.TimeToLive - OriginalTime)/86400&#39;</span><span class="p">)</span>
-                    <span class="n">requirements</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;Target.TimeToLive &gt; OriginalTime&#39;</span><span class="p">)</span>
+                    <span class="n">p</span><span class="p">(</span><span class="s1">&#39;+TargetTime = (!isUndefined(Target.PYGLIDEIN_TIME_TO_LIVE) ? Target.PYGLIDEIN_TIME_TO_LIVE : Target.TimeToLive)&#39;</span><span class="p">)</span>
+                    <span class="n">p</span><span class="p">(</span><span class="s1">&#39;Rank = Rank + (TargetTime - OriginalTime)/86400&#39;</span><span class="p">)</span>
+                    <span class="n">requirements</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;TargetTime &gt; OriginalTime&#39;</span><span class="p">)</span>
                 <span class="k">if</span> <span class="s1">&#39;os&#39;</span> <span class="ow">in</span> <span class="n">task</span><span class="p">[</span><span class="s1">&#39;reqs&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">task</span><span class="p">[</span><span class="s1">&#39;reqs&#39;</span><span class="p">][</span><span class="s1">&#39;os&#39;</span><span class="p">]:</span>
                     <span class="n">requirements</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">condor_os_reqs</span><span class="p">(</span><span class="n">task</span><span class="p">[</span><span class="s1">&#39;reqs&#39;</span><span class="p">][</span><span class="s1">&#39;os&#39;</span><span class="p">]))</span>
 

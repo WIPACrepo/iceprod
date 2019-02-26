@@ -67,7 +67,7 @@
             
             
               <div class="version">
-                2.5.0
+                2.5.1
               </div>
             
           
@@ -589,6 +589,15 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">rest</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s1">&#39;PATCH&#39;</span><span class="p">,</span> <span class="s1">&#39;/pilots/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pilot_id</span><span class="p">),</span> <span class="n">kwargs</span><span class="p">)</span></div>
 
+<div class="viewcode-block" id="ServerComms.delete_pilot"><a class="viewcode-back" href="../../../core/exe_json.html#iceprod.core.exe_json.ServerComms.delete_pilot">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">delete_pilot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pilot_id</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Delete the pilot.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pilot_id (str): pilot id</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">rest</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s1">&#39;DELETE&#39;</span><span class="p">,</span> <span class="s1">&#39;/pilots/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pilot_id</span><span class="p">))</span></div>
+
 
     <span class="c1"># --- synchronous versions to be used from a signal handler</span>
     <span class="c1"># --- or other non-async code</span>
@@ -665,7 +674,16 @@
 <span class="sd">            pilot_id (str): pilot id</span>
 <span class="sd">            **kwargs: passed through to rpc function</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">rest</span><span class="o">.</span><span class="n">request_seq</span><span class="p">(</span><span class="s1">&#39;PATCH&#39;</span><span class="p">,</span> <span class="s1">&#39;/pilots/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pilot_id</span><span class="p">),</span> <span class="n">kwargs</span><span class="p">)</span></div></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rest</span><span class="o">.</span><span class="n">request_seq</span><span class="p">(</span><span class="s1">&#39;PATCH&#39;</span><span class="p">,</span> <span class="s1">&#39;/pilots/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pilot_id</span><span class="p">),</span> <span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ServerComms.delete_pilot_sync"><a class="viewcode-back" href="../../../core/exe_json.html#iceprod.core.exe_json.ServerComms.delete_pilot_sync">[docs]</a>    <span class="k">def</span> <span class="nf">delete_pilot_sync</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pilot_id</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Delete the pilot (synchronous version).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pilot_id (str): pilot id</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rest</span><span class="o">.</span><span class="n">request_seq</span><span class="p">(</span><span class="s1">&#39;DELETE&#39;</span><span class="p">,</span> <span class="s1">&#39;/pilots/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pilot_id</span><span class="p">))</span></div></div>
 </pre></div>
 
            </div>

@@ -67,7 +67,7 @@
             
             
               <div class="version">
-                2.5.0
+                2.5.1
               </div>
             
           
@@ -539,6 +539,7 @@
                         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;cannot find specified task&#39;</span><span class="p">)</span>
                     <span class="c1"># finish task</span>
                     <span class="k">if</span> <span class="ow">not</span> <span class="n">offline</span><span class="p">:</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;task finishing&#39;</span><span class="p">)</span>
                         <span class="k">await</span> <span class="n">rpc</span><span class="o">.</span><span class="n">finish_task</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;options&#39;</span><span class="p">][</span><span class="s1">&#39;task_id&#39;</span><span class="p">],</span>
                                 <span class="n">dataset_id</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;options&#39;</span><span class="p">][</span><span class="s1">&#39;dataset_id&#39;</span><span class="p">],</span>
                                 <span class="n">stats</span><span class="o">=</span><span class="n">env</span><span class="p">[</span><span class="s1">&#39;stats&#39;</span><span class="p">],</span> <span class="n">start_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
@@ -583,6 +584,7 @@
         <span class="c1"># upload log files to server</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">offline</span><span class="p">)</span> <span class="ow">and</span> <span class="s1">&#39;upload&#39;</span> <span class="ow">in</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;options&#39;</span><span class="p">]:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;uploading logfiles&#39;</span><span class="p">)</span>
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;options&#39;</span><span class="p">][</span><span class="s1">&#39;upload&#39;</span><span class="p">],</span>
                               <span class="n">iceprod</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">dataclasses</span><span class="o">.</span><span class="n">String</span><span class="p">):</span>
                     <span class="n">upload</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;options&#39;</span><span class="p">][</span><span class="s1">&#39;upload&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;|&#39;</span><span class="p">)</span>

@@ -69,7 +69,7 @@
             
             
               <div class="version">
-                2.5.0
+                2.5.1
               </div>
             
           
@@ -435,6 +435,20 @@
 </dd></dl>
 
 <dl class="method">
+<dt id="iceprod.core.exe_json.ServerComms.delete_pilot">
+<code class="descname">delete_pilot</code><span class="sig-paren">(</span><em>pilot_id</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_json.html#ServerComms.delete_pilot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_json.ServerComms.delete_pilot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete the pilot.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>pilot_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – pilot id</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="iceprod.core.exe_json.ServerComms.task_kill_sync">
 <code class="descname">task_kill_sync</code><span class="sig-paren">(</span><em>task_id</em>, <em>dataset_id=None</em>, <em>resources=None</em>, <em>reason=None</em>, <em>message=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_json.html#ServerComms.task_kill_sync"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_json.ServerComms.task_kill_sync" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tell the server that we killed a task (synchronous version).</p>
@@ -468,6 +482,20 @@
 <li><strong>**kwargs</strong> – passed through to rpc function</li>
 </ul>
 </td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.exe_json.ServerComms.delete_pilot_sync">
+<code class="descname">delete_pilot_sync</code><span class="sig-paren">(</span><em>pilot_id</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_json.html#ServerComms.delete_pilot_sync"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_json.ServerComms.delete_pilot_sync" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete the pilot (synchronous version).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>pilot_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – pilot id</td>
 </tr>
 </tbody>
 </table>
