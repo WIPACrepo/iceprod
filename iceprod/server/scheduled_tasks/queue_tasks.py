@@ -18,6 +18,8 @@ from iceprod.server import GlobalID
 
 logger = logging.getLogger('dataset_monitor')
 
+NTASKS = 50000
+
 def queue_tasks(module):
     """
     Initial entrypoint.
@@ -53,7 +55,7 @@ async def run(rest_client, debug=False):
                 dataset_prios[dataset_id] = dataset['priority']
 
         if num_tasks_waiting > 0:
-            tasks_to_queue = 20000 - num_tasks_queued
+            tasks_to_queue = NTASKS - num_tasks_queued
             if tasks_to_queue > 0:
                 args = {
                     'num_tasks': tasks_to_queue,
@@ -61,7 +63,7 @@ async def run(rest_client, debug=False):
                 }
                 await rest_client.request('POST', '/task_actions/queue', args)
     except Exception:
-        logger.error('error monitoring datasets', exc_info=True)
+        logger.error('error queueing tasks', exc_info=True)
         if debug:
             raise
 
