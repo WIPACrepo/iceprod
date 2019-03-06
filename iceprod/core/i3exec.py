@@ -309,7 +309,7 @@ async def runner(config, rpc=None, debug=False, offline=False,
                         await rpc.finish_task(config['options']['task_id'],
                                 dataset_id=config['options']['dataset_id'],
                                 stats=env['stats'], start_time=start_time,
-                                resources=resources.get_final(config['options']['task_id']))
+                                resources=resources.get_final(config['options']['task_id']) if resources else None)
                 elif offline:
                     # run all tasks in order
                     for task in config['tasks']:
@@ -328,7 +328,7 @@ async def runner(config, rpc=None, debug=False, offline=False,
                             dataset_id=config['options']['dataset_id'],
                             stats=env['stats'], start_time=start_time,
                             reason=str(e),
-                            resources=resources.get_final(config['options']['task_id']))
+                            resources=resources.get_final(config['options']['task_id']) if resources else None)
                 except Exception as e:
                     logger.error(e)
                 # forcibly turn on logging, so we can see the error
