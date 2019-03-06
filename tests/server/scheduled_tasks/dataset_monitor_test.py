@@ -65,7 +65,7 @@ class dataset_monitor_test(AsyncTestCase):
                 client.called = True
                 return tasks
             if url.startswith('/datasets/foo'):
-                return {'dataset':123}
+                return {'dataset':123,'status':'processing'}
             else:
                 raise Exception()
         client.called = False
@@ -74,13 +74,15 @@ class dataset_monitor_test(AsyncTestCase):
 
         await dataset_monitor.run(rc, mon, debug=True)
         self.assertTrue(client.called)
-        self.assertFalse(mon.gauge.called)
+        self.assertTrue(mon.gauge.called)
 
         jobs['processing'] = 1
+        mon.reset_mock()
         await dataset_monitor.run(rc, mon, debug=True)
         self.assertTrue(mon.gauge.called)
 
         tasks['generate']['queued'] = 1
+        mon.reset_mock()
         await dataset_monitor.run(rc, mon, debug=True)
         self.assertTrue(mon.gauge.called)
 
