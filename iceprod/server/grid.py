@@ -119,7 +119,7 @@ class BaseGrid(object):
         grid_idle = 0
         for grid_queue_id in set(grid_jobs).intersection(pilots):
             status = grid_jobs[grid_queue_id]['status']
-            submit_time = pilots[grid_queue_id]['submit_time']
+            submit_time = pilots[grid_queue_id]['submit_date']
             if '.' in submit_time:
                 submit_time = datetime.strptime(submit_time, '%Y-%m-%dT%H:%M:%S.%f')
             else:
