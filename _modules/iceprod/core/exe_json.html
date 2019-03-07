@@ -579,13 +579,25 @@
             <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">constants</span><span class="p">[</span><span class="s1">&#39;stdout&#39;</span><span class="p">])</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_upload_logfile</span><span class="p">(</span><span class="s1">&#39;stdout&#39;</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
+<div class="viewcode-block" id="ServerComms.create_pilot"><a class="viewcode-back" href="../../../core/exe_json.html#iceprod.core.exe_json.ServerComms.create_pilot">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">create_pilot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create an entry in the pilot table.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            **kwargs: passed through to rest function</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            str: pilot id</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">rest</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s1">&#39;POST&#39;</span><span class="p">,</span> <span class="s1">&#39;/pilots&#39;</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;result&#39;</span><span class="p">]</span></div>
+
 <div class="viewcode-block" id="ServerComms.update_pilot"><a class="viewcode-back" href="../../../core/exe_json.html#iceprod.core.exe_json.ServerComms.update_pilot">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">update_pilot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pilot_id</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Update the pilot table.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            pilot_id (str): pilot id</span>
-<span class="sd">            **kwargs: passed through to rpc function</span>
+<span class="sd">            **kwargs: passed through to rest function</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">rest</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s1">&#39;PATCH&#39;</span><span class="p">,</span> <span class="s1">&#39;/pilots/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pilot_id</span><span class="p">),</span> <span class="n">kwargs</span><span class="p">)</span></div>
 
