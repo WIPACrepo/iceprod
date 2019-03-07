@@ -345,13 +345,25 @@ class ServerComms:
             filename = os.path.abspath(constants['stdout'])
         await self._upload_logfile('stdout', filename, **kwargs)
 
+    async def create_pilot(self, **kwargs):
+        """
+        Create an entry in the pilot table.
+
+        Args:
+            **kwargs: passed through to rest function
+        Returns:
+            str: pilot id
+        """
+        ret = await self.rest.request('POST', '/pilots', kwargs)
+        return ret['result']
+
     async def update_pilot(self, pilot_id, **kwargs):
         """
         Update the pilot table.
 
         Args:
             pilot_id (str): pilot id
-            **kwargs: passed through to rpc function
+            **kwargs: passed through to rest function
         """
         await self.rest.request('PATCH', '/pilots/{}'.format(pilot_id), kwargs)
 

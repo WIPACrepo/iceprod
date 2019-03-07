@@ -36,6 +36,7 @@ import asyncio
 
 from tornado.ioloop import IOLoop
 
+import iceprod
 from iceprod.core import to_file, constants
 import iceprod.core.dataclasses
 import iceprod.core.serialization
@@ -103,7 +104,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
             logging.critical('url missing')
             raise Exception('url missing')
 
-        # setup jsonRPC
+        # setup server comms
         kwargs = {}
         if 'username' in config['options']:
             kwargs['username'] = config['options']['username']
@@ -124,17 +125,30 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
             # tell the server that we are processing this task
             if 'task_id' not in config['options']:
                 raise Exception('config["options"]["task_id"] not specified')
+            pilot_id = None
             try:
+                pilot_id = await rpc.create_pilot(queue_host='manual',
+                                                  queue_version=iceprod.__version__,
+                                                  version=iceprod.__version__,
+                                                  tasks=[config['options']['task_id']],
+                                                  resources={})
                 await rpc.processing(config['options']['task_id'])
             except Exception:
-                logging.error('json error', exc_info=True)
+                logging.error('comms error', exc_info=True)
 
             # set up stdout and stderr
             stdout = partial(to_file,sys.stdout,constants['stdout'])
             stderr = partial(to_file,sys.stderr,constants['stderr'])
-            with stdout(), stderr():
-                async for proc in runner(config, rpc=rpc, debug=debug):
-                    await proc.wait()
+            try:
+                with stdout(), stderr():
+                    async for proc in runner(config, rpc=rpc, debug=debug):
+                        await proc.wait()
+            finally:
+                try:
+                    if pilot_id:
+                        await rpc.delete_pilot(pilot_id)
+                except Exception:
+                    logging.error('comms error', exc_info=True)
         else:
             logging.info('pilot mode - get many tasks from server')
             if 'gridspec' not in config['options']:
