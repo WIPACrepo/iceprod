@@ -128,6 +128,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
             pilot_id = None
             try:
                 pilot_id = await rpc.create_pilot(queue_host='manual',
+                                                  grid_queue_id='1',
                                                   queue_version=iceprod.__version__,
                                                   version=iceprod.__version__,
                                                   tasks=[config['options']['task_id']],
