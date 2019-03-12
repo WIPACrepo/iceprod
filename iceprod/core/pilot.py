@@ -394,6 +394,20 @@ class Pilot:
                                 logger.warning('task %s yielded again', task_id)
                                 task['iter'] = f
                                 self.tasks[task_id] = task
+                        # make sure the task is reset
+                        try:
+                            await self.rpc.still_running(task_id)
+                        except Exception:
+                            pass
+                        else:
+                            kwargs = {
+                                'reason': 'task exited with return code {}'.format(proc.returncode),
+                                'message': 'task exited with return code {}'.format(proc.returncode),
+                                'resources': self.resources.get_final(task_id),
+                            }
+                            if 'dataset_id' in self.tasks[task_id]['config']['options']:
+                                kwargs['dataset_id'] = self.tasks[task_id]['config']['options']['dataset_id']
+                            await self.rpc.task_kill(task_id, **kwargs)
                     else:
                         # check if the DB has killed a task
                         try:

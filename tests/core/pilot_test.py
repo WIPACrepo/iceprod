@@ -131,6 +131,12 @@ class pilot_test(TestBase):
         async def still_running(*args, **kwargs):
             return True
         rpc.still_running.side_effect = still_running
+        async def delete_pilot(*args, **kwargs):
+            logging.debug('delete_pilot %r %r', args, kwargs)
+        rpc.delete_pilot.side_effect = delete_pilot
+        async def task_kill(*args, **kwargs):
+            logging.debug('task_kill %r %r', args, kwargs)
+        rpc.task_kill.side_effect = task_kill
         async def runner(*args, **kwargs):
             logging.debug('runner - before')
             yield await asyncio.create_subprocess_exec('sleep','0.1')
@@ -167,6 +173,12 @@ class pilot_test(TestBase):
         async def still_running(*args, **kwargs):
             return True
         rpc.still_running.side_effect = still_running
+        async def delete_pilot(*args, **kwargs):
+            logging.debug('delete_pilot %r %r', args, kwargs)
+        rpc.delete_pilot.side_effect = delete_pilot
+        async def task_kill(*args, **kwargs):
+            logging.debug('task_kill %r %r', args, kwargs)
+        rpc.task_kill.side_effect = task_kill
         async def runner(*args, **kwargs):
             logging.debug('runner - before')
             yield await asyncio.create_subprocess_exec('sleep','0.1')
@@ -229,6 +241,12 @@ class pilot_multi_test(TestBase):
         async def still_running(*args, **kwargs):
             return True
         rpc.still_running.side_effect = still_running
+        async def delete_pilot(*args, **kwargs):
+            logging.debug('delete_pilot %r %r', args, kwargs)
+        rpc.delete_pilot.side_effect = delete_pilot
+        async def task_kill(*args, **kwargs):
+            logging.debug('task_kill %r %r', args, kwargs)
+        rpc.task_kill.side_effect = task_kill
         async def runner(*args, **kwargs):
             logging.debug('runner - before')
             yield await asyncio.create_subprocess_exec('sleep','2.0')
@@ -297,6 +315,12 @@ class pilot_multi_test(TestBase):
             logging.debug('update_pilot %r %r', args, kwargs)
             update_args.append((args,kwargs))
         rpc.update_pilot.side_effect = update_pilot
+        async def delete_pilot(*args, **kwargs):
+            logging.debug('delete_pilot %r %r', args, kwargs)
+        rpc.delete_pilot.side_effect = delete_pilot
+        async def task_kill(*args, **kwargs):
+            logging.debug('task_kill %r %r', args, kwargs)
+        rpc.task_kill.side_effect = task_kill
         async def runner(*args, **kwargs):
             logging.debug('runner - before')
             yield await asyncio.create_subprocess_exec('sleep','0.5')
