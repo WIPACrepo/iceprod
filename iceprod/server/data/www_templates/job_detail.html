@@ -47,7 +47,7 @@
         {% for task in job['tasks'] %}
         <tr>
             <td><a href="/dataset/{{ url_escape(job['dataset_id']) }}/task/{{ url_escape(task['task_id']) }}">{{ task['name'] }}</a></td>
-            <td>{{ 'GPU' if 'gpu' in task['requirements'] else 'CPU' }}</td>
+            <td>{{ 'GPU' if 'gpu' in task['requirements'] and task['requirements']['gpu'] else 'CPU' }}</td>
             <td>{{ task['status'] }}</td>
             <td>{{ task['failures'] }}</td>
             <td>{{ '{:.2f}'.format(task['walltime']/3600) }}</td>
