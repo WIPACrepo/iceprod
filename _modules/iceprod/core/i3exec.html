@@ -359,14 +359,14 @@
             <span class="c1"># tell the server that we are processing this task</span>
             <span class="k">if</span> <span class="s1">&#39;task_id&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;options&#39;</span><span class="p">]:</span>
                 <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;config[&quot;options&quot;][&quot;task_id&quot;] not specified&#39;</span><span class="p">)</span>
-            <span class="n">pilot_id</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">pilot_id2</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="n">pilot_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">rpc</span><span class="o">.</span><span class="n">create_pilot</span><span class="p">(</span><span class="n">queue_host</span><span class="o">=</span><span class="s1">&#39;manual&#39;</span><span class="p">,</span>
-                                                  <span class="n">grid_queue_id</span><span class="o">=</span><span class="s1">&#39;1&#39;</span><span class="p">,</span>
-                                                  <span class="n">queue_version</span><span class="o">=</span><span class="n">iceprod</span><span class="o">.</span><span class="n">__version__</span><span class="p">,</span>
-                                                  <span class="n">version</span><span class="o">=</span><span class="n">iceprod</span><span class="o">.</span><span class="n">__version__</span><span class="p">,</span>
-                                                  <span class="n">tasks</span><span class="o">=</span><span class="p">[</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;options&#39;</span><span class="p">][</span><span class="s1">&#39;task_id&#39;</span><span class="p">]],</span>
-                                                  <span class="n">resources</span><span class="o">=</span><span class="p">{})</span>
+                <span class="n">pilot_id2</span> <span class="o">=</span> <span class="k">await</span> <span class="n">rpc</span><span class="o">.</span><span class="n">create_pilot</span><span class="p">(</span><span class="n">queue_host</span><span class="o">=</span><span class="s1">&#39;manual&#39;</span><span class="p">,</span>
+                                                   <span class="n">grid_queue_id</span><span class="o">=</span><span class="s1">&#39;1&#39;</span><span class="p">,</span>
+                                                   <span class="n">queue_version</span><span class="o">=</span><span class="n">iceprod</span><span class="o">.</span><span class="n">__version__</span><span class="p">,</span>
+                                                   <span class="n">version</span><span class="o">=</span><span class="n">iceprod</span><span class="o">.</span><span class="n">__version__</span><span class="p">,</span>
+                                                   <span class="n">tasks</span><span class="o">=</span><span class="p">[</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;options&#39;</span><span class="p">][</span><span class="s1">&#39;task_id&#39;</span><span class="p">]],</span>
+                                                   <span class="n">resources</span><span class="o">=</span><span class="p">{})</span>
                 <span class="k">await</span> <span class="n">rpc</span><span class="o">.</span><span class="n">processing</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;options&#39;</span><span class="p">][</span><span class="s1">&#39;task_id&#39;</span><span class="p">])</span>
             <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
                 <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;comms error&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -380,8 +380,8 @@
                         <span class="k">await</span> <span class="n">proc</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
             <span class="k">finally</span><span class="p">:</span>
                 <span class="k">try</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">pilot_id</span><span class="p">:</span>
-                        <span class="k">await</span> <span class="n">rpc</span><span class="o">.</span><span class="n">delete_pilot</span><span class="p">(</span><span class="n">pilot_id</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">pilot_id2</span><span class="p">:</span>
+                        <span class="k">await</span> <span class="n">rpc</span><span class="o">.</span><span class="n">delete_pilot</span><span class="p">(</span><span class="n">pilot_id2</span><span class="p">)</span>
                 <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
                     <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;comms error&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
