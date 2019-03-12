@@ -125,14 +125,14 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
             # tell the server that we are processing this task
             if 'task_id' not in config['options']:
                 raise Exception('config["options"]["task_id"] not specified')
-            pilot_id = None
+            pilot_id2 = None
             try:
-                pilot_id = await rpc.create_pilot(queue_host='manual',
-                                                  grid_queue_id='1',
-                                                  queue_version=iceprod.__version__,
-                                                  version=iceprod.__version__,
-                                                  tasks=[config['options']['task_id']],
-                                                  resources={})
+                pilot_id2 = await rpc.create_pilot(queue_host='manual',
+                                                   grid_queue_id='1',
+                                                   queue_version=iceprod.__version__,
+                                                   version=iceprod.__version__,
+                                                   tasks=[config['options']['task_id']],
+                                                   resources={})
                 await rpc.processing(config['options']['task_id'])
             except Exception:
                 logging.error('comms error', exc_info=True)
@@ -146,8 +146,8 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
                         await proc.wait()
             finally:
                 try:
-                    if pilot_id:
-                        await rpc.delete_pilot(pilot_id)
+                    if pilot_id2:
+                        await rpc.delete_pilot(pilot_id2)
                 except Exception:
                     logging.error('comms error', exc_info=True)
         else:
