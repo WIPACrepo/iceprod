@@ -28,6 +28,7 @@ import logging
 import logging.config
 import time
 import signal
+import socket
 from functools import partial
 import tempfile
 import shutil
@@ -128,6 +129,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
             pilot_id2 = None
             try:
                 pilot_id2 = await rpc.create_pilot(queue_host='manual',
+                                                   host=socket.getfqdn(),
                                                    grid_queue_id='1',
                                                    queue_version=iceprod.__version__,
                                                    version=iceprod.__version__,
