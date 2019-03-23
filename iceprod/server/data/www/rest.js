@@ -89,8 +89,8 @@ async function set_jobs_status(dataset_id, job_ids, stat, passkey, task_status_f
             let url = '/datasets/' + dataset_id + '/tasks?job_id='+jid;
             if (task_status_filters.length > 0) {
                 url += '&status='+task_status_filters[0];
-                for (var i=1;i<task_status_filters.length;i++) {
-                    url += '|'+task_status_filters[i];
+                for (var j=1;j<task_status_filters.length;j++) {
+                    url += '|'+task_status_filters[j];
                 }
             }
             url += '&keys=task_id';
