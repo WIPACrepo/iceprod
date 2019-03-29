@@ -394,6 +394,7 @@ class Pilot:
                                 logger.warning('task %s yielded again', task_id)
                                 task['iter'] = f
                                 self.tasks[task_id] = task
+                                continue
                         # make sure the task is reset
                         try:
                             await self.rpc.still_running(task_id)
