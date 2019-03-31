@@ -188,7 +188,7 @@ class BaseGrid(object):
         # get tasks on the queue
         args = {
             'status': 'queued',
-            'keys': 'task_id|dataset_id|requirements',
+            'keys': 'task_id|dataset_id|status_changed|requirements',
         }
         ret = await self.rest_client.request('GET', '/tasks', args)
         tasks = ret['tasks']
@@ -200,8 +200,8 @@ class BaseGrid(object):
             dataset = await self.rest_client.request('GET', '/datasets/{}'.format(d))
             dataset_prios[d] = dataset['priority']
 
-        # sort by dataset priority
-        tasks.sort(key=lambda t:(-1*dataset_prios[t['dataset_id']],t['task_id']))
+        # sort by dataset priority, status changed time
+        tasks.sort(key=lambda t:(-1*dataset_prios[t['dataset_id']],t['status_changed'],t['task_id']))
 
         # queue new pilots
         await self.setup_pilots(tasks)
