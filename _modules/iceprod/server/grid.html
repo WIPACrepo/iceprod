@@ -422,7 +422,7 @@
         <span class="c1"># get tasks on the queue</span>
         <span class="n">args</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="s1">&#39;queued&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;keys&#39;</span><span class="p">:</span> <span class="s1">&#39;task_id|dataset_id|requirements&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;keys&#39;</span><span class="p">:</span> <span class="s1">&#39;task_id|dataset_id|status_changed|requirements&#39;</span><span class="p">,</span>
         <span class="p">}</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">rest_client</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/tasks&#39;</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
         <span class="n">tasks</span> <span class="o">=</span> <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;tasks&#39;</span><span class="p">]</span>
@@ -434,14 +434,26 @@
             <span class="n">dataset</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">rest_client</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/datasets/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">d</span><span class="p">))</span>
             <span class="n">dataset_prios</span><span class="p">[</span><span class="n">d</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s1">&#39;priority&#39;</span><span class="p">]</span>
 
-        <span class="c1"># sort by dataset priority</span>
-        <span class="n">tasks</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:(</span><span class="o">-</span><span class="mi">1</span><span class="o">*</span><span class="n">dataset_prios</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="s1">&#39;dataset_id&#39;</span><span class="p">]],</span><span class="n">t</span><span class="p">[</span><span class="s1">&#39;task_id&#39;</span><span class="p">]))</span>
+        <span class="c1"># sort by dataset priority, status changed time</span>
+        <span class="n">tasks</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:(</span><span class="o">-</span><span class="mi">1</span><span class="o">*</span><span class="n">dataset_prios</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="s1">&#39;dataset_id&#39;</span><span class="p">]],</span><span class="n">t</span><span class="p">[</span><span class="s1">&#39;status_changed&#39;</span><span class="p">],</span><span class="n">t</span><span class="p">[</span><span class="s1">&#39;task_id&#39;</span><span class="p">]))</span>
 
         <span class="c1"># queue new pilots</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">setup_pilots</span><span class="p">(</span><span class="n">tasks</span><span class="p">)</span></div>
 
 
     <span class="c1">### Private Functions ###</span>
+
+<div class="viewcode-block" id="BaseGrid.get_queue_num"><a class="viewcode-back" href="../../../server/grid.html#iceprod.server.grid.BaseGrid.get_queue_num">[docs]</a>    <span class="k">def</span> <span class="nf">get_queue_num</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Determine how many pilots to queue.&quot;&quot;&quot;</span>
+        <span class="n">tasks_on_queue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_cfg</span><span class="p">[</span><span class="s1">&#39;pilots_on_queue&#39;</span><span class="p">]</span>
+        <span class="n">queue_tot_max</span> <span class="o">=</span> <span class="n">tasks_on_queue</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid_processing</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid_idle</span>
+        <span class="n">queue_idle_max</span> <span class="o">=</span> <span class="n">tasks_on_queue</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid_idle</span>
+        <span class="n">queue_interval_max</span> <span class="o">=</span> <span class="n">tasks_on_queue</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tasks_on_queue</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="k">else</span> <span class="n">tasks_on_queue</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">queue_num</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tasks</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid_idle</span><span class="p">,</span> <span class="n">queue_tot_max</span><span class="p">,</span>
+                              <span class="n">queue_idle_max</span><span class="p">,</span> <span class="n">queue_interval_max</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;queueing </span><span class="si">%d</span><span class="s1"> pilots&#39;</span><span class="p">,</span> <span class="n">queue_num</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">statsd</span><span class="o">.</span><span class="n">incr</span><span class="p">(</span><span class="s1">&#39;queueing_pilots&#39;</span><span class="p">,</span> <span class="n">queue_num</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">queue_num</span></div>
 
     <span class="nd">@run_on_executor</span>
     <span class="k">def</span> <span class="nf">_delete_dirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dirs</span><span class="p">):</span>
@@ -518,17 +530,8 @@
             <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">groups_considered</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">n</span>
 
-        <span class="c1"># determine how many pilots to queue</span>
-        <span class="n">tasks_on_queue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_cfg</span><span class="p">[</span><span class="s1">&#39;pilots_on_queue&#39;</span><span class="p">]</span>
-        <span class="n">queue_tot_max</span> <span class="o">=</span> <span class="n">tasks_on_queue</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid_processing</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid_idle</span>
-        <span class="n">queue_idle_max</span> <span class="o">=</span> <span class="n">tasks_on_queue</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid_idle</span>
-        <span class="n">queue_interval_max</span> <span class="o">=</span> <span class="n">tasks_on_queue</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tasks_on_queue</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="k">else</span> <span class="n">tasks_on_queue</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">queue_num</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tasks</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid_idle</span><span class="p">,</span> <span class="n">queue_tot_max</span><span class="p">,</span>
-                              <span class="n">queue_idle_max</span><span class="p">,</span> <span class="n">queue_interval_max</span><span class="p">))</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;queueing </span><span class="si">%d</span><span class="s1"> pilots&#39;</span><span class="p">,</span> <span class="n">queue_num</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">statsd</span><span class="o">.</span><span class="n">incr</span><span class="p">(</span><span class="s1">&#39;queueing_pilots&#39;</span><span class="p">,</span> <span class="n">queue_num</span><span class="p">)</span>
-
         <span class="c1"># select at least one from each resource group</span>
+        <span class="n">queue_num</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_queue_num</span><span class="p">()</span>
         <span class="n">groups_to_queue</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">()</span>
         <span class="n">keys</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">groups_considered</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
         <span class="k">while</span> <span class="n">queue_num</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">keys</span><span class="p">:</span>
@@ -635,7 +638,10 @@
         <span class="sd">&quot;&quot;&quot;Write the config file for a task-like object&quot;&quot;&quot;</span>
         <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">task</span><span class="p">[</span><span class="s1">&#39;submit_dir&#39;</span><span class="p">],</span><span class="s1">&#39;task.cfg&#39;</span><span class="p">)</span>
 
-        <span class="n">config</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">Job</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">task</span><span class="p">[</span><span class="s1">&#39;config&#39;</span><span class="p">]:</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="n">task</span><span class="p">[</span><span class="s1">&#39;config&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">Job</span><span class="p">()</span>
         <span class="n">filelist</span> <span class="o">=</span> <span class="p">[</span><span class="n">filename</span><span class="p">]</span>
 
         <span class="k">if</span> <span class="s1">&#39;reqs&#39;</span> <span class="ow">in</span> <span class="n">task</span><span class="p">:</span>

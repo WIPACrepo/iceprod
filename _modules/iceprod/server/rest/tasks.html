@@ -774,7 +774,7 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Handle task action for queued -&gt; processing.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="TasksActionsProcessingHandler.post"><a class="viewcode-back" href="../../../../server/rest_api/tasks.html#iceprod.server.rest.tasks.TasksActionsProcessingHandler.post">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">,</span><span class="s1">&#39;pilot&#39;</span><span class="p">])</span>
+<div class="viewcode-block" id="TasksActionsProcessingHandler.post"><a class="viewcode-back" href="../../../../server/rest_api/tasks.html#iceprod.server.rest.tasks.TasksActionsProcessingHandler.post">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">,</span><span class="s1">&#39;client&#39;</span><span class="p">,</span><span class="s1">&#39;pilot&#39;</span><span class="p">])</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Take one queued task, set its status to processing, and return it.</span>
@@ -822,7 +822,7 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Handle task action on error (* -&gt; reset).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="TasksActionsErrorHandler.post"><a class="viewcode-back" href="../../../../server/rest_api/tasks.html#iceprod.server.rest.tasks.TasksActionsErrorHandler.post">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">,</span><span class="s1">&#39;pilot&#39;</span><span class="p">])</span>
+<div class="viewcode-block" id="TasksActionsErrorHandler.post"><a class="viewcode-back" href="../../../../server/rest_api/tasks.html#iceprod.server.rest.tasks.TasksActionsErrorHandler.post">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">,</span><span class="s1">&#39;client&#39;</span><span class="p">,</span><span class="s1">&#39;pilot&#39;</span><span class="p">])</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Take one task, set its status to reset.</span>
@@ -833,6 +833,7 @@
 <span class="sd">        Body args (json):</span>
 <span class="sd">            time_used (int): (optional) time used to run task, in seconds</span>
 <span class="sd">            resources (dict): (optional) resources used by task</span>
+<span class="sd">            reason (str): (optional) reason for error</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            dict: {}  empty dict</span>
@@ -891,7 +892,7 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Handle task action on processing -&gt; complete.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="TasksActionsCompleteHandler.post"><a class="viewcode-back" href="../../../../server/rest_api/tasks.html#iceprod.server.rest.tasks.TasksActionsCompleteHandler.post">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">,</span><span class="s1">&#39;pilot&#39;</span><span class="p">])</span>
+<div class="viewcode-block" id="TasksActionsCompleteHandler.post"><a class="viewcode-back" href="../../../../server/rest_api/tasks.html#iceprod.server.rest.tasks.TasksActionsCompleteHandler.post">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">,</span><span class="s1">&#39;client&#39;</span><span class="p">,</span><span class="s1">&#39;pilot&#39;</span><span class="p">])</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Take one task, set its status to complete.</span>
