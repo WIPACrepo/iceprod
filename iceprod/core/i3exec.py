@@ -215,7 +215,7 @@ async def runner(config, rpc=None, debug=False, offline=False,
     if ('loglevel' in config['options'] and
         config['options']['loglevel'].upper() in iceprod.core.logger.setlevel):
         try:
-            logger.set_log_level(config['options']['loglevel'])
+            iceprod.core.logger.set_log_level(config['options']['loglevel'])
         except Exception:
             logger.warning('failed to set a new log level', exc_info=True)
 

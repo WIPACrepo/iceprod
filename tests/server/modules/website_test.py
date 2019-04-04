@@ -89,7 +89,7 @@ class website_test(AsyncTestCase):
             
             self.website = website(self.cfg, self.io_loop, self.executor, self.modules)
         except:
-            logger.warn('error setting up modules_website', exc_info=True)
+            logger.warning('error setting up modules_website', exc_info=True)
             raise
 
         self.auth_cookie = None
@@ -722,7 +722,7 @@ class website_test(AsyncTestCase):
                 WebDriverWait(driver, 1).until(EC.text_to_be_present_in_element(
                     (webdriver.common.by.By.ID,'status'),'OK'))
             finally:
-                logger.warn('status: %r',driver.find_element_by_id('status').text)
+                logger.warning('status: %r',driver.find_element_by_id('status').text)
             c = self.modules.called[-1]
             logger.info('%r',c)
             self.assertEqual(c[:2], ('db','rpc_set_groups'))

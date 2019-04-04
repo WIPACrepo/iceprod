@@ -18,6 +18,7 @@ lib64/
 parts/
 sdist/
 var/
+venv/
 *.egg-info/
 .installed.cfg
 *.egg
@@ -113,4 +114,6 @@ globus_proxy.json
 iceprod_stats
 iceprod_task_exception
 test.json
+
+etc/
 

@@ -102,8 +102,10 @@ class MultiPilotsHandler(BaseHandler):
             data['version'] = ''
         if 'grid_queue_id' not in data:
             data['grid_queue_id'] = ''
-        data['resources_available'] = {}
-        data['resources_claimed'] = {}
+        if 'resources_available' not in data:
+            data['resources_available'] = {}
+        if 'resources_claimed' not in data:
+            data['resources_claimed'] = {}
 
         ret = await self.db.pilots.insert_one(data)
         self.set_status(201)

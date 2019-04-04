@@ -38,8 +38,8 @@ logging.basicConfig()
 logger = logging.getLogger('tests')
 
 def handler1(signum, frame):
-   logger.warn('Signal handler called with signal %s' % signum)
-   logger.warn('Exiting...')
+   logger.warning('Signal handler called with signal %s' % signum)
+   logger.warning('Exiting...')
    os._exit(0)
 
 class MyArgumentParser(argparse.ArgumentParser):
@@ -85,7 +85,7 @@ signal.signal(signal.SIGQUIT, handler1)
 signal.signal(signal.SIGINT, handler1)
 
 # start testing
-logger.warn('starting...%s ' % logger.name)
+logger.warning('starting...%s ' % logger.name)
 print('Testing...')
 print('(detailed log file available at tests.log)')
 print('')

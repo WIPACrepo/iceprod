@@ -173,6 +173,7 @@ class resources_test(unittest.TestCase):
         raw = {'cpu':8, 'gpu':['0','1'], 'memory':3.5, 'disk':20,
                'time':12}
         r = iceprod.core.resources.Resources(raw=raw, debug=True)
+        r.lookup_intervals['memory'] = 0.1
 
         task_id = 'foo'
         reqs = {'cpu':1, 'gpu':1, 'memory':2.1, 'disk':3.4, 'time': 9}

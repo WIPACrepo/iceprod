@@ -64,7 +64,7 @@ class queue_test(module_test):
             
             self.queue = queue(self.cfg, self.io_loop, self.executor, self.modules)
         except:
-            logger.warn('error setting up modules_queue', exc_info=True)
+            logger.warning('error setting up modules_queue', exc_info=True)
             raise
 
     @unittest_reporter

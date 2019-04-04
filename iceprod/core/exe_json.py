@@ -33,8 +33,6 @@ class ServerComms:
         **kwargs: passed to JSONRPC
     """
     def __init__(self, url, passkey, config, **kwargs):
-        self.url = url
-        self.cfg = config
         self.rest = RestClient(address=url,token=passkey,**kwargs)
 
     async def download_task(self, gridspec, resources={}):
@@ -76,7 +74,7 @@ class ServerComms:
             if not isinstance(config, dataclasses.Job):
                 config = dict_to_dataclasses(config)
         except Exception:
-            logging.warn('failed to get dataset config for dataset %s', task['dataset_id'])
+            logging.warning('failed to get dataset config for dataset %s', task['dataset_id'])
             await self.task_kill(task['task_id'], dataset_id=task['dataset_id'],
                                  reason='failed to download dataset config')
             raise
@@ -94,7 +92,7 @@ class ServerComms:
             job = await self.rest.request('GET', '/jobs/{}'.format(task['job_id']))
             config['options']['job'] = job['job_index']
         except Exception:
-            logging.warn('failed to get job %s', task['job_id'])
+            logging.warning('failed to get job %s', task['job_id'])
             await self.task_kill(task['task_id'], dataset_id=task['dataset_id'],
                                  reason='failed to download job')
             raise
@@ -105,7 +103,7 @@ class ServerComms:
             config['options']['tasks_submitted'] = dataset['tasks_submitted']
             config['options']['debug'] = dataset['debug']
         except Exception:
-            logging.warn('failed to get dataset %s', task['dataset_id'])
+            logging.warning('failed to get dataset %s', task['dataset_id'])
             await self.task_kill(task['task_id'], dataset_id=task['dataset_id'],
                                  reason='failed to download dataset')
             raise

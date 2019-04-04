@@ -550,13 +550,13 @@ async def setupClass(env, class_obj, logger=None):
                 download_local = await functions.download(url, local_temp,
                         options=download_options)
             except Exception:
-                logger.info('failed to download', exc_info=True)
+                logger.info('download failed, {} attempts left'.format(i), exc_info=True)
                 if i < 10:
                     i += 1
                     continue # retry with different url
                 raise
             if not os.path.exists(download_local):
-                raise Exception('download failed')
+                raise Exception('failed to download {} to {}'.format(url, local))
             if functions.iscompressed(download_local) or functions.istarred(download_local):
                 files = functions.uncompress(download_local, out_dir=local_temp)
                 # check if we extracted a tarfile
@@ -968,6 +968,7 @@ class ForkModule:
         if not exc_type:
             # now clean up after process
             if self.proc and self.proc.returncode:
+                self.logger.warning('return code: {}'.format(self.proc.returncode))
                 try:
                     with open(self.error_filename, 'rb') as f:
                         e = pickle.load(f)

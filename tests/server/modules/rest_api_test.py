@@ -41,7 +41,7 @@ class rest_api_test(module_test):
             self.mod = rest_api(self.cfg, self.io_loop, self.executor, self.modules)
             self.mod.rest_client = MagicMock(spec=RestClient)
         except:
-            logger.warn('error setting up modules_schedule', exc_info=True)
+            logger.warning('error setting up modules_schedule', exc_info=True)
             raise
 
     @unittest_reporter(name='start/stop')

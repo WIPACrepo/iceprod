@@ -540,7 +540,7 @@ class TasksActionsProcessingHandler(BaseHandler):
     """
     Handle task action for queued -> processing.
     """
-    @authorization(roles=['admin','pilot'])
+    @authorization(roles=['admin','client','pilot'])
     async def post(self):
         """
         Take one queued task, set its status to processing, and return it.
@@ -588,7 +588,7 @@ class TasksActionsErrorHandler(BaseHandler):
     """
     Handle task action on error (* -> reset).
     """
-    @authorization(roles=['admin','pilot'])
+    @authorization(roles=['admin','client','pilot'])
     async def post(self, task_id):
         """
         Take one task, set its status to reset.
@@ -599,6 +599,7 @@ class TasksActionsErrorHandler(BaseHandler):
         Body args (json):
             time_used (int): (optional) time used to run task, in seconds
             resources (dict): (optional) resources used by task
+            reason (str): (optional) reason for error
 
         Returns:
             dict: {}  empty dict
@@ -657,7 +658,7 @@ class TasksActionsCompleteHandler(BaseHandler):
     """
     Handle task action on processing -> complete.
     """
-    @authorization(roles=['admin','pilot'])
+    @authorization(roles=['admin','client','pilot'])
     async def post(self, task_id):
         """
         Take one task, set its status to complete.

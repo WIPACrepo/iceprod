@@ -55,7 +55,7 @@ def setup_rest(config, module=None):
     rest = config.get('rest',{})
     routes = []
     for key in rest:
-        logger.warn('setting up tornado for REST.%s', key)
+        logger.warning('setting up tornado for REST.%s', key)
         mod = importlib.import_module('iceprod.server.rest.'+key)
         routes.extend(mod.setup(config, module=module))
     logger.info('REST routes being served:')
