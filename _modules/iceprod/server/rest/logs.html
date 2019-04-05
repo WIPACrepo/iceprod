@@ -344,7 +344,7 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Handle logs requests.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="MultiLogsHandler.post"><a class="viewcode-back" href="../../../../server/rest_api/logs.html#iceprod.server.rest.logs.MultiLogsHandler.post">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">,</span><span class="s1">&#39;pilot&#39;</span><span class="p">])</span>
+<div class="viewcode-block" id="MultiLogsHandler.post"><a class="viewcode-back" href="../../../../server/rest_api/logs.html#iceprod.server.rest.logs.MultiLogsHandler.post">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">,</span><span class="s1">&#39;client&#39;</span><span class="p">,</span><span class="s1">&#39;pilot&#39;</span><span class="p">])</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create a log entry.</span>
