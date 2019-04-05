@@ -405,7 +405,8 @@ class supercomp_graham(grid.BaseGrid):
     def generate_submit_file(self, task, cfg=None, passkey=None,
                              filelist=None):
         """Generate queueing system submit file for task in dir."""
-        args = self.get_submit_args(task,cfg=cfg,passkey=passkey)
+        args = self.get_submit_args(task,cfg=cfg)
+        args.append('--offline')
 
         # write the submit file
         submit_file = os.path.join(task['submit_dir'],'submit.sh')
