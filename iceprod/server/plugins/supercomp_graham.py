@@ -43,7 +43,7 @@ async def subprocess_ssh(host, args):
     return p
 
 async def check_call(*args, **kwargs):
-    logger.info('subprocess_check_call: %r', cmd)
+    logger.info('subprocess_check_call: %r', args)
     p = await asyncio.create_subprocess_exec(*args, **kwargs)
     if p.returncode:
         raise Exception(f'command failed, return code {p.returncode}')
@@ -52,7 +52,7 @@ async def check_call(*args, **kwargs):
 async def check_output(*args, **kwargs):
     kwargs['stdout'] = subprocess.PIPE
     kwargs['stderr'] = subprocess.STDOUT
-    logger.info('subprocess_check_output: %r', cmd)
+    logger.info('subprocess_check_output: %r', args)
     p = await asyncio.create_subprocess_exec(*args, **kwargs)
     out,_ = await p.communicate()
     if p.returncode:
