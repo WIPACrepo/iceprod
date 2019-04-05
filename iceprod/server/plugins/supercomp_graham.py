@@ -35,7 +35,7 @@ async def subprocess_ssh(host, args):
     if 'ICEPRODBASE' in os.environ:
         cmd.append(f'{os.environ["ICEPRODBASE"]}/env-shell.sh')
     cmd += args
-    await asyncio.create_subprocess_exec(cmd, timeout=20*60, check=True)
+    await asyncio.create_subprocess_exec(*cmd, timeout=20*60, check=True)
 
 class MyServerComms(ServerComms):
     def __init__(self, rest_client):
@@ -270,7 +270,7 @@ class supercomp_graham(grid.BaseGrid):
             else:
                 logger.warning('cannot find task in config for %s', task['task_id'])
                 continue
-            if task_cfg['task_files']:
+            if 'task_files' in task_cfg and task_cfg['task_files']:
                 comms = MyServerComms(self.rest_client)
                 files = await comms.task_files(task['dataset_id'],
                                                task['task_id'])
@@ -436,7 +436,7 @@ class supercomp_graham(grid.BaseGrid):
     async def submit(self,task):
         """Submit task to queueing system."""
         cmd = ['sbatch','submit.sh']
-        ret = await asyncio.create_subprocess_exec(cmd, cwd=task['submit_dir'],
+        ret = await asyncio.create_subprocess_exec(*cmd, cwd=task['submit_dir'],
                                                    check=True,
                                                    stdout=subprocess.PIPE)
         grid_queue_id = ''
@@ -456,7 +456,7 @@ class supercomp_graham(grid.BaseGrid):
             dict: {grid_queue_id: {status, submit_dir} }
         """
         cmd = ['squeue', '-u', getpass.getuser(), '-h', '-o', '%A %t %j %o']
-        ret = await asyncio.create_subprocess_exec(cmd, check=True,
+        ret = await asyncio.create_subprocess_exec(*cmd, check=True,
                                                    stdout=subprocess.PIPE)
         out = ret.out
         ret = {}
@@ -486,7 +486,7 @@ class supercomp_graham(grid.BaseGrid):
         """
         date = (datetime.now()-timedelta(days=4)).isoformat().split('.',1)[0]
         cmd = ['sacct', '-u', getpass.getuser(), '-n', '-P', '-S', date, '-o', 'JobIDRaw,State,JobName,ExitCode,Workdir']
-        ret = await asyncio.create_subprocess_exec(cmd, check=True,
+        ret = await asyncio.create_subprocess_exec(*cmd, check=True,
                                                    stdout=subprocess.PIPE)
         out = ret.out
         ret = {}
@@ -507,4 +507,4 @@ class supercomp_graham(grid.BaseGrid):
         """Remove tasks from queueing system."""
         if tasks:
             cmd = ['scancel']+list(tasks)
-            await asyncio.create_subprocess_exec(cmd, check=True)
+            await asyncio.create_subprocess_exec(*cmd, check=True)
