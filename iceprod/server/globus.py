@@ -66,6 +66,8 @@ class SiteGlobusProxy(object):
             else:
                 cmd = ['grid-proxy-init']
             cmd.extend(['-pwstdin','-valid','%d:0'%(self.cfg['duration']+1)])
+            if 'out' in self.cfg:
+                cmd.extend(['-out', self.cfg['out']])
             p = subprocess.Popen(cmd, stdin=subprocess.PIPE,
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
@@ -86,6 +88,8 @@ class SiteGlobusProxy(object):
 
     def get_proxy(self):
         """Get the proxy location"""
+        if 'out' in self.cfg:
+            return self.cfg['out']
         FNULL = open(os.devnull, 'w')
         return subprocess.check_output(['grid-proxy-info','-path'],
                                        stderr=FNULL).decode('utf-8').strip()

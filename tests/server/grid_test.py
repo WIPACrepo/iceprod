@@ -179,15 +179,15 @@ class grid_test(AsyncTestCase):
         if not g:
             raise Exception('init did not return grid object')
 
-        tasks = [{'task_id':'1', 'dataset_id':'bar', 'requirements':{}},
-                 {'task_id':'2', 'dataset_id':'bar', 'requirements':{}},
-                 {'task_id':'3', 'dataset_id':'baz', 'requirements':{}},]
+        tasks = [{'task_id':'1', 'dataset_id':'bar', 'status_changed':'2017', 'requirements':{}},
+                 {'task_id':'2', 'dataset_id':'bar', 'status_changed':'2017', 'requirements':{}},
+                 {'task_id':'3', 'dataset_id':'baz', 'status_changed':'2017', 'requirements':{}},]
         dataset = {'dataset_id':'bar', 'priority':1}
         dataset2 = {'dataset_id':'baz', 'priority':2}
         async def req(method, path, args=None):
             logger.info('req path=%r, args=%r', path, args)
             if 'task' in path:
-                return {'tasks':tasks}
+                return {'tasks':tasks.copy()}
             if 'bar' in path:
                 return dataset
             else:
@@ -198,9 +198,7 @@ class grid_test(AsyncTestCase):
         g.tasks_queued = 0
         await g.queue()
         self.assertTrue(setup_pilots.called)
-        expected = [{'task_id':'3', 'dataset_id':'baz', 'requirements':{}},
-                    {'task_id':'1', 'dataset_id':'bar', 'requirements':{}},
-                    {'task_id':'2', 'dataset_id':'bar', 'requirements':{}},]
+        expected = [tasks[2], tasks[0], tasks[1]]
         self.assertEqual(setup_pilots.call_args[0][0], expected)
 
     @patch('iceprod.server.grid.BaseGrid.setup_submit_directory')

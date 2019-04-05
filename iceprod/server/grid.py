@@ -209,13 +209,13 @@ class BaseGrid(object):
 
     ### Private Functions ###
 
-    def get_queue_num(self):
+    def get_queue_num(self, available=100000):
         """Determine how many pilots to queue."""
         tasks_on_queue = self.queue_cfg['pilots_on_queue']
         queue_tot_max = tasks_on_queue[1] - self.grid_processing - self.grid_idle
         queue_idle_max = tasks_on_queue[0] - self.grid_idle
         queue_interval_max = tasks_on_queue[2] if len(tasks_on_queue) > 2 else tasks_on_queue[0]
-        queue_num = max(0,min(len(tasks) - self.grid_idle, queue_tot_max,
+        queue_num = max(0,min(available - self.grid_idle, queue_tot_max,
                               queue_idle_max, queue_interval_max))
         logger.info('queueing %d pilots', queue_num)
         self.statsd.incr('queueing_pilots', queue_num)
@@ -297,7 +297,7 @@ class BaseGrid(object):
                 groups_considered[k] = n
 
         # select at least one from each resource group
-        queue_num = self.get_queue_num()
+        queue_num = self.get_queue_num(available=len(tasks))
         groups_to_queue = Counter()
         keys = set(groups_considered.keys())
         while queue_num > 0 and keys:
@@ -404,7 +404,7 @@ class BaseGrid(object):
         """Write the config file for a task-like object"""
         filename = os.path.join(task['submit_dir'],'task.cfg')
 
-        if task['config']:
+        if 'config' in task and task['config']:
             config = task['config']
         else:
             config = dataclasses.Job()
