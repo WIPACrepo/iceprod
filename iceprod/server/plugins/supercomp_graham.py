@@ -244,7 +244,7 @@ class supercomp_graham(grid.BaseGrid):
                     await self.upload_logfiles(task_id,
                                                dataset_id=pilot['dataset_id'],
                                                submit_dir=pilot['submit_dir'])
-                    await self.finish_task(task['task_id'],
+                    await self.finish_task(task_id,
                                            dataset_id=pilot['dataset_id'],
                                            submit_dir=pilot['submit_dir'])
 
