@@ -110,7 +110,7 @@ class MultiLogsHandler(BaseHandler):
     """
     Handle logs requests.
     """
-    @authorization(roles=['admin','pilot'])
+    @authorization(roles=['admin','client','pilot'])
     async def post(self):
         """
         Create a log entry.
