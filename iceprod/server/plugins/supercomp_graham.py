@@ -438,8 +438,7 @@ class supercomp_graham(grid.BaseGrid):
         cmd = ['sbatch','submit.sh']
         ret = await asyncio.create_subprocess_exec(cmd, cwd=task['submit_dir'],
                                                    check=True,
-                                                   stdout=subprocess.PIPE,
-                                                   universal_newlines=True)
+                                                   stdout=subprocess.PIPE)
         grid_queue_id = ''
         for line in ret.stdout.split('\n'):
             if 'Submitted batch job' in line:
@@ -458,8 +457,7 @@ class supercomp_graham(grid.BaseGrid):
         """
         cmd = ['squeue', '-u', getpass.getuser(), '-h', '-o', '%A %t %j %o']
         ret = await asyncio.create_subprocess_exec(cmd, check=True,
-                                                   stdout=subprocess.PIPE,
-                                                   universal_newlines=True)
+                                                   stdout=subprocess.PIPE)
         out = ret.out
         ret = {}
         for line in out.split('\n'):
@@ -489,8 +487,7 @@ class supercomp_graham(grid.BaseGrid):
         date = (datetime.now()-timedelta(days=4)).isoformat().split('.',1)[0]
         cmd = ['sacct', '-u', getpass.getuser(), '-n', '-P', '-S', date, '-o', 'JobIDRaw,State,JobName,ExitCode,Workdir']
         ret = await asyncio.create_subprocess_exec(cmd, check=True,
-                                                   stdout=subprocess.PIPE,
-                                                   universal_newlines=True)
+                                                   stdout=subprocess.PIPE)
         out = ret.out
         ret = {}
         for line in out.split('\n'):
