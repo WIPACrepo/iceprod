@@ -200,10 +200,10 @@ class supercomp_graham(grid.BaseGrid):
 
         if grid_jobs:
             # get pilots from iceprod
-            ret = await self.rest_client.request('GET', '/pilots')
+            pilots = await self.rest_client.request('GET', '/pilots')
             pilot_futures = []
             pilots_to_delete = set()
-            for pilot_id in ret:
+            for pilot_id in pilots:
                 pilot = ret[pilot_id]
                 if pilot['queue_host'] != host:
                     continue
