@@ -345,7 +345,7 @@ class supercomp_graham(grid.BaseGrid):
                                            reason=reason)
                 await self.task_error(task['task_id'],
                                       dataset_id=task['dataset_id'],
-                                      submit_dir=pilot['submit_dir'],
+                                      submit_dir=task['submit_dir'],
                                       reason=reason)
                 await self.rest_client.request('DELETE', f'/pilots/{pilot_id}')
                 continue
@@ -367,11 +367,10 @@ class supercomp_graham(grid.BaseGrid):
             dict: task info
         """
         try:
-            proxy = self.x509proxy.get_proxy()
+            #proxy = self.x509proxy.get_proxy()
             await subprocess_ssh(
                     'gra-dtn1.computecanada.ca',
-                    ['export', f'X509_USER_PROXY={proxy}',';',
-                     'python', '-m', 'iceprod.core.data_transfer', '-f',
+                    ['python', '-m', 'iceprod.core.data_transfer', '-f',
                      os.path.join(task['submit_dir'],'task.cfg'),
                      '-d', task['submit_dir'],
                      'input']
@@ -390,11 +389,10 @@ class supercomp_graham(grid.BaseGrid):
             dict: task info
         """
         try:
-            proxy = self.x509proxy.get_proxy()
+            #proxy = self.x509proxy.get_proxy()
             await subprocess_ssh(
                     'gra-dtn1.computecanada.ca',
-                    ['export', f'X509_USER_PROXY={proxy}',';',
-                     'python', '-m', 'iceprod.core.data_transfer', '-f',
+                    ['python', '-m', 'iceprod.core.data_transfer', '-f',
                      os.path.join(task['submit_dir'],'task.cfg'),
                      '-d', task['submit_dir'],
                      'output']
