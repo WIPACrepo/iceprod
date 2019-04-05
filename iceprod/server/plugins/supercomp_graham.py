@@ -464,7 +464,7 @@ class supercomp_graham(grid.BaseGrid):
         grid_queue_id = ''
         for line in ret.split('\n'):
             if 'Submitted batch job' in line:
-                grid_queue_id = line.strip().rsplit(1)[-1]
+                grid_queue_id = line.strip().rsplit(' ',1)[-1]
                 break
         else:
             raise Exception('did not get a grid_queue_id')
