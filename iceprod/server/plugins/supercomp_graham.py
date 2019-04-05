@@ -35,7 +35,25 @@ async def subprocess_ssh(host, args):
     if 'ICEPRODBASE' in os.environ:
         cmd.append(f'{os.environ["ICEPRODBASE"]}/env-shell.sh')
     cmd += args
-    await asyncio.create_subprocess_exec(*cmd, timeout=20*60, check=True)
+    p = await asyncio.create_subprocess_exec(*cmd, timeout=20*60)
+    if p.returncode:
+        raise Exception(f'command failed, return code {p.returncode}')
+    return p
+
+async def check_call(*args, **kwargs):
+    p = await asyncio.create_subprocess_exec(*args, **kwargs)
+    if p.returncode:
+        raise Exception(f'command failed, return code {p.returncode}')
+    return p
+
+async def check_output(*args, **kwargs):
+    kwargs['stdout'] = subprocess.PIPE
+    kwargs['stderr'] = subprocess.STDOUT
+    p = await asyncio.create_subprocess_exec(*args, **kwargs)
+    out,err = await p.communicate()
+    if p.returncode:
+        raise Exception(f'command failed, return code {p.returncode}')
+    return out
 
 class MyServerComms(ServerComms):
     def __init__(self, rest_client):
@@ -301,7 +319,7 @@ class supercomp_graham(grid.BaseGrid):
                      'queue_version': iceprod.__version__,
                      'version': iceprod.__version__,
             }
-            ret = await self.rest_client.request('POST', '/pilots', args)
+            ret = await self.rest_client.request('POST', '/pilots', pilot)
             pilot['pilot_id'] = ret['result']
             task['pilot'] = pilot
 
@@ -436,11 +454,9 @@ class supercomp_graham(grid.BaseGrid):
     async def submit(self,task):
         """Submit task to queueing system."""
         cmd = ['sbatch','submit.sh']
-        ret = await asyncio.create_subprocess_exec(*cmd, cwd=task['submit_dir'],
-                                                   check=True,
-                                                   stdout=subprocess.PIPE)
+        ret = await check_output(*cmd, cwd=task['submit_dir'])
         grid_queue_id = ''
-        for line in ret.stdout.split('\n'):
+        for line in ret.split('\n'):
             if 'Submitted batch job' in line:
                 grid_queue_id = line.strip().rsplit(1)[-1]
                 break
@@ -456,9 +472,7 @@ class supercomp_graham(grid.BaseGrid):
             dict: {grid_queue_id: {status, submit_dir} }
         """
         cmd = ['squeue', '-u', getpass.getuser(), '-h', '-o', '%A %t %j %o']
-        ret = await asyncio.create_subprocess_exec(*cmd, check=True,
-                                                   stdout=subprocess.PIPE)
-        out = ret.out
+        out = await check_output(*cmd)
         ret = {}
         for line in out.split('\n'):
             if not line.strip():
@@ -486,9 +500,7 @@ class supercomp_graham(grid.BaseGrid):
         """
         date = (datetime.now()-timedelta(days=4)).isoformat().split('.',1)[0]
         cmd = ['sacct', '-u', getpass.getuser(), '-n', '-P', '-S', date, '-o', 'JobIDRaw,State,JobName,ExitCode,Workdir']
-        ret = await asyncio.create_subprocess_exec(*cmd, check=True,
-                                                   stdout=subprocess.PIPE)
-        out = ret.out
+        out = await check_output(*cmd)
         ret = {}
         for line in out.split('\n'):
             if not line.strip():
@@ -507,4 +519,4 @@ class supercomp_graham(grid.BaseGrid):
         """Remove tasks from queueing system."""
         if tasks:
             cmd = ['scancel']+list(tasks)
-            await asyncio.create_subprocess_exec(*cmd, check=True)
+            await check_call(*cmd)
