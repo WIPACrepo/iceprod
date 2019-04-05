@@ -25,6 +25,7 @@ from iceprod.core import constants
 from iceprod.core import functions
 from iceprod.core.exe_json import ServerComms
 from iceprod.server import grid
+from iceprod.server.globus import SiteGlobusProxy
 
 logger = logging.getLogger('plugin-graham')
 
