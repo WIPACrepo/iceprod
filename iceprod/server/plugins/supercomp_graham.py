@@ -35,6 +35,7 @@ async def subprocess_ssh(host, args):
     if 'ICEPRODBASE' in os.environ:
         cmd.append(f'{os.environ["ICEPRODBASE"]}/env-shell.sh')
     cmd += args
+    logger.info('subprocess_ssh: %r', cmd)
     p = await asyncio.create_subprocess_exec(*cmd)
     await asyncio.wait_for(p.wait(), timeout=20*60)
     if p.returncode:
@@ -42,6 +43,7 @@ async def subprocess_ssh(host, args):
     return p
 
 async def check_call(*args, **kwargs):
+    logger.info('subprocess_check_call: %r', cmd)
     p = await asyncio.create_subprocess_exec(*args, **kwargs)
     if p.returncode:
         raise Exception(f'command failed, return code {p.returncode}')
@@ -50,6 +52,7 @@ async def check_call(*args, **kwargs):
 async def check_output(*args, **kwargs):
     kwargs['stdout'] = subprocess.PIPE
     kwargs['stderr'] = subprocess.STDOUT
+    logger.info('subprocess_check_output: %r', cmd)
     p = await asyncio.create_subprocess_exec(*args, **kwargs)
     out,_ = await p.communicate()
     if p.returncode:
@@ -341,7 +344,8 @@ class supercomp_graham(grid.BaseGrid):
                                            submit_dir=task['submit_dir'],
                                            reason=reason)
                 await self.task_error(task['task_id'],
-                                      dataset_id=task['dataset_id'],
+                                      dataset_id=task['dataset_id'],,
+                                      submit_dir=pilot['submit_dir']
                                       reason=reason)
                 await self.rest_client.request('DELETE', f'/pilots/{pilot_id}')
                 continue
