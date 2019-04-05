@@ -204,7 +204,7 @@ class supercomp_graham(grid.BaseGrid):
             pilot_futures = []
             pilots_to_delete = set()
             for pilot_id in pilots:
-                pilot = ret[pilot_id]
+                pilot = pilots[pilot_id]
                 if pilot['queue_host'] != host:
                     continue
                 if 'grid_queue_id' in pilot and pilot['grid_queue_id'] in grid_jobs:
