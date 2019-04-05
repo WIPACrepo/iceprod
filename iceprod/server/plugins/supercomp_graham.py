@@ -35,7 +35,8 @@ async def subprocess_ssh(host, args):
     if 'ICEPRODBASE' in os.environ:
         cmd.append(f'{os.environ["ICEPRODBASE"]}/env-shell.sh')
     cmd += args
-    p = await asyncio.create_subprocess_exec(*cmd, timeout=20*60)
+    p = await asyncio.create_subprocess_exec(*cmd)
+    await asyncio.wait_for(p.wait(), timeout=20*60)
     if p.returncode:
         raise Exception(f'command failed, return code {p.returncode}')
     return p
