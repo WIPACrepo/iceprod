@@ -430,8 +430,9 @@ class supercomp_graham(grid.BaseGrid):
                     p(f'#SBATCH --gres=gpu:{task["reqs"]["gpu"]}')
                 if 'memory' in task['reqs'] and task['reqs']['memory']:
                     p('#SBATCH --mem={}M'.format(int(task['reqs']['memory']*1000)))
-                if 'disk' in task['reqs'] and task['reqs']['disk']:
-                    p('#SBATCH --tmp={}M'.format(int(task['reqs']['disk']*1000)))
+                # we don't currently use the local disk, just the global scratch
+                #if 'disk' in task['reqs'] and task['reqs']['disk']:
+                #    p('#SBATCH --tmp={}M'.format(int(task['reqs']['disk']*1000)))
                 if 'time' in task['reqs'] and task['reqs']['time']:
                     p('#SBATCH --time={}'.format(int(task['reqs']['time']*60)))
 
