@@ -344,8 +344,8 @@ class supercomp_graham(grid.BaseGrid):
                                            submit_dir=task['submit_dir'],
                                            reason=reason)
                 await self.task_error(task['task_id'],
-                                      dataset_id=task['dataset_id'],,
-                                      submit_dir=pilot['submit_dir']
+                                      dataset_id=task['dataset_id'],
+                                      submit_dir=pilot['submit_dir'],
                                       reason=reason)
                 await self.rest_client.request('DELETE', f'/pilots/{pilot_id}')
                 continue
