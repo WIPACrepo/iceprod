@@ -50,10 +50,10 @@ async def check_output(*args, **kwargs):
     kwargs['stdout'] = subprocess.PIPE
     kwargs['stderr'] = subprocess.STDOUT
     p = await asyncio.create_subprocess_exec(*args, **kwargs)
-    out,err = await p.communicate()
+    out,_ = await p.communicate()
     if p.returncode:
         raise Exception(f'command failed, return code {p.returncode}')
-    return out
+    return out.decode('utf-8')
 
 class MyServerComms(ServerComms):
     def __init__(self, rest_client):
@@ -349,7 +349,7 @@ class supercomp_graham(grid.BaseGrid):
             args = {'grid_queue_id': task['grid_queue_id']}
             await self.rest_client.request('PATCH', f'/pilots/{pilot_id}', args)
 
-    async def download_input(task):
+    async def download_input(self, task):
         """
         Download input files for task.
 
@@ -372,7 +372,7 @@ class supercomp_graham(grid.BaseGrid):
             return (task, e)
         return (task,None)
 
-    async def upload_output(*args):
+    async def upload_output(self, task):
         """
         Upload output files for task.
 
