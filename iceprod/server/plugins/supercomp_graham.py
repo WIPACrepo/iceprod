@@ -113,7 +113,7 @@ class supercomp_graham(grid.BaseGrid):
             data['data'] = ''
             await self.rest_client.request('POST', '/logs', data)
 
-    async def task_error(self, task_id, dataset_id, reason=''):
+    async def task_error(self, task_id, dataset_id, submit_dir, reason=''):
         """reset a task"""
         # search for reason, reasources in logfile
         resources = {}
@@ -156,7 +156,7 @@ class supercomp_graham(grid.BaseGrid):
         await comms.task_kill(task_id, dataset_id=dataset_id, 
                               reason=reason, resources=resources)
 
-    async def finish_task(self, task_id, dataset_id):
+    async def finish_task(self, task_id, dataset_id, submit_dir):
         """complete a task"""
         # search for reasources in logfile
         resources = {}
@@ -218,7 +218,8 @@ class supercomp_graham(grid.BaseGrid):
                             else:
                                 await self.upload_logfiles(task_id, pilot['dataset_id'],
                                                            submit_dir=pilot['submit_dir'])
-                                await self.task_error(task_id, pilot['dataset_id'])
+                                await self.task_error(task_id, pilot['dataset_id'],
+                                                      submit_dir=pilot['submit_dir'])
 
                     pilots_to_delete.add(pilot_id)
 
@@ -234,13 +235,15 @@ class supercomp_graham(grid.BaseGrid):
                                                reason=reason)
                     await self.task_error(task['task_id'],
                                           dataset_id=pilot['dataset_id'],
+                                          submit_dir=pilot['submit_dir'],
                                           reason=reason)
                 else:
                     await self.upload_logfiles(task_id,
                                                dataset_id=pilot['dataset_id'],
                                                submit_dir=task['submit_dir'])
                     await self.finish_task(task['task_id'],
-                                           dataset_id=pilot['dataset_id'])
+                                           dataset_id=pilot['dataset_id'],
+                                           submit_dir=pilot['submit_dir'])
 
             for pilot_id in pilots_to_delete:
                 await self.rest_client.request('DELETE', f'/pilots/{pilot_id}')
