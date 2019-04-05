@@ -212,7 +212,7 @@ class supercomp_graham(grid.BaseGrid):
                     pilot['submit_dir'] = grid_jobs[gid]['submit_dir']
                     if pilot['tasks']:
                         task_id = pilot['tasks'][0]
-                        ret = await self.rest_client.request('GET', f'/task/{task_id}')
+                        ret = await self.rest_client.request('GET', f'/tasks/{task_id}')
                         if ret['status'] == 'processing':
                             pilot['dataset_id'] = ret['dataset_id']
                             if grid_jobs[gid]['status'] == 'ok':
