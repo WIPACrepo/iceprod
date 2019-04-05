@@ -451,7 +451,7 @@ class supercomp_graham(grid.BaseGrid):
                 if 'time' in task['reqs'] and task['reqs']['time']:
                     p(f'export TIME={task["reqs"]["time"]}')
 
-            p('{} {}'.format(os.path.join(task['submit_dir'],'loader.sh'),args))
+            p('{} {}'.format(os.path.join(task['submit_dir'],'loader.sh'), ' '.join(args)))
 
         # make it executable
         st = os.stat(submit_file)
