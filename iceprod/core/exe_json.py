@@ -162,6 +162,8 @@ class ServerComms:
         domain = '.'.join(hostname.split('.')[-2:])
         if start_time:
             t = time.time() - start_time
+        elif resources and 'time' in resources and resources['time']:
+            t = int(resources['time']*3600)
         else:
             t = None
         iceprod_stats = {
@@ -213,6 +215,8 @@ class ServerComms:
             domain = '.'.join(hostname.split('.')[-2:])
             if start_time:
                 t = time.time() - start_time
+            elif resources and 'time' in resources and resources['time']:
+                t = int(resources['time']*3600)
             else:
                 t = None
             iceprod_stats = {
