@@ -311,13 +311,13 @@ class supercomp_graham(grid.BaseGrid):
                 'jobs_submitted': dataset['jobs_submitted'],
                 'tasks_submitted': dataset['tasks_submitted'],
                 'debug': dataset['debug'],
-            #    'reqs': args['requirements'],
             })
 
             # setup submit dir
             await self.setup_submit_directory(task)
 
             # create pilot
+            task['reqs'] = args['requirements']
             resources_available = {'time': resources['time']}
             for k in ('cpu','gpu','memory','disk'):
                 resources_available[k] = resources[k]-task['requirements'][k]
