@@ -118,12 +118,11 @@ class supercomp_graham(grid.BaseGrid):
 
     async def task_error(self, task_id, dataset_id, submit_dir, reason=''):
         """reset a task"""
-        # search for reason, reasources in logfile
+        # search for resources in slurm stdout
         resources = {}
-        filename = os.path.join(submit_dir, constants['stdlog'])
+        filename = os.path.join(submit_dir, 'slurm.out')
         if os.path.exists(filename):
             with open(filename) as f:
-                log_reason = ''
                 resource_lines = False
                 for line in f:
                     line = line.strip()
@@ -142,18 +141,22 @@ class supercomp_graham(grid.BaseGrid):
                                     resources[name] = value
                             continue
                         else:
-                            resource_lines = False
-                    if not reason:
+                            break
+        if not reason:
+            # search for reason in logfile
+            filename = os.path.join(submit_dir, constants['stdlog'])
+            if os.path.exists(filename):
+                with open(filename) as f:
+                    for line in f:
+                        line = line.strip()
                         if 'failed to download' in line:
-                            log_reason = 'failed to download input file(s)'
+                            reason = 'failed to download input file(s)'
                         if 'failed to upload' in line:
-                            log_reason = 'failed to upload output file(s)'
-                        if 'Exception' in line and not log_reason:
-                            log_reason = line
-                        if 'return code:' in line and not log_reason:
-                            log_reason = 'task error: return code '+line.rsplit(':',1)[-1]
-                if log_reason and not reason:
-                    reason = log_reason
+                            reason = 'failed to upload output file(s)'
+                        if 'Exception' in line and not reason:
+                            reason = line
+                        if 'return code:' in line and not reason:
+                            reason = 'task error: return code '+line.rsplit(':',1)[-1]
 
         comms = MyServerComms(self.rest_client)
         await comms.task_kill(task_id, dataset_id=dataset_id, 
@@ -161,9 +164,9 @@ class supercomp_graham(grid.BaseGrid):
 
     async def finish_task(self, task_id, dataset_id, submit_dir):
         """complete a task"""
-        # search for reasources in logfile
+        # search for reasources in slurm stdout
         resources = {}
-        filename = os.path.join(submit_dir, constants['stdlog'])
+        filename = os.path.join(submit_dir, 'slurm.out')
         if os.path.exists(filename):
             with open(filename) as f:
                 resource_lines = False
@@ -308,7 +311,7 @@ class supercomp_graham(grid.BaseGrid):
                 'jobs_submitted': dataset['jobs_submitted'],
                 'tasks_submitted': dataset['tasks_submitted'],
                 'debug': dataset['debug'],
-                'reqs': args['requirements'],
+            #    'reqs': args['requirements'],
             })
 
             # setup submit dir
@@ -443,15 +446,15 @@ class supercomp_graham(grid.BaseGrid):
             # make resources explicit in env
             if 'reqs' in task:
                 if 'cpu' in task['reqs'] and task['reqs']['cpu']:
-                    p(f'export CPU={task["reqs"]["cpu"]}')
+                    p(f'export NUM_CPUS={task["reqs"]["cpu"]}')
                 if 'gpu' in task['reqs'] and task['reqs']['gpu']:
-                    p(f'export GPU={task["reqs"]["gpu"]}')
+                    p(f'export NUM_GPUS={task["reqs"]["gpu"]}')
                 if 'memory' in task['reqs'] and task['reqs']['memory']:
-                    p(f'export MEMORY={task["reqs"]["memory"]}')
+                    p(f'export NUM_MEMORY={task["reqs"]["memory"]}')
                 if 'disk' in task['reqs'] and task['reqs']['disk']:
-                    p(f'export DISK={task["reqs"]["disk"]}')
+                    p(f'export NUM_DISK={task["reqs"]["disk"]}')
                 if 'time' in task['reqs'] and task['reqs']['time']:
-                    p(f'export TIME={task["reqs"]["time"]}')
+                    p(f'export NUM_TIME={task["reqs"]["time"]}')
 
             p('{} {}'.format(os.path.join(task['submit_dir'],'loader.sh'), ' '.join(args)))
 
