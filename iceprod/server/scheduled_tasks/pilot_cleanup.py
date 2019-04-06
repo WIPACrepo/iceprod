@@ -42,11 +42,9 @@ async def run(rest_client, debug=False):
     try:
         pilots = await rest_client.request('GET', '/pilots')
         for pilot in pilots.values():
-            if 'grid_queue_id' not in pilot or not pilot['grid_queue_id']:
+            if 'last_update' not in pilot or str2datetime(pilot['last_update']) < time_limit:
                 await reset_pilot(pilot['pilot_id'])
-            elif 'last_update' not in pilot or str2datetime(pilot['last_update']) < time_limit:
-                await reset_pilot(pilot['pilot_id'])
-                
+
     except Exception:
         logger.error('error cleaning pilots', exc_info=True)
         if debug:
