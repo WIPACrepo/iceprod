@@ -311,13 +311,13 @@ class supercomp_graham(grid.BaseGrid):
                 'jobs_submitted': dataset['jobs_submitted'],
                 'tasks_submitted': dataset['tasks_submitted'],
                 'debug': dataset['debug'],
+                'requirements': args['requirements'],
             })
 
             # setup submit dir
             await self.setup_submit_directory(task)
 
             # create pilot
-            task['reqs'] = args['requirements']
             resources_available = {'time': resources['time']}
             for k in ('cpu','gpu','memory','disk'):
                 resources_available[k] = resources[k]-task['requirements'][k]
@@ -426,35 +426,35 @@ class supercomp_graham(grid.BaseGrid):
             p('#SBATCH --job-name=iceprod_{}'.format(os.path.basename(task['submit_dir'])))
 
             # handle resource requests
-            if 'reqs' in task:
-                if 'cpu' in task['reqs'] and task['reqs']['cpu']:
-                    p(f'#SBATCH --cpus-per-task={task["reqs"]["cpu"]}')
-                if 'gpu' in task['reqs'] and task['reqs']['gpu']:
-                    p(f'#SBATCH --gres=gpu:{task["reqs"]["gpu"]}')
-                if 'memory' in task['reqs'] and task['reqs']['memory']:
-                    p('#SBATCH --mem={}M'.format(int(task['reqs']['memory']*1000)))
+            if 'requirements' in task:
+                if 'cpu' in task['requirements'] and task['requirements']['cpu']:
+                    p(f'#SBATCH --cpus-per-task={task["requirements"]["cpu"]}')
+                if 'gpu' in task['requirements'] and task['requirements']['gpu']:
+                    p(f'#SBATCH --gres=gpu:{task["requirements"]["gpu"]}')
+                if 'memory' in task['requirements'] and task['requirements']['memory']:
+                    p('#SBATCH --mem={}M'.format(int(task['requirements']['memory']*1000)))
                 # we don't currently use the local disk, just the global scratch
-                #if 'disk' in task['reqs'] and task['reqs']['disk']:
-                #    p('#SBATCH --tmp={}M'.format(int(task['reqs']['disk']*1000)))
-                if 'time' in task['reqs'] and task['reqs']['time']:
-                    p('#SBATCH --time={}'.format(int(task['reqs']['time']*60)))
+                #if 'disk' in task['requirements'] and task['requirements']['disk']:
+                #    p('#SBATCH --tmp={}M'.format(int(task['requirements']['disk']*1000)))
+                if 'time' in task['requirements'] and task['requirements']['time']:
+                    p('#SBATCH --time={}'.format(int(task['requirements']['time']*60)))
 
             # get batchopts
             for b in self.queue_cfg['batchopts']:
                 p(b+'='+self.queue_cfg['batchopts'][b])
 
             # make resources explicit in env
-            if 'reqs' in task:
-                if 'cpu' in task['reqs'] and task['reqs']['cpu']:
-                    p(f'export NUM_CPUS={task["reqs"]["cpu"]}')
-                if 'gpu' in task['reqs'] and task['reqs']['gpu']:
-                    p(f'export NUM_GPUS={task["reqs"]["gpu"]}')
-                if 'memory' in task['reqs'] and task['reqs']['memory']:
-                    p(f'export NUM_MEMORY={task["reqs"]["memory"]}')
-                if 'disk' in task['reqs'] and task['reqs']['disk']:
-                    p(f'export NUM_DISK={task["reqs"]["disk"]}')
-                if 'time' in task['reqs'] and task['reqs']['time']:
-                    p(f'export NUM_TIME={task["reqs"]["time"]}')
+            if 'requirements' in task:
+                if 'cpu' in task['requirements'] and task['requirements']['cpu']:
+                    p(f'export NUM_CPUS={task["requirements"]["cpu"]}')
+                if 'gpu' in task['requirements'] and task['requirements']['gpu']:
+                    p(f'export NUM_GPUS={task["requirements"]["gpu"]}')
+                if 'memory' in task['requirements'] and task['requirements']['memory']:
+                    p(f'export NUM_MEMORY={task["requirements"]["memory"]}')
+                if 'disk' in task['requirements'] and task['requirements']['disk']:
+                    p(f'export NUM_DISK={task["requirements"]["disk"]}')
+                if 'time' in task['requirements'] and task['requirements']['time']:
+                    p(f'export NUM_TIME={task["requirements"]["time"]}')
 
             p('{} {}'.format(os.path.join(task['submit_dir'],'loader.sh'), ' '.join(args)))
 
