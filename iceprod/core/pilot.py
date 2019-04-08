@@ -259,9 +259,9 @@ class Pilot:
         while self.running or self.tasks:
             while self.running:
                 # retrieve new task(s)
-                if self.resources.total['gpu'] and not self.resources.available['gpu']:
-                    logger.info('gpu pilot with no gpus left - not queueing')
-                    break
+                #if self.resources.total['gpu'] and not self.resources.available['gpu']:
+                #    logger.info('gpu pilot with no gpus left - not queueing')
+                #    break
                 try:
                     task_configs = await self.rpc.download_task(
                             self.config['options']['gridspec'],
