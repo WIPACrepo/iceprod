@@ -211,45 +211,51 @@ class supercomp_graham(grid.BaseGrid):
                 if pilot['queue_host'] != host:
                     continue
                 if 'grid_queue_id' in pilot and pilot['grid_queue_id'] in grid_jobs:
-                    gid = pilot['grid_queue_id']
-                    pilot['submit_dir'] = grid_jobs[gid]['submit_dir']
-                    if pilot['tasks']:
-                        task_id = pilot['tasks'][0]
-                        ret = await self.rest_client.request('GET', f'/tasks/{task_id}')
-                        if ret['status'] == 'processing':
-                            pilot['dataset_id'] = ret['dataset_id']
-                            if grid_jobs[gid]['status'] == 'ok':
-                                # upload data - do other steps in next loop
-                                pilot_futures.append(asyncio.ensure_future(self.upload_output(pilot)))
-                            else:
-                                await self.upload_logfiles(task_id, pilot['dataset_id'],
-                                                           submit_dir=pilot['submit_dir'])
-                                await self.task_error(task_id, pilot['dataset_id'],
-                                                      submit_dir=pilot['submit_dir'])
+                    try:
+                        gid = pilot['grid_queue_id']
+                        pilot['submit_dir'] = grid_jobs[gid]['submit_dir']
+                        if pilot['tasks']:
+                            task_id = pilot['tasks'][0]
+                            ret = await self.rest_client.request('GET', f'/tasks/{task_id}')
+                            if ret['status'] == 'processing':
+                                pilot['dataset_id'] = ret['dataset_id']
+                                if grid_jobs[gid]['status'] == 'ok':
+                                    # upload data - do other steps in next loop
+                                    pilot_futures.append(asyncio.ensure_future(self.upload_output(pilot)))
+                                else:
+                                    await self.upload_logfiles(task_id, pilot['dataset_id'],
+                                                               submit_dir=pilot['submit_dir'])
+                                    await self.task_error(task_id, pilot['dataset_id'],
+                                                          submit_dir=pilot['submit_dir'])
+                    except Exception:
+                        logger.error('error handling task', exc_info=True)
 
                     pilots_to_delete.add(pilot_id)
 
             for fut in asyncio.as_completed(pilot_futures):
                 pilot,e = await fut # upload is done
 
-                task_id = pilot['tasks'][0]
-                if e:
-                    reason = f'failed to download input files\n{e}'
-                    await self.upload_logfiles(task_id,
-                                               dataset_id=pilot['dataset_id'],
-                                               submit_dir=pilot['submit_dir'],
-                                               reason=reason)
-                    await self.task_error(task['task_id'],
-                                          dataset_id=pilot['dataset_id'],
-                                          submit_dir=pilot['submit_dir'],
-                                          reason=reason)
-                else:
-                    await self.upload_logfiles(task_id,
+                try:
+                    task_id = pilot['tasks'][0]
+                    if e:
+                        reason = f'failed to download input files\n{e}'
+                        await self.upload_logfiles(task_id,
+                                                   dataset_id=pilot['dataset_id'],
+                                                   submit_dir=pilot['submit_dir'],
+                                                   reason=reason)
+                        await self.task_error(task['task_id'],
+                                              dataset_id=pilot['dataset_id'],
+                                              submit_dir=pilot['submit_dir'],
+                                              reason=reason)
+                    else:
+                        await self.upload_logfiles(task_id,
+                                                   dataset_id=pilot['dataset_id'],
+                                                   submit_dir=pilot['submit_dir'])
+                        await self.finish_task(task_id,
                                                dataset_id=pilot['dataset_id'],
                                                submit_dir=pilot['submit_dir'])
-                    await self.finish_task(task_id,
-                                           dataset_id=pilot['dataset_id'],
-                                           submit_dir=pilot['submit_dir'])
+                except Exception:
+                    logger.error('error handling task', exc_info=True)
 
             for pilot_id in pilots_to_delete:
                 await self.rest_client.request('DELETE', f'/pilots/{pilot_id}')
@@ -339,26 +345,41 @@ class supercomp_graham(grid.BaseGrid):
         # wait for the futures
         for fut in asyncio.as_completed(task_futures):
             task,e = await fut
-            pilot_id = task['pilot']['pilot_id']
-            if e:
-                reason = f'failed to download input files\n{e}'
-                await self.upload_logfiles(task['task_id'],
-                                           dataset_id=task['dataset_id'],
-                                           submit_dir=task['submit_dir'],
-                                           reason=reason)
-                await self.task_error(task['task_id'],
-                                      dataset_id=task['dataset_id'],
-                                      submit_dir=task['submit_dir'],
-                                      reason=reason)
-                await self.rest_client.request('DELETE', f'/pilots/{pilot_id}')
-                continue
+            try:
+                pilot_id = task['pilot']['pilot_id']
+                if e:
+                    reason = f'failed to download input files\n{e}'
+                    await self.upload_logfiles(task['task_id'],
+                                               dataset_id=task['dataset_id'],
+                                               submit_dir=task['submit_dir'],
+                                               reason=reason)
+                    await self.task_error(task['task_id'],
+                                          dataset_id=task['dataset_id'],
+                                          submit_dir=task['submit_dir'],
+                                          reason=reason)
+                    await self.rest_client.request('DELETE', f'/pilots/{pilot_id}')
+                    continue
 
-            # submit to queue
-            await self.submit(task)
+                # submit to queue
+                await self.submit(task)
 
-            # update pilot
-            args = {'grid_queue_id': task['grid_queue_id']}
-            await self.rest_client.request('PATCH', f'/pilots/{pilot_id}', args)
+                # update pilot
+                args = {'grid_queue_id': task['grid_queue_id']}
+                await self.rest_client.request('PATCH', f'/pilots/{pilot_id}', args)
+            except Exception as e:
+                try:
+                    reason = f'failed to submit pilot:\n{e}'
+                    await self.upload_logfiles(task['task_id'],
+                                               dataset_id=task['dataset_id'],
+                                               submit_dir=task['submit_dir'],
+                                               reason=reason)
+                    await self.task_error(task['task_id'],
+                                          dataset_id=task['dataset_id'],
+                                          submit_dir=task['submit_dir'],
+                                          reason=reason)
+                except Exception:
+                    pass
+                logger.error('error handling pilot', exc_info=True)
 
     async def download_input(self, task):
         """
