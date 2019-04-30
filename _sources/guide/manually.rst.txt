@@ -11,7 +11,7 @@ Make sure to load IceProd and dependencies into your PYTHONPATH.
 
    IceProd is available on cvmfs::
 
-      eval $(/cvmfs/icecube.opensciencegrid.org/iceprod/latest/setup.sh)
+      eval $(/cvmfs/icecube.opensciencegrid.org/iceprod/master/setup.sh)
 
 1. First, download the config to a file (we'll call it `config.json`).
 2. Then, run iceprod with special flags::

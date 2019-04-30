@@ -3,7 +3,7 @@ Login
 
 Users can log in to IceProd like any other web application.
 
-Authentication is either handled internally, or by an external plugin
+Authentication is handled by an external plugin
 such as `LDAP`_.
 
 .. _LDAP: https://en.wikipedia.org/wiki/Lightweight_Directory_Access_Protocol
