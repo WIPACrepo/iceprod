@@ -31,6 +31,7 @@ class S3:
             'secret_key' in config['s3']):
             try:
                 self.s3 = boto3.client('s3','us-east-1',
+                    endpoint_url=config['s3'].get('host', None),
                     aws_access_key_id=config['s3']['access_key'],
                     aws_secret_access_key=config['s3']['secret_key'],
                     config=botocore.client.Config(max_pool_connections=101))
