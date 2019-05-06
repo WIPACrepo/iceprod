@@ -12,8 +12,7 @@
         <th>Name</th>
         <th>Failures</th>
         {% if (current_user) %}
-        <th><button class="set_status" onclick='set_tasks_and_jobs_status(dataset_id, task_ids_on_page, "waiting", "{{ passkey }}");'>Reset All</button></th>
-        <th><button class="set_status" onclick='set_tasks_and_jobs_status(dataset_id, task_ids_on_page, "reset", "{{ passkey }}");'>Resume All</button></th>
+        <th><button class="set_status" onclick='set_tasks_and_jobs_status(dataset_id, task_ids_on_page, "reset", "{{ passkey }}");'>Reset All</button></th>
         <th><button class="set_status" onclick='set_tasks_status(dataset_id, task_ids_on_page, "suspended", "{{ passkey }}");'>Suspend All</button></th>
         {% end %}
     </tr>
@@ -23,8 +22,7 @@
         <td>{{ tasks[t]['name'] }}</td>
         <td>{{ tasks[t]['failures'] }}</td>
         {% if (current_user) %}
-        <td><button class="set_status" onclick='set_tasks_and_jobs_status(dataset_id, ["{{ tasks[t]['task_id'] }}"], "waiting", "{{ passkey }}");'>Reset</button></td>
-        <td><button class="set_status" onclick='set_tasks_and_jobs_status(dataset_id, ["{{ tasks[t]['task_id'] }}"], "reset", "{{ passkey }}");'>Resume</button></td>
+        <td><button class="set_status" onclick='set_tasks_and_jobs_status(dataset_id, ["{{ tasks[t]['task_id'] }}"], "reset", "{{ passkey }}");'>Reset</button></td>
         <td><button class="set_status" onclick='set_tasks_status(dataset_id, ["{{ tasks[t]['task_id'] }}"], "suspended", "{{ passkey }}");'>Suspend</button></td>
         {% end %}
     </tr>
