@@ -274,6 +274,10 @@
 <td>/datasets/&lt;dataset_id&gt;/description</td>
 <td>update dataset description</td>
 </tr>
+<tr class="row-odd"><td>GET</td>
+<td>/dataset_summaries/status</td>
+<td>get dataset ids grouped by status</td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -334,6 +338,10 @@
 <td>/datasets/&lt;dataset_id&gt;/job_summaries/status</td>
 <td>get a summary of jobs grouped by status</td>
 </tr>
+<tr class="row-even"><td>GET</td>
+<td>/datasets/&lt;dataset_id&gt;/job_counts/status</td>
+<td>get a count of jobs grouped by status</td>
+</tr>
 </tbody>
 </table>
 <div class="section" id="jobs-internal-use-only">
@@ -372,8 +380,8 @@
 <table border="1" class="docutils">
 <colgroup>
 <col width="5%" />
-<col width="39%" />
-<col width="56%" />
+<col width="45%" />
+<col width="50%" />
 </colgroup>
 <thead valign="bottom">
 <tr class="row-odd"><th class="head">Method</th>
@@ -397,6 +405,46 @@
 <tr class="row-odd"><td>GET</td>
 <td>/datasets/&lt;dataset_id&gt;/task_summaries/status</td>
 <td>get a summary of tasks grouped by status</td>
+</tr>
+<tr class="row-even"><td>GET</td>
+<td>/datasets/&lt;dataset_id&gt;/task_counts/status</td>
+<td>get a count of tasks grouped by status</td>
+</tr>
+<tr class="row-odd"><td>GET</td>
+<td>/datasets/&lt;dataset_id&gt;/task_counts/name_status</td>
+<td>get a count of tasks grouped by name and status</td>
+</tr>
+<tr class="row-even"><td>POST</td>
+<td>/datasets/&lt;dataset_id&gt;/task_actions/bulk_status/&lt;status&gt;</td>
+<td>set a task status in bulk</td>
+</tr>
+<tr class="row-odd"><td>PATCH</td>
+<td>/datasets/&lt;dataset_id&gt;/task_actions/bulk_requirements/&lt;name&gt;</td>
+<td>set a task requirement in bulk, by task name</td>
+</tr>
+<tr class="row-even"><td>GET</td>
+<td>/datasets/&lt;dataset_id&gt;/task_stats</td>
+<td>get simple stats for a dataset</td>
+</tr>
+<tr class="row-odd"><td>GET</td>
+<td>/datasets/&lt;dataset_id&gt;/files</td>
+<td>get all the files in a dataset</td>
+</tr>
+<tr class="row-even"><td>POST</td>
+<td>/datasets/&lt;dataset_id&gt;/files</td>
+<td>add a file to a dataset, specifying url, job, task name</td>
+</tr>
+<tr class="row-odd"><td>GET</td>
+<td>/datasets/&lt;dataset_id&gt;/files/&lt;task_id&gt;</td>
+<td>get files for a task</td>
+</tr>
+<tr class="row-even"><td>POST</td>
+<td>/datasets/&lt;dataset_id&gt;/files/&lt;task_id&gt;</td>
+<td>add a file to a task</td>
+</tr>
+<tr class="row-odd"><td>DELETE</td>
+<td>/datasets/&lt;dataset_id&gt;/files/&lt;task_id&gt;</td>
+<td>delete all files from a task</td>
 </tr>
 </tbody>
 </table>
@@ -426,6 +474,22 @@
 <tr class="row-even"><td>PATCH</td>
 <td>/tasks/&lt;task_id&gt;</td>
 <td>update a task</td>
+</tr>
+<tr class="row-odd"><td>POST</td>
+<td>/tasks/&lt;task_id&gt;/task_actions/reset</td>
+<td>reset a task</td>
+</tr>
+<tr class="row-even"><td>POST</td>
+<td>/tasks/&lt;task_id&gt;/task_actions/complete</td>
+<td>complete a task</td>
+</tr>
+<tr class="row-odd"><td>POST</td>
+<td>/task_actions/queue</td>
+<td>queue some tasks</td>
+</tr>
+<tr class="row-even"><td>POST</td>
+<td>/task_actions/process</td>
+<td>process some tasks</td>
 </tr>
 </tbody>
 </table>
@@ -501,6 +565,10 @@
 <tr class="row-odd"><td>GET</td>
 <td>/datasets/&lt;dataset_id&gt;/logs/&lt;log_id&gt;</td>
 <td>get a log</td>
+</tr>
+<tr class="row-even"><td>GET</td>
+<td>/datasets/&lt;dataset_id&gt;/tasks/&lt;task_id&gt;/logs</td>
+<td>get logs for a dataset and task</td>
 </tr>
 </tbody>
 </table>
@@ -588,13 +656,13 @@
 <td>/pilots/&lt;pilot_id&gt;</td>
 <td>get a pilot</td>
 </tr>
-<tr class="row-odd"><td>DELETE</td>
+<tr class="row-odd"><td>PATCH</td>
+<td>/pilots/&lt;pilot_id&gt;</td>
+<td>update a pilot</td>
+</tr>
+<tr class="row-even"><td>DELETE</td>
 <td>/pilots/&lt;pilot_id&gt;</td>
 <td>delete a pilot</td>
-</tr>
-<tr class="row-even"><td>PUT</td>
-<td>/pilots/&lt;pilot_id&gt;/tasks</td>
-<td>set all tasks in the pilot</td>
 </tr>
 </tbody>
 </table>
@@ -681,6 +749,10 @@
 <tr class="row-even"><td>POST</td>
 <td>/ldap</td>
 <td>create a token from an LDAP username/password lookup</td>
+</tr>
+<tr class="row-odd"><td>POST</td>
+<td>/create_token</td>
+<td>create a token from another token</td>
 </tr>
 </tbody>
 </table>
