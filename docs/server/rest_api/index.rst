@@ -25,6 +25,7 @@ POST    /datasets                                       create new dataset
 GET     /datasets/<dataset_id>                          get a dataset
 PUT     /datasets/<dataset_id>/status                   update dataset status
 PUT     /datasets/<dataset_id>/description              update dataset description
+GET     /dataset_summaries/status                       get dataset ids grouped by status
 ======  ==============================================  ==================================================================
 
 :doc:`Config <config>`
@@ -47,6 +48,7 @@ GET     /datasets/<dataset_id>/jobs                     get a list of jobs, filt
 GET     /datasets/<dataset_id>/jobs/<job_id>            get a job
 PUT     /datasets/<dataset_id>/jobs/<job_id>/status     set a job status
 GET     /datasets/<dataset_id>/job_summaries/status     get a summary of jobs grouped by status
+GET     /datasets/<dataset_id>/job_counts/status        get a count of jobs grouped by status
 ======  ==============================================  ==================================================================
 
 Jobs (internal use only)
@@ -63,14 +65,24 @@ PATCH   /jobs/<job_id>                                  update a job
 :doc:`Tasks <tasks>`
 --------------------
 
-======  ==============================================  ==================================================================
-Method  Path                                            Description
-======  ==============================================  ==================================================================
-GET     /datasets/<dataset_id>/tasks                    get a list of tasks, filtered by dataset_id, job_id, grid_id
-GET     /datasets/<dataset_id>/tasks/<task_id>          get a task
-PUT     /datasets/<dataset_id>/tasks/<task_id>/status   set a task status
-GET     /datasets/<dataset_id>/task_summaries/status    get a summary of tasks grouped by status
-======  ==============================================  ==================================================================
+======  ============================================================  ==================================================================
+Method  Path                                                          Description
+======  ============================================================  ==================================================================
+GET     /datasets/<dataset_id>/tasks                                  get a list of tasks, filtered by dataset_id, job_id, grid_id
+GET     /datasets/<dataset_id>/tasks/<task_id>                        get a task
+PUT     /datasets/<dataset_id>/tasks/<task_id>/status                 set a task status
+GET     /datasets/<dataset_id>/task_summaries/status                  get a summary of tasks grouped by status
+GET     /datasets/<dataset_id>/task_counts/status                     get a count of tasks grouped by status
+GET     /datasets/<dataset_id>/task_counts/name_status                get a count of tasks grouped by name and status
+POST    /datasets/<dataset_id>/task_actions/bulk_status/<status>      set a task status in bulk
+PATCH   /datasets/<dataset_id>/task_actions/bulk_requirements/<name>  set a task requirement in bulk, by task name
+GET     /datasets/<dataset_id>/task_stats                             get simple stats for a dataset
+GET     /datasets/<dataset_id>/files                                  get all the files in a dataset
+POST    /datasets/<dataset_id>/files                                  add a file to a dataset, specifying url, job, task name
+GET     /datasets/<dataset_id>/files/<task_id>                        get files for a task
+POST    /datasets/<dataset_id>/files/<task_id>                        add a file to a task
+DELETE  /datasets/<dataset_id>/files/<task_id>                        delete all files from a task
+======  ============================================================  ==================================================================
 
 Tasks (internal use only)
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -81,6 +93,10 @@ Method  Path                                            Description
 POST    /tasks                                          create a task
 GET     /tasks/<task_id>                                get a task
 PATCH   /tasks/<task_id>                                update a task
+POST    /tasks/<task_id>/task_actions/reset             reset a task
+POST    /tasks/<task_id>/task_actions/complete          complete a task
+POST    /task_actions/queue                             queue some tasks
+POST    /task_actions/process                           process some tasks
 ======  ==============================================  ==================================================================
 
 
@@ -111,6 +127,7 @@ Method  Path                                            Description
 ======  ==============================================  ==================================================================
 POST    /datasets/<dataset_id>/logs                     create a log
 GET     /datasets/<dataset_id>/logs/<log_id>            get a log
+GET     /datasets/<dataset_id>/tasks/<task_id>/logs     get logs for a dataset and task
 ======  ==============================================  ==================================================================
 
 Logs (internal use only)
@@ -143,8 +160,8 @@ Method  Path                                            Description
 GET     /pilots                                         get a list of pilots, filtered by grid_id
 POST    /pilots                                         create a pilot
 GET     /pilots/<pilot_id>                              get a pilot
+PATCH   /pilots/<pilot_id>                              update a pilot
 DELETE  /pilots/<pilot_id>                              delete a pilot
-PUT     /pilots/<pilot_id>/tasks                        set all tasks in the pilot
 ======  ==============================================  ==================================================================
 
 :doc:`Auth <auth>`
@@ -170,6 +187,7 @@ POST    /users/<user_id>/groups                         add a group to a user
 PUT     /users/<user_id>/groups                         set the groups for a user
 PUT     /users/<user_id>/roles                          set the roles for a user
 POST    /ldap                                           create a token from an LDAP username/password lookup
+POST    /create_token                                   create a token from another token
 ======  ==============================================  ==================================================================
 
 Internal auth
