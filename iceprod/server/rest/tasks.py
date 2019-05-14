@@ -828,6 +828,7 @@ class DatasetMultiFilesHandler(BaseHandler):
             movement (str): [input | output | both]
             job_index (int): the job index to add to
             task_name (str): the name of the task
+            local (str): (optional) the local filename the task sees
 
         Returns:
             dict: {'result': <task_id>}
@@ -866,6 +867,11 @@ class DatasetMultiFilesHandler(BaseHandler):
             'remote': data['filename'],
             'movement': data['movement'],
         })
+        if 'local' in data:
+            if not isinstance(data['local'], str):
+                r = 'key {} should be of type {}'.format('local', str)
+                raise tornado.web.HTTPError(400, reason=r)
+            file_data['local'] = data['local']
         if not file_data.valid():
             raise tornado.web.HTTPError(400, reason='bad file data')
 
@@ -907,6 +913,7 @@ class DatasetTaskFilesHandler(BaseHandler):
         Parameters:
             filename (str): the full url filename
             movement (str): [input | output | both]
+            local (str): (optional) the local filename the task sees
 
         Returns:
             dict: {}
@@ -933,6 +940,11 @@ class DatasetTaskFilesHandler(BaseHandler):
             'remote': data['filename'],
             'movement': data['movement'],
         })
+        if 'local' in data:
+            if not isinstance(data['local'], str):
+                r = 'key {} should be of type {}'.format('local', str)
+                raise tornado.web.HTTPError(400, reason=r)
+            file_data['local'] = data['local']
         if not file_data.valid():
             raise tornado.web.HTTPError(400, reason='bad file data')
 
