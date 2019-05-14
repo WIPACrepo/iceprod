@@ -25,6 +25,7 @@ POST    /datasets                                       create new dataset
 GET     /datasets/<dataset_id>                          get a dataset
 PUT     /datasets/<dataset_id>/status                   update dataset status
 PUT     /datasets/<dataset_id>/description              update dataset description
+PUT     /datasets/<dataset_id>/jobs_submitted           update dataset jobs_submitted
 GET     /dataset_summaries/status                       get dataset ids grouped by status
 ======  ==============================================  ==================================================================
 

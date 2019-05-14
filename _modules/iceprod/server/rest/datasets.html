@@ -278,6 +278,7 @@
         <span class="p">(</span><span class="sa">r</span><span class="s1">&#39;/datasets/(?P&lt;dataset_id&gt;\w+)&#39;</span><span class="p">,</span> <span class="n">DatasetHandler</span><span class="p">,</span> <span class="n">handler_cfg</span><span class="p">),</span>
         <span class="p">(</span><span class="sa">r</span><span class="s1">&#39;/datasets/(?P&lt;dataset_id&gt;\w+)/description&#39;</span><span class="p">,</span> <span class="n">DatasetDescriptionHandler</span><span class="p">,</span> <span class="n">handler_cfg</span><span class="p">),</span>
         <span class="p">(</span><span class="sa">r</span><span class="s1">&#39;/datasets/(?P&lt;dataset_id&gt;\w+)/status&#39;</span><span class="p">,</span> <span class="n">DatasetStatusHandler</span><span class="p">,</span> <span class="n">handler_cfg</span><span class="p">),</span>
+        <span class="p">(</span><span class="sa">r</span><span class="s1">&#39;/datasets/(?P&lt;dataset_id&gt;\w+)/jobs_submitted&#39;</span><span class="p">,</span> <span class="n">DatasetJobsSubmittedHandler</span><span class="p">,</span> <span class="n">handler_cfg</span><span class="p">),</span>
         <span class="p">(</span><span class="sa">r</span><span class="s1">&#39;/dataset_summaries/status&#39;</span><span class="p">,</span> <span class="n">DatasetSummariesStatusHandler</span><span class="p">,</span> <span class="n">handler_cfg</span><span class="p">),</span>
     <span class="p">]</span></div>
 
@@ -364,6 +365,8 @@
             <span class="n">data</span><span class="p">[</span><span class="s1">&#39;priority&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">if</span> <span class="s1">&#39;debug&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
             <span class="n">data</span><span class="p">[</span><span class="s1">&#39;debug&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="s1">&#39;jobs_immutable&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;jobs_immutable&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
 
         <span class="c1"># insert</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">insert_one</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
@@ -462,6 +465,51 @@
 
         <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">find_one_and_update</span><span class="p">({</span><span class="s1">&#39;dataset_id&#39;</span><span class="p">:</span><span class="n">dataset_id</span><span class="p">},</span>
                 <span class="p">{</span><span class="s1">&#39;$set&#39;</span><span class="p">:{</span><span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]}},</span>
+                <span class="n">projection</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">send_error</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;Dataset not found&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">({})</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span></div></div>
+
+<div class="viewcode-block" id="DatasetJobsSubmittedHandler"><a class="viewcode-back" href="../../../../server/rest_api/datasets.html#iceprod.server.rest.datasets.DatasetJobsSubmittedHandler">[docs]</a><span class="k">class</span> <span class="nc">DatasetJobsSubmittedHandler</span><span class="p">(</span><span class="n">BaseHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handle dataset jobs_submitted updates.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="DatasetJobsSubmittedHandler.put"><a class="viewcode-back" href="../../../../server/rest_api/datasets.html#iceprod.server.rest.datasets.DatasetJobsSubmittedHandler.put">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">],</span> <span class="n">attrs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;dataset_id:write&#39;</span><span class="p">])</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set a dataset&#39;s jobs_submitted.</span>
+
+<span class="sd">        Only allows increases, if the jobs_immutable flag is not set.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dataset_id (str): the dataset</span>
+
+<span class="sd">        Json body:</span>
+<span class="sd">            jobs_submitted (int): the number of jobs submitted</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: empty dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">body</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;jobs_submitted&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">HTTPError</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s1">&#39;missing jobs_submitted&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">jobs_submitted</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;jobs_submitted&#39;</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">HTTPError</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s1">&#39;jobs_submitted is not an int&#39;</span><span class="p">)</span>
+
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s1">&#39;dataset_id&#39;</span><span class="p">:</span><span class="n">dataset_id</span><span class="p">})</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">HTTPError</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s1">&#39;Dataset not found&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;jobs_immutable&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">HTTPError</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s1">&#39;jobs_submitted is immutable&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;jobs_submitted&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">jobs_submitted</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">HTTPError</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s1">&#39;jobs_submitted must be larger than before&#39;</span><span class="p">)</span>
+
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">find_one_and_update</span><span class="p">({</span><span class="s1">&#39;dataset_id&#39;</span><span class="p">:</span><span class="n">dataset_id</span><span class="p">},</span>
+                <span class="p">{</span><span class="s1">&#39;$set&#39;</span><span class="p">:{</span><span class="s1">&#39;jobs_submitted&#39;</span><span class="p">:</span> <span class="n">jobs_submitted</span><span class="p">}},</span>
                 <span class="n">projection</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">])</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">send_error</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;Dataset not found&quot;</span><span class="p">)</span>
