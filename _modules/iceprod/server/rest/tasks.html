@@ -1062,6 +1062,7 @@
 <span class="sd">            movement (str): [input | output | both]</span>
 <span class="sd">            job_index (int): the job index to add to</span>
 <span class="sd">            task_name (str): the name of the task</span>
+<span class="sd">            local (str): (optional) the local filename the task sees</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            dict: {&#39;result&#39;: &lt;task_id&gt;}</span>
@@ -1100,6 +1101,11 @@
             <span class="s1">&#39;remote&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">],</span>
             <span class="s1">&#39;movement&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;movement&#39;</span><span class="p">],</span>
         <span class="p">})</span>
+        <span class="k">if</span> <span class="s1">&#39;local&#39;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;local&#39;</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">r</span> <span class="o">=</span> <span class="s1">&#39;key </span><span class="si">{}</span><span class="s1"> should be of type </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;local&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">HTTPError</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="n">r</span><span class="p">)</span>
+            <span class="n">file_data</span><span class="p">[</span><span class="s1">&#39;local&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;local&#39;</span><span class="p">]</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">file_data</span><span class="o">.</span><span class="n">valid</span><span class="p">():</span>
             <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">HTTPError</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s1">&#39;bad file data&#39;</span><span class="p">)</span>
 
@@ -1141,6 +1147,7 @@
 <span class="sd">        Parameters:</span>
 <span class="sd">            filename (str): the full url filename</span>
 <span class="sd">            movement (str): [input | output | both]</span>
+<span class="sd">            local (str): (optional) the local filename the task sees</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            dict: {}</span>
@@ -1167,6 +1174,11 @@
             <span class="s1">&#39;remote&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">],</span>
             <span class="s1">&#39;movement&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;movement&#39;</span><span class="p">],</span>
         <span class="p">})</span>
+        <span class="k">if</span> <span class="s1">&#39;local&#39;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;local&#39;</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">r</span> <span class="o">=</span> <span class="s1">&#39;key </span><span class="si">{}</span><span class="s1"> should be of type </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;local&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">HTTPError</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="n">r</span><span class="p">)</span>
+            <span class="n">file_data</span><span class="p">[</span><span class="s1">&#39;local&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;local&#39;</span><span class="p">]</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">file_data</span><span class="o">.</span><span class="n">valid</span><span class="p">():</span>
             <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">HTTPError</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s1">&#39;bad file data&#39;</span><span class="p">)</span>
 
