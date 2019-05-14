@@ -60,7 +60,7 @@ class RestTestCase(AsyncTestCase):
             for r in routes:
                 self.server.add_route(*r)
             self.server.startup(port=self.port)
-            self.token = Auth('secret').create_token('foo', type='user', payload={'role':'admin','username':'admin'})
+            self.token = Auth('secret').create_token('foo', type='user', payload={'role':'admin','username':'admin'}).encode('utf-8')
         except Exception:
             logger.error('failed setup', exc_info=True)
             raise

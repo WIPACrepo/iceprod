@@ -43,7 +43,7 @@ class rest_datasets_test(RestTestCase):
                 'datasets':{},
             },
             'rest_api': {
-                'auth_key': self.module_auth_token.decode('utf-8'),
+                'auth_key': self.module_auth_token,
             },
         }
         super(rest_datasets_test,self).setUp(config=config)
@@ -200,6 +200,90 @@ class rest_datasets_test(RestTestCase):
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret['status'], data['status'])
+
+    @patch('tornado.httpclient.AsyncHTTPClient.fetch', autospec=True)
+    @unittest_reporter(name='REST PUT    /datasets/<dataset_id>/status')
+    def test_220_datasets(self, fetch):
+        # need to mock the REST auth interface
+        def mocked(self, url, *args, **kwargs):
+            if 'auth' in url:
+                return tornado.gen.maybe_future(HTTPResponse(HTTPRequest(url), 200))
+            else:
+                return orig_fetch(self, url, *args, **kwargs)
+        fetch.side_effect = mocked
+
+        client = AsyncHTTPClient()
+        data = {
+            'description': 'blah',
+            'jobs_submitted': 1,
+            'tasks_submitted': 4,
+            'group': 'foo',
+        }
+        r = yield client.fetch('http://localhost:%d/datasets'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        ret = json.loads(r.body)
+        uri = ret['result']
+        dataset_id = uri.split('/')[-1]
+
+        data = {'jobs_submitted': 2}
+        r = yield client.fetch('http://localhost:%d/datasets/%s/jobs_submitted'%(self.port,dataset_id),
+                method='PUT', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertEqual(ret, {})
+        
+        r = yield client.fetch('http://localhost:%d/datasets/%s'%(self.port,dataset_id),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertEqual(ret['jobs_submitted'], data['jobs_submitted'])
+
+        with self.assertRaises(Exception):
+            yield client.fetch('http://localhost:%d/datasets/%s/jobs_submitted'%(self.port,'blah'),
+                    method='PUT', body=json.dumps(data),
+                    headers={'Authorization': b'bearer '+self.token})
+
+        data = {}
+        with self.assertRaises(Exception):
+            yield client.fetch('http://localhost:%d/datasets/%s/jobs_submitted'%(self.port,dataset_id),
+                    method='PUT', body=json.dumps(data),
+                    headers={'Authorization': b'bearer '+self.token})
+        
+        data = {'jobs_submitted': 'foo'}
+        with self.assertRaises(Exception):
+            yield client.fetch('http://localhost:%d/datasets/%s/jobs_submitted'%(self.port,dataset_id),
+                    method='PUT', body=json.dumps(data),
+                    headers={'Authorization': b'bearer '+self.token})
+
+        data = {'jobs_submitted': 0}
+        with self.assertRaises(Exception):
+            yield client.fetch('http://localhost:%d/datasets/%s/jobs_submitted'%(self.port,dataset_id),
+                    method='PUT', body=json.dumps(data),
+                    headers={'Authorization': b'bearer '+self.token})
+
+        data = {
+            'description': 'blah',
+            'jobs_submitted': 1,
+            'tasks_submitted': 4,
+            'group': 'foo',
+            'jobs_immutable': True,
+        }
+        r = yield client.fetch('http://localhost:%d/datasets'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        ret = json.loads(r.body)
+        uri = ret['result']
+        dataset_id = uri.split('/')[-1]
+
+        data = {'jobs_submitted': 4}
+        with self.assertRaises(Exception):
+            yield client.fetch('http://localhost:%d/datasets/%s/jobs_submitted'%(self.port,dataset_id),
+                    method='PUT', body=json.dumps(data),
+                    headers={'Authorization': b'bearer '+self.token})
 
     @patch('tornado.httpclient.AsyncHTTPClient.fetch', autospec=True)
     @unittest_reporter(name='REST GET    /dataset_summaries/status')

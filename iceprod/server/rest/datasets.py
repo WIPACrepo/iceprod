@@ -44,6 +44,7 @@ def setup(config, *args, **kwargs):
         (r'/datasets/(?P<dataset_id>\w+)', DatasetHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/description', DatasetDescriptionHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/status', DatasetStatusHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/jobs_submitted', DatasetJobsSubmittedHandler, handler_cfg),
         (r'/dataset_summaries/status', DatasetSummariesStatusHandler, handler_cfg),
     ]
 
@@ -130,6 +131,8 @@ class MultiDatasetHandler(BaseHandler):
             data['priority'] = 0
         if 'debug' not in data:
             data['debug'] = False
+        if 'jobs_immutable' not in data:
+            data['jobs_immutable'] = False
 
         # insert
         ret = await self.db.datasets.insert_one(data)
@@ -228,6 +231,51 @@ class DatasetStatusHandler(BaseHandler):
 
         ret = await self.db.datasets.find_one_and_update({'dataset_id':dataset_id},
                 {'$set':{'status': data['status']}},
+                projection=['_id'])
+        if not ret:
+            self.send_error(404, reason="Dataset not found")
+        else:
+            self.write({})
+            self.finish()
+
+class DatasetJobsSubmittedHandler(BaseHandler):
+    """
+    Handle dataset jobs_submitted updates.
+    """
+    @authorization(roles=['admin'], attrs=['dataset_id:write'])
+    async def put(self, dataset_id):
+        """
+        Set a dataset's jobs_submitted.
+
+        Only allows increases, if the jobs_immutable flag is not set.
+
+        Args:
+            dataset_id (str): the dataset
+
+        Json body:
+            jobs_submitted (int): the number of jobs submitted
+
+        Returns:
+            dict: empty dict
+        """
+        data = json.loads(self.request.body)
+        if 'jobs_submitted' not in data:
+            raise tornado.web.HTTPError(400, reason='missing jobs_submitted')
+        try:
+            jobs_submitted = int(data['jobs_submitted'])
+        except Exception:
+            raise tornado.web.HTTPError(400, reason='jobs_submitted is not an int')
+
+        ret = await self.db.datasets.find_one({'dataset_id':dataset_id})
+        if not ret:
+            raise tornado.web.HTTPError(404, reason='Dataset not found')
+        if ret['jobs_immutable']:
+            raise tornado.web.HTTPError(400, reason='jobs_submitted is immutable')
+        if ret['jobs_submitted'] > jobs_submitted:
+            raise tornado.web.HTTPError(400, reason='jobs_submitted must be larger than before')
+
+        ret = await self.db.datasets.find_one_and_update({'dataset_id':dataset_id},
+                {'$set':{'jobs_submitted': jobs_submitted}},
                 projection=['_id'])
         if not ret:
             self.send_error(404, reason="Dataset not found")
