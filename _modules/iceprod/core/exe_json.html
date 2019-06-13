@@ -269,13 +269,14 @@
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">passkey</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">rest</span> <span class="o">=</span> <span class="n">RestClient</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="n">url</span><span class="p">,</span><span class="n">token</span><span class="o">=</span><span class="n">passkey</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-<div class="viewcode-block" id="ServerComms.download_task"><a class="viewcode-back" href="../../../core/exe_json.html#iceprod.core.exe_json.ServerComms.download_task">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">download_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gridspec</span><span class="p">,</span> <span class="n">resources</span><span class="o">=</span><span class="p">{}):</span>
+<div class="viewcode-block" id="ServerComms.download_task"><a class="viewcode-back" href="../../../core/exe_json.html#iceprod.core.exe_json.ServerComms.download_task">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">download_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gridspec</span><span class="p">,</span> <span class="n">resources</span><span class="o">=</span><span class="p">{},</span> <span class="n">site</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Download new task(s) from the server.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            gridspec (str): gridspec the pilot was submitted from</span>
 <span class="sd">            resources (dict): resources available in the pilot</span>
+<span class="sd">            site (str): site where pilot is running</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            list: list of task configs</span>
@@ -292,6 +293,8 @@
         <span class="n">os_type</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;OS_ARCH&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;OS_ARCH&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">os_type</span><span class="p">:</span>
             <span class="n">resources</span><span class="p">[</span><span class="s1">&#39;os&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os_type</span>
+        <span class="k">if</span> <span class="n">site</span><span class="p">:</span>
+            <span class="n">resources</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">site</span>
         <span class="n">task</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">rest</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s1">&#39;POST&#39;</span><span class="p">,</span> <span class="s1">&#39;/task_actions/process&#39;</span><span class="p">,</span>
                 <span class="p">{</span><span class="s1">&#39;gridspec&#39;</span><span class="p">:</span> <span class="n">gridspec</span><span class="p">,</span>
                  <span class="s1">&#39;hostname&#39;</span><span class="p">:</span> <span class="n">hostname</span><span class="p">,</span> 
@@ -376,7 +379,8 @@
                               <span class="p">{</span><span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="s1">&#39;processing&#39;</span><span class="p">})</span></div>
 
 <div class="viewcode-block" id="ServerComms.finish_task"><a class="viewcode-back" href="../../../core/exe_json.html#iceprod.core.exe_json.ServerComms.finish_task">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">finish_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">dataset_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">stats</span><span class="o">=</span><span class="p">{},</span>
-                          <span class="n">stat_filter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">start_time</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">resources</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+                          <span class="n">stat_filter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">start_time</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">resources</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                          <span class="n">site</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Finish a task.</span>
 
@@ -387,6 +391,7 @@
 <span class="sd">            stat_filter (iterable): (optional) stat filter by keywords</span>
 <span class="sd">            start_time (float): (optional) task start time in unix seconds</span>
 <span class="sd">            resources (dict): (optional) task resource usage</span>
+<span class="sd">            site (str): (optional) site the task is running at</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">stat_filter</span><span class="p">:</span>
             <span class="c1"># filter task stats</span>
@@ -409,6 +414,8 @@
         <span class="p">}</span>
         <span class="k">if</span> <span class="n">resources</span><span class="p">:</span>
             <span class="n">iceprod_stats</span><span class="p">[</span><span class="s1">&#39;resources&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">resources</span>
+        <span class="k">if</span> <span class="n">site</span><span class="p">:</span>
+            <span class="n">iceprod_stats</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">site</span>
         <span class="k">if</span> <span class="n">dataset_id</span><span class="p">:</span>
             <span class="n">iceprod_stats</span><span class="p">[</span><span class="s1">&#39;dataset_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset_id</span>
 
@@ -418,6 +425,8 @@
         <span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">if</span> <span class="n">t</span><span class="p">:</span>
             <span class="n">data</span><span class="p">[</span><span class="s1">&#39;time_used&#39;</span><span class="p">]</span> <span class="o">=</span>  <span class="n">t</span>
+        <span class="k">if</span> <span class="n">site</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">site</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">rest</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s1">&#39;POST&#39;</span><span class="p">,</span> <span class="s1">&#39;/tasks/</span><span class="si">{}</span><span class="s1">/task_actions/complete&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">task_id</span><span class="p">),</span> <span class="n">data</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="ServerComms.still_running"><a class="viewcode-back" href="../../../core/exe_json.html#iceprod.core.exe_json.ServerComms.still_running">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">still_running</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">):</span>
@@ -431,7 +440,9 @@
         <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">ret</span><span class="p">)</span> <span class="ow">or</span> <span class="s1">&#39;status&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ret</span> <span class="ow">or</span> <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;processing&#39;</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;task should be stopped&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="ServerComms.task_error"><a class="viewcode-back" href="../../../core/exe_json.html#iceprod.core.exe_json.ServerComms.task_error">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">task_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">dataset_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">stats</span><span class="o">=</span><span class="p">{},</span> <span class="n">start_time</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">resources</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="ServerComms.task_error"><a class="viewcode-back" href="../../../core/exe_json.html#iceprod.core.exe_json.ServerComms.task_error">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">task_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">dataset_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">stats</span><span class="o">=</span><span class="p">{},</span>
+                         <span class="n">start_time</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">resources</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                         <span class="n">site</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Tell the server about the error experienced</span>
 
@@ -442,6 +453,7 @@
 <span class="sd">            start_time (float): (optional) task start time in unix seconds</span>
 <span class="sd">            reason (str): (optional) one-line summary of error</span>
 <span class="sd">            resources (dict): (optional) task resource usage</span>
+<span class="sd">            site (str): (optional) site the task is running at</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">iceprod_stats</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">try</span><span class="p">:</span>
@@ -466,6 +478,8 @@
                 <span class="n">iceprod_stats</span><span class="p">[</span><span class="s1">&#39;dataset_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset_id</span>
             <span class="k">if</span> <span class="n">resources</span><span class="p">:</span>
                 <span class="n">iceprod_stats</span><span class="p">[</span><span class="s1">&#39;resources&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">resources</span>
+            <span class="k">if</span> <span class="n">site</span><span class="p">:</span>
+                <span class="n">iceprod_stats</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">site</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;failed to collect error info&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
@@ -480,11 +494,14 @@
             <span class="n">data</span><span class="p">[</span><span class="s1">&#39;time_used&#39;</span><span class="p">]</span> <span class="o">=</span>  <span class="n">t</span>
         <span class="k">if</span> <span class="n">resources</span><span class="p">:</span>
             <span class="n">data</span><span class="p">[</span><span class="s1">&#39;resources&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">resources</span>
+        <span class="k">if</span> <span class="n">site</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">site</span>
         <span class="k">if</span> <span class="n">reason</span><span class="p">:</span>
             <span class="n">data</span><span class="p">[</span><span class="s1">&#39;reason&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">reason</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">rest</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s1">&#39;POST&#39;</span><span class="p">,</span> <span class="s1">&#39;/tasks/</span><span class="si">{}</span><span class="s1">/task_actions/reset&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">task_id</span><span class="p">),</span> <span class="n">data</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="ServerComms.task_kill"><a class="viewcode-back" href="../../../core/exe_json.html#iceprod.core.exe_json.ServerComms.task_kill">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">task_kill</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">dataset_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">resources</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="ServerComms.task_kill"><a class="viewcode-back" href="../../../core/exe_json.html#iceprod.core.exe_json.ServerComms.task_kill">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">task_kill</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">dataset_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">resources</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                        <span class="n">reason</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">site</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Tell the server that we killed a task.</span>
 
@@ -494,6 +511,7 @@
 <span class="sd">            resources (dict): (optional) used resources</span>
 <span class="sd">            reason (str): (optional) short summary for kill</span>
 <span class="sd">            message (str): (optional) long message to replace log upload</span>
+<span class="sd">            site (str): (optional) site the task is running at</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">reason</span><span class="p">:</span>
             <span class="n">reason</span> <span class="o">=</span> <span class="s1">&#39;killed&#39;</span>
@@ -513,6 +531,8 @@
                 <span class="n">iceprod_stats</span><span class="p">[</span><span class="s1">&#39;dataset_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset_id</span>
             <span class="k">if</span> <span class="n">resources</span><span class="p">:</span>
                 <span class="n">iceprod_stats</span><span class="p">[</span><span class="s1">&#39;resources&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">resources</span>
+            <span class="k">if</span> <span class="n">site</span><span class="p">:</span>
+                <span class="n">iceprod_stats</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">site</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;failed to collect error info&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="n">iceprod_stats</span> <span class="o">=</span> <span class="p">{}</span>
@@ -527,6 +547,8 @@
             <span class="n">data</span><span class="p">[</span><span class="s1">&#39;time_used&#39;</span><span class="p">]</span> <span class="o">=</span>  <span class="n">resources</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span><span class="o">*</span><span class="mf">3600.</span>
         <span class="k">if</span> <span class="n">resources</span><span class="p">:</span>
             <span class="n">data</span><span class="p">[</span><span class="s1">&#39;resources&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">resources</span>
+        <span class="k">if</span> <span class="n">site</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">site</span>
         <span class="k">if</span> <span class="n">reason</span><span class="p">:</span>
             <span class="n">data</span><span class="p">[</span><span class="s1">&#39;reason&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">reason</span>
         <span class="k">else</span><span class="p">:</span>
@@ -616,7 +638,8 @@
     <span class="c1"># --- synchronous versions to be used from a signal handler</span>
     <span class="c1"># --- or other non-async code</span>
 
-<div class="viewcode-block" id="ServerComms.task_kill_sync"><a class="viewcode-back" href="../../../core/exe_json.html#iceprod.core.exe_json.ServerComms.task_kill_sync">[docs]</a>    <span class="k">def</span> <span class="nf">task_kill_sync</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">dataset_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">resources</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="ServerComms.task_kill_sync"><a class="viewcode-back" href="../../../core/exe_json.html#iceprod.core.exe_json.ServerComms.task_kill_sync">[docs]</a>    <span class="k">def</span> <span class="nf">task_kill_sync</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">dataset_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">resources</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                       <span class="n">reason</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">site</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Tell the server that we killed a task (synchronous version).</span>
 
@@ -626,6 +649,7 @@
 <span class="sd">            resources (dict): (optional) used resources</span>
 <span class="sd">            reason (str): (optional) short summary for kill</span>
 <span class="sd">            message (str): (optional) long message to replace log upload</span>
+<span class="sd">            site (str): (optional) site the task is running at</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">reason</span><span class="p">:</span>
             <span class="n">reason</span> <span class="o">=</span> <span class="s1">&#39;killed&#39;</span>
@@ -645,6 +669,8 @@
                 <span class="n">iceprod_stats</span><span class="p">[</span><span class="s1">&#39;dataset_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset_id</span>
             <span class="k">if</span> <span class="n">resources</span><span class="p">:</span>
                 <span class="n">iceprod_stats</span><span class="p">[</span><span class="s1">&#39;resources&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">resources</span>
+            <span class="k">if</span> <span class="n">site</span><span class="p">:</span>
+                <span class="n">iceprod_stats</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">site</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;failed to collect error info&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="n">iceprod_stats</span> <span class="o">=</span> <span class="p">{}</span>
@@ -659,6 +685,8 @@
             <span class="n">data</span><span class="p">[</span><span class="s1">&#39;time_used&#39;</span><span class="p">]</span> <span class="o">=</span>  <span class="n">resources</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span><span class="o">*</span><span class="mf">3600.</span>
         <span class="k">if</span> <span class="n">resources</span><span class="p">:</span>
             <span class="n">data</span><span class="p">[</span><span class="s1">&#39;resources&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">resources</span>
+        <span class="k">if</span> <span class="n">site</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">site</span>
         <span class="k">if</span> <span class="n">reason</span><span class="p">:</span>
             <span class="n">data</span><span class="p">[</span><span class="s1">&#39;reason&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">reason</span>
         <span class="k">else</span><span class="p">:</span>

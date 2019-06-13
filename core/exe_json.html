@@ -258,7 +258,7 @@
 </table>
 <dl class="method">
 <dt id="iceprod.core.exe_json.ServerComms.download_task">
-<code class="descname">download_task</code><span class="sig-paren">(</span><em>gridspec</em>, <em>resources={}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_json.html#ServerComms.download_task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_json.ServerComms.download_task" title="Permalink to this definition">¶</a></dt>
+<code class="descname">download_task</code><span class="sig-paren">(</span><em>gridspec</em>, <em>resources={}</em>, <em>site=''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_json.html#ServerComms.download_task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_json.ServerComms.download_task" title="Permalink to this definition">¶</a></dt>
 <dd><p>Download new task(s) from the server.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -267,6 +267,7 @@
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>gridspec</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – gridspec the pilot was submitted from</li>
 <li><strong>resources</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a>) – resources available in the pilot</li>
+<li><strong>site</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – site where pilot is running</li>
 </ul>
 </td>
 </tr>
@@ -321,7 +322,7 @@
 
 <dl class="method">
 <dt id="iceprod.core.exe_json.ServerComms.finish_task">
-<code class="descname">finish_task</code><span class="sig-paren">(</span><em>task_id</em>, <em>dataset_id=None</em>, <em>stats={}</em>, <em>stat_filter=None</em>, <em>start_time=None</em>, <em>resources=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_json.html#ServerComms.finish_task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_json.ServerComms.finish_task" title="Permalink to this definition">¶</a></dt>
+<code class="descname">finish_task</code><span class="sig-paren">(</span><em>task_id</em>, <em>dataset_id=None</em>, <em>stats={}</em>, <em>stat_filter=None</em>, <em>start_time=None</em>, <em>resources=None</em>, <em>site=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_json.html#ServerComms.finish_task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_json.ServerComms.finish_task" title="Permalink to this definition">¶</a></dt>
 <dd><p>Finish a task.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -334,6 +335,7 @@
 <li><strong>stat_filter</strong> (<em>iterable</em>) – (optional) stat filter by keywords</li>
 <li><strong>start_time</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) – (optional) task start time in unix seconds</li>
 <li><strong>resources</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a>) – (optional) task resource usage</li>
+<li><strong>site</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – (optional) site the task is running at</li>
 </ul>
 </td>
 </tr>
@@ -357,7 +359,7 @@
 
 <dl class="method">
 <dt id="iceprod.core.exe_json.ServerComms.task_error">
-<code class="descname">task_error</code><span class="sig-paren">(</span><em>task_id</em>, <em>dataset_id=None</em>, <em>stats={}</em>, <em>start_time=None</em>, <em>reason=None</em>, <em>resources=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_json.html#ServerComms.task_error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_json.ServerComms.task_error" title="Permalink to this definition">¶</a></dt>
+<code class="descname">task_error</code><span class="sig-paren">(</span><em>task_id</em>, <em>dataset_id=None</em>, <em>stats={}</em>, <em>start_time=None</em>, <em>reason=None</em>, <em>resources=None</em>, <em>site=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_json.html#ServerComms.task_error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_json.ServerComms.task_error" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tell the server about the error experienced</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -370,6 +372,7 @@
 <li><strong>start_time</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) – (optional) task start time in unix seconds</li>
 <li><strong>reason</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – (optional) one-line summary of error</li>
 <li><strong>resources</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a>) – (optional) task resource usage</li>
+<li><strong>site</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – (optional) site the task is running at</li>
 </ul>
 </td>
 </tr>
@@ -379,7 +382,7 @@
 
 <dl class="method">
 <dt id="iceprod.core.exe_json.ServerComms.task_kill">
-<code class="descname">task_kill</code><span class="sig-paren">(</span><em>task_id</em>, <em>dataset_id=None</em>, <em>resources=None</em>, <em>reason=None</em>, <em>message=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_json.html#ServerComms.task_kill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_json.ServerComms.task_kill" title="Permalink to this definition">¶</a></dt>
+<code class="descname">task_kill</code><span class="sig-paren">(</span><em>task_id</em>, <em>dataset_id=None</em>, <em>resources=None</em>, <em>reason=None</em>, <em>message=None</em>, <em>site=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_json.html#ServerComms.task_kill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_json.ServerComms.task_kill" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tell the server that we killed a task.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -391,6 +394,7 @@
 <li><strong>resources</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a>) – (optional) used resources</li>
 <li><strong>reason</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – (optional) short summary for kill</li>
 <li><strong>message</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – (optional) long message to replace log upload</li>
+<li><strong>site</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – (optional) site the task is running at</li>
 </ul>
 </td>
 </tr>
@@ -468,7 +472,7 @@
 
 <dl class="method">
 <dt id="iceprod.core.exe_json.ServerComms.task_kill_sync">
-<code class="descname">task_kill_sync</code><span class="sig-paren">(</span><em>task_id</em>, <em>dataset_id=None</em>, <em>resources=None</em>, <em>reason=None</em>, <em>message=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_json.html#ServerComms.task_kill_sync"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_json.ServerComms.task_kill_sync" title="Permalink to this definition">¶</a></dt>
+<code class="descname">task_kill_sync</code><span class="sig-paren">(</span><em>task_id</em>, <em>dataset_id=None</em>, <em>resources=None</em>, <em>reason=None</em>, <em>message=None</em>, <em>site=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_json.html#ServerComms.task_kill_sync"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_json.ServerComms.task_kill_sync" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tell the server that we killed a task (synchronous version).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -480,6 +484,7 @@
 <li><strong>resources</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a>) – (optional) used resources</li>
 <li><strong>reason</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – (optional) short summary for kill</li>
 <li><strong>message</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – (optional) long message to replace log upload</li>
+<li><strong>site</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – (optional) site the task is running at</li>
 </ul>
 </td>
 </tr>
