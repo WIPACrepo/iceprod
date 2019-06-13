@@ -7,6 +7,7 @@ import subprocess
 import collections
 import logging
 from functools import partial
+from unittest.mock import MagicMock
 
 from pymongo import MongoClient
 from tornado.testing import AsyncTestCase
@@ -55,7 +56,7 @@ class RestTestCase(AsyncTestCase):
                     'port': self.mongo_port,
                 }
 
-            routes, args = setup_rest(config)
+            routes, args = setup_rest(config, module=MagicMock())
             self.server = RestServer(**args)
             for r in routes:
                 self.server.add_route(*r)

@@ -35,13 +35,14 @@ class ServerComms:
     def __init__(self, url, passkey, config, **kwargs):
         self.rest = RestClient(address=url,token=passkey,**kwargs)
 
-    async def download_task(self, gridspec, resources={}):
+    async def download_task(self, gridspec, resources={}, site=''):
         """
         Download new task(s) from the server.
 
         Args:
             gridspec (str): gridspec the pilot was submitted from
             resources (dict): resources available in the pilot
+            site (str): site where pilot is running
 
         Returns:
             list: list of task configs
@@ -58,6 +59,8 @@ class ServerComms:
         os_type = os.environ['OS_ARCH'] if 'OS_ARCH' in os.environ else None
         if os_type:
             resources['os'] = os_type
+        if site:
+            resources['site'] = site
         task = await self.rest.request('POST', '/task_actions/process',
                 {'gridspec': gridspec,
                  'hostname': hostname, 
@@ -142,7 +145,8 @@ class ServerComms:
                               {'status': 'processing'})
 
     async def finish_task(self, task_id, dataset_id=None, stats={},
-                          stat_filter=None, start_time=None, resources=None):
+                          stat_filter=None, start_time=None, resources=None,
+                          site=None):
         """
         Finish a task.
 
@@ -153,6 +157,7 @@ class ServerComms:
             stat_filter (iterable): (optional) stat filter by keywords
             start_time (float): (optional) task start time in unix seconds
             resources (dict): (optional) task resource usage
+            site (str): (optional) site the task is running at
         """
         if stat_filter:
             # filter task stats
@@ -175,6 +180,8 @@ class ServerComms:
         }
         if resources:
             iceprod_stats['resources'] = resources
+        if site:
+            iceprod_stats['site'] = site
         if dataset_id:
             iceprod_stats['dataset_id'] = dataset_id
 
@@ -184,6 +191,8 @@ class ServerComms:
         data = {}
         if t:
             data['time_used'] =  t
+        if site:
+            data['site'] = site
         await self.rest.request('POST', '/tasks/{}/task_actions/complete'.format(task_id), data)
 
     async def still_running(self, task_id):
@@ -197,7 +206,9 @@ class ServerComms:
         if (not ret) or 'status' not in ret or ret['status'] != 'processing':
             raise Exception('task should be stopped')
 
-    async def task_error(self, task_id, dataset_id=None, stats={}, start_time=None, reason=None, resources=None):
+    async def task_error(self, task_id, dataset_id=None, stats={},
+                         start_time=None, reason=None, resources=None,
+                         site=None):
         """
         Tell the server about the error experienced
 
@@ -208,6 +219,7 @@ class ServerComms:
             start_time (float): (optional) task start time in unix seconds
             reason (str): (optional) one-line summary of error
             resources (dict): (optional) task resource usage
+            site (str): (optional) site the task is running at
         """
         iceprod_stats = {}
         try:
@@ -232,6 +244,8 @@ class ServerComms:
                 iceprod_stats['dataset_id'] = dataset_id
             if resources:
                 iceprod_stats['resources'] = resources
+            if site:
+                iceprod_stats['site'] = site
         except Exception:
             logging.warning('failed to collect error info', exc_info=True)
 
@@ -246,11 +260,14 @@ class ServerComms:
             data['time_used'] =  t
         if resources:
             data['resources'] = resources
+        if site:
+            data['site'] = site
         if reason:
             data['reason'] = reason
         await self.rest.request('POST', '/tasks/{}/task_actions/reset'.format(task_id), data)
 
-    async def task_kill(self, task_id, dataset_id=None, resources=None, reason=None, message=None):
+    async def task_kill(self, task_id, dataset_id=None, resources=None,
+                        reason=None, message=None, site=None):
         """
         Tell the server that we killed a task.
 
@@ -260,6 +277,7 @@ class ServerComms:
             resources (dict): (optional) used resources
             reason (str): (optional) short summary for kill
             message (str): (optional) long message to replace log upload
+            site (str): (optional) site the task is running at
         """
         if not reason:
             reason = 'killed'
@@ -279,6 +297,8 @@ class ServerComms:
                 iceprod_stats['dataset_id'] = dataset_id
             if resources:
                 iceprod_stats['resources'] = resources
+            if site:
+                iceprod_stats['site'] = site
         except Exception:
             logging.warning('failed to collect error info', exc_info=True)
             iceprod_stats = {}
@@ -293,6 +313,8 @@ class ServerComms:
             data['time_used'] =  resources['time']*3600.
         if resources:
             data['resources'] = resources
+        if site:
+            data['site'] = site
         if reason:
             data['reason'] = reason
         else:
@@ -382,7 +404,8 @@ class ServerComms:
     # --- synchronous versions to be used from a signal handler
     # --- or other non-async code
 
-    def task_kill_sync(self, task_id, dataset_id=None, resources=None, reason=None, message=None):
+    def task_kill_sync(self, task_id, dataset_id=None, resources=None,
+                       reason=None, message=None, site=None):
         """
         Tell the server that we killed a task (synchronous version).
 
@@ -392,6 +415,7 @@ class ServerComms:
             resources (dict): (optional) used resources
             reason (str): (optional) short summary for kill
             message (str): (optional) long message to replace log upload
+            site (str): (optional) site the task is running at
         """
         if not reason:
             reason = 'killed'
@@ -411,6 +435,8 @@ class ServerComms:
                 iceprod_stats['dataset_id'] = dataset_id
             if resources:
                 iceprod_stats['resources'] = resources
+            if site:
+                iceprod_stats['site'] = site
         except Exception:
             logging.warning('failed to collect error info', exc_info=True)
             iceprod_stats = {}
@@ -425,6 +451,8 @@ class ServerComms:
             data['time_used'] =  resources['time']*3600.
         if resources:
             data['resources'] = resources
+        if site:
+            data['site'] = site
         if reason:
             data['reason'] = reason
         else:

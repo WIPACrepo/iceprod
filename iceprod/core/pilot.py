@@ -103,6 +103,7 @@ class Pilot:
         # update pilot status
         await self.rpc.update_pilot(self.pilot_id, tasks=[],
                 host=self.hostname, version=iceprod.__version__,
+                site=self.resources.site,
                 start_date=datetime.utcnow().isoformat(),
                 resources_available=self.resources.get_available(),
                 resources_claimed=self.resources.get_claimed())  
@@ -265,7 +266,8 @@ class Pilot:
                 try:
                     task_configs = await self.rpc.download_task(
                             self.config['options']['gridspec'],
-                            resources=self.resources.get_available())
+                            resources=self.resources.get_available(),
+                            site=self.resources.site)
                 except Exception:
                     download_errors -= 1
                     if download_errors < 1:

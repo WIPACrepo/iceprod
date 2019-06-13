@@ -3,8 +3,6 @@ Manage resources like CPUs and Memory.  Default values, detection, tracking,
 policy, etc.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import time
 import math
@@ -163,6 +161,9 @@ class Resources:
         #: maximum usage for each claim
         # dict of task_id:{resource:{max,cnt,avg}}
         self.used = defaultdict(lambda:defaultdict(lambda:{'max':0.,'cnt':0,'avg':0.}))
+
+        #: site info - shouldn't change while running
+        self.site = get_site()
 
     def get_available(self):
         """
@@ -712,6 +713,50 @@ def get_gpu_utilization_by_id(gpu_id):
     except Exception:
         logging.info('nvidia-smi failed for gpu %s', gpu_id, exc_info=True)
     return ret
+
+def get_site():
+    """Detect the site we are running on."""
+    ret = None
+    if os.path.exists('.machine.ad'):
+        try:
+            ads = classad_to_dict(open('.machine.ad').read())
+        except Exception:
+            logging.debug('failed to get classads from .machine.ad', exc_info=True)
+        else:
+            if 'GLIDEIN_Site' in ads:
+                try:
+                    ret = ads['GLIDEIN_Site']
+                    logging.info('got GLIDEIN_Site from machine ad: %r',ret)
+                except Exception:
+                    logging.info('failed to get GLIDEIN_Site', exc_info=True)
+            if (not ret) and 'GLIDEIN_SiteResource' in ads:
+                try:
+                    ret = ads['GLIDEIN_SiteResource']
+                    logging.info('got GLIDEIN_SiteResource from machine ad: %r',ret)
+                except Exception:
+                    logging.info('failed to get GLIDEIN_SiteResource', exc_info=True)
+            if (not ret) and 'GLIDEIN_ResourceName' in ads:
+                try:
+                    ret = ads['GLIDEIN_ResourceName']
+                    logging.info('got GLIDEIN_ResourceName from machine ad: %r',ret)
+                except Exception:
+                    logging.info('failed to get GLIDEIN_ResourceName', exc_info=True)
+    if (not ret) and 'GLIDEIN_Site' in os.environ:
+        try:
+            ret = os.environ['GLIDEIN_Site']
+            logging.info('got site from GLIDEIN_Site: %r',ret)
+        except Exception:
+            pass
+    if (not ret) and 'Site' in os.environ:
+        try:
+            ret = os.environ['Site']
+            logging.info('got site from Site: %r',ret)
+        except Exception:
+            pass
+    if not ret:
+        return ''
+    else:
+        return ret
 
 def du(path):
     """

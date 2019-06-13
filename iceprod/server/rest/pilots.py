@@ -98,6 +98,8 @@ class MultiPilotsHandler(BaseHandler):
             data['tasks'] = []
         if 'host' not in data:
             data['host'] = ''
+        if 'site' not in data:
+            data['site'] = ''
         if 'version' not in data:
             data['version'] = ''
         if 'grid_queue_id' not in data:
@@ -161,6 +163,8 @@ class PilotsHandler(BaseHandler):
         if not ret:
             self.send_error(404, reason="Pilot not found")
         else:
+            if ret['site']:
+                self.module.statsd.incr('{}.pilot'.format(ret['site']))
             self.write(ret)
             self.finish()
 
@@ -175,8 +179,10 @@ class PilotsHandler(BaseHandler):
         Returns:
             dict: empty dict
         """
-        ret = await self.db.pilots.delete_one({'pilot_id':pilot_id})
-        if (not ret) or (ret.deleted_count < 1):
+        ret = await self.db.pilots.find_one_and_delete({'pilot_id':pilot_id})
+        if not ret:
             self.send_error(404, reason="Pilot not found")
         else:
+            if ret['site']:
+                self.module.statsd.incr('{}.pilot_delete'.format(ret['site']))
             self.write({})

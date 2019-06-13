@@ -392,13 +392,18 @@ async def uploadData(env, data, logger=None):
         local_base = env['options']['subprocess_dir']
     else:
         local_base = os.getcwd()
+    if (not data['remote']) and not data['local']:
+        raise Exception('need either remote or local defined')
     if not data['remote']:
         url = os.path.join(remote_base, data['local'])
     elif not functions.isurl(data['remote']):
         url = os.path.join(remote_base, data['remote'])
     else:
         url = data['remote']
-    local = os.path.join(local_base,data['local'])
+
+    if not data['local']:
+        data['local'] = os.path.basename(data['remote'])
+    local = os.path.join(local_base, data['local'])
 
     execute = data.do_transfer()
     exists = os.path.exists(local)

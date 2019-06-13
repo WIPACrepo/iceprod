@@ -144,6 +144,7 @@ class MultiTasksHandler(BaseHandler):
             'walltime': 0.0,
             'walltime_err': 0.0,
             'walltime_err_n': 0,
+            'site': '',
         })
 
         ret = await self.db.tasks.insert_one(data)
@@ -553,25 +554,26 @@ class TasksActionsProcessingHandler(BaseHandler):
         """
         filter_query = {'status':'queued'}
         sort_by = [('status_changed',1)]
+        site = 'unknown'
         if self.request.body:
             data = json.loads(self.request.body)
             reqs = data.get('requirements', {})
             for k in reqs:
-                if k == 'os':
-                    filter_query['$or'] = [
-                        {'requirements.os': {'$exists': False}},
-                        {'requirements.os': reqs[k]},
-                    ]
-                elif k == 'gpu' and reqs[k] > 0:
+                if k == 'gpu' and reqs[k] > 0:
                     filter_query['requirements.'+k] = {'$lte': reqs[k], '$gte': 1}
                 elif isinstance(reqs[k], (int,float)):
                     filter_query['requirements.'+k] = {'$lte': reqs[k]}
                 else:
-                    filter_query['requirements.'+k] = reqs[k]
+                    filter_query['$or'] = [
+                        {'requirements.'+k: {'$exists': False}},
+                        {'requirements.'+k: reqs[k]},
+                    ]
             if 'gpu' in reqs and reqs['gpu'] > 0:
                 sort_by.append(('requirements.gpu',-1))
             elif 'memory' in reqs:
                 sort_by.append(('requirements.memory',-1))
+            if 'site' in reqs:
+                site = reqs['site']
         ret = await self.db.tasks.find_one_and_update(filter_query,
                 {'$set':{'status':'processing'}},
                 projection={'_id':False},
@@ -581,6 +583,7 @@ class TasksActionsProcessingHandler(BaseHandler):
             logger.info('filter_query: %r', filter_query)
             self.send_error(404, reason="Task not found")
         else:
+            self.module.statsd.incr('{}.task_processing'.format(site))
             self.write(ret)
             self.finish()
 
@@ -599,6 +602,7 @@ class TasksActionsErrorHandler(BaseHandler):
         Body args (json):
             time_used (int): (optional) time used to run task, in seconds
             resources (dict): (optional) resources used by task
+            site (str): (optional) site the task was running at
             reason (str): (optional) reason for error
 
         Returns:
@@ -625,6 +629,10 @@ class TasksActionsErrorHandler(BaseHandler):
             for k in ('memory','disk','time'):
                 if 'resources' in data and k in data['resources']:
                     update_query['$max']['requirements.'+k] = data['resources'][k]
+            site = 'unknown'
+            if 'site' in data:
+                site = data['site']
+                update_query['$set']['site'] = site
             if self.module and self.module.statsd and 'reason' in data and data['reason']:
                 reason = 'other'
                 reasons = [
@@ -643,7 +651,7 @@ class TasksActionsErrorHandler(BaseHandler):
                     if text in data['reason']:
                         reason = r
                         break
-                self.module.statsd.incr('task_reset_reason.{}'.format(reason))
+                self.module.statsd.incr('{}.task_reset.{}'.format(site, reason))
         ret = await self.db.tasks.find_one_and_update(filter_query,
                 update_query,
                 projection={'_id':False})
@@ -668,6 +676,7 @@ class TasksActionsCompleteHandler(BaseHandler):
 
         Body args (json):
             time_used (int): (optional) time used to run task, in seconds
+            site (str): (optional) site the task was running at
 
         Returns:
             dict: {}  empty dict
@@ -683,6 +692,11 @@ class TasksActionsCompleteHandler(BaseHandler):
             data = json.loads(self.request.body)
             if 'time_used' in data:
                 update_query['$set']['walltime'] = data['time_used']/3600.
+            site = 'unknown'
+            if 'site' in data:
+                site = data['site']
+                update_query['$set']['site'] = site
+            self.module.statsd.incr('{}.task_complete'.format(site))
         ret = await self.db.tasks.find_one_and_update(filter_query,
                 update_query,
                 projection={'_id':False})
