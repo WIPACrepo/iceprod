@@ -583,7 +583,7 @@ class TasksActionsProcessingHandler(BaseHandler):
             logger.info('filter_query: %r', filter_query)
             self.send_error(404, reason="Task not found")
         else:
-            self.module.statsd.incr('{}.task_processing'.format(site))
+            self.module.statsd.incr('site.{}.task_processing'.format(site))
             self.write(ret)
             self.finish()
 
@@ -651,7 +651,7 @@ class TasksActionsErrorHandler(BaseHandler):
                     if text in data['reason']:
                         reason = r
                         break
-                self.module.statsd.incr('{}.task_reset.{}'.format(site, reason))
+                self.module.statsd.incr('site.{}.task_reset.{}'.format(site, reason))
         ret = await self.db.tasks.find_one_and_update(filter_query,
                 update_query,
                 projection={'_id':False})
@@ -696,7 +696,7 @@ class TasksActionsCompleteHandler(BaseHandler):
             if 'site' in data:
                 site = data['site']
                 update_query['$set']['site'] = site
-            self.module.statsd.incr('{}.task_complete'.format(site))
+            self.module.statsd.incr('site.{}.task_complete'.format(site))
         ret = await self.db.tasks.find_one_and_update(filter_query,
                 update_query,
                 projection={'_id':False})

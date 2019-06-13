@@ -164,7 +164,7 @@ class PilotsHandler(BaseHandler):
             self.send_error(404, reason="Pilot not found")
         else:
             if 'site' in ret:
-                self.module.statsd.incr('{}.pilot'.format(ret['site']))
+                self.module.statsd.incr('site.{}.pilot'.format(ret['site']))
             self.write(ret)
             self.finish()
 
@@ -184,5 +184,5 @@ class PilotsHandler(BaseHandler):
             self.send_error(404, reason="Pilot not found")
         else:
             if 'site' in ret:
-                self.module.statsd.incr('{}.pilot_delete'.format(ret['site']))
+                self.module.statsd.incr('site.{}.pilot_delete'.format(ret['site']))
             self.write({})
