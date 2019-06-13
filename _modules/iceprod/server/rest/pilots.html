@@ -397,7 +397,7 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">send_error</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;Pilot not found&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="s1">&#39;site&#39;</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">statsd</span><span class="o">.</span><span class="n">incr</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">.pilot&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]))</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span></div>
@@ -417,7 +417,7 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">send_error</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;Pilot not found&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="s1">&#39;site&#39;</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">statsd</span><span class="o">.</span><span class="n">incr</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">.pilot_delete&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]))</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">({})</span></div></div>
 </pre></div>
