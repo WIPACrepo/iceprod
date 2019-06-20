@@ -254,8 +254,6 @@ class LogsHandler(BaseHandler):
         """
         ret = await self.db.logs.find_one_and_delete({'log_id':log_id})
         if ret:
-            self.send_error(500, reason="Failed to delete")
-        else:
             if 'data' not in ret:
                 if self.s3:
                     e = await self.s3.exists(log_id)
@@ -263,8 +261,8 @@ class LogsHandler(BaseHandler):
                         await self.s3.delete(log_id)
                 else:
                     logging.warn('no data field and s3 disabled')
-            self.write({})
-            self.finish()
+        self.write({})
+        self.finish()
 
 class DatasetMultiLogsHandler(BaseHandler):
     """
