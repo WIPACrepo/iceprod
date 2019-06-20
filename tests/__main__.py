@@ -107,8 +107,12 @@ if args.server:
     if glob_dir == '*' or not test_dirs:
         test_dirs.append('tests.server')
     for d in test_dirs:
-        #print('searching dir',d,'with glob',args.file_glob)
-        test_suites.addTests(loader.discover(d,args.file_glob+'_test.py'))
+        print('searching dir',d,'with glob',args.file_glob)
+        try:
+            test_suites.addTests(loader.discover(d,args.file_glob+'_test.py'))
+        except TypeError as e:
+            logging.error(f'error searching dir {d} with glob {args.file_glob}',
+                          exc_info=True)
 
 # run tests
 test_result = unittest.TestResult()

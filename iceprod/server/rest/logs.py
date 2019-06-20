@@ -58,6 +58,22 @@ class S3:
             await loop.run_in_executor(self.executor,
                     partial(self.s3.upload_fileobj, f, self.bucket, key))
 
+    async def exists(self, key):
+        """Check existence in S3"""
+        loop = asyncio.get_event_loop()
+        try:
+            await loop.run_in_executor(self.executor,
+                    partial(self.s3.head_object, Bucket=self.bucket, Key=key))
+        except Exception:
+            return False
+        return True
+
+    async def delete(self, key):
+        """Delete object in S3"""
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(self.executor,
+                partial(self.s3.delete_object, Bucket=self.bucket, Key=key))
+
 
 def setup(config, *args, **kwargs):
     """
@@ -111,6 +127,61 @@ class MultiLogsHandler(BaseHandler):
     """
     Handle logs requests.
     """
+    @authorization(roles=['admin','client'])
+    async def get(self):
+        """
+        Get multiple log entries based on search arguments.
+
+        Body args (json):
+            from (str): timestamp to start searching
+            to (str): timestamp to end searching
+            name (str): name (type) of log
+            dataset_id (str): dataset_id
+            task_id (str): task_id
+            keys: | separated list of keys to return for each task
+
+        Returns:
+            dict: {log_id: {keys}}
+        """
+        query = {}
+        projection = {'_id': False, 'log_id': True}
+        try:
+            limit = int(self.get_argument('limit', 0))
+        except Exception:
+            raise tornado.web.HTTPError(500, reason='non-integer limit')
+
+        date_to = self.get_argument('to', None)
+        date_from = self.get_argument('from', None)
+        if date_to and date_from:
+            query['timestamp'] = {'$gte': date_from, '$lte': date_to}
+        elif date_from:
+            query['timestamp'] = {'$gte': date_from}
+        elif date_to:
+            query['timestamp'] = {'$lte': date_to}
+
+        for k in ('name', 'dataset_id', 'task_id'):
+            val = self.get_argument(k, None)
+            if val:
+                query[k] = val
+
+        keys = self.get_argument('keys', 'name|data|timestamp|task_id|dataset_id')
+        projection.update({x:True for x in keys.split('|') if x})
+
+        logging.debug('query: %r', query)
+        logging.debug('projection: %r', projection)
+
+        ret = {}
+        f = self.db.logs.find(query, projection=projection, limit=limit)
+        async for row in f:
+            if 'data' in projection and 'data' not in row:
+                if self.s3:
+                    row['data'] = await self.s3.get(row['log_id'])
+                else:
+                    raise tornado.web.HTTPError(500, reason='no data field and s3 disabled')
+            ret[row['log_id']] = row
+        self.write(ret)
+        self.finish()
+
     @authorization(roles=['admin','client','pilot'])
     async def post(self):
         """
@@ -168,6 +239,31 @@ class LogsHandler(BaseHandler):
                 else:
                     raise tornado.web.HTTPError(500, reason='no data field and s3 disabled')
             self.write(ret)
+            self.finish()
+
+    @authorization(roles=['admin','client'])
+    async def delete(self, log_id):
+        """
+        Delete a log entry.
+
+        Args:
+            log_id (str): the log id of the entry
+
+        Returns:
+            dict: empty dict on success
+        """
+        ret = await self.db.logs.find_one_and_delete({'log_id':log_id})
+        if ret:
+            self.send_error(500, reason="Failed to delete")
+        else:
+            if 'data' not in ret:
+                if self.s3:
+                    e = await self.s3.exists(log_id)
+                    if e:
+                        await self.s3.delete(log_id)
+                else:
+                    logging.warn('no data field and s3 disabled')
+            self.write({})
             self.finish()
 
 class DatasetMultiLogsHandler(BaseHandler):

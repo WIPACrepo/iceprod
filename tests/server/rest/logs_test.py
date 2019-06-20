@@ -22,6 +22,7 @@ from tests.util import unittest_reporter, glob_tests
 
 import tornado.web
 import tornado.ioloop
+from tornado.httputil import url_concat
 from tornado.httpclient import AsyncHTTPClient, HTTPError
 from tornado.testing import AsyncTestCase
 import boto3
@@ -53,6 +54,34 @@ class rest_logs_test(RestTestCase):
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         log_id = ret['result']
+
+    @unittest_reporter(name='REST GET    /logs')
+    def test_105_logs(self):
+        client = AsyncHTTPClient()
+        data = {'name': 'stdlog', 'data': 'foo bar baz'}
+        r = yield client.fetch('http://localhost:%d/logs'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        ret = json.loads(r.body)
+        log_id = ret['result']
+
+        r = yield client.fetch('http://localhost:%d/logs'%self.port,
+                method='GET',
+                headers={'Authorization': b'bearer '+self.token})
+        ret = json.loads(r.body)
+        self.assertIn(log_id, ret)
+        self.assertEqual(len(ret), 1)
+        for k in data:
+            self.assertIn(k, ret[log_id])
+            self.assertEqual(data[k], ret[log_id][k])
+
+        args = {'name': 'stdlog', 'keys': 'log_id|name|data'}
+        r = yield client.fetch(url_concat('http://localhost:%d/logs'%self.port, args),
+                method='GET',
+                headers={'Authorization': b'bearer '+self.token})
+        ret = json.loads(r.body)
+        self.assertIn(log_id, ret)
 
     @unittest_reporter(name='REST GET    /logs/<log_id>')
     def test_110_logs(self):
