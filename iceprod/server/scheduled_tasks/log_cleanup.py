@@ -47,21 +47,21 @@ async def run(rest_client, debug=False):
             'to': datetime2str(time_limit),
             'name': name,
             'keys': 'log_id',
-            'limit': 1000,
+            'limit': 100,
         }
         logs = await rest_client.request('GET', '/logs', args)
         for log_id in logs:
             await rest_client.request('DELETE', '/logs/{}'.format(log_id))
         return len(logs)
     try:
-        while (await delete_logs('stdlog', 31)) == 1000:
+        while (await delete_logs('stdlog', 31)) == 100:
             await asyncio.sleep(60)
         #while (await delete_logs('stderr', 365)) == 1000:
         #    await asyncio.sleep(60)
         #while (await delete_logs('stdout', 365)) == 1000:
         #    await asyncio.sleep(60)
     except Exception:
-        logger.error('error cleaning pilots', exc_info=True)
+        logger.error('error cleaning logs', exc_info=True)
         if debug:
             raise
 
