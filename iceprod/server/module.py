@@ -26,6 +26,18 @@ class FakeStatsClient(object):
         def foo(*args, **kwargs):
             pass
         return foo
+        
+class StatsClientIgnoreErrors(object):
+    def __init__(self, *args, **kwargs):
+        self._statsclient = StatsClient(*args, **kwargs)
+    def __getattr__(self, name):
+        def foo(*args, **kwargs):
+            try:
+                return getattr(self._statsclient, name)(*args, **kwargs)
+            except Exception:
+                pass
+        return foo
+        
 
 class ElasticClient(object):
     def __init__(self, hostname, basename='iceprod'):
@@ -108,8 +120,8 @@ class module(object):
                 if ':' in addr:
                     addr,port = addr.split(':')
                     port = int(port)
-                self.statsd = StatsClient(addr, port=port,
-                                          prefix=self.cfg['site_id']+'.'+self.__class__.__name__)
+                self.statsd = StatsClientIgnoreErrors(addr, port=port,
+                        prefix=self.cfg['site_id']+'.'+self.__class__.__name__)
             except Exception:
                 logger.warning('failed to connect to statsd: %r',
                             self.cfg['statsd'], exc_info=True)
