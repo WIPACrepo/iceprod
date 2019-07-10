@@ -103,7 +103,12 @@ class module(object):
         logger.warning('starting module %s', self.__class__.__name__)
         if 'statsd' in self.cfg and self.cfg['statsd']:
             try:
-                self.statsd = StatsClient(self.cfg['statsd'],
+                addr = self.cfg['statsd']
+                port = 8125
+                if ':' in addr:
+                    addr,port = addr.split(':')
+                    port = int(port)
+                self.statsd = StatsClient(addr, port=port,
                                           prefix=self.cfg['site_id']+'.'+self.__class__.__name__)
             except Exception:
                 logger.warning('failed to connect to statsd: %r',
