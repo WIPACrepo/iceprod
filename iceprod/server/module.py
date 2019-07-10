@@ -35,7 +35,8 @@ class StatsClientIgnoreErrors(object):
             try:
                 return getattr(self._statsclient, name)(*args, **kwargs)
             except Exception:
-                pass
+                logging.info('StatsClient dropped %s %r %r', name, args, kwargs,
+                             exc_info=True)
         return foo
         
 
