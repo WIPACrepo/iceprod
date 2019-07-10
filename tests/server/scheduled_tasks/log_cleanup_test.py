@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 from unittest.mock import patch, MagicMock
 
 from tornado.testing import AsyncTestCase
-from statsd import StatsClient
+from statsd import TCPStatsClient as StatsClient
 from rest_tools.client import RestClient
 
 from tests.util import unittest_reporter, glob_tests

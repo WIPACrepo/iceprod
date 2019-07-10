@@ -16,7 +16,7 @@ from collections import defaultdict
 
 from tornado.testing import AsyncTestCase
 
-from statsd import StatsClient
+from statsd import TCPStatsClient as StatsClient
 from rest_tools.client import RestClient
 
 from tests.util import unittest_reporter, glob_tests

@@ -6,7 +6,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 
-from statsd import StatsClient
+from statsd import TCPStatsClient as StatsClient
 import requests
 
 try:
