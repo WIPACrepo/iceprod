@@ -6,7 +6,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 
-from statsd import TCPStatsClient as StatsClient
+from statsd import TCPStatsClient
 import requests
 
 try:
@@ -26,14 +26,19 @@ class FakeStatsClient(object):
         def foo(*args, **kwargs):
             pass
         return foo
-        
+
 class StatsClientIgnoreErrors(object):
     def __init__(self, *args, **kwargs):
-        self._statsclient = StatsClient(*args, **kwargs)
+        kwargs['timeout'] = 0.1
+        self._statsclient = TCPStatsClient(*args, **kwargs)
     def __getattr__(self, name):
         def foo(*args, **kwargs):
             try:
-                return getattr(self._statsclient, name)(*args, **kwargs)
+                try:
+                    return getattr(self._statsclient, name)(*args, **kwargs)
+                except BrokenPipeError:
+                    self._statsclient.reconnect()
+                    return getattr(self._statsclient, name)(*args, **kwargs)
             except Exception:
                 logging.info('StatsClient dropped %s %r %r', name, args, kwargs,
                              exc_info=True)
