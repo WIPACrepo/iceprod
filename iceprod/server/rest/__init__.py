@@ -101,7 +101,7 @@ def authorization(**_auth):
                         authorized = True
                 except Exception:
                     logger.info('/auths failure', exc_info=True)
-                    raise #tornado.web.HTTPError(403, reason="authorization failed")
+                    raise tornado.web.HTTPError(403, reason="authorization failed")
 
             if authorized:
                 return await method(self, *args, **kwargs)
