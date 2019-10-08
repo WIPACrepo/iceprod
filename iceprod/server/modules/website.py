@@ -279,6 +279,8 @@ class PublicHandler(tornado.web.RequestHandler):
             self.write('<br />'.join(kwargs['message'].split('\n')))
         elif 'reason' in kwargs:
             self.write('<br />'.join(kwargs['reason'].split('\n')))
+        elif self._reason:
+            self.write('<br />'.join(self._reason.split('\n')))
         self.finish()
 
 class Default(PublicHandler):
