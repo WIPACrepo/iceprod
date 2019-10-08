@@ -266,7 +266,7 @@ async def runner(config, rpc=None, debug=False, offline=False,
             # track resource usage in separate thread
             resource_stop = False
             resources = iceprod.core.resources.Resources(debug=debug)
-            resources.claim('a')
+            config['options']['resources'] = resources.claim('a')
             resources.register_process('a',psutil.Process(), os.getcwd())
             def track():
                 while not resource_stop:
