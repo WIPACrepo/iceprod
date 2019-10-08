@@ -277,6 +277,8 @@ class PublicHandler(tornado.web.RequestHandler):
             self.write('<h2>Request Error</h2>')
         if 'message' in kwargs:
             self.write('<br />'.join(kwargs['message'].split('\n')))
+        elif 'reason' in kwargs:
+            self.write('<br />'.join(kwargs['reason'].split('\n')))
         self.finish()
 
 class Default(PublicHandler):
