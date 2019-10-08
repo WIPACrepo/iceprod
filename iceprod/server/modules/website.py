@@ -359,14 +359,14 @@ class DatasetBrowse(PublicHandler):
     @tornado.web.authenticated
     async def get(self):
         self.statsd.incr('dataset_browse')
-        filter_options = {'status':['processing','suspended','errors']}
+        filter_options = {'status':['processing','suspended','errors','complete','truncated']}
         filter_results = {n:self.get_arguments(n) for n in filter_options}
 
         args = []
         for name in filter_results:
             val = filter_results[name]
             if any(v not in filter_options[name] for v in val):
-                raise tornado.web.HTTPError(400, reason='Bad filter '+name+' value')
+                raise tornado.web.HTTPError(400, message='Bad filter '+name+' value')
             args.append(name+'='+('|'.join(val)))
 
         url = '/datasets'
