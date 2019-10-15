@@ -18,7 +18,7 @@ decorator==4.1.1
 docker==3.5.0
 docker-pycreds==0.3.0
 docutils==0.14
-ecdsa==0.13
+ecdsa==0.13.3
 flexmock==0.10.2
 future==0.16.0
 idna==2.6
@@ -75,6 +75,6 @@ traitlets==4.3.2
 urllib3==1.25.2
 wcwidth==0.1.7
 websocket-client==0.53.0
-Werkzeug==0.14.1
+Werkzeug==0.15.3
 wrapt==1.10.11
 xmltodict==0.11.0
