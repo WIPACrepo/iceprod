@@ -781,6 +781,7 @@ class DatasetTaskBulkRequirementsHandler(BaseHandler):
         """
         valid_req_keys = set(Resources.defaults)
         valid_req_keys.add('os')
+        valid_req_keys.add('site')
         
         data = json.loads(self.request.body)
         if (not data):
