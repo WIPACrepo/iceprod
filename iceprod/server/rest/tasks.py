@@ -795,10 +795,10 @@ class DatasetTaskBulkRequirementsHandler(BaseHandler):
             if key == 'os':
                 if not isinstance(val, list):
                     raise tornado.web.HTTPError(400, reason='Bad type for {}, should be list'.format(key))
-            elif isinstance(Resources.defaults[key], (int, list)):
+            elif key in Resources.defaults and isinstance(Resources.defaults[key], (int, list)):
                 if not isinstance(val, int):
                     raise tornado.web.HTTPError(400, reason='Bad type for {}, should be int'.format(key))
-            elif isinstance(Resources.defaults[key], float):
+            elif key in Resources.defaults and isinstance(Resources.defaults[key], float):
                 if not isinstance(val, (int,float)):
                     raise tornado.web.HTTPError(400, reason='Bad type for {}, should be float'.format(key))
             else:
