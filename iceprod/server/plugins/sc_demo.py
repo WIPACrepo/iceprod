@@ -76,11 +76,11 @@ class sc_demo(grid.BaseGrid):
         # SC demo queue requirements
         self.resources = {}
         self.queue_params = {
-            'resources.site': 'SCDemo-test',
+            'requirements.site': 'SCDemo-test',
         }
         if 'site' in self.queue_cfg:
-            self.queue_params['resources.site'] = self.queue_cfg['site']
-        if 'gpu' in self.queue_params['resources.site'].lower():
+            self.queue_params['requirements.site'] = self.queue_cfg['site']
+        if 'gpu' in self.queue_params['requirements.site'].lower():
             self.resources['gpu'] = 1
         logger.info('resources: %r', self.resources)
         logger.info('queue params: %r', self.queue_params)
