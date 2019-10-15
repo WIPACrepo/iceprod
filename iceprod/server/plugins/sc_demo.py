@@ -74,14 +74,16 @@ class sc_demo(grid.BaseGrid):
         self.x509proxy = SiteGlobusProxy()
 
         # SC demo queue requirements
-        self.resources = {
-            'site': 'SCDemo',
+        self.resources = {}
+        self.queue_params = {
+            'resources.site': 'SCDemo-test',
         }
         if 'site' in self.queue_cfg:
-            self.resources['site'] = self.queue_cfg['site']
-        if 'gpu' in self.resources['site'].lower():
+            self.queue_params['resources.site'] = self.queue_cfg['site']
+        if 'gpu' in self.queue_params['resources.site'].lower():
             self.resources['gpu'] = 1
         logger.info('resources: %r', self.resources)
+        logger.info('queue params: %r', self.queue_params)
 
     async def upload_logfiles(self, task_id, dataset_id, submit_dir='', reason=''):
         """upload logfiles"""
@@ -281,7 +283,10 @@ class sc_demo(grid.BaseGrid):
         task_futures = []
         for _ in range(self.get_queue_num()):
             # get a processing task
-            args = {'requirements': self.resources.copy()}
+            args = {
+                'requirements': self.resources.copy(),
+                'query_params': self.queue_params,
+            }
             args['requirements']['os'] = 'RHEL_7_x86_64'
             try:
                 task = await self.rest_client.request('POST', f'/task_actions/process', args)
@@ -356,7 +361,7 @@ class sc_demo(grid.BaseGrid):
             task,e = await fut
             try:
                 pilot_id = task['pilot']['pilot_id']
-                if e:
+                if e is not None:
                     reason = f'failed to download input files\n{e}'
                     await self.upload_logfiles(task['task_id'],
                                                dataset_id=task['dataset_id'],

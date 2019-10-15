@@ -548,6 +548,7 @@ class TasksActionsProcessingHandler(BaseHandler):
 
         Body args (json):
             requirements: dict
+            query_params: (optional) dict of mongodb params
 
         Returns:
             dict: <task dict>
@@ -557,6 +558,7 @@ class TasksActionsProcessingHandler(BaseHandler):
         site = 'unknown'
         if self.request.body:
             data = json.loads(self.request.body)
+            # handle requirements
             reqs = data.get('requirements', {})
             for k in reqs:
                 if k == 'gpu' and reqs[k] > 0:
@@ -574,6 +576,12 @@ class TasksActionsProcessingHandler(BaseHandler):
                 sort_by.append(('requirements.memory',-1))
             if 'site' in reqs:
                 site = reqs['site']
+            # handle query_params
+            params = data.get('query_params', {})
+            for k in params:
+                if k in filter_query:
+                    raise tornado.web.HTTPError(400, reason=f'param {k} would override an already set filter')
+                filter_query[k] = params[k]
         ret = await self.db.tasks.find_one_and_update(filter_query,
                 {'$set':{'status':'processing'}},
                 projection={'_id':False},
