@@ -198,7 +198,7 @@ class sc_demo(grid.BaseGrid):
     async def check_and_clean(self):
         """Check and clean the grid"""
         host = socket.getfqdn()
-        self.x509proxy.update_proxy()
+        #self.x509proxy.update_proxy()
 
         # first, check if anything has completed successfully
         grid_jobs = await self.get_grid_completions()
@@ -268,7 +268,7 @@ class sc_demo(grid.BaseGrid):
     async def queue(self):
         """Submit a pilot for each task, up to the limit"""
         host = socket.getfqdn()
-        self.x509proxy.update_proxy()
+        #self.x509proxy.update_proxy()
         resources = self.resources.copy()
 
         debug = False
