@@ -81,6 +81,7 @@ class sc_demo(grid.BaseGrid):
             self.resources['site'] = self.queue_cfg['site']
         if 'gpu' in self.resources['site'].lower():
             self.resources['gpu'] = 1
+        logger.info('resources: %r', self.resources)
 
     async def upload_logfiles(self, task_id, dataset_id, submit_dir='', reason=''):
         """upload logfiles"""
@@ -280,7 +281,7 @@ class sc_demo(grid.BaseGrid):
         task_futures = []
         for _ in range(self.get_queue_num()):
             # get a processing task
-            args = {'requirements': resources.copy()}
+            args = {'requirements': self.resources.copy()}
             args['requirements']['os'] = 'RHEL_7_x86_64'
             try:
                 task = await self.rest_client.request('POST', f'/task_actions/process', args)
@@ -532,7 +533,7 @@ class sc_demo(grid.BaseGrid):
     async def submit(self,task):
         """Submit task to queueing system."""
         cmd = ['condor_submit','-terse','condor.submit']
-        ret = await check_output_clean_env(*cmd, cwd=task['submit_dir'])
+        out = await check_output_clean_env(*cmd, cwd=task['submit_dir'])
         grid_queue_id = []
         for line in out.split('\n'):
             # look for range
