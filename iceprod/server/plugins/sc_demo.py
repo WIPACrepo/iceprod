@@ -601,7 +601,7 @@ class sc_demo(grid.BaseGrid):
             gid,status,exitstatus,cmd = line.split()
             if 'loader.sh' not in cmd:
                 continue
-            if status == '2' and jobstatus == '0':
+            if status == '4' and exitstatus == '0':
                 status = 'ok'
             else:
                 status = 'error'
