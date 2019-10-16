@@ -425,7 +425,7 @@ class sc_demo(grid.BaseGrid):
             dict: task info
         """
         try:
-            await subprocess_ssh(
+            await check_call(
                 'python', '-m', 'iceprod.core.data_transfer', '-f',
                  os.path.join(task['submit_dir'],'task.cfg'),
                  '-d', task['submit_dir'],
