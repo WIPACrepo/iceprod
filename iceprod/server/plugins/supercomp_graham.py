@@ -238,12 +238,12 @@ class supercomp_graham(grid.BaseGrid):
                 try:
                     task_id = pilot['tasks'][0]
                     if e:
-                        reason = f'failed to download input files\n{e}'
+                        reason = f'failed to upload output files\n{e}'
                         await self.upload_logfiles(task_id,
                                                    dataset_id=pilot['dataset_id'],
                                                    submit_dir=pilot['submit_dir'],
                                                    reason=reason)
-                        await self.task_error(task['task_id'],
+                        await self.task_error(task_id,
                                               dataset_id=pilot['dataset_id'],
                                               submit_dir=pilot['submit_dir'],
                                               reason=reason)
