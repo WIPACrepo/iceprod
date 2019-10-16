@@ -412,6 +412,7 @@ class sc_demo(grid.BaseGrid):
                  'input'
             )
         except Exception as e:
+            logger.info('error downloading', exc_info=True)
             return (task, e)
         return (task,None)
 
@@ -432,6 +433,7 @@ class sc_demo(grid.BaseGrid):
                  'output'
             )
         except Exception as e:
+            logger.info('error uploading', exc_info=True)
             return (task,e)
         return (task,None)
 
