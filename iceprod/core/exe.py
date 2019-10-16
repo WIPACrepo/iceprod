@@ -795,18 +795,21 @@ class ForkModule:
     async def __aenter__(self):
         module_src = None
         if self.module['src']:
-            # get script to run
-            c = dataclasses.Class()
-            c['src'] = self.module['src']
-            c['name'] = os.path.basename(c['src'])
-            if '?' in c['name']:
-                c['name'] = c['name'][:c['name'].find('?')]
-            elif '#' in c['name']:
-                c['name'] = c['name'][:c['name'].find('#')]
-            await setupClass(self.env,c,logger=self.logger)
-            if c['name'] not in self.env['classes']:
-                raise Exception('Failed to install class %s'%c['name'])
-            module_src = self.env['classes'][c['name']]
+            if not functions.isurl(self.module['src']):
+                module_src = self.module['src']
+            else:
+                # get script to run
+                c = dataclasses.Class()
+                c['src'] = self.module['src']
+                c['name'] = os.path.basename(c['src'])
+                if '?' in c['name']:
+                    c['name'] = c['name'][:c['name'].find('?')]
+                elif '#' in c['name']:
+                    c['name'] = c['name'][:c['name'].find('#')]
+                await setupClass(self.env,c,logger=self.logger)
+                if c['name'] not in self.env['classes']:
+                    raise Exception('Failed to install class %s'%c['name'])
+                module_src = self.env['classes'][c['name']]
 
         # set up env_shell
         env_shell = None
@@ -830,8 +833,12 @@ class ForkModule:
                         raise Exception('Failed to install class %s'%c['name'])
                     env_shell[0] = self.env['classes'][c['name']]
 
-        self.logger.warning('running module \'%s\' with class %s',self.module['name'],
-                    self.module['running_class'])
+        if module_src:
+            self.logger.warning('running module \'%s\' with src %s',
+                    self.module['name'], module_src)
+        else:
+            self.logger.warning('running module \'%s\' with class %s',
+                    self.module['name'], self.module['running_class'])
 
         # set up the args
         args = self.module['args']
