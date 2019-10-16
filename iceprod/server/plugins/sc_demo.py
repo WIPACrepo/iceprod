@@ -592,24 +592,18 @@ class sc_demo(grid.BaseGrid):
             dict: {grid_queue_id: {status, submit_dir} }
         """
         ret = {}
-        cmd = ['condor_history',getpass.getuser(),'-af:j','jobstatus','cmd']
+        cmd = ['condor_history',getpass.getuser(),'-af:j','jobstatus','exitstatus','cmd']
         out = await check_output_clean_env(*cmd)
         print('get_grid_status():',out)
         for line in out.split('\n'):
             if not line.strip():
                 continue
-            gid,status,cmd = line.split()
+            gid,status,exitstatus,cmd = line.split()
             if 'loader.sh' not in cmd:
                 continue
-            if status == '1':
-                status = 'queued'
-            elif status == '2':
-                status = 'processing'
-            elif status == '4':
-                status = 'completed'
-            elif status in ('3','5','6'):
-                status = 'error'
+            if status == '2' and jobstatus == '0':
+                status = 'ok'
             else:
-                status = 'unknown'
+                status = 'error'
             ret[gid] = {'status':status,'submit_dir':os.path.dirname(cmd)}
         return ret
