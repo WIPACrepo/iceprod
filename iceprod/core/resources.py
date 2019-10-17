@@ -796,7 +796,7 @@ def group_hasher(resources):
             ret ^= len(resources['gpu'])*100
     if 'memory' in resources:
         ret ^= int(math.log(resources['memory'])*math.e)*1000
-    if 'disk' in resources':
+    if 'disk' in resources:
         ret ^= int(math.log(resources['disk'])*math.e)*1000000
     if 'time' in resources:
         ret ^= int(resources['time'])*1000000000
