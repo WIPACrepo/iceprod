@@ -786,14 +786,20 @@ def group_hasher(resources):
     """
     Hash a set of resources into a binned group.
     """
-    ret = int(resources['cpu'])
-    if isinstance(resources['gpu'],(int,float)):
-        ret ^= int(resources['gpu'])*100
-    else:
-        ret ^= len(resources['gpu'])*100
-    ret ^= int(math.log(resources['memory'])*math.e)*1000
-    ret ^= int(math.log(resources['disk'])*math.e)*1000000
-    ret ^= int(resources['time'])*1000000000
+    ret = 0
+    if 'cpu' in resources:
+        ret = int(resources['cpu'])
+    if 'gpu' in resources:
+        if isinstance(resources['gpu'],(int,float)):
+            ret ^= int(resources['gpu'])*100
+        else:
+            ret ^= len(resources['gpu'])*100
+    if 'memory' in resources:
+        ret ^= int(math.log(resources['memory'])*math.e)*1000
+    if 'disk' in resources':
+        ret ^= int(math.log(resources['disk'])*math.e)*1000000
+    if 'time' in resources:
+        ret ^= int(resources['time'])*1000000000
     if 'os' in resources:
         ret ^= hash(resources['os'])&(0b11111111<<32)
     return ret
