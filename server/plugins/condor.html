@@ -230,8 +230,57 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="condor-plugin">
-<span id="plugins-condor"></span><span id="index-0"></span><h1>Condor Plugin<a class="headerlink" href="#condor-plugin" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-iceprod.server.plugins.condor">
+<span id="condor-plugin"></span><span id="plugins-condor"></span><span id="index-0"></span><h1>Condor Plugin<a class="headerlink" href="#module-iceprod.server.plugins.condor" title="Permalink to this headline">¶</a></h1>
+<p>The Condor plugin.  Allows submission to
+<a class="reference external" href="http://research.cs.wisc.edu/htcondor/">HTCondor</a>.</p>
+<p>Note: Condor was renamed to HTCondor in 2012.</p>
+<dl class="function">
+<dt id="iceprod.server.plugins.condor.check_call_clean_env">
+<code class="descclassname">iceprod.server.plugins.condor.</code><code class="descname">check_call_clean_env</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/plugins/condor.html#check_call_clean_env"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.plugins.condor.check_call_clean_env" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="iceprod.server.plugins.condor.check_output_clean_env">
+<code class="descclassname">iceprod.server.plugins.condor.</code><code class="descname">check_output_clean_env</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/plugins/condor.html#check_output_clean_env"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.plugins.condor.check_output_clean_env" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="iceprod.server.plugins.condor.condor_os_reqs">
+<code class="descclassname">iceprod.server.plugins.condor.</code><code class="descname">condor_os_reqs</code><span class="sig-paren">(</span><em>os_arch</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/plugins/condor.html#condor_os_reqs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.plugins.condor.condor_os_reqs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert from OS_ARCH to Condor OS requirements</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.plugins.condor.condor">
+<em class="property">class </em><code class="descclassname">iceprod.server.plugins.condor.</code><code class="descname">condor</code><span class="sig-paren">(</span><em>gridspec</em>, <em>queue_cfg</em>, <em>cfg</em>, <em>modules</em>, <em>io_loop</em>, <em>executor</em>, <em>statsd</em>, <em>rest_client</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/plugins/condor.html#condor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.plugins.condor.condor" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="iceprod.server.plugins.condor.condor.generate_submit_file">
+<code class="descname">generate_submit_file</code><span class="sig-paren">(</span><em>task</em>, <em>cfg=None</em>, <em>passkey=None</em>, <em>filelist=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/plugins/condor.html#condor.generate_submit_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.plugins.condor.condor.generate_submit_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate queueing system submit file for task in dir.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.plugins.condor.condor.submit">
+<code class="descname">submit</code><span class="sig-paren">(</span><em>task</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/plugins/condor.html#condor.submit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.plugins.condor.condor.submit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Submit task to queueing system.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.plugins.condor.condor.get_grid_status">
+<code class="descname">get_grid_status</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/plugins/condor.html#condor.get_grid_status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.plugins.condor.condor.get_grid_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all tasks running on the queue system.
+Returns {grid_queue_id:{status,submit_dir}}</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.plugins.condor.condor.remove">
+<code class="descname">remove</code><span class="sig-paren">(</span><em>tasks</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/plugins/condor.html#condor.remove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.plugins.condor.condor.remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove tasks from queueing system.</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 
