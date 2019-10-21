@@ -914,17 +914,18 @@ class ForkModule:
                 args = []
 
             shebang = False
-            with open(module_src) as f:
-                if f.read(10).startswith('#!'):
-                    # shebang found
-                    try:
-                        mode = os.stat(module_src).st_mode
-                        if not (mode & stat.S_IXUSR):
-                            os.chmod(module_src, mode | stat.S_IXUSR)
-                        shebang = True
-                    except Exception:
-                        self.logger.warning('cannot get shebang for %s', module_src,
-                                       exc_info=True)
+            if os.path.exists(module_src):
+                with open(module_src) as f:
+                    if f.read(10).startswith('#!'):
+                        # shebang found
+                        try:
+                            mode = os.stat(module_src).st_mode
+                            if not (mode & stat.S_IXUSR):
+                                os.chmod(module_src, mode | stat.S_IXUSR)
+                            shebang = True
+                        except Exception:
+                            self.logger.warning('cannot get shebang for %s', module_src,
+                                           exc_info=True)
 
             if (not shebang) and module_src[-3:] == '.py':
                 # call as python script
