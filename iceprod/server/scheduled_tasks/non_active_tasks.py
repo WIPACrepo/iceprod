@@ -34,6 +34,7 @@ async def run(rest_client, debug=False):
         rest_client (:py:class:`iceprod.core.rest_client.Client`): rest client
         debug (bool): debug flag to propagate exceptions
     """
+    return
     start_time = time.time()
 
     try:

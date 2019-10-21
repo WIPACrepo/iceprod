@@ -221,6 +221,7 @@ class sc_demo(grid.BaseGrid):
                         pilot['submit_dir'] = grid_jobs[gid]['submit_dir']
                         if pilot['tasks']:
                             task_id = pilot['tasks'][0]
+                            logger.info('completing task %s', task_id)
                             ret = await self.rest_client.request('GET', f'/tasks/{task_id}')
                             if ret['status'] == 'processing':
                                 pilot['dataset_id'] = ret['dataset_id']
@@ -599,7 +600,7 @@ class sc_demo(grid.BaseGrid):
             dict: {grid_queue_id: {status, submit_dir} }
         """
         ret = {}
-        cmd = ['condor_history',getpass.getuser(),'-af:j','jobstatus','exitcode','exitbysignal','cmd']
+        cmd = ['condor_history',getpass.getuser(),'-match','10000','-af:j','jobstatus','exitcode','exitbysignal','cmd']
         out = await check_output_clean_env(*cmd)
         print('get_grid_status():',out)
         for line in out.split('\n'):
