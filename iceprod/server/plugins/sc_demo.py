@@ -353,8 +353,13 @@ class sc_demo(grid.BaseGrid):
             pilot['pilot_id'] = ret['result']
             task['pilot'] = pilot
 
-            # get input files, all tasks in parallel
-            task_futures.append(asyncio.ensure_future(self.download_input(task)))
+            if any(f['movement'] in ('download','both') for f in task_cfg['data']):
+                # get input files, all tasks in parallel
+                task_futures.append(asyncio.ensure_future(self.download_input(task)))
+            else:
+                async def f(task):
+                    return task,None
+                task_futures.append(asyncio.ensure_future(f(task)))
 
         # wait for the futures
         for fut in asyncio.as_completed(task_futures):
