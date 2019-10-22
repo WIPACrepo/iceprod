@@ -178,10 +178,17 @@ class sc_demo(grid.BaseGrid):
                             reason = line
                         if 'return code:' in line and not reason:
                             reason = 'task error: return code '+line.rsplit(':',1)[-1]
+        if not reason:
+            reason = 'unknown failure'
+
+        site = None
+        if 'site' in self.queue_cfg:
+            site = self.queue_cfg['site']
 
         comms = MyServerComms(self.rest_client)
-        await comms.task_kill(task_id, dataset_id=dataset_id, 
-                              reason=reason, resources=resources)
+        await comms.task_error(task_id, dataset_id=dataset_id, 
+                               reason=reason, resources=resources,
+                               site=site)
 
     async def finish_task(self, task_id, dataset_id, submit_dir):
         """complete a task"""
@@ -237,14 +244,15 @@ class sc_demo(grid.BaseGrid):
                         pilot['submit_dir'] = grid_jobs[gid]['submit_dir']
                         if pilot['tasks']:
                             task_id = pilot['tasks'][0]
-                            logger.info('completing task %s', task_id)
+                            logger.info('post-processing task %s', task_id)
                             ret = await self.rest_client.request('GET', f'/tasks/{task_id}')
                             if ret['status'] == 'processing':
                                 pilot['dataset_id'] = ret['dataset_id']
                                 if grid_jobs[gid]['status'] == 'ok':
-                                    # upload data - do other steps in next loop
+                                    logger.info('uploading logs for task %s', task_id)
                                     pilot_futures.append(asyncio.ensure_future(self.upload_output(pilot)))
                                 else:
+                                    logger.info('error in task %s', task_id)
                                     await self.upload_logfiles(task_id, pilot['dataset_id'],
                                                                submit_dir=pilot['submit_dir'])
                                     await self.task_error(task_id, pilot['dataset_id'],
@@ -260,6 +268,7 @@ class sc_demo(grid.BaseGrid):
                 try:
                     task_id = pilot['tasks'][0]
                     if e:
+                        logger.info('failed to upload output files for task %s', task_id)
                         reason = f'failed to upload output files\n{e}'
                         await self.upload_logfiles(task_id,
                                                    dataset_id=pilot['dataset_id'],
@@ -270,6 +279,7 @@ class sc_demo(grid.BaseGrid):
                                               submit_dir=pilot['submit_dir'],
                                               reason=reason)
                     else:
+                        logger.info('finishing task %s', task_id)
                         await self.upload_logfiles(task_id,
                                                    dataset_id=pilot['dataset_id'],
                                                    submit_dir=pilot['submit_dir'])
@@ -618,7 +628,7 @@ class sc_demo(grid.BaseGrid):
         ret = {}
         cmd = ['condor_history',getpass.getuser(),'-match','10000','-af:j','jobstatus','exitcode','exitbysignal','cmd']
         out = await check_output_clean_env(*cmd)
-        print('get_grid_status():',out)
+        print('get_grid_completions():',out)
         for line in out.split('\n'):
             if not line.strip():
                 continue
