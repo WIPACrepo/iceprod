@@ -98,7 +98,7 @@ class sc_demo(grid.BaseGrid):
             await self.rest_client.request('POST', '/logs', data)
         elif os.path.exists(filename+'.gz'):
             try:
-                with gzip.open(filename+'.gz') as f:
+                with gzip.open(filename+'.gz', 'rt', encoding='utf-8') as f:
                     data['data'] = f.read()
             except Exception:
                 data['data'] = 'failed to read stdlog'
@@ -118,7 +118,7 @@ class sc_demo(grid.BaseGrid):
             await self.rest_client.request('POST', '/logs', data)
         elif os.path.exists(filename+'.gz'):
             try:
-                with gzip.open(filename+'.gz') as f:
+                with gzip.open(filename+'.gz', 'rt', encoding='utf-8') as f:
                     data['data'] = f.read()
             except Exception:
                 data['data'] = ''
@@ -138,7 +138,7 @@ class sc_demo(grid.BaseGrid):
             await self.rest_client.request('POST', '/logs', data)
         elif os.path.exists(filename+'.gz'):
             try:
-                with gzip.open(filename+'.gz') as f:
+                with gzip.open(filename+'.gz', 'rt', encoding='utf-8') as f:
                     data['data'] = f.read()
             except Exception:
                 data['data'] = ''
