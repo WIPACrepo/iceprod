@@ -515,10 +515,10 @@ class sc_demo(grid.BaseGrid):
             p('want_graceful_removal = True')
             if filelist:
                 p('transfer_input_files = {}'.format(','.join(filelist)))
-                p('skip_filechecks = True')
-                p('should_transfer_files = always')
-                p('when_to_transfer_output = ON_EXIT_OR_EVICT')
-                p('+SpoolOnEvict = False')
+            p('skip_filechecks = True')
+            p('should_transfer_files = always')
+            p('when_to_transfer_output = ON_EXIT_OR_EVICT')
+            p('+SpoolOnEvict = False')
             p('transfer_output_files = iceprod_log.gz, iceprod_out.gz, iceprod_err.gz')
 
             # handle resources

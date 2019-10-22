@@ -67,7 +67,9 @@ echo " "
 touch iceprod_log
 touch iceprod_out
 touch iceprod_err
-
+touch iceprod_log.gz
+touch iceprod_out.gz
+touch iceprod_err.gz
 
 if [ -z $SROOT ]; then
     SROOT="/cvmfs/icecube.opensciencegrid.org/iceprod/latest"
