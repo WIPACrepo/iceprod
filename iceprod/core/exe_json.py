@@ -9,7 +9,7 @@ import json
 from copy import deepcopy
 from functools import wraps
 from datetime import datetime
-
+import gzip
 import logging
 
 from rest_tools.client import RestClient
@@ -344,8 +344,12 @@ class ServerComms:
         if dataset_id:
             data['dataset_id'] = dataset_id
         try:
-            with open(filename) as f:
-                data['data'] = f.read()
+            if filename.endswith('.gz'):
+                with gzip.open(filename, 'r') as f:
+                    data['data'] = f.read()
+            else:
+                with open(filename) as f:
+                    data['data'] = f.read()
         except Exception as e:
             data['data'] = str(e)
         await self.rest.request('POST', '/logs', data)
@@ -353,7 +357,13 @@ class ServerComms:
     async def uploadLog(self, **kwargs):
         """Upload log file"""
         logging.getLogger().handlers[0].flush()
-        await self._upload_logfile('stdlog', os.path.abspath(constants['stdlog']), **kwargs)
+        filename = os.path.abspath(constants['stdlog'])
+        if os.path.exists(filename):
+            await self._upload_logfile('stdlog', filename, **kwargs)
+        elif os.path.exists(filename+'.gz'):
+            await self._upload_logfile('stdlog', filename+'.gz', **kwargs)
+        else:
+            raise Exception('cannot find stdlog')
 
     async def uploadErr(self, filename=None, **kwargs):
         """Upload stderr file"""

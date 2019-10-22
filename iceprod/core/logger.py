@@ -9,6 +9,7 @@ import sys
 import time
 import logging
 import logging.handlers
+import gzip
 
 setlevel = {
   'CRITICAL': logging.CRITICAL, # execution cannot continue
@@ -37,8 +38,12 @@ def set_logger(loglevel='INFO', logfile=None, logsize=2**28, lognum=4):
                 logfile = os.path.join(os.getcwd(), 'log', host, logfile)
         if not os.path.exists(os.path.dirname(logfile)):
             os.makedirs(os.path.dirname(logfile))
-        fileHandler = logging.handlers.RotatingFileHandler(logfile, 'a',
-                                                           logsize, lognum)
+        if logfile.endswith('.gz'):
+            z_file = gzip.open(logfile, mode='wt', encoding='utf-8')
+            fileHandler = logging.StreamHandler(z_file)
+        else:
+            fileHandler = logging.handlers.RotatingFileHandler(logfile, 'a',
+                                                               logsize, lognum)
         formatter = logging.Formatter(logformat)
         formatter.converter = time.gmtime
         fileHandler.setFormatter(formatter)

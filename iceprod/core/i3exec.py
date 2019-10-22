@@ -18,6 +18,7 @@ optional arguments:
   --logfile LOGFILE     Specify the logfile to use
   --job JOB             Index of the job to run
   --task TASK           Name of the task to run
+  --gzip-logs           gzip the iceprod logs
 """
 
 from __future__ import absolute_import, division, print_function
@@ -34,6 +35,8 @@ import tempfile
 import shutil
 import threading
 import asyncio
+import gzip
+import shutil
 
 from tornado.ioloop import IOLoop
 
@@ -73,7 +76,8 @@ def load_config(cfgfile):
     return config
 
 def main(cfgfile=None, logfile=None, url=None, debug=False,
-         passkey='', pilot_id=None, offline=False, offline_transfer=False):
+         passkey='', pilot_id=None, offline=False, offline_transfer=False,
+         gzip_logs=False):
     """Main task runner for iceprod"""
     # set up logger
     if debug:
@@ -84,6 +88,8 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
         logf = os.path.abspath(os.path.expandvars(logfile))
     else:
         logf = os.path.abspath(os.path.expandvars(constants['stdlog']))
+        if gzip_logs:
+            logf += '.gz'
     iceprod.core.logger.set_logger(loglevel=logl,
                                    logfile=logf,
                                    logsize=67108864,
@@ -203,6 +209,8 @@ async def runner(config, rpc=None, debug=False, offline=False,
     # set logging
     if offline:
         logger = logging.getLogger('task')
+        if 'task_id' not in config['options']:
+            config['options']['task_id'] = 'a'
     else:
         if 'task_id' not in config['options']:
             raise Exception('task_id not set in config options')
@@ -257,7 +265,8 @@ async def runner(config, rpc=None, debug=False, offline=False,
         # make sure steering exists in the config
         config['steering'] = iceprod.core.dataclasses.Steering()
 
-    if offline:
+    resource_thread = None
+    if not resources:
         try:
             import psutil
         except ImportError:
@@ -266,8 +275,9 @@ async def runner(config, rpc=None, debug=False, offline=False,
             # track resource usage in separate thread
             resource_stop = False
             resources = iceprod.core.resources.Resources(debug=debug)
-            config['options']['resources'] = resources.claim('a')
-            resources.register_process('a',psutil.Process(), os.getcwd())
+            config['options']['resources'] = resources.claim(config['options']['task_id'])
+            resources.register_process(config['options']['task_id'],
+                                       psutil.Process(), os.getcwd())
             def track():
                 while not resource_stop:
                     resources.check_claims()
@@ -327,7 +337,7 @@ async def runner(config, rpc=None, debug=False, offline=False,
                                 dataset_id=config['options']['dataset_id'],
                                 stats=env['stats'], start_time=start_time,
                                 resources=resources.get_final(config['options']['task_id']) if resources else None,
-                                site=resources.site,
+                                site=resources.site if resources else None,
                         )
                 elif offline:
                     # run all tasks in order
@@ -348,7 +358,7 @@ async def runner(config, rpc=None, debug=False, offline=False,
                             stats=env['stats'], start_time=start_time,
                             reason=str(e),
                             resources=resources.get_final(config['options']['task_id']) if resources else None,
-                            site=resources.site,
+                            site=resources.site if resources else None,
                     )
                 except Exception as e:
                     logger.error(e)
@@ -358,11 +368,11 @@ async def runner(config, rpc=None, debug=False, offline=False,
 
     finally:
         # check resources
-        if offline and resources:
+        if resource_thread:
             resource_stop = True
             resource_thread.join()
             print('Resources:')
-            r = resources.get_final('a')
+            r = resources.get_final(config['options']['task_id'])
             if not r:
                 print('  None')
             else:
@@ -443,6 +453,8 @@ if __name__ == '__main__':
                         help='Total number of jobs in this dataset')
     parser.add_argument('--task', type=str, default=None,
                         help='Name of the task to run')
+    parser.add_argument('--gzip-logs', dest='gzip_logs', action='store_true',
+                        help='gzip the iceprod logs')
 
     args = vars(parser.parse_args())
     print(args)
@@ -467,3 +479,14 @@ if __name__ == '__main__':
 
     # start iceprod
     main(**args)
+
+    if args['gzip_logs']:
+        # compress stdout and stderr
+        for filename in ('stdout', 'stderr'):
+            if os.path.exist(constants[filename]):
+                with open(constants[filename], 'rb') as f_in:
+                    with gzip.open(constants[filename]+'.gz', 'wb') as f_out:
+                        shutil.copyfileobj(f_in, f_out)
+            else:
+                with gzip.open(constants[filename]+'.gz', 'wb') as f_out:
+                    pass

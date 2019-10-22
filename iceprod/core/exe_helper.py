@@ -80,11 +80,11 @@ def run(classname, filename=None, args=False, debug=False):
     else:
         p,cl = parts
     if filename:
-        logging.info('try loading from source')
+        logging.info('try loading from source: %s', filename)
         mod = imp.load_source(p, filename)
         class_obj = getattr(mod,cl)
     else:
-        logging.info('try regular import')
+        logging.info('try regular import: %s.%s', p, cl)
         mod = __import__(p,globals(),locals(),[cl])
         class_obj = getattr(mod,cl)
 

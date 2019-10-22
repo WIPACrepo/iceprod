@@ -985,13 +985,14 @@ class ForkModule:
                 try:
                     with open(self.error_filename, 'rb') as f:
                         e = pickle.load(f)
-                        if isinstance(e, Exception):
-                            raise e
-                        else:
-                            raise Exception(str(e))
                 except Exception:
-                    self.logger.warning('cannot load exception info from failed module')
+                    self.logger.warning('cannot load exception info from failed module', )
                     raise Exception('module failed')
+                else:
+                    if isinstance(e, Exception):
+                        raise e
+                    else:
+                        raise Exception(str(e))
 
             # get stats, if available
             if os.path.exists(self.stats_filename):

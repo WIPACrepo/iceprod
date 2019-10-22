@@ -29,6 +29,7 @@ import iceprod.core.serialization
 import iceprod.core.logger
 from iceprod.core import jsonUtil
 from iceprod.core import i3exec
+from iceprod.core import constants
 
 
 from .exe_test import DownloadTestCase
@@ -65,11 +66,11 @@ class i3exec_test(DownloadTestCase):
         mod = iceprod.core.dataclasses.Module()
         mod['name'] = 'mod'
         mod['running_class'] = 'MyTest'
-        mod['src'] = 'mytest.py'
+        mod['src'] = 'file:/mytest.py'
         tray['modules'].append(mod)
 
         async def create(*args, **kwargs):
-            path = os.path.join(config['options']['local_temp'], mod['src'])
+            path = os.path.join(config['options']['local_temp'], os.path.basename(mod['src']))
             self.mk_files(path, """
 class IPBaseClass:
     def __init__(self):
@@ -120,11 +121,11 @@ class MyTest(IPBaseClass):
         mod = iceprod.core.dataclasses.Module()
         mod['name'] = 'mod'
         mod['running_class'] = 'MyTest'
-        mod['src'] = 'mytest.py'
+        mod['src'] = 'file:/mytest.py'
         tray['modules'].append(mod)
 
         async def create(*args, **kwargs):
-            path = os.path.join(config['options']['local_temp'], mod['src'])
+            path = os.path.join(config['options']['local_temp'], os.path.basename(mod['src']))
             self.mk_files(path, """
 class IPBaseClass:
     def __init__(self):
@@ -184,7 +185,7 @@ class MyTest(IPBaseClass):
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module2'
         module['running_class'] = 'Test'
-        module['src'] = 'mytest.py'
+        module['src'] = 'file:/mytest.py'
         tray['modules'].append(module)
 
         # add tray to task
@@ -211,7 +212,7 @@ class MyTest(IPBaseClass):
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module2'
         module['running_class'] = 'Test'
-        module['src'] = 'mytest.py'
+        module['src'] = 'file:/mytest.py'
         tray['modules'].append(module)
 
         # add tray to task
@@ -229,7 +230,7 @@ def Test():
     return hello.say_hello('Tester')
 """, 'hello.so':so}, compress='gz')
             else:
-                path = os.path.join(config['options']['local_temp'], module['src'])
+                path = os.path.join(config['options']['local_temp'], os.path.basename(module['src']))
                 self.mk_files(path, """
 def Test():
     return 'Tester2'
@@ -258,11 +259,11 @@ def Test():
         mod = iceprod.core.dataclasses.Module()
         mod['name'] = 'mod'
         mod['running_class'] = 'MyTest'
-        mod['src'] = 'mytest.py'
+        mod['src'] = 'file:/mytest.py'
         tray['modules'].append(mod)
 
         async def create(*args, **kwargs):
-            path = os.path.join(config['options']['local_temp'], mod['src'])
+            path = os.path.join(config['options']['local_temp'], os.path.basename(mod['src']))
             self.mk_files(path, """
 class IPBaseClass:
     def __init__(self):
@@ -364,7 +365,7 @@ class MyTest(IPBaseClass):
         mod = iceprod.core.dataclasses.Module()
         mod['name'] = 'mod'
         mod['running_class'] = 'MyTest'
-        mod['src'] = 'mytest.py'
+        mod['src'] = 'file:/mytest.py'
         tray['modules'].append(mod)
 
         i3exec.main(config, url='http://foo')
@@ -438,6 +439,27 @@ class MyTest(IPBaseClass):
         
         with self.assertRaises(Exception):
             i3exec.main(cfgfile, url='http://foo', pilot_id='p')
+
+    @patch('iceprod.core.i3exec.runner')
+    @patch('iceprod.core.logger.set_logger')
+    @unittest_reporter(name='main() gzip_logs')
+    def test_94(self, logger, runner):
+        async def run(*args, **kwargs):
+            run.called = True
+            yield await asyncio.create_subprocess_exec('sleep','0.1')
+            raise Exception()
+        run.called = False
+        runner.side_effect = run
+
+        config = self.make_config()
+        cfgfile = os.path.join(self.test_dir,'test_steering.json')
+        iceprod.core.serialization.serialize_json.dump(config,cfgfile)
+
+        with self.assertRaises(Exception):
+            i3exec.main(cfgfile, offline=True, debug=True, gzip_logs=True)
+
+        self.assertTrue(run.called)
+        self.assertEqual(logger.call_args[1]['logfile'], os.path.join(self.test_dir, constants['stdlog']+'.gz'))
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

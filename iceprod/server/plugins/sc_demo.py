@@ -16,6 +16,7 @@ from datetime import datetime,timedelta
 import subprocess
 import asyncio
 from functools import partial
+import gzip
 
 import tornado.gen
 from tornado.concurrent import run_on_executor
@@ -93,6 +94,10 @@ class sc_demo(grid.BaseGrid):
         filename = os.path.join(submit_dir, constants['stdlog'])
         if os.path.exists(filename):
             with open(filename) as f:
+                data['data'] = f.read()
+            await self.rest_client.request('POST', '/logs', data)
+        elif os.path.exists(filename+'.gz'):
+            with gzip.open(filename+'.gz') as f:
                 data['data'] = f.read()
             await self.rest_client.request('POST', '/logs', data)
         else:
@@ -447,7 +452,7 @@ class sc_demo(grid.BaseGrid):
                              filelist=None):
         """Generate queueing system submit file for task in dir."""
         args = self.get_submit_args(task,cfg=cfg,passkey=passkey)
-        args.append('--offline')
+        args.extend(['--offline', '--gzip-logs'])
 
         # get requirements and batchopts
         requirements = []
@@ -514,7 +519,7 @@ class sc_demo(grid.BaseGrid):
                 p('should_transfer_files = always')
                 p('when_to_transfer_output = ON_EXIT_OR_EVICT')
                 p('+SpoolOnEvict = False')
-            p('transfer_output_files = iceprod_log, iceprod_out, iceprod_err')
+            p('transfer_output_files = iceprod_log.gz, iceprod_out.gz, iceprod_err.gz')
 
             # handle resources
             p('+JobIsRunning = (JobStatus =!= 1) && (JobStatus =!= 5)')

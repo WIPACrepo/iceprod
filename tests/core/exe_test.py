@@ -1181,7 +1181,7 @@ class exe_test(DownloadTestCase):
         # create the module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module'
-        module['src'] = 'test.py'
+        module['src'] = 'file:/test.py'
         module['running_class'] = 'Test'
 
         # create parameters
@@ -1194,7 +1194,7 @@ class exe_test(DownloadTestCase):
         if 'resource_url' not in options:
             options['resource_url'] = 'http://foo/'
         if 'debug' not in options:
-            options['debug'] = False
+            options['debug'] = True
 
         # make sure some basic options are set
         if 'data_url' not in options:
@@ -1207,7 +1207,8 @@ class exe_test(DownloadTestCase):
             options['local_temp'] = os.path.join(self.test_dir,'local_temp')
 
         async def create(*args, **kwargs):
-            path = os.path.join(options['local_temp'], module['src'])
+            path = os.path.join(options['local_temp'], os.path.basename(module['src']))
+            logger.info('create file %s', path)
             self.mk_files(path, """
 class IPBaseClass:
     def __init__(self):
@@ -1237,6 +1238,7 @@ class Test(IPBaseClass):
                     await mod.wait()
             except:
                 logger.error('running the module failed')
+                logger.info('\n%s', open(constants['stderr']).read())
                 raise
 
     @patch('iceprod.core.exe.functions.download')
@@ -1245,7 +1247,7 @@ class Test(IPBaseClass):
         # create the module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module'
-        module['src'] = 'test.py'
+        module['src'] = 'file:/test.py'
         module['running_class'] = 'Test'
         module['env_clear'] = True
 
@@ -1272,7 +1274,7 @@ class Test(IPBaseClass):
             options['local_temp'] = os.path.join(self.test_dir,'local_temp')
 
         async def create(*args, **kwargs):
-            path = os.path.join(options['local_temp'], module['src'])
+            path = os.path.join(options['local_temp'], os.path.basename(module['src']))
             self.mk_files(path, """
 class IPBaseClass:
     def __init__(self):
@@ -1310,7 +1312,7 @@ class Test(IPBaseClass):
         # create the module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module'
-        module['src'] = 'test.py'
+        module['src'] = 'file:/test.py'
         module['running_class'] = 'Test'
 
         # check that validate, resource_url, debug are in options
@@ -1333,7 +1335,7 @@ class Test(IPBaseClass):
             options['local_temp'] = os.path.join(self.test_dir,'local_temp')
 
         async def create(*args, **kwargs):
-            path = os.path.join(options['local_temp'], module['src'])
+            path = os.path.join(options['local_temp'], os.path.basename(module['src']))
             self.mk_files(path, """
 def Test():
     return 'Tester'
@@ -1371,7 +1373,7 @@ def Test():
         # create the module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module'
-        module['src'] = 'test.py'
+        module['src'] = 'file:/test.py'
 
         # check that validate, resource_url, debug are in options
         options = {}
@@ -1393,7 +1395,7 @@ def Test():
             options['local_temp'] = os.path.join(self.test_dir,'local_temp')
 
         async def create(*args, **kwargs):
-            path = os.path.join(options['local_temp'], module['src'])
+            path = os.path.join(options['local_temp'], os.path.basename(module['src']))
             self.mk_files(path, """
 def Test():
     return 'Tester'
@@ -1421,7 +1423,7 @@ if __name__ == '__main__':
         # create the module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module'
-        module['src'] = 'test.sh'
+        module['src'] = 'file:/test.sh'
 
         # check that validate, resource_url, debug are in options
         options = {}
@@ -1443,7 +1445,7 @@ if __name__ == '__main__':
             options['local_temp'] = os.path.join(self.test_dir,'local_temp')
 
         async def create(*args, **kwargs):
-            path = os.path.join(options['local_temp'], module['src'])
+            path = os.path.join(options['local_temp'], os.path.basename(module['src']))
             self.mk_files(path, """
 uname -a
 echo "test"
@@ -1469,7 +1471,7 @@ echo "test"
         # create the module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module'
-        module['src'] = 'test.py'
+        module['src'] = 'file:/test.py'
         module['env_clear'] = True
 
         # check that validate, resource_url, debug are in options
@@ -1492,7 +1494,7 @@ echo "test"
             options['local_temp'] = os.path.join(self.test_dir,'local_temp')
 
         async def create(*args, **kwargs):
-            path = os.path.join(options['local_temp'], module['src'])
+            path = os.path.join(options['local_temp'], os.path.basename(module['src']))
             self.mk_files(path, """
 def Test():
     return 'Tester'
@@ -1526,7 +1528,7 @@ if __name__ == '__main__':
         # create the module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module'
-        module['src'] = 'test.py'
+        module['src'] = 'file:/test.py'
         module['env_shell'] = env_shell
 
         # check that validate, resource_url, debug are in options
@@ -1549,7 +1551,7 @@ if __name__ == '__main__':
             options['local_temp'] = os.path.join(self.test_dir,'local_temp')
 
         async def create(*args, **kwargs):
-            path = os.path.join(options['local_temp'], module['src'])
+            path = os.path.join(options['local_temp'], os.path.basename(module['src']))
             self.mk_files(path, """
 import os
 def Test():
@@ -1655,7 +1657,7 @@ def Test():
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module2'
         module['running_class'] = 'Test'
-        module['src'] = 'test2.py'
+        module['src'] = 'file:/test2.py'
         tray['modules'].append(module)
 
         # make .so file
@@ -1689,7 +1691,7 @@ def Test():
     return hello.say_hello('Tester')
 """, 'hello.so':so}, compress='gz')
             else:
-                path = os.path.join(options['local_temp'], module['src'])
+                path = os.path.join(options['local_temp'], os.path.basename(module['src']))
                 self.mk_files(path, """
 def Test():
     return 'Tester2'
@@ -1734,7 +1736,7 @@ def Test():
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module2'
         module['running_class'] = 'Test'
-        module['src'] = 'test.py'
+        module['src'] = 'file:/test.py'
         tray['modules'].append(module)
 
         # make .so file
@@ -1768,7 +1770,7 @@ def Test():
     return hello.say_hello('Tester')
 """, 'hello.so':so}, compress='gz')
             else:
-                path = os.path.join(options['local_temp'], module['src'])
+                path = os.path.join(options['local_temp'], os.path.basename(module['src']))
                 self.mk_files(path, """
 def Test():
     return 'Tester2'
@@ -1815,7 +1817,7 @@ def Test():
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module2'
         module['running_class'] = 'Test'
-        module['src'] = 'test.py'
+        module['src'] = 'file:/test.py'
         tray['modules'].append(module)
 
         # add tray to task
@@ -1852,7 +1854,7 @@ def Test():
     return hello.say_hello('Tester')
 """, 'hello.so':so}, compress='gz')
             else:
-                path = os.path.join(options['local_temp'], module['src'])
+                path = os.path.join(options['local_temp'], os.path.basename(module['src']))
                 self.mk_files(path, """
 def Test():
     return 'Tester2'
@@ -1899,7 +1901,7 @@ def Test():
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module2'
         module['running_class'] = 'Test'
-        module['src'] = 'test.py'
+        module['src'] = 'file:/test.py'
         tray['modules'].append(module)
 
         # add tray to task
@@ -1942,7 +1944,7 @@ def Test():
     return hello.say_hello('Tester')
 """, 'hello.so':so}, compress='gz')
             else:
-                path = os.path.join(options['local_temp'], module['src'])
+                path = os.path.join(options['local_temp'], os.path.basename(module['src']))
                 self.mk_files(path, """
 def Test():
     return 'Tester2'
@@ -2003,7 +2005,7 @@ def Test():
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module2'
         module['running_class'] = 'Test'
-        module['src'] = 'test.py'
+        module['src'] = 'file:/test.py'
         tray['modules'].append(module)
 
         # add tray to task
@@ -2029,7 +2031,7 @@ def Test():
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module2'
         module['running_class'] = 'Test'
-        module['src'] = 'test.py'
+        module['src'] = 'file:/test.py'
         tray['modules'].append(module)
 
         # add tray to task
@@ -2066,7 +2068,7 @@ def Test():
     return hello.say_hello('Tester')
 """, 'hello.so':so}, compress='gz')
             else:
-                path = os.path.join(options['local_temp'], module['src'])
+                path = os.path.join(options['local_temp'], os.path.basename(module['src']))
                 self.mk_files(path, """
 def Test():
     return 'Tester2'
@@ -2114,7 +2116,7 @@ def Test():
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module2'
         module['running_class'] = 'Test'
-        module['src'] = 'test.py'
+        module['src'] = 'file:/test.py'
         tray['modules'].append(module)
 
         # add tray to task
@@ -2141,7 +2143,7 @@ def Test():
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module2'
         module['running_class'] = 'Test'
-        module['src'] = 'test.py'
+        module['src'] = 'file:/test.py'
         tray['modules'].append(module)
 
         # add tray to task
@@ -2178,7 +2180,7 @@ def Test():
     return hello.say_hello('Tester')
 """, 'hello.so':so}, compress='gz')
             else:
-                path = os.path.join(options['local_temp'], module['src'])
+                path = os.path.join(options['local_temp'], os.path.basename(module['src']))
                 self.mk_files(path, """
 def Test():
     return 'Tester2'
