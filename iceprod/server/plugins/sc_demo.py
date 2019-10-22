@@ -100,6 +100,7 @@ class sc_demo(grid.BaseGrid):
                 with gzip.open(filename+'.gz', 'rt', encoding='utf-8') as f:
                     data['data'] = f.read()
             except Exception:
+                logging.info('stdlog:', exc_info=True)
                 data['data'] = 'failed to read stdlog'
         else:
             data['data'] = reason
@@ -116,6 +117,7 @@ class sc_demo(grid.BaseGrid):
                 with gzip.open(filename+'.gz', 'rt', encoding='utf-8') as f:
                     data['data'] = f.read()
             except Exception:
+                logging.info('stderr:', exc_info=True)
                 data['data'] = ''
         else:
             data['data'] = ''
@@ -132,6 +134,7 @@ class sc_demo(grid.BaseGrid):
                 with gzip.open(filename+'.gz', 'rt', encoding='utf-8') as f:
                     data['data'] = f.read()
             except Exception:
+                logging.info('stdout:', exc_info=True)
                 data['data'] = ''
         else:
             data['data'] = ''
