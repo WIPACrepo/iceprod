@@ -34,7 +34,6 @@ async def run(rest_client, debug=False):
         rest_client (:py:class:`iceprod.core.rest_client.Client`): rest client
         debug (bool): debug flag to propagate exceptions
     """
-    return
     start_time = time.time()
 
     try:
@@ -59,6 +58,17 @@ async def run(rest_client, debug=False):
                         args = {'status':'reset'}
                         for t in reset_tasks:
                             await rest_client.request('PUT', '/datasets/{}/tasks/{}/status'.format(dataset_id,t), args)
+                            data = {
+                                'name': 'stdlog',
+                                'task_id': t,
+                                'dataset_id': dataset_id,
+                                'data': 'task status = processing, but not found in any pilot',
+                            }
+                            await rest_client.request('POST', '/logs', data)
+                            data.update({'name':'stdout', 'data': ''})
+                            await rest_client.request('POST', '/logs', data)
+                            data.update({'name':'stderr', 'data': ''})
+                            await rest_client.request('POST', '/logs', data)
             except Exception:
                 logger.error('error resetting non-active tasks in dataset %s', dataset_id, exc_info=True)
                 if debug:
