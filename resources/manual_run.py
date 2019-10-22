@@ -96,7 +96,7 @@ def main():
     if not jobs:
         raise Exception('no jobs found')
 
-    with make_pilot() as pilot:
+    with make_pilot(rpc) as pilot:
         for job_id in jobs:
             tasks = rpc.request_seq('GET', f'/datasets/{dataset_id}/tasks',
                                     {'job_id': job_id, 'keys': 'task_id|task_index|name|depends',
