@@ -97,9 +97,14 @@ class sc_demo(grid.BaseGrid):
                 data['data'] = f.read()
             await self.rest_client.request('POST', '/logs', data)
         elif os.path.exists(filename+'.gz'):
-            with gzip.open(filename+'.gz') as f:
-                data['data'] = f.read()
-            await self.rest_client.request('POST', '/logs', data)
+            try:
+                with gzip.open(filename+'.gz') as f:
+                    data['data'] = f.read()
+            except Exception:
+                data['data'] = 'failed to read stdlog'
+                await self.rest_client.request('POST', '/logs', data)
+            else:
+                await self.rest_client.request('POST', '/logs', data)
         else:
             data['data'] = reason
             await self.rest_client.request('POST', '/logs', data)
@@ -111,6 +116,15 @@ class sc_demo(grid.BaseGrid):
             with open(filename) as f:
                 data['data'] = f.read()
             await self.rest_client.request('POST', '/logs', data)
+        elif os.path.exists(filename+'.gz'):
+            try:
+                with gzip.open(filename+'.gz') as f:
+                    data['data'] = f.read()
+            except Exception:
+                data['data'] = ''
+                await self.rest_client.request('POST', '/logs', data)
+            else:
+                await self.rest_client.request('POST', '/logs', data)
         else:
             data['data'] = ''
             await self.rest_client.request('POST', '/logs', data)
@@ -122,6 +136,15 @@ class sc_demo(grid.BaseGrid):
             with open(filename) as f:
                 data['data'] = f.read()
             await self.rest_client.request('POST', '/logs', data)
+        elif os.path.exists(filename+'.gz'):
+            try:
+                with gzip.open(filename+'.gz') as f:
+                    data['data'] = f.read()
+            except Exception:
+                data['data'] = ''
+                await self.rest_client.request('POST', '/logs', data)
+            else:
+                await self.rest_client.request('POST', '/logs', data)
         else:
             data['data'] = ''
             await self.rest_client.request('POST', '/logs', data)
