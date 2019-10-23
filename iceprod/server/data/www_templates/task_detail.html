@@ -37,10 +37,12 @@
 
 </div>
 
+{% if task_stats %}
 <div class="task_stats">
   <p class="stat_name">task stats</p>
   <div class="stat_body">{{ '<br />'.join(escape(json_encode(task_stats, indent=2).replace('\r','')).replace(' ','&nbsp;').split('\n')) }}</div>
 </div>
+{% end %}
 
 {% for log in logs %}
     {% if 'data' in log and log['data'] %}
