@@ -411,7 +411,8 @@
     <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span>
     <span class="n">loop</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="n">run</span><span class="p">())</span>
 
-    <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;finished running normally; exiting...&#39;</span><span class="p">)</span></div>
+    <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;finished running normally; exiting...&#39;</span><span class="p">)</span>
+    <span class="n">iceprod</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">remove_handlers</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="runner"><a class="viewcode-back" href="../../../core/i3exec.html#iceprod.core.i3exec.runner">[docs]</a><span class="k">async</span> <span class="k">def</span> <span class="nf">runner</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">rpc</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">offline</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                  <span class="n">offline_transfer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">resources</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
