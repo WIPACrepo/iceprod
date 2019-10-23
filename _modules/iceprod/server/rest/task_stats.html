@@ -327,17 +327,35 @@
 <div class="viewcode-block" id="DatasetsMultiTaskStatsHandler.get"><a class="viewcode-back" href="../../../../server/rest_api/task_stats.html#iceprod.server.rest.task_stats.DatasetsMultiTaskStatsHandler.get">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">],</span> <span class="n">attrs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;dataset_id:read&#39;</span><span class="p">])</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_id</span><span class="p">,</span> <span class="n">task_id</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Get all task_stats for a dataset and task.</span>
+<span class="sd">        Get task_stats for a dataset and task.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            dataset_id (str): dataset id</span>
 <span class="sd">            task_id (str): task id</span>
 
+<span class="sd">        Params (optional):</span>
+<span class="sd">            last: bool (True: only last task_stat.  False: all task_stats)</span>
+<span class="sd">            keys: | separated list of keys to return for each task_stat</span>
+
 <span class="sd">        Returns:</span>
 <span class="sd">            dict: {&lt;task_stat_id&gt;: stats}</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">last</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_argument</span><span class="p">(</span><span class="s1">&#39;last&#39;</span><span class="p">,</span> <span class="s1">&#39;f&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;true&#39;</span><span class="p">,</span><span class="s1">&#39;t&#39;</span><span class="p">,</span><span class="s1">&#39;1&#39;</span><span class="p">,</span><span class="s1">&#39;yes&#39;</span><span class="p">,</span><span class="s1">&#39;y&#39;</span><span class="p">)</span>
+
+        <span class="n">projection</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_argument</span><span class="p">(</span><span class="s1">&#39;keys&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">keys</span><span class="p">:</span>
+            <span class="n">projection</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">x</span><span class="p">:</span><span class="kc">True</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">keys</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;|&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span><span class="p">})</span>
+            <span class="n">projection</span><span class="p">[</span><span class="s1">&#39;task_stat_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="n">last</span><span class="p">:</span>
+                <span class="n">projection</span><span class="p">[</span><span class="s1">&#39;create_date&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
         <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">task_stats</span><span class="o">.</span><span class="n">find</span><span class="p">({</span><span class="s1">&#39;dataset_id&#39;</span><span class="p">:</span><span class="n">dataset_id</span><span class="p">,</span><span class="s1">&#39;task_id&#39;</span><span class="p">:</span><span class="n">task_id</span><span class="p">},</span>
-                <span class="n">projection</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span><span class="kc">False</span><span class="p">})</span><span class="o">.</span><span class="n">to_list</span><span class="p">(</span><span class="mi">10000</span><span class="p">)</span>
+                <span class="n">projection</span><span class="o">=</span><span class="n">projection</span><span class="p">)</span><span class="o">.</span><span class="n">to_list</span><span class="p">(</span><span class="mi">10000</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">last</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s1">&#39;create_date&#39;</span><span class="p">])[</span><span class="o">-</span><span class="mi">1</span><span class="p">:]</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">({</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;task_stat_id&#39;</span><span class="p">]:</span><span class="n">row</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">})</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span></div></div>
 

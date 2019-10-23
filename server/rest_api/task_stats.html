@@ -300,22 +300,31 @@
 <dl class="method">
 <dt id="iceprod.server.rest.task_stats.DatasetsMultiTaskStatsHandler.get">
 <code class="descname">get</code><span class="sig-paren">(</span><em>dataset_id</em>, <em>task_id</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/task_stats.html#DatasetsMultiTaskStatsHandler.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.task_stats.DatasetsMultiTaskStatsHandler.get" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get all task_stats for a dataset and task.</p>
+<dd><p>Get task_stats for a dataset and task.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>dataset_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – dataset id</li>
 <li><strong>task_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – task id</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">{&lt;task_stat_id&gt;: stats}</p>
-</td>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>Params (optional):</dt>
+<dd>last: bool (True: only last task_stat.  False: all task_stats)
+keys: | separated list of keys to return for each task_stat</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">{&lt;task_stat_id&gt;: stats}</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></p>
-</td>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></td>
 </tr>
 </tbody>
 </table>
