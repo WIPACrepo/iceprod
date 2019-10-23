@@ -483,7 +483,7 @@ if __name__ == '__main__':
     if args['gzip_logs']:
         # compress stdout and stderr
         for filename in ('stdout', 'stderr'):
-            if os.path.exist(constants[filename]):
+            if os.path.exists(constants[filename]):
                 with open(constants[filename], 'rb') as f_in:
                     with gzip.open(constants[filename]+'.gz', 'wb') as f_out:
                         shutil.copyfileobj(f_in, f_out)
