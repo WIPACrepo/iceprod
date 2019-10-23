@@ -38,7 +38,8 @@
 </div>
 
 <div class="task_stats">
-    <textarea style="min-height: 400px">{{ json_encode(task_stats, indent=2) }}</textarea>
+  <p class="stat_name">task stats</p>
+  <div class="stat_body">{{ '<br />'.join(map(escape,json_encode(task_stats, indent=2).replace('\r','').split('\n'))) }}</div>
 </div>
 
 {% for log in logs %}

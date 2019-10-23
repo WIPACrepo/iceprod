@@ -311,6 +311,20 @@ div.task_details div.key_value div {
 div.task_details div.key_value div:nth-of-type(1) {
     width: 150px;
 }
+div.task_stats {
+    margin-bottom: 40px;
+}
+div.task_stats p.stat_name {
+    font-weight: bold;
+}
+div.task_stats div.stat_body {
+    background: lightblue;
+    padding: .3em;
+    margin: .5em 0;
+    font-size: .6em;
+    line-height: 1.1em;
+    word-wrap: break-word;
+}
 div.logs p.log_name {
     font-weight: bold;
 }
