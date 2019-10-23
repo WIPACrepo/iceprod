@@ -39,7 +39,7 @@
 
 <div class="task_stats">
   <p class="stat_name">task stats</p>
-  <div class="stat_body">{{ '<br />'.join(encode(json_encode(task_stats, indent=2).replace('\r','')).replace(' ','&nbsp;').split('\n')) }}</div>
+  <div class="stat_body">{{ '<br />'.join(escape(json_encode(task_stats, indent=2).replace('\r','')).replace(' ','&nbsp;').split('\n')) }}</div>
 </div>
 
 {% for log in logs %}
