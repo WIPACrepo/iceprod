@@ -38,7 +38,7 @@
 </div>
 
 <div class="task_stats">
-{{ json_encode(task_stats) }}
+    <textarea style="min-height: 400px">{{ json_encode(task_stats, indent=2) }}</textarea>
 </div>
 
 {% for log in logs %}
