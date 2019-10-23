@@ -90,54 +90,34 @@ class sc_demo(grid.BaseGrid):
         """upload logfiles"""
         data = {'name': 'stdlog', 'task_id': task_id, 'dataset_id': dataset_id}
 
+        def read_filename(filename):
+            if os.path.exists(filename):
+                with open(filename) as f:
+                    return f.read()
+            elif os.path.exists(filename+'.gz'):
+                try:
+                    with gzip.open(filename+'.gz', 'rt', encoding='utf-8') as f:
+                        return f.read()
+                except EOFError:
+                    pass
+                except Exception:
+                    logging.info('stdlog:', exc_info=True)
+            return ''
+
         # upload stdlog
-        filename = os.path.join(submit_dir, constants['stdlog'])
-        if os.path.exists(filename):
-            with open(filename) as f:
-                data['data'] = f.read()
-        elif os.path.exists(filename+'.gz'):
-            try:
-                with gzip.open(filename+'.gz', 'rt', encoding='utf-8') as f:
-                    data['data'] = f.read()
-            except Exception:
-                logging.info('stdlog:', exc_info=True)
-                data['data'] = 'failed to read stdlog'
-        else:
+        data['data'] = read_filename(os.path.join(submit_dir, constants['stdlog']))
+        if not data['data']:
             data['data'] = reason
         await self.rest_client.request('POST', '/logs', data)
 
         # upload stderr
         data['name'] = 'stderr'
-        filename = os.path.join(submit_dir, constants['stderr'])
-        if os.path.exists(filename):
-            with open(filename) as f:
-                data['data'] = f.read()
-        elif os.path.exists(filename+'.gz'):
-            try:
-                with gzip.open(filename+'.gz', 'rt', encoding='utf-8') as f:
-                    data['data'] = f.read()
-            except Exception:
-                logging.info('stderr:', exc_info=True)
-                data['data'] = ''
-        else:
-            data['data'] = ''
+        data['data'] = read_filename(os.path.join(submit_dir, constants['stderr']))
         await self.rest_client.request('POST', '/logs', data)
 
         # upload stdout
         data['name'] = 'stdout'
-        filename = os.path.join(submit_dir, constants['stdout'])
-        if os.path.exists(filename):
-            with open(filename) as f:
-                data['data'] = f.read()
-        elif os.path.exists(filename+'.gz'):
-            try:
-                with gzip.open(filename+'.gz', 'rt', encoding='utf-8') as f:
-                    data['data'] = f.read()
-            except Exception:
-                logging.info('stdout:', exc_info=True)
-                data['data'] = ''
-        else:
-            data['data'] = ''
+        data['data'] = read_filename(os.path.join(submit_dir, constants['stdout']))
         await self.rest_client.request('POST', '/logs', data)
 
     async def task_error(self, task_id, dataset_id, submit_dir, reason=''):

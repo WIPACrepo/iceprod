@@ -294,10 +294,11 @@ class MyTest(IPBaseClass):
                 await proc.wait()
 
 
+    @patch('iceprod.core.logger.remove_handlers')
     @patch('iceprod.core.i3exec.runner')
     @patch('iceprod.core.logger.set_logger')
     @unittest_reporter(name='main() offline')
-    def test_90(self, logger, runner):
+    def test_90(self, logger, runner, _):
         async def run(*args, **kwargs):
             run.called = True
             yield await asyncio.create_subprocess_exec('sleep','0.1')
@@ -315,10 +316,11 @@ class MyTest(IPBaseClass):
         with self.assertRaises(Exception):
             i3exec.main(None, offline=True, debug=True)
 
+    @patch('iceprod.core.logger.remove_handlers')
     @patch('iceprod.core.i3exec.runner')
     @patch('iceprod.core.logger.set_logger')
     @unittest_reporter(name='main() error')
-    def test_91(self, logger, runner):
+    def test_91(self, logger, runner, _):
         async def run(*args, **kwargs):
             run.called = True
             yield await asyncio.create_subprocess_exec('sleep','0.1')
@@ -336,12 +338,13 @@ class MyTest(IPBaseClass):
         self.assertTrue(run.called)
         self.assertEqual(logger.call_args[1]['logfile'], os.path.join(self.test_dir,'foo'))
 
+    @patch('iceprod.core.logger.remove_handlers')
     @patch('iceprod.core.i3exec.runner')
     @patch('iceprod.core.i3exec.ServerComms')
     @patch('iceprod.core.logger.set_logger')
     @patch('iceprod.core.i3exec.to_file')
     @unittest_reporter(name='main() online')
-    def test_92(self, to_file, logger, comms, runner):
+    def test_92(self, to_file, logger, comms, runner, _):
         async def run(*args, **kwargs):
             run.called = True
             yield await asyncio.create_subprocess_exec('sleep','0.1')
@@ -393,11 +396,12 @@ class MyTest(IPBaseClass):
         with self.assertRaises(Exception):
             i3exec.main(config)
 
+    @patch('iceprod.core.logger.remove_handlers')
     @patch('iceprod.core.pilot.Pilot')
     @patch('iceprod.core.i3exec.ServerComms')
     @patch('iceprod.core.logger.set_logger')
     @unittest_reporter(name='main() pilot')
-    def test_93(self, logger, comms, pilot):
+    def test_93(self, logger, comms, pilot, _):
         class Run:
             def __init__(self,*args, **kwargs):
                 pass
@@ -440,10 +444,11 @@ class MyTest(IPBaseClass):
         with self.assertRaises(Exception):
             i3exec.main(cfgfile, url='http://foo', pilot_id='p')
 
+    @patch('iceprod.core.logger.remove_handlers')
     @patch('iceprod.core.i3exec.runner')
     @patch('iceprod.core.logger.set_logger')
     @unittest_reporter(name='main() gzip_logs')
-    def test_94(self, logger, runner):
+    def test_94(self, logger, runner, _h):
         async def run(*args, **kwargs):
             run.called = True
             yield await asyncio.create_subprocess_exec('sleep','0.1')

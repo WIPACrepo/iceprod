@@ -90,6 +90,14 @@ def remove_stdout():
             log.removeHandler(handler)
     logging.info('loggers=%s', log.handlers)
 
+def remove_handlers():
+    """Remove all handlers from the root logger"""
+    log = logging.getLogger()
+    logging.info('remove_handlers(): loggers=%s', log.handlers)
+    for handler in log.handlers:
+        log.removeHandler(handler)
+    logging.info('loggers=%s', log.handlers)
+
 def rotate():
     """Rotate the file in the root logger"""
     log = logging.getLogger()

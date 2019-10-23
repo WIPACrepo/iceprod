@@ -178,6 +178,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
     loop.run_until_complete(run())
 
     logging.warning('finished running normally; exiting...')
+    iceprod.core.logger.remove_handlers()
 
 async def runner(config, rpc=None, debug=False, offline=False,
                  offline_transfer=False, resources=None):
