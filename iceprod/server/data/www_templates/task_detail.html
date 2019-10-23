@@ -37,6 +37,10 @@
 
 </div>
 
+<div class="task_stats">
+{{ json_encode(task_stats) }}
+</div>
+
 {% for log in logs %}
     {% if 'data' in log and log['data'] %}
 <div class="logs">

@@ -93,17 +93,35 @@ class DatasetsMultiTaskStatsHandler(BaseHandler):
     @authorization(roles=['admin'], attrs=['dataset_id:read'])
     async def get(self, dataset_id, task_id):
         """
-        Get all task_stats for a dataset and task.
+        Get task_stats for a dataset and task.
 
         Args:
             dataset_id (str): dataset id
             task_id (str): task id
 
+        Params (optional):
+            last: bool (True: only last task_stat.  False: all task_stats)
+            keys: | separated list of keys to return for each task_stat
+
         Returns:
             dict: {<task_stat_id>: stats}
         """
+        last = self.get_argument('last', 'f').lower() in ('true','t','1','yes','y')
+
+        projection = {'_id': False}
+        keys = self.get_argument('keys','')
+        if keys:
+            projection.update({x:True for x in keys.split('|') if x})
+            projection['task_stat_id'] = True
+            if last:
+                projection['create_date'] = True
+
         ret = await self.db.task_stats.find({'dataset_id':dataset_id,'task_id':task_id},
-                projection={'_id':False}).to_list(10000)
+                projection=projection).to_list(10000)
+
+        if last:
+            ret = sorted(ret, key=lambda x: x['create_date'])[-1:]
+
         self.write({row['task_stat_id']:row for row in ret})
         self.finish()
 

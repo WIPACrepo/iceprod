@@ -462,6 +462,7 @@ class Task(PublicHandler):
 
         dataset = await self.rest_client.request('GET', '/datasets/{}'.format(dataset_id))
         task_details = await self.rest_client.request('GET','/datasets/{}/tasks/{}'.format(dataset_id, task_id))
+        task_stats = await self.rest_client.request('GET','/datasets/{}/tasks/{}/task_stats?last=true'.format(dataset_id, task_id))
         try:
             ret = await self.rest_client.request('GET','/datasets/{}/tasks/{}/logs?group=true'.format(dataset_id, task_id))
             logs = ret['logs']
@@ -484,7 +485,7 @@ class Task(PublicHandler):
                 logger.info('error sorting logs', exc_info=True)
         except Exception:
             logs = []
-        self.render('task_detail.html', dataset=dataset, task=task_details, logs=logs, passkey=passkey)
+        self.render('task_detail.html', dataset=dataset, task=task_details, task_stats=task_stats, logs=logs, passkey=passkey)
 
 class JobBrowse(PublicHandler):
     """Handle /job urls"""

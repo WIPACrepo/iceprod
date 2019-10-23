@@ -68,15 +68,44 @@ class rest_task_stats_test(RestTestCase):
         ret = json.loads(r.body)
         task_stat_id = ret['result']
 
+        time.sleep(0.1)
+        r = yield client.fetch('http://localhost:%d/tasks/%s/task_stats'%(self.port,task_id),
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        ret = json.loads(r.body)
+        task_stat_id2 = ret['result']
+
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/task_stats'%(self.port,'foo',task_id),
                 headers={'Authorization': b'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
-        self.assertEqual(len(ret), 1)
+        self.assertEqual(len(ret), 2)
         self.assertIn(task_stat_id, ret)
+        self.assertIn(task_stat_id2, ret)
         self.assertIn('task_id', ret[task_stat_id])
         self.assertEqual(task_id, ret[task_stat_id]['task_id'])
         self.assertEqual(data, ret[task_stat_id]['stats'])
+
+        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/task_stats?last=true'%(self.port,'foo',task_id),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertEqual(len(ret), 1)
+        self.assertIn(task_stat_id2, ret)
+        self.assertIn('task_id', ret[task_stat_id2])
+        self.assertEqual(task_id, ret[task_stat_id2]['task_id'])
+        self.assertEqual(data, ret[task_stat_id2]['stats'])
+
+        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/task_stats?last=true&keys=task_id'%(self.port,'foo',task_id),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertEqual(len(ret), 1)
+        self.assertIn(task_stat_id2, ret)
+        self.assertIn('task_id', ret[task_stat_id2])
+        self.assertEqual(task_id, ret[task_stat_id2]['task_id'])
+        self.assertNotIn('stats', ret[task_stat_id2])
 
     # note: the name is so long it needs a break to wrap correctly
     @unittest_reporter(name='REST GET    /datasets/<dataset_id>/tasks/<task_id>/task_stats/<task_stat_id>')
