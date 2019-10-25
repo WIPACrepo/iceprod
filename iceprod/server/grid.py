@@ -9,6 +9,7 @@ import sys
 import random
 import math
 import logging
+import time
 from copy import deepcopy
 from io import BytesIO
 from datetime import datetime,timedelta
@@ -33,6 +34,16 @@ from iceprod.server import dataset_prio
 
 logger = logging.getLogger('grid')
 
+
+def get_host():
+    """Cache the host fqdn for 1 hour"""
+    t = time.time()
+    if get_host.history and get_host.history[0]+3600 < t:
+        return get_host.history[1]
+    host = socket.getfqdn()
+    get_host.history = [t, host]
+    return host
+get_host.history = None
 
 class BaseGrid(object):
     """
@@ -93,7 +104,7 @@ class BaseGrid(object):
         now = datetime.utcnow()
 
         # get pilots from iceprod
-        host = socket.getfqdn()
+        host = get_host()
         ret = await self.rest_client.request('GET', '/pilots')
 
         # filter by queue host
@@ -269,7 +280,7 @@ class BaseGrid(object):
 
     async def setup_pilots(self, tasks):
         """Setup pilots for the task reqs"""
-        host = socket.getfqdn()
+        host = get_host()
 
         debug = False
         if ('queue' in self.cfg and 'debug' in self.cfg['queue']

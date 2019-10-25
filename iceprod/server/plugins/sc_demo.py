@@ -3,15 +3,9 @@ A supercomputer-like plugin, specificially for the SC 2019 Demo.
 
 Basically, task submission directly to condor.
 """
-from __future__ import print_function
 import os
-import sys
-import stat
-import random
-import math
 import logging
 import getpass
-import socket
 from datetime import datetime,timedelta
 import subprocess
 import asyncio
@@ -206,32 +200,69 @@ class sc_demo(grid.BaseGrid):
 
     async def check_and_clean(self):
         """Check and clean the grid"""
-        host = socket.getfqdn()
+        host = grid.get_host()
         #self.x509proxy.update_proxy()
+        
+        # get time limits
+        try:
+            queued_time = timedelta(seconds=self.queue_cfg['max_task_queued_time'])
+        except Exception:
+            queued_time = timedelta(seconds=86400*2)
+        try:
+            processing_time = timedelta(seconds=self.queue_cfg['max_task_processing_time'])
+        except Exception:
+            processing_time = timedelta(seconds=86400*2)
+        try:
+            suspend_time = timedelta(seconds=self.queue_cfg['suspend_submit_dir_time'])
+        except Exception:
+            suspend_time = timedelta(seconds=86400)
+        all_time = queued_time + processing_time + suspend_time
+        time_dict = {'queued': queued_time,
+                     'processing': queued_time+processing_time,
+                     'completed': all_time,
+                     'error': all_time,
+                     'unknown': all_time}
+        for t in time_dict:
+            logger.debug("time limit: %s - %s",t,time_dict[t])
+        now = datetime.utcnow()
+        
+        # get pilots from iceprod
+        ret = await self.rest_client.request('GET', '/pilots')
+
+        # filter by queue host
+        # index by grid_queue_id
+        pilots = {}
+        for pilot_id in ret:
+            if (ret[pilot_id]['queue_host'] == host
+                and 'grid_queue_id' in ret[pilot_id]
+                and ret[pilot_id]['grid_queue_id']):
+                pilots[ret[pilot_id]['grid_queue_id']] = ret[pilot_id]
 
         # first, check if anything has completed successfully
-        grid_jobs = await self.get_grid_completions()
+        # important to get grid status before completions, so we don't reset
+        # newly completed jobs
+        grid_jobs = await self.get_grid_status()
+        grid_history = await self.get_grid_completions()
 
-        if grid_jobs:
-            # get pilots from iceprod
-            pilots = await self.rest_client.request('GET', '/pilots')
+        logger.info("iceprod pilots: %r", list(pilots))
+        logger.info("grid jobs: %r", list(grid_jobs))
+        logger.info("grid history: %r", list(grid_history))
+
+        if grid_history:
             pilot_futures = []
             pilots_to_delete = set()
-            for pilot_id in pilots:
-                pilot = pilots[pilot_id]
-                if pilot['queue_host'] != host:
-                    continue
-                if 'grid_queue_id' in pilot and pilot['grid_queue_id'] in grid_jobs:
+            for gid in pilots:
+                if gid in grid_history:
                     try:
-                        gid = pilot['grid_queue_id']
-                        pilot['submit_dir'] = grid_jobs[gid]['submit_dir']
+                        pilot = pilots[gid]
+                        pilot['submit_dir'] = grid_history[gid]['submit_dir']
                         if pilot['tasks']:
                             task_id = pilot['tasks'][0]
                             logger.info('post-processing task %s', task_id)
                             ret = await self.rest_client.request('GET', f'/tasks/{task_id}')
                             if ret['status'] == 'processing':
                                 pilot['dataset_id'] = ret['dataset_id']
-                                if grid_jobs[gid]['status'] == 'ok':
+                                if grid_history[gid]['status'] == 'ok':
                                     logger.info('uploading logs for task %s', task_id)
                                     pilot_futures.append(asyncio.ensure_future(self.upload_output(pilot)))
                                 else:
@@ -274,13 +305,85 @@ class sc_demo(grid.BaseGrid):
 
             for pilot_id in pilots_to_delete:
                 await self.rest_client.request('DELETE', f'/pilots/{pilot_id}')
+                if pilot_id in pilots:
+                    del pilots[pilot_id]
 
-        # now, do regular check_and_clean
-        await super(sc_demo, self).check_and_clean()
+
+        ### Now do the regular check and clean
+        reset_pilots = set(pilots).difference(grid_jobs)
+        remove_grid_jobs = set(grid_jobs).difference(pilots)
+        prechecked_dirs = set()
+
+        # check the queue
+        grid_idle = 0
+        for grid_queue_id in set(grid_jobs).intersection(pilots):
+            status = grid_jobs[grid_queue_id]['status']
+            submit_time = pilots[grid_queue_id]['submit_date']
+            if '.' in submit_time:
+                submit_time = datetime.strptime(submit_time, '%Y-%m-%dT%H:%M:%S.%f')
+            else:
+                submit_time = datetime.strptime(submit_time, '%Y-%m-%dT%H:%M:%S')
+
+            if now - submit_time > time_dict[status]:
+                logger.info('pilot over time: %r', pilots[grid_queue_id]['pilot_id'])
+                reset_pilots.add(pilots[grid_queue_id]['pilot_id'])
+            elif status == 'queued':
+                grid_idle += 1
+
+            submit_dir = grid_jobs[grid_queue_id]['submit_dir']
+            if submit_dir:
+                # queueing systems don't like deleteing directories they know
+                # about, so put them on a list of "don't touch"
+                prechecked_dirs.add(submit_dir)
+        self.grid_idle = grid_idle
+        self.grid_processing = len(pilots)-len(reset_pilots)-grid_idle
+
+        # check submit directories
+        delete_dirs = set()
+        for x in os.listdir(self.submit_dir):
+            d = os.path.join(self.submit_dir,x)
+            if d in prechecked_dirs:
+                continue
+            if os.path.isdir(d) and '_' in x:
+                logger.debug('found submit_dir %s',d)
+                mtime = datetime.utcfromtimestamp(os.path.getmtime(d))
+                # use all_time instead of suspend_time because the
+                # dir will have the submit time, not the last time
+                if now-mtime < all_time:
+                    continue # skip for suspended or failed tasks
+                delete_dirs.add(d)
+
+        logger.info('%d processing pilots', self.grid_processing)
+        logger.info('%d queued pilots', self.grid_idle)
+        logger.info('%d ->reset', len(reset_pilots))
+        logger.info('%d ->grid remove', len(remove_grid_jobs))
+        logger.info('%d ->submit clean', len(delete_dirs))
+        self.statsd.gauge('processing_pilots', self.grid_processing)
+        self.statsd.gauge('queued_pilots', self.grid_idle)
+        self.statsd.incr('reset_pilots', len(reset_pilots))
+        self.statsd.incr('grid_remove', len(remove_grid_jobs))
+        self.statsd.incr('clean_dirs', len(delete_dirs))
+
+        if reset_pilots:
+            logger.info('reset %r',reset_pilots)
+            for grid_queue_id in reset_pilots:
+                try:
+                    pilot_id = pilots[grid_queue_id]['pilot_id']
+                    await self.rest_client.request('DELETE', '/pilots/{}'.format(pilot_id))
+                except KeyError:
+                    pass
+
+        # remove grid tasks
+        if remove_grid_jobs:
+            logger.info('remove %r',remove_grid_jobs)
+            await asyncio.ensure_future(self.remove(remove_grid_jobs))
+
+        if delete_dirs:
+            await asyncio.ensure_future(self._delete_dirs(delete_dirs))
 
     async def queue(self):
         """Submit a pilot for each task, up to the limit"""
-        host = socket.getfqdn()
+        host = grid.get_host()
         #self.x509proxy.update_proxy()
         resources = self.resources.copy()
 
@@ -596,13 +699,15 @@ class sc_demo(grid.BaseGrid):
             gid,status,cmd = line.split()
             if 'loader.sh' not in cmd:
                 continue
-            if status in ('1','5'): # DEMO: treat held jobs as queued
+            if status in ('0', '1', '5'): # DEMO: treat held jobs as queued
                 status = 'queued'
             elif status == '2':
                 status = 'processing'
             elif status == '4':
                 status = 'completed'
-            elif status in ('3','5','6'):
+            elif status == '3':
+                continue # skip already removed jobs
+            elif status in ('5', '6'):
                 status = 'error'
             else:
                 status = 'unknown'
