@@ -554,7 +554,7 @@ class sc_demo(grid.BaseGrid):
                     requirements.append(condor_os_reqs(task['reqs']['os']))
 
             for b in batch_opts:
-                p(b+'='+batch_opts[b])
+                p(f'{b}={batch_opts[b]}')
             if requirements:
                 p('requirements = ('+')&&('.join(requirements)+')')
 
