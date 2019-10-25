@@ -77,7 +77,7 @@ class sc_demo(grid.BaseGrid):
         # SC demo queue requirements
         self.resources = {}
         self.queue_params = {
-            'requirements.site': 'SCDemo-test',
+            'requirements.site': 'SC-Demo',
         }
         if 'site' in self.queue_cfg:
             self.queue_params['requirements.site'] = self.queue_cfg['site']
@@ -505,6 +505,12 @@ class sc_demo(grid.BaseGrid):
                                 else:
                                     batch_opts[bb] = value
 
+        # DEMO: igor's test scripts
+        filelist.extend([
+            os.path.abspath('~/igor_test_support/pre_test.sh'),
+            os.path.abspath('~/igor_test_support/post_test.sh'),
+        ])
+
         # write the submit file
         submit_file = os.path.join(task['submit_dir'],'condor.submit')
         with open(submit_file,'w') as f:
@@ -532,6 +538,9 @@ class sc_demo(grid.BaseGrid):
                     p('request_cpus = {}'.format(task['reqs']['cpu']))
                 if 'gpu' in task['reqs'] and task['reqs']['gpu']:
                     p('request_gpus = {}'.format(task['reqs']['gpu']))
+                    # DEMO: gpu jobs need region set by condor_qedit
+                    p('+CHUNK_Locations="NONE"')
+                    requirements.append('stringListIMember($(CLOUD_DATARegion), $(CHUNK_Locations))')
                 if 'memory' in task['reqs'] and task['reqs']['memory']:
                     p('request_memory = {}'.format(int(task['reqs']['memory']*1000+100)))
                 else:
@@ -569,6 +578,10 @@ class sc_demo(grid.BaseGrid):
                 grid_queue_id.append('{}.{}'.format(major,i))
         task['grid_queue_id'] = ','.join(grid_queue_id)
 
+        # DEMO: put on hold, to releaes when it's time
+        cmd = ['condor_hold', task['grid_queue_id']]
+        out = await check_output_clean_env(*cmd, cwd=task['submit_dir'])
+
     async def get_grid_status(self):
         """Get all tasks running on the queue system.
            Returns {grid_queue_id:{status,submit_dir}}
@@ -583,7 +596,7 @@ class sc_demo(grid.BaseGrid):
             gid,status,cmd = line.split()
             if 'loader.sh' not in cmd:
                 continue
-            if status == '1':
+            if status in ('1','5'): # DEMO: treat held jobs as queued
                 status = 'queued'
             elif status == '2':
                 status = 'processing'
@@ -604,12 +617,12 @@ class sc_demo(grid.BaseGrid):
     async def get_grid_completions(self):
         """
         Get completions in the last 4 days.
-        
+
         Returns:
             dict: {grid_queue_id: {status, submit_dir} }
         """
         ret = {}
-        cmd = ['condor_history',getpass.getuser(),'-match','10000','-af:j','jobstatus','exitcode','exitbysignal','cmd']
+        cmd = ['condor_history',getpass.getuser(),'-match','50000','-af:j','jobstatus','exitcode','exitbysignal','cmd']
         out = await check_output_clean_env(*cmd)
         print('get_grid_completions():',out)
         for line in out.split('\n'):
