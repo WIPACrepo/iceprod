@@ -20,6 +20,7 @@ import tornado.gen
 from tornado.concurrent import run_on_executor
 
 import iceprod
+import iceprod.core.exe
 from iceprod.core import dataclasses
 from iceprod.core import functions
 from iceprod.core import serialization
@@ -470,6 +471,9 @@ class BaseGrid(object):
 
         # write to file
         serialization.serialize_json.dump(config,filename)
+
+        c = iceprod.core.exe.Config(config)
+        config = c.parseObject(config)
 
         return (config, filelist)
 
