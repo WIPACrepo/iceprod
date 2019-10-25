@@ -479,15 +479,16 @@ if __name__ == '__main__':
         args['cfgfile'] = cfgfile
 
     # start iceprod
-    main(**args)
-
-    if args['gzip_logs']:
-        # compress stdout and stderr
-        for filename in ('stdout', 'stderr'):
-            if os.path.exists(constants[filename]):
-                with open(constants[filename], 'rb') as f_in:
+    try:
+        main(**args)
+    finally:
+        if args['gzip_logs']:
+            # compress stdout and stderr
+            for filename in ('stdout', 'stderr'):
+                if os.path.exists(constants[filename]):
+                    with open(constants[filename], 'rb') as f_in:
+                        with gzip.open(constants[filename]+'.gz', 'wb') as f_out:
+                            shutil.copyfileobj(f_in, f_out)
+                else:
                     with gzip.open(constants[filename]+'.gz', 'wb') as f_out:
-                        shutil.copyfileobj(f_in, f_out)
-            else:
-                with gzip.open(constants[filename]+'.gz', 'wb') as f_out:
-                    pass
+                        pass
