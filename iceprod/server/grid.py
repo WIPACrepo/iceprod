@@ -473,7 +473,7 @@ class BaseGrid(object):
         serialization.serialize_json.dump(config,filename)
 
         c = iceprod.core.exe.Config(config)
-        config = c.parseObject(config)
+        config = c.parseObject(config, {})
 
         return (config, filelist)
 
