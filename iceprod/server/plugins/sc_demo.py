@@ -507,8 +507,8 @@ class sc_demo(grid.BaseGrid):
 
         # DEMO: igor's test scripts
         filelist.extend([
-            os.path.abspath('~/igor_test_support/pre_test.sh'),
-            os.path.abspath('~/igor_test_support/post_test.sh'),
+            os.path.abspath(os.path.expanduser('~/igor_test_support/pre_test.sh')),
+            os.path.abspath(os.path.expanduser('~/igor_test_support/post_test.sh')),
         ])
 
         # write the submit file
