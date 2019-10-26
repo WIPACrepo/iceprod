@@ -280,7 +280,7 @@ class ExpParser:
             logger.warning("recursion depth of parse exceeded")
             return input
 
-        logger.info("parse: %s",input)
+        logger.debug("parse: %s",input)
         if not isinstance(input,dataclasses.String) or not input:
             return input
 
@@ -358,7 +358,7 @@ class ExpParser:
                     else:
                         raise SyntaxError()
             except Exception:
-                logger.info('SyntaxError', exc_info=True)
+                logger.debug('SyntaxError', exc_info=True)
                 output = input
             else:
                 output = getType(''.join(s[1] for s in stack))
@@ -368,7 +368,7 @@ class ExpParser:
             break
 
         # return parsed output
-        logger.info('parser out: %r',output)
+        logger.debug('parser out: %r',output)
         return output
 
     def process_phrase(self,keyword,param=None):
