@@ -509,7 +509,8 @@ class sc_demo(grid.BaseGrid):
                 except Exception:
                     pass
                 logger.error('error handling pilot', exc_info=True)
-        
+
+        grid_queue_ids = []
         for fut in asyncio.as_completed(pilot_futures):
             task,e = await fut
             try:
@@ -530,6 +531,8 @@ class sc_demo(grid.BaseGrid):
                 pilot_id = task['pilot']['pilot_id']
                 args = {'grid_queue_id': task['grid_queue_id']}
                 await self.rest_client.request('PATCH', f'/pilots/{pilot_id}', args)
+
+                grid_queue_ids.append(task['grid_queue_id'])
             except Exception as e:
                 try:
                     reason = f'failed to submit pilot:\n{e}'
@@ -544,6 +547,11 @@ class sc_demo(grid.BaseGrid):
                 except Exception:
                     pass
                 logger.error('error handling pilot', exc_info=True)
+                
+
+        # DEMO: put jobs on hold, to releaes when it's time
+        cmd = ['condor_hold']+grid_queue_ids
+        out = await check_output_clean_env(*cmd)
 
     async def download_input(self, task):
         """
@@ -713,10 +721,6 @@ class sc_demo(grid.BaseGrid):
                 grid_queue_id.append('{}.{}'.format(major,i))
         task['grid_queue_id'] = ','.join(grid_queue_id)
 
-        # DEMO: put on hold, to releaes when it's time
-        cmd = ['condor_hold', task['grid_queue_id']]
-        out = await check_output_clean_env(*cmd, cwd=task['submit_dir'])
-
         return task
 
     async def get_grid_status(self):
@@ -751,7 +755,8 @@ class sc_demo(grid.BaseGrid):
     async def remove(self,tasks):
         """Remove tasks from queueing system."""
         if tasks:
-            await check_call_clean_env(['condor_rm']+list(tasks))
+            cmd = ['condor_rm']+list(tasks)
+            await check_call_clean_env(*cmd)
 
     async def get_grid_completions(self):
         """
