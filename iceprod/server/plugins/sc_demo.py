@@ -558,7 +558,7 @@ class sc_demo(grid.BaseGrid):
     async def generate_submit_file(self, task, cfg=None, passkey=None,
                              filelist=None):
         """Generate queueing system submit file for task in dir."""
-        args = self.get_submit_args(task,cfg=cfg,passkey=passkey)
+        args = self.get_submit_args(task,cfg=cfg)
         args.extend(['--offline', '--gzip-logs'])
 
         # get requirements and batchopts
