@@ -475,6 +475,7 @@ class sc_demo(grid.BaseGrid):
                 task_futures.append(asyncio.ensure_future(f(task)))
 
         # wait for the futures
+        pilot_futures = []
         for fut in asyncio.as_completed(task_futures):
             task,e = await fut
             try:
@@ -493,9 +494,40 @@ class sc_demo(grid.BaseGrid):
                     continue
 
                 # submit to queue
-                await self.submit(task)
+                pilot_futures.append(asyncio.ensure_future(self.submit(task)))
+            except Exception as e:
+                try:
+                    reason = f'failed to submit pilot:\n{e}'
+                    await self.upload_logfiles(task['task_id'],
+                                               dataset_id=task['dataset_id'],
+                                               submit_dir=task['submit_dir'],
+                                               reason=reason)
+                    await self.task_error(task['task_id'],
+                                          dataset_id=task['dataset_id'],
+                                          submit_dir=task['submit_dir'],
+                                          reason=reason)
+                except Exception:
+                    pass
+                logger.error('error handling pilot', exc_info=True)
+        
+        for fut in asyncio.as_completed(pilot_futures):
+            task,e = await fut
+            try:
+                if e is not None:
+                    reason = f'failed to download input files\n{e}'
+                    await self.upload_logfiles(task['task_id'],
+                                               dataset_id=task['dataset_id'],
+                                               submit_dir=task['submit_dir'],
+                                               reason=reason)
+                    await self.task_error(task['task_id'],
+                                          dataset_id=task['dataset_id'],
+                                          submit_dir=task['submit_dir'],
+                                          reason=reason)
+                    await self.rest_client.request('DELETE', f'/pilots/{pilot_id}')
+                    continue
 
                 # update pilot
+                pilot_id = task['pilot']['pilot_id']
                 args = {'grid_queue_id': task['grid_queue_id']}
                 await self.rest_client.request('PATCH', f'/pilots/{pilot_id}', args)
             except Exception as e:
@@ -684,6 +716,8 @@ class sc_demo(grid.BaseGrid):
         # DEMO: put on hold, to releaes when it's time
         cmd = ['condor_hold', task['grid_queue_id']]
         out = await check_output_clean_env(*cmd, cwd=task['submit_dir'])
+
+        return task
 
     async def get_grid_status(self):
         """Get all tasks running on the queue system.
