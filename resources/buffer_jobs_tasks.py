@@ -31,11 +31,13 @@ async def run(rest_client, only_dataset=None, num=10, debug=True):
                     jobs = await rest_client.request('GET', '/datasets/{}/jobs'.format(dataset_id))
                     jobs_to_buffer = min(num, dataset['jobs_submitted'] - len(jobs))
                     if jobs_to_buffer > 0:
+                        logger.warning('buffering %d jobs', jobs_to_buffer)
                         config = await rest_client.request('GET', '/config/{}'.format(dataset_id))
                         parser = ExpParser()
                         task_names = [task['name'] if task['name'] else str(i) for i,task in enumerate(config['tasks'])]
                         job_index = max(jobs[i]['job_index'] for i in jobs)+1 if jobs else 0
                         for i in range(jobs_to_buffer):
+                            logging.info('buffering job %d', job_index)
                             # buffer job
                             args = {'dataset_id': dataset_id, 'job_index': job_index}
                             job_id = await rest_client.request('POST', '/jobs', args)

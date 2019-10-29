@@ -652,6 +652,8 @@ class sc_demo(grid.BaseGrid):
                     # DEMO: gpu jobs need region set by condor_qedit
                     p('+CHUNK_Locations="NONE"')
                     requirements.append('stringListIMember($(CLOUD_DATARegion), $(CHUNK_Locations))')
+                else:
+                    requirements.append('(!isUndefined(Target.GPUs) ? Target.GPUs == 0 : True)')
                 if 'memory' in task['reqs'] and task['reqs']['memory']:
                     p('request_memory = {}'.format(int(task['reqs']['memory']*1000+100)))
                 else:
