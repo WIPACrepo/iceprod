@@ -650,13 +650,12 @@ class sc_demo(grid.BaseGrid):
                 p('+CHUNK_Locations="NONE"')
                 requirements.append('stringListIMember(CLOUD_DATARegion, CHUNK_Locations)')
             else:
-                requirements.append('(!isUndefined(Target.GPUs) ? Target.GPUs == 0 : True)')
+                p('+CPU_START=False')
+                requirements.append('(!isUndefined(Target.GPUs) ? Target.GPUs == 0 : True) && CPU_START')
             if 'memory' in task['requirements'] and task['requirements']['memory']:
                 p('request_memory = {}'.format(int(task['requirements']['memory']*1000+100)))
-            else:
-                p('request_memory = 1000')
             if 'disk' in task['requirements'] and task['requirements']['disk']:
-                p('request_disk = {}'.format(int(task['reqs']['disk']*1000000)))
+                p('request_disk = {}'.format(int(task['requirements']['disk']*1000000)))
             if 'time' in task['requirements'] and task['requirements']['time']:
                 # extra 10 min for pilot
                 p('+OriginalTime = {}'.format(int(task['requirements']['time'])*3600+600))
