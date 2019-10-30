@@ -76,6 +76,7 @@ def run_async(func,*args,**kwargs):
         try:
             return_obj['return'] = await func(*args,**kwargs)
         except Exception as e:
+            logger.info('error running async', exc_info=True)
             return_obj['exception'] = e
         return return_obj
     return asyncio.ensure_future(myfunc())
@@ -469,7 +470,7 @@ class sc_demo(grid.BaseGrid):
                 'jobs_submitted': dataset['jobs_submitted'],
                 'tasks_submitted': dataset['tasks_submitted'],
                 'debug': dataset['debug'],
-                'requirements': args['requirements'],
+                'requirements': self.resources.copy(),
             })
             await self.setup_submit_directory(task)
             task['pilot']['submit_dir'] = task['submit_dir']
@@ -512,7 +513,7 @@ class sc_demo(grid.BaseGrid):
                 reason = f'failed queue task\n{ret["exception"]}'
                 await self.upload_logfiles(task['task_id'],
                                            dataset_id=task['dataset_id'],
-                                           submit_dir=task['pilot']['submit_dir'],
+                                           submit_dir=task['submit_dir'],
                                            reason=reason)
                 await self.task_error(task['task']['task_id'],
                                       dataset_id=task['dataset_id'],
@@ -641,27 +642,26 @@ class sc_demo(grid.BaseGrid):
 
             # handle resources
             p('+JobIsRunning = (JobStatus =!= 1) && (JobStatus =!= 5)')
-            if 'requirements' in task:
-                if 'cpu' in task['reqs'] and task['reqs']['cpu']:
-                    p('request_cpus = {}'.format(task['reqs']['cpu']))
-                if 'gpu' in task['reqs'] and task['reqs']['gpu']:
-                    p('request_gpus = {}'.format(task['reqs']['gpu']))
-                    # DEMO: gpu jobs need region set by condor_qedit
-                    p('+CHUNK_Locations="NONE"')
-                    requirements.append('stringListIMember($(CLOUD_DATARegion), $(CHUNK_Locations))')
-                else:
-                    requirements.append('(!isUndefined(Target.GPUs) ? Target.GPUs == 0 : True)')
-                if 'memory' in task['reqs'] and task['reqs']['memory']:
-                    p('request_memory = {}'.format(int(task['reqs']['memory']*1000+100)))
-                else:
-                    p('request_memory = 1000')
-                if 'disk' in task['reqs'] and task['reqs']['disk']:
-                    p('request_disk = {}'.format(int(task['reqs']['disk']*1000000)))
-                if 'time' in task['reqs'] and task['reqs']['time']:
-                    # extra 10 min for pilot
-                    p('+OriginalTime = {}'.format(int(task['reqs']['time'])*3600+600))
-                if 'os' in task['reqs'] and task['reqs']['os']:
-                    requirements.append(condor_os_reqs(task['reqs']['os']))
+            if 'cpu' in task['requirements'] and task['requirements']['cpu']:
+                p('request_cpus = {}'.format(task['requirements']['cpu']))
+            if 'gpu' in task['requirements'] and task['requirements']['gpu']:
+                p('request_gpus = {}'.format(task['requirements']['gpu']))
+                # DEMO: gpu jobs need region set by condor_qedit
+                p('+CHUNK_Locations="NONE"')
+                requirements.append('stringListIMember($(CLOUD_DATARegion), $(CHUNK_Locations))')
+            else:
+                requirements.append('(!isUndefined(Target.GPUs) ? Target.GPUs == 0 : True)')
+            if 'memory' in task['requirements'] and task['requirements']['memory']:
+                p('request_memory = {}'.format(int(task['requirements']['memory']*1000+100)))
+            else:
+                p('request_memory = 1000')
+            if 'disk' in task['requirements'] and task['requirements']['disk']:
+                p('request_disk = {}'.format(int(task['reqs']['disk']*1000000)))
+            if 'time' in task['requirements'] and task['requirements']['time']:
+                # extra 10 min for pilot
+                p('+OriginalTime = {}'.format(int(task['requirements']['time'])*3600+600))
+            if 'os' in task['requirements'] and task['requirements']['os']:
+                requirements.append(condor_os_reqs(task['requirements']['os']))
 
             for b in batch_opts:
                 p(f'{b}={batch_opts[b]}')
