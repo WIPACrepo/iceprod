@@ -136,7 +136,7 @@ export PYTHONNOUSERSITE=1
 # run i3exec
 cmd="$PYBIN -m iceprod.core.i3exec $@"
 echo $cmd
-exec $cmd
+$cmd
 
 # clean up after ourselves
 rm -Rf resource_libs $ENV env
