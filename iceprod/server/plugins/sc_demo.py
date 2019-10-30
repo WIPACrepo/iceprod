@@ -60,6 +60,27 @@ class MyServerComms(ServerComms):
     def __init__(self, rest_client):
         self.rest = rest_client
 
+class TaskInfo(dict):
+    def __init__(self, **kwargs):
+        self['dataset_id'] = None
+        self['job_id'] = None
+        self['task_id'] = None
+        self['config'] = None
+        self['pilot'] = None
+        self['submit_dir'] = None
+        super(TaskInfo, self).__init__(**kwargs)
+
+def run_async(func,*args,**kwargs):
+    async def myfunc():
+        return_obj = {'args':args,'kwargs':kwargs}
+        try:
+            return_obj['return'] = await func(*args,**kwargs)
+        except Exception as e:
+            return_obj['exception'] = e
+        return return_obj
+    return asyncio.ensure_future(myfunc())
+
+
 class sc_demo(grid.BaseGrid):
 
     ### Plugin Overrides ###
@@ -69,14 +90,15 @@ class sc_demo(grid.BaseGrid):
         self.x509proxy = SiteGlobusProxy()
 
         # SC demo queue requirements
-        self.resources = {}
-        self.queue_params = {
-            'requirements.site': 'SC-Demo',
-        }
+        self.site = 'SC-Demo'
         if 'site' in self.queue_cfg:
-            self.queue_params['requirements.site'] = self.queue_cfg['site']
-        if 'gpu' in self.queue_params['requirements.site'].lower():
+            self.site = self.queue_cfg['site']
+        self.resources = {'site': self.site}
+        if 'gpu' in self.site.lower():
             self.resources['gpu'] = 1
+        self.queue_params = {
+            'requirements.site': self.site,
+        }
         logger.info('resources: %r', self.resources)
         logger.info('queue params: %r', self.queue_params)
 
@@ -158,14 +180,10 @@ class sc_demo(grid.BaseGrid):
         if not reason:
             reason = 'unknown failure'
 
-        site = None
-        if 'site' in self.queue_cfg:
-            site = self.queue_cfg['site']
-
         comms = MyServerComms(self.rest_client)
         await comms.task_error(task_id, dataset_id=dataset_id, 
                                reason=reason, resources=resources,
-                               site=site)
+                               site=self.site)
 
     async def finish_task(self, task_id, dataset_id, submit_dir):
         """complete a task"""
@@ -381,11 +399,11 @@ class sc_demo(grid.BaseGrid):
         if delete_dirs:
             await asyncio.ensure_future(self._delete_dirs(delete_dirs))
 
+
     async def queue(self):
         """Submit a pilot for each task, up to the limit"""
         host = grid.get_host()
         #self.x509proxy.update_proxy()
-        resources = self.resources.copy()
 
         debug = False
         if ('queue' in self.cfg and 'debug' in self.cfg['queue']
@@ -393,56 +411,10 @@ class sc_demo(grid.BaseGrid):
             debug = True
 
         dataset_cache = {}
-        task_futures = []
-        for _ in range(self.get_queue_num()):
-            # get a processing task
-            args = {
-                'requirements': self.resources.copy(),
-                'query_params': self.queue_params,
-            }
-            args['requirements']['os'] = 'RHEL_7_x86_64'
-            try:
-                task = await self.rest_client.request('POST', f'/task_actions/process', args)
-            except Exception:
-                logger.info('no more tasks to queue')
-                break
 
-            # get full job, dataset, config info
-            job = await self.rest_client.request('GET', f'/jobs/{task["job_id"]}')
-            if task['dataset_id'] in dataset_cache:
-                dataset, config = dataset_cache[task['dataset_id']]
-            else:
-                dataset = await self.rest_client.request('GET', f'/datasets/{task["dataset_id"]}')
-                config = await self.rest_client.request('GET', f'/config/{task["dataset_id"]}')
-                dataset_cache[task['dataset_id']] = (dataset, config)
-
-            # check if we have any files in the task_files API
-            task_cfg = None
-            for t in config['tasks']:
-                if t['name'] == task['name']:
-                    task_cfg = t
-                    break
-            else:
-                logger.warning('cannot find task in config for %s', task['task_id'])
-                continue
-            if 'task_files' in task_cfg and task_cfg['task_files']:
-                comms = MyServerComms(self.rest_client)
-                files = await comms.task_files(task['dataset_id'],
-                                               task['task_id'])
-                task_cfg['data'].extend(files)
-
-            config['dataset'] = dataset['dataset']
-            task.update({
-                'config': config,
-                'job': job['job_index'],
-                'jobs_submitted': dataset['jobs_submitted'],
-                'tasks_submitted': dataset['tasks_submitted'],
-                'debug': dataset['debug'],
-                'requirements': args['requirements'],
-            })
-
-            # setup submit dir
-            await self.setup_submit_directory(task)
+        async def make_pilot(task):
+            """take a TaskInfo as input"""
+            resources = self.resources.copy()
 
             # create pilot
             if 'time' in resources:
@@ -466,56 +438,88 @@ class sc_demo(grid.BaseGrid):
             pilot['pilot_id'] = ret['result']
             task['pilot'] = pilot
 
+            # get full job, dataset, config info
+            job = await self.rest_client.request('GET', f'/jobs/{task["job_id"]}')
+            if task['dataset_id'] in dataset_cache:
+                dataset, config = dataset_cache[task['dataset_id']]
+            else:
+                dataset = await self.rest_client.request('GET', f'/datasets/{task["dataset_id"]}')
+                config = await self.rest_client.request('GET', f'/config/{task["dataset_id"]}')
+                dataset_cache[task['dataset_id']] = (dataset, config)
+
+            # check if we have any files in the task_files API
+            task_cfg = None
+            for t in config['tasks']:
+                if t['name'] == task['name']:
+                    task_cfg = t
+                    break
+            else:
+                raise Exception(f'cannot find task in config for {task["task_id"]}')
+
+            if 'task_files' in task_cfg and task_cfg['task_files']:
+                comms = MyServerComms(self.rest_client)
+                files = await comms.task_files(task['dataset_id'],
+                                               task['task_id'])
+                task_cfg['data'].extend(files)
+
+            config['dataset'] = dataset['dataset']
+            task.update({
+                'config': config,
+                'job': job['job_index'],
+                'jobs_submitted': dataset['jobs_submitted'],
+                'tasks_submitted': dataset['tasks_submitted'],
+                'debug': dataset['debug'],
+                'requirements': args['requirements'],
+            })
+            await self.setup_submit_directory(task)
+            task['pilot']['submit_dir'] = task['submit_dir']
+
             if any(f['movement'] in ('download','both') for f in task_cfg['data']):
                 # get input files, all tasks in parallel
-                task_futures.append(asyncio.ensure_future(self.download_input(task)))
-            else:
-                async def f(task):
-                    return task,None
-                task_futures.append(asyncio.ensure_future(f(task)))
+                await self.download_input(task['pilot'])
 
-        # wait for the futures
-        grid_queue_ids = []
-        for fut in asyncio.as_completed(task_futures):
-            task,e = await fut
+            # submit to queue
+            await self.submit(task['pilot'])
+
+            # update pilot
+            pilot_id = task['pilot']['pilot_id']
+            args = {'grid_queue_id': task['pilot']['grid_queue_id']}
+            await self.rest_client.request('PATCH', f'/pilots/{pilot_id}', args)
+
+        awaitables = set()
+        for _ in range(self.get_queue_num()):
+            # get a processing task
+            args = {
+                'requirements': self.resources.copy(),
+                'query_params': self.queue_params,
+            }
+            args['requirements']['os'] = 'RHEL_7_x86_64'
             try:
-                pilot_id = task['pilot']['pilot_id']
-                if e is not None:
-                    reason = f'failed to download input files\n{e}'
-                    await self.upload_logfiles(task['task_id'],
-                                               dataset_id=task['dataset_id'],
-                                               submit_dir=task['submit_dir'],
-                                               reason=reason)
-                    await self.task_error(task['task_id'],
-                                          dataset_id=task['dataset_id'],
-                                          submit_dir=task['submit_dir'],
-                                          reason=reason)
-                    await self.rest_client.request('DELETE', f'/pilots/{pilot_id}')
-                    continue
+                ret = await self.rest_client.request('POST', f'/task_actions/process', args)
+            except Exception:
+                logger.info('no more tasks to queue')
+                break
+            awaitables.add(run_async(make_pilot, TaskInfo(**ret)))
 
-                # submit to queue
-                await self.submit(task)
-                grid_queue_ids.append(task['grid_queue_id'])
+        grid_queue_ids = []
+        for fut in asyncio.as_completed(awaitables):
+            ret = await fut
+            task = ret['args'][0]
+            if 'grid_queue_id' in task['pilot'] and task['pilot']['grid_queue_id']:
+                grid_queue_ids.append(task['pilot']['grid_queue_id'])
 
-                # update pilot
-                pilot_id = task['pilot']['pilot_id']
-                args = {'grid_queue_id': task['grid_queue_id']}
-                await self.rest_client.request('PATCH', f'/pilots/{pilot_id}', args)
-
-            except Exception as e:
-                try:
-                    reason = f'failed to submit pilot:\n{e}'
-                    await self.upload_logfiles(task['task_id'],
-                                               dataset_id=task['dataset_id'],
-                                               submit_dir=task['submit_dir'],
-                                               reason=reason)
-                    await self.task_error(task['task_id'],
-                                          dataset_id=task['dataset_id'],
-                                          submit_dir=task['submit_dir'],
-                                          reason=reason)
-                except Exception:
-                    pass
-                logger.error('error handling pilot', exc_info=True)
+            if 'exception' in ret:
+                reason = f'failed queue task\n{ret["exception"]}'
+                await self.upload_logfiles(task['task_id'],
+                                           dataset_id=task['dataset_id'],
+                                           submit_dir=task['pilot']['submit_dir'],
+                                           reason=reason)
+                await self.task_error(task['task']['task_id'],
+                                      dataset_id=task['dataset_id'],
+                                      submit_dir=task['submit_dir'],
+                                      reason=reason)
+                if task['pilot']['pilot_id']:
+                    await self.rest_client.request('DELETE', f'/pilots/{task["pilot"]["pilot_id"]}')
 
         # DEMO: put jobs on hold, to releaes when it's time
         cmd = ['condor_hold']+grid_queue_ids
@@ -539,8 +543,7 @@ class sc_demo(grid.BaseGrid):
             )
         except Exception as e:
             logger.info('error downloading', exc_info=True)
-            return (task, e)
-        return (task,None)
+            raise
 
     async def upload_output(self, task):
         """
@@ -616,12 +619,6 @@ class sc_demo(grid.BaseGrid):
                                 else:
                                     batch_opts[bb] = value
 
-        # DEMO: igor's test scripts
-        filelist.extend([
-            os.path.abspath(os.path.expanduser('~/igor_test_support/pre_test.sh')),
-            os.path.abspath(os.path.expanduser('~/igor_test_support/post_test.sh')),
-        ])
-
         # write the submit file
         submit_file = os.path.join(task['submit_dir'],'condor.submit')
         with open(submit_file,'w') as f:
@@ -644,7 +641,7 @@ class sc_demo(grid.BaseGrid):
 
             # handle resources
             p('+JobIsRunning = (JobStatus =!= 1) && (JobStatus =!= 5)')
-            if 'reqs' in task:
+            if 'requirements' in task:
                 if 'cpu' in task['reqs'] and task['reqs']['cpu']:
                     p('request_cpus = {}'.format(task['reqs']['cpu']))
                 if 'gpu' in task['reqs'] and task['reqs']['gpu']:
@@ -677,7 +674,14 @@ class sc_demo(grid.BaseGrid):
     async def submit(self,task):
         """Submit task to queueing system."""
         cmd = ['condor_submit','-terse','condor.submit']
-        out = await check_output_clean_env(*cmd, cwd=task['submit_dir'])
+        for tries in range(3): # make three attempts
+            try:
+                out = await check_output_clean_env(*cmd, cwd=task['submit_dir'])
+                break
+            except:
+                if tries >= 2:
+                    raise
+                await asyncio.sleep(1) # backoff a bit
         grid_queue_id = []
         for line in out.split('\n'):
             # look for range
