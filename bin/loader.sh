@@ -137,6 +137,9 @@ export PYTHONNOUSERSITE=1
 cmd="$PYBIN -m iceprod.core.i3exec $@"
 echo $cmd
 $cmd
+err=$?
 
 # clean up after ourselves
 rm -Rf resource_libs $ENV env
+
+exit $err
