@@ -48,29 +48,40 @@ async def run(rest_client, debug=False):
         for p in pilots.values():
             if 'tasks' in p and p['tasks']:
                 task_ids_in_pilots.update(p['tasks'])
+        dataset_tasks = {}
         for dataset_id in dataset_ids:
+            dataset_tasks[dataset_id] = await rest_client.request('GET', '/datasets/{}/task_summaries/status'.format(dataset_id))
+
+        async def reset(dataset_id, task_id):
+            await rest_client.request('PUT', f'/datasets/{dataset_id}/tasks/{task_id}/status', args)
+            data = {
+                'name': 'stdlog',
+                'task_id': task_id,
+                'dataset_id': dataset_id,
+                'data': 'task status = processing, but not found in any pilot',
+            }
+            await rest_client.request('POST', '/logs', data)
+            data.update({'name':'stdout', 'data': ''})
+            await rest_client.request('POST', '/logs', data)
+            data.update({'name':'stderr', 'data': ''})
+            await rest_client.request('POST', '/logs', data)
+
+        awaitables = set()
+        for dataset_id in dataset_ids:
+            tasks = dataset_tasks[dataset_id]
+            if 'processing' in tasks:
+                reset_tasks = set(tasks['processing'])-task_ids_in_pilots
+                if reset_tasks:
+                    logger.info('dataset %s reset tasks: %s', dataset_id, reset_tasks)
+                    args = {'status':'reset'}
+                    for t in reset_tasks:
+                        awaitables.add(reset(dataset_id,t))
+        
+        for fut in asyncio.as_completed(awaitables):
             try:
-                tasks = await rest_client.request('GET', '/datasets/{}/task_summaries/status'.format(dataset_id))
-                if 'processing' in tasks:
-                    reset_tasks = set(tasks['processing'])-task_ids_in_pilots
-                    if reset_tasks:
-                        logger.info('dataset %s reset tasks: %s', dataset_id, reset_tasks)
-                        args = {'status':'reset'}
-                        for t in reset_tasks:
-                            await rest_client.request('PUT', '/datasets/{}/tasks/{}/status'.format(dataset_id,t), args)
-                            data = {
-                                'name': 'stdlog',
-                                'task_id': t,
-                                'dataset_id': dataset_id,
-                                'data': 'task status = processing, but not found in any pilot',
-                            }
-                            await rest_client.request('POST', '/logs', data)
-                            data.update({'name':'stdout', 'data': ''})
-                            await rest_client.request('POST', '/logs', data)
-                            data.update({'name':'stderr', 'data': ''})
-                            await rest_client.request('POST', '/logs', data)
+                await fut
             except Exception:
-                logger.error('error resetting non-active tasks in dataset %s', dataset_id, exc_info=True)
+                logger.error('error resetting non-active tasks', exc_info=True)
                 if debug:
                     raise
     except Exception:
