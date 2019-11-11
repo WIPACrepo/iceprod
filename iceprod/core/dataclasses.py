@@ -42,8 +42,6 @@ class Job(dict):
     If the `options` are empty, this is the same as a dataset
     configuration.
 
-    :ivar dataset: 0
-    :ivar parent_id: 0
     :ivar version: 3
     :ivar options: {} -- a dict of parameters to pass to the task runner
     :ivar steering: None
@@ -54,8 +52,6 @@ class Job(dict):
     """
     plural = 'Jobs'
     def __init__(self,*args,**kwargs):
-        self['dataset']     = 0
-        self['parent_id']   = 0
         self['version']     = 3
         self['options']     = {}
         self['steering']    = None
@@ -101,9 +97,7 @@ class Job(dict):
 
     def valid(self):
         try:
-            return (isinstance(self['dataset'],(Number,String)) and
-                    isinstance(self['parent_id'],(Number,String)) and
-                    isinstance(self['version'],Number) and
+            return (isinstance(self['version'],Number) and
                     self['version'] >= 3 and
                     isinstance(self['options'],dict) and
                     (self['steering'] is None or (

@@ -467,6 +467,7 @@ class sc_demo(grid.BaseGrid):
             task.update({
                 'config': config,
                 'job': job['job_index'],
+                'dataset': dataset['dataset'],
                 'jobs_submitted': dataset['jobs_submitted'],
                 'tasks_submitted': dataset['tasks_submitted'],
                 'debug': dataset['debug'],

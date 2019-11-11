@@ -437,6 +437,8 @@ class BaseGrid(object):
             config['options']['jobs_submitted'] = task['jobs_submitted']
         if 'dataset_id' in task:
             config['options']['dataset_id'] = task['dataset_id']
+        if 'dataset' in task:
+            config['options']['dataset'] = task['dataset']
         config['options']['stillrunninginterval'] = self.queue_cfg['ping_interval']
         config['options']['debug'] = task['debug']
         config['options']['upload'] = 'logging'
