@@ -346,7 +346,7 @@ class sc_demo(grid.BaseGrid):
 
             if now - submit_time > time_dict[status]:
                 logger.info('pilot over time: %r', pilots[grid_queue_id]['pilot_id'])
-                reset_pilots.add(pilots[grid_queue_id]['pilot_id'])
+                reset_pilots.add(grid_queue_id)
             elif status == 'queued':
                 grid_idle += 1
 
