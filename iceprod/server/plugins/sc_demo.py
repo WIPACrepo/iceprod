@@ -324,7 +324,10 @@ class sc_demo(grid.BaseGrid):
                     logger.error('error handling task', exc_info=True)
 
             for pilot_id in pilots_to_delete:
-                await self.rest_client.request('DELETE', f'/pilots/{pilot_id}')
+                try:
+                    await self.rest_client.request('DELETE', f'/pilots/{pilot_id}')
+                except Exception:
+                    logger.info('delete pilot error', exc_info=True)
                 if pilot_id in pilots:
                     del pilots[pilot_id]
 
@@ -392,6 +395,8 @@ class sc_demo(grid.BaseGrid):
                     await self.rest_client.request('DELETE', '/pilots/{}'.format(pilot_id))
                 except KeyError:
                     pass
+                except Exception:
+                    logger.info('delete pilot error', exc_info=True)
 
         # remove grid tasks
         if remove_grid_jobs:
