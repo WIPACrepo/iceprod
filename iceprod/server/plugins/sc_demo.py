@@ -219,7 +219,6 @@ class sc_demo(grid.BaseGrid):
 
     async def check_and_clean(self):
         """Check and clean the grid"""
-        return ### for queueing, don't need this
         host = grid.get_host()
         #self.x509proxy.update_proxy()
         
