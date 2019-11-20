@@ -401,7 +401,7 @@ class sc_demo(grid.BaseGrid):
         if delete_dirs:
             await asyncio.ensure_future(self._delete_dirs(delete_dirs))
 
-        sys.exit(0) # only run this once, then exit once cleanup is done
+        os._exit(0) # only run this once, then exit once cleanup is done
 
     async def queue(self):
         """Submit a pilot for each task, up to the limit"""
