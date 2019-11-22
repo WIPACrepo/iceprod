@@ -261,8 +261,6 @@ configuration.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
-<li><strong>dataset</strong> – 0</li>
-<li><strong>parent_id</strong> – 0</li>
 <li><strong>version</strong> – 3</li>
 <li><strong>options</strong> – {} – a dict of parameters to pass to the task runner</li>
 <li><strong>steering</strong> – None</li>
@@ -476,6 +474,8 @@ new objects.</p>
 <li><strong>env_shell</strong> – None – src of script which sets env and calls arg</li>
 <li><strong>env_clear</strong> – True – clear the env before calling the module
 (calls env_shell after clearing, if defined)</li>
+<li><strong>configs</strong> – None – any json config files that should be written
+(format is {filename: data})</li>
 </ul>
 </td>
 </tr>

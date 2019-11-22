@@ -276,8 +276,6 @@
 <span class="sd">    If the `options` are empty, this is the same as a dataset</span>
 <span class="sd">    configuration.</span>
 
-<span class="sd">    :ivar dataset: 0</span>
-<span class="sd">    :ivar parent_id: 0</span>
 <span class="sd">    :ivar version: 3</span>
 <span class="sd">    :ivar options: {} -- a dict of parameters to pass to the task runner</span>
 <span class="sd">    :ivar steering: None</span>
@@ -288,8 +286,6 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">plural</span> <span class="o">=</span> <span class="s1">&#39;Jobs&#39;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;dataset&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="mi">0</span>
-        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;parent_id&#39;</span><span class="p">]</span>   <span class="o">=</span> <span class="mi">0</span>
         <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;version&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="mi">3</span>
         <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;options&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;steering&#39;</span><span class="p">]</span>    <span class="o">=</span> <span class="kc">None</span>
@@ -335,9 +331,7 @@
 
 <div class="viewcode-block" id="Job.valid"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Job.valid">[docs]</a>    <span class="k">def</span> <span class="nf">valid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;dataset&#39;</span><span class="p">],(</span><span class="n">Number</span><span class="p">,</span><span class="n">String</span><span class="p">))</span> <span class="ow">and</span>
-                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;parent_id&#39;</span><span class="p">],(</span><span class="n">Number</span><span class="p">,</span><span class="n">String</span><span class="p">))</span> <span class="ow">and</span>
-                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;version&#39;</span><span class="p">],</span><span class="n">Number</span><span class="p">)</span> <span class="ow">and</span>
+            <span class="k">return</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;version&#39;</span><span class="p">],</span><span class="n">Number</span><span class="p">)</span> <span class="ow">and</span>
                     <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;version&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">3</span> <span class="ow">and</span>
                     <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;options&#39;</span><span class="p">],</span><span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span>
                     <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;steering&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="p">(</span>
@@ -648,6 +642,8 @@
 <span class="sd">    :ivar env_shell: None -- src of script which sets env and calls arg</span>
 <span class="sd">    :ivar env_clear: True -- clear the env before calling the module</span>
 <span class="sd">                              (calls env_shell after clearing, if defined)</span>
+<span class="sd">    :ivar configs: None -- any json config files that should be written</span>
+<span class="sd">                             (format is {filename: data})</span>
 
 <span class="sd">    Note that `env_clear` should be used carefully, as it wipes out</span>
 <span class="sd">    any loaded classes.</span>
@@ -659,6 +655,7 @@
         <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">]</span>          <span class="o">=</span> <span class="s1">&#39;&#39;</span>
         <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;env_shell&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="s1">&#39;&#39;</span>
         <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;env_clear&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;configs&#39;</span><span class="p">]</span>       <span class="o">=</span> <span class="p">{}</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">Module</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Module.output"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Module.output">[docs]</a>    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -686,7 +683,8 @@
                     <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;src&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">)</span> <span class="ow">and</span>
                     <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">)</span> <span class="ow">and</span>
                     <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;env_shell&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">)</span> <span class="ow">and</span>
-                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;env_clear&#39;</span><span class="p">],</span><span class="nb">bool</span><span class="p">)</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;env_clear&#39;</span><span class="p">],</span><span class="nb">bool</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;configs&#39;</span><span class="p">],</span><span class="nb">dict</span><span class="p">)</span>
                    <span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">False</span></div></div>
