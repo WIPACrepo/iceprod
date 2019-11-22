@@ -57,7 +57,7 @@ class loader_test(unittest.TestCase):
         with open(test_loader,'w') as f:
             for line in loader_lines:
                 line = line.strip('\n')
-                if (line.startswith('exec $cmd') or
+                if (line.startswith('$cmd') or
                     line.startswith('rm -Rf')):
                     continue
                 f.write(line+'\n')
