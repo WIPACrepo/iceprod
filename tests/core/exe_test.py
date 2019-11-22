@@ -1466,6 +1466,78 @@ echo "test"
                 raise
 
     @patch('iceprod.core.exe.functions.download')
+    @unittest_reporter(name='runmodule - config file')
+    async def test_213_runmodule_configs(self, download):
+        # create the module object
+        module = iceprod.core.dataclasses.Module()
+        module['name'] = 'module'
+        module['src'] = 'file:/test.sh'
+        module['configs'] = {'foo': {'bar': 123}}
+
+        # check that validate, resource_url, debug are in options
+        options = {}
+        if 'validate' not in options:
+            options['validate'] = True
+        if 'resource_url' not in options:
+            options['resource_url'] = 'http://foo/'
+        if 'debug' not in options:
+            options['debug'] = False
+
+        # make sure some basic options are set
+        if 'data_url' not in options:
+            options['data_url'] = 'gsiftp://gridftp/'
+        if 'svn_repository' not in options:
+            options['svn_repository'] = 'http://svn/'
+        if 'job_temp' not in options:
+            options['job_temp'] = os.path.join(self.test_dir,'job_temp')
+        if 'local_temp' not in options:
+            options['local_temp'] = os.path.join(self.test_dir,'local_temp')
+
+        async def create(*args, **kwargs):
+            path = os.path.join(options['local_temp'], os.path.basename(module['src']))
+            self.mk_files(path, """
+uname -a
+echo "test"
+cat foo|grep 123
+""", ext=True)
+            return path
+        download.side_effect = create
+
+        # set env
+        env = {'options': options}
+
+        # run the module
+        with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
+            try:
+                async for mod in iceprod.core.exe.runmodule(self.config, env, module):
+                    await mod.wait()
+            except:
+                logger.error('running the module failed')
+                raise
+
+        # now for failure
+        async def create(*args, **kwargs):
+            path = os.path.join(options['local_temp'], os.path.basename(module['src']))
+            self.mk_files(path, """
+uname -a
+echo "test"
+cat foobar|grep 123
+""", ext=True)
+            return path
+        download.side_effect = create
+
+        # run the module
+        with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
+            try:
+                async for mod in iceprod.core.exe.runmodule(self.config, env, module):
+                    await mod.wait()
+            except:
+                pass
+            else:
+                logger.error('running the module succeeded when not supposed to')
+                raise Exception('running the module succeeded when not supposed to')
+
+    @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='runmodule - python script (clear env)')
     async def test_220_runmodule_script(self, download):
         # create the module object

@@ -749,6 +749,10 @@ async def runmodule(cfg, globalenv, module, stats={}, logger=None):
             module['src'] = cfg.parseValue(module['src'],env)
         if module['env_shell']:
             module['env_shell'] = cfg.parseValue(module['env_shell'],env)
+        if module['configs']:
+            # parse twice to make sure it's parsed, even if it starts as a string
+            module['configs'] = cfg.parseObject(module['configs'],env)
+            module['configs'] = cfg.parseObject(module['configs'],env)
 
         # make subprocess to run the module
         async with ForkModule(cfg, env, module, logger=logger, stats=stats) as process:
@@ -867,13 +871,19 @@ class ForkModule:
             if not os.path.exists(subdir):
                 os.makedirs(subdir)
             kwargs['cwd'] = subdir
-            self.stdout = open(os.path.join(subdir, constants['stdout']), 'ab')
-            self.stderr = open(os.path.join(subdir, constants['stderr']), 'ab')
         else:
-            self.stdout = open(os.path.join(os.getcwd(), constants['stdout']), 'ab')
-            self.stderr = open(os.path.join(os.getcwd(), constants['stderr']), 'ab')
+            kwargs['cwd'] = os.getcwd()
+        self.stdout = open(os.path.join(kwargs['cwd'], constants['stdout']), 'ab')
+        self.stderr = open(os.path.join(kwargs['cwd'], constants['stderr']), 'ab')
         kwargs['stdout'] = self.stdout
         kwargs['stderr'] = self.stderr
+
+        # set up configs
+        if self.module['configs']:
+            for filename in self.module['configs']:
+                self.logger.info('creating config %r', filename)
+                with open(os.path.join(kwargs['cwd'], filename),'w') as f:
+                    f.write(json_encode(self.module['configs'][filename]))
 
         # run the module
         if self.module['running_class']:
