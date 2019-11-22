@@ -18,7 +18,7 @@ from iceprod.server import GlobalID
 
 logger = logging.getLogger('dataset_monitor')
 
-NTASKS = 50000
+NTASKS = 100000
 
 def queue_tasks(module):
     """
