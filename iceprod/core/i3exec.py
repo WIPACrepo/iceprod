@@ -229,6 +229,8 @@ async def runner(config, rpc=None, debug=False, offline=False,
             logger.warning('failed to set a new log level', exc_info=True)
 
     # make sure some basic options are set
+    if 'dataset' not in config['options']:
+        config['options']['dataset'] = 0
     if 'job' not in config['options']:
         config['options']['job'] = 0
     if 'jobs_submitted' not in config['options']:
@@ -448,6 +450,8 @@ if __name__ == '__main__':
                         help='Enable/disable file transfer during offline mode')
     parser.add_argument('--logfile', type=str, default=None,
                         help='Specify the logfile to use')
+    parser.add_argument('--dataset', type=int, default=None,
+                        help='Dataset number')
     parser.add_argument('--job', type=int, default=None,
                         help='Index of the job to run')
     parser.add_argument('--jobs_submitted', type=int, default=None,
@@ -467,7 +471,7 @@ if __name__ == '__main__':
         else:
             args['cfgfile'] = None
 
-    options = {k: args.pop(k) for k in ('job','jobs_submitted','task')}
+    options = {k: args.pop(k) for k in ('dataset','job','jobs_submitted','task')}
     if not options['jobs_submitted'] and options['job']:
         options['jobs_submitted'] = options['job']+1
     options['debug'] = args['debug']
