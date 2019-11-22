@@ -3,6 +3,7 @@ A supercomputer-like plugin, specificially for the SC 2019 Demo.
 
 Basically, task submission directly to condor.
 """
+import sys
 import os
 import logging
 import getpass
@@ -324,7 +325,10 @@ class sc_demo(grid.BaseGrid):
                     logger.error('error handling task', exc_info=True)
 
             for pilot_id in pilots_to_delete:
-                await self.rest_client.request('DELETE', f'/pilots/{pilot_id}')
+                try:
+                    await self.rest_client.request('DELETE', f'/pilots/{pilot_id}')
+                except Exception:
+                    logger.info('delete pilot error', exc_info=True)
                 if pilot_id in pilots:
                     del pilots[pilot_id]
 
@@ -346,7 +350,7 @@ class sc_demo(grid.BaseGrid):
 
             if now - submit_time > time_dict[status]:
                 logger.info('pilot over time: %r', pilots[grid_queue_id]['pilot_id'])
-                reset_pilots.add(pilots[grid_queue_id]['pilot_id'])
+                reset_pilots.add(grid_queue_id)
             elif status == 'queued':
                 grid_idle += 1
 
@@ -392,6 +396,8 @@ class sc_demo(grid.BaseGrid):
                     await self.rest_client.request('DELETE', '/pilots/{}'.format(pilot_id))
                 except KeyError:
                     pass
+                except Exception:
+                    logger.info('delete pilot error', exc_info=True)
 
         # remove grid tasks
         if remove_grid_jobs:
@@ -401,6 +407,7 @@ class sc_demo(grid.BaseGrid):
         if delete_dirs:
             await asyncio.ensure_future(self._delete_dirs(delete_dirs))
 
+        os._exit(0) # only run this once, then exit once cleanup is done
 
     async def queue(self):
         """Submit a pilot for each task, up to the limit"""

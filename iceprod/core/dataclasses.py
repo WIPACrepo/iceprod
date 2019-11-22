@@ -408,6 +408,8 @@ class Module(_TaskCommon):
     :ivar env_shell: None -- src of script which sets env and calls arg
     :ivar env_clear: True -- clear the env before calling the module
                               (calls env_shell after clearing, if defined)
+    :ivar configs: None -- any json config files that should be written
+                             (format is {filename: data})
 
     Note that `env_clear` should be used carefully, as it wipes out
     any loaded classes.
@@ -419,6 +421,7 @@ class Module(_TaskCommon):
         self['args']          = ''
         self['env_shell']     = ''
         self['env_clear']     = True
+        self['configs']       = {}
         super(Module,self).__init__(*args,**kwargs)
 
     def output(self):
@@ -446,7 +449,8 @@ class Module(_TaskCommon):
                     isinstance(self['src'],String) and
                     isinstance(self['args'],String) and
                     isinstance(self['env_shell'],String) and
-                    isinstance(self['env_clear'],bool)
+                    isinstance(self['env_clear'],bool) and
+                    isinstance(self['configs'],dict)
                    )
         except Exception:
             return False
