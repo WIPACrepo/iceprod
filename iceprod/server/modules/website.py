@@ -415,6 +415,7 @@ class Dataset(PublicHandler):
         tasks = await self.rest_client.request('GET','/datasets/{}/task_counts/status'.format(dataset_id))
         task_info = await self.rest_client.request('GET','/datasets/{}/task_counts/name_status'.format(dataset_id))
         task_stats = await self.rest_client.request('GET','/datasets/{}/task_stats'.format(dataset_id))
+        config = await self.rest_client.request('GET','/config/{}'.format(dataset_id))
         for t in task_info:
             logger.info('task_info[%s] = %r', t, task_info[t])
             for s in ('waiting','queued','processing','complete'):
@@ -425,7 +426,12 @@ class Dataset(PublicHandler):
                 if s in task_info[t]:
                     error += task_info[t][s]
             task_info[t]['error'] = error
-            task_info[t]['type'] = 'GPU' if t in task_stats and task_stats[t]['gpu'] else 'CPU'
+            for task in config['tasks']:
+                if task['name'] == task_info[t]['name']:
+                    task_info[t]['type'] = 'GPU' if 'gpu' in task['requirements'] and task['requirements']['gpu'] else 'CPU'
+                    break
+            else:
+                task_info[t]['type'] = 'UNK'
         self.render('dataset_detail.html',dataset_id=dataset_id,dataset_num=dataset_num,
                     dataset=dataset,jobs=jobs,tasks=tasks,task_info=task_info,task_stats=task_stats,passkey=passkey)
 
