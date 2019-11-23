@@ -427,8 +427,8 @@ class Dataset(PublicHandler):
                     error += task_info[t][s]
             task_info[t]['error'] = error
             for task in config['tasks']:
-                if task['name'] == task_info[t]['name']:
-                    task_info[t]['type'] = 'GPU' if 'gpu' in task['requirements'] and task['requirements']['gpu'] else 'CPU'
+                if 'name' in task and task['name'] == t:
+                    task_info[t]['type'] = 'GPU' if 'requirements' in task and 'gpu' in task['requirements'] and task['requirements']['gpu'] else 'CPU'
                     break
             else:
                 task_info[t]['type'] = 'UNK'
