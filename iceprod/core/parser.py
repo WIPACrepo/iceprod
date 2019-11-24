@@ -282,6 +282,11 @@ class ExpParser:
 
         logger.debug("parse: %s",input)
         if not isinstance(input,dataclasses.String) or not input:
+            # check for lists or dicts to recurse into
+            if isinstance(input, list):
+                input = [self.parse(x,job=job,env=env,depth=depth-1) for x in input]
+            elif isinstance(input, dict):
+                input = {self.parse(x,job=job,env=env,depth=depth-1):self.parse(input[x],job=job,env=env,depth=depth-1) for x in input}
             return input
 
         # set job and env
@@ -366,6 +371,12 @@ class ExpParser:
                     input = output
                     continue
             break
+
+        # check for lists or dicts to recurse into
+        if isinstance(output, list):
+            output = [self.parse(x,job=job,env=env,depth=depth-1) for x in output]
+        elif isinstance(output, dict):
+            output = {self.parse(x,job=job,env=env,depth=depth-1):self.parse(output[x],job=job,env=env,depth=depth-1) for x in output}
 
         # return parsed output
         logger.debug('parser out: %r',output)

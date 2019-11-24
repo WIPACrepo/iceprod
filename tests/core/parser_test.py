@@ -297,6 +297,7 @@ class parser_test(unittest.TestCase):
             'test2': 't2',
             'test3': False,
             'list': [1,2,3,4.0],
+            'dict': {'foo':'$steering(test)','bar':{'baz':'$steering(list)'}},
         }
 
         p = parser.ExpParser()
@@ -324,6 +325,10 @@ class parser_test(unittest.TestCase):
 
         ret = p.parse('$steering(list)[10]',job=job)
         expected = str(job['steering']['parameters']['list'])+'[10]'
+        self.assertEqual(ret,expected)
+
+        ret = p.parse('$steering(dict)',job=job)
+        expected = {'foo':1,'bar':{'baz':[1,2,3,4.0]}}
         self.assertEqual(ret,expected)
 
         for reduction in 'sum', 'len', 'min', 'max':
