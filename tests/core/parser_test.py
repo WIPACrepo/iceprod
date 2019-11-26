@@ -16,6 +16,7 @@ import string
 import subprocess
 import threading
 import unittest
+import json
 try:
     import builtins
 except ImportError:
@@ -61,6 +62,10 @@ class parser_test(unittest.TestCase):
         
         ret = parser.getType('f"o\'o"')
         self.assertEqual(ret, 'f"o\'o"')
+
+        input = {'IceModelLocation': '$I3_BUILD/ice-models/resources/models/spice_3.2.1', 'HoleIceParameterization': '$I3_BUILD/ice-models/resources/models/angsens/as.flasher_p1_0.30_p2_-1', 'Perturbations': {'IceWavePlusModes': {'apply': False, 'type': 'default'}, 'Scattering': {'type': 'delta', 'delta': {'x0': [1.0]}}, 'Absorption': {'type': 'delta', 'delta': {'x0': [1.0]}}, 'AnisotropyScale': {'type': 'delta', 'delta': {'x0': [1.0]}}, 'DOMEfficiency': {'type': 'delta', 'delta': {'x0': [1.0]}}, 'HoleIceForward_Unified': {'type': 'delta', 'delta': {'x0': [0.101569, -0.049344]}}}}
+        ret = parser.getType(json.dumps(input))
+        self.assertEqual(ret, input)
 
     @unittest_reporter
     def test_01_steering(self):
@@ -298,6 +303,57 @@ class parser_test(unittest.TestCase):
             'test3': False,
             'list': [1,2,3,4.0],
             'dict': {'foo':'$steering(test)','bar':{'baz':'$steering(list)'}},
+            "SNOWSTORM::config": {
+                "IceModelLocation": "$I3_BUILD/ice-models/resources/models/spice_3.2.1",
+                "HoleIceParameterization": "$I3_BUILD/ice-models/resources/models/angsens/as.flasher_p1_0.30_p2_-1",
+                "Perturbations": {
+                    "IceWavePlusModes": {
+                        "apply": False,
+                        "type": "default"
+                    },
+                    "Scattering": {
+                        "type": "delta",
+                        "delta": {
+                            "x0": [
+                                1.0
+                            ]
+                        }
+                    },
+                    "Absorption": {
+                        "type": "delta",
+                        "delta": {
+                            "x0": [
+                                1.0
+                            ]
+                        }
+                    },
+                    "AnisotropyScale": {
+                        "type": "delta",
+                        "delta": {
+                            "x0": [
+                                1.0
+                            ]
+                        }
+                    },
+                    "DOMEfficiency": {
+                        "type": "delta",
+                        "delta": {
+                            "x0": [
+                                1.0
+                            ]
+                        }
+                    },
+                    "HoleIceForward_Unified": {
+                        "type": "delta",
+                        "delta": {
+                            "x0": [
+                                0.101569,
+                                -0.049344
+                            ]
+                        }
+                    }
+                }
+            },
         }
 
         p = parser.ExpParser()
@@ -329,6 +385,10 @@ class parser_test(unittest.TestCase):
 
         ret = p.parse('$steering(dict)',job=job)
         expected = {'foo':1,'bar':{'baz':[1,2,3,4.0]}}
+        self.assertEqual(ret,expected)
+
+        ret = p.parse('$steering(SNOWSTORM::config)',job=job)
+        expected = job['steering']['parameters']['SNOWSTORM::config']
         self.assertEqual(ret,expected)
 
         for reduction in 'sum', 'len', 'min', 'max':

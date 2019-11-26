@@ -66,6 +66,7 @@ def getType(output):
             try:
                 output = json.loads(output.replace("'",'"'))
             except Exception:
+                logging.debug('error formatting json', exc_info=True)
                 if output.lower() == 'true':
                     output = True
                 elif output.lower() == 'false':
@@ -77,6 +78,12 @@ def getType(output):
     except Exception:
         pass
     return output
+
+def parse_ret_type(ret):
+    if isinstance(ret, (list,dict)):
+        return ret
+    else:
+        return str(ret)
 
 tokens = ["word", "name", "starter", "scopeL", "scopeR", "bracketL", "bracketR"]
 
@@ -266,7 +273,7 @@ class ExpParser:
         for reduction in 'sum', 'min', 'max', 'len':
             self.keywords[reduction] = functools.partial(self.reduce_func, getattr(builtins, reduction))
     
-    def parse(self,input,job=None,env=None,depth=10):
+    def parse(self,input,job=None,env=None,depth=20):
         """
         Parse the input, expanding where possible.
         
@@ -280,13 +287,15 @@ class ExpParser:
             logger.warning("recursion depth of parse exceeded")
             return input
 
-        logger.debug("parse: %s",input)
+        logger.debug("parse: %r",input)
         if not isinstance(input,dataclasses.String) or not input:
             # check for lists or dicts to recurse into
             if isinstance(input, list):
-                input = [self.parse(x,job=job,env=env,depth=depth-1) for x in input]
+                logger.debug("recursing into list: %r", input)
+                input = [self.parse(x, job=job, env=env, depth=depth-1) for x in input]
             elif isinstance(input, dict):
-                input = {self.parse(x,job=job,env=env,depth=depth-1):self.parse(input[x],job=job,env=env,depth=depth-1) for x in input}
+                logger.debug("recursing into dict: %r", input)
+                input = {self.parse(x, job=job, env=env, depth=depth-1):self.parse(input[x],job=job,env=env,depth=depth-1) for x in input}
             return input
 
         # set job and env
@@ -324,6 +333,8 @@ class ExpParser:
                                 args.append(name)
                             args.append(word)
                             ret = self.process_phrase(*args)
+                            if isinstance(ret, (list, dict)):
+                                ret = json.dumps(ret)
                             stack.append(('word',str(ret)))
                         except GrammarException:
                             logger.debug('GrammarException')
@@ -364,7 +375,7 @@ class ExpParser:
                         raise SyntaxError()
             except Exception:
                 logger.debug('SyntaxError', exc_info=True)
-                output = input
+                output = getType(input)
             else:
                 output = getType(''.join(s[1] for s in stack))
                 if isinstance(output,dataclasses.String) and output != input:
@@ -373,10 +384,8 @@ class ExpParser:
             break
 
         # check for lists or dicts to recurse into
-        if isinstance(output, list):
-            output = [self.parse(x,job=job,env=env,depth=depth-1) for x in output]
-        elif isinstance(output, dict):
-            output = {self.parse(x,job=job,env=env,depth=depth-1):self.parse(output[x],job=job,env=env,depth=depth-1) for x in output}
+        if isinstance(output, (list,dict)):
+            output = self.parse(output, job=job, env=env, depth=depth)
 
         # return parsed output
         logger.debug('parser out: %r',output)
@@ -414,28 +423,28 @@ class ExpParser:
     def steering_func(self,param):
         """Find param in steering"""
         if self.job['steering'] and param in self.job['steering']['parameters']:
-            return str(self.job['steering']['parameters'][param])
+            return parse_ret_type(self.job['steering']['parameters'][param])
         else:
             raise GrammarException('steering:'+param)
 
     def system_func(self,param):
         """Find param in steering.system"""
         if self.job['steering'] and param in self.job['steering']['system']:
-            return str(self.job['steering']['system'][param])
+            return parse_ret_type(self.job['steering']['system'][param])
         else:
             raise GrammarException('system:'+param)
 
     def environ_func(self,param):
         """Find param in env["environment"]"""
         if 'environment' in self.env and param in self.env['environment']:
-            return str(self.env['environment'][param])
+            return parse_ret_type(self.env['environment'][param])
         else:
             raise GrammarException('environ:'+param)
 
     def options_func(self,param):
         """Find param in options"""
         if param in self.job['options']:
-            return str(self.job['options'][param])
+            return parse_ret_type(self.job['options'][param])
         else:
             raise GrammarException('options:'+param)
     
@@ -443,10 +452,10 @@ class ExpParser:
         """Find param in dif plus"""
         try:
             # try dif, then plus
-            return str(self.job['difplus']['dif'][param])
+            return parse_ret_type(self.job['difplus']['dif'][param])
         except Exception:
             try:
-                return str(self.job['difplus']['plus'][param])
+                return parse_ret_type(self.job['difplus']['plus'][param])
             except Exception:
                 raise GrammarException('difplus:'+param)
     
@@ -456,9 +465,9 @@ class ExpParser:
             raise GrammarException('no choices available')
         try:
             if isinstance(param,(tuple,list)):
-                return str(random.choice(param))
+                return parse_ret_type(random.choice(param))
             else:
-                return str(random.choice(param.split(',')))
+                return parse_ret_type(random.choice(param.split(',')))
         except Exception:
             raise GrammarException('not a valid choice')
     
@@ -470,13 +479,13 @@ class ExpParser:
             raise GrammarException('Unsafe operator call')
         else:
             try:
-                return str(safe_eval.eval(param))
+                return parse_ret_type(safe_eval.eval(param))
             except Exception as e:
                 raise GrammarException('Eval is not basic arithmetic')
     
     def reduce_func(self, func, param):
         try:
-            return str(func(getType(param)))
+            return parse_ret_type(func(getType(param)))
         except Exception as e:
             raise GrammarException('Not a reducible sequence')
     
