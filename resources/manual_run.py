@@ -69,6 +69,7 @@ def main():
     parser.add_argument('-t', '--token', help='auth token')
     parser.add_argument('-d','--dataset', type=int, help='dataset number')
     parser.add_argument('-j','--job', type=int, help='job number (optional)')
+    parser.add_argument('--run-failed-jobs', action='store_true', help='also run failed jobs')
     parser.add_argument('--no-clean', dest='clean', action='store_false', help='do not clean up after job')
     parser.add_argument('--log-level', default='DEBUG', choices=['ERROR','WARNING','INFO','DEBUG'], help='log level')
     parser.add_argument('--ignore-error', action='store_true', help='keep going if a job fails')
@@ -99,9 +100,12 @@ def main():
 
     with make_pilot(rpc) as pilot:
         for job_id in jobs:
+            status = 'waiting|queued|reset'
+            if args['run_failed_jobs']:
+                status += '|failed'
             tasks = rpc.request_seq('GET', f'/datasets/{dataset_id}/tasks',
                                     {'job_id': job_id, 'keys': 'task_id|task_index|name|depends',
-                                     'status': 'waiting|queued|reset|failed'})
+                                     'status': status})
             if not tasks:
                 logging.warning(f'no tasks available for {dataset["dataset"]} {jobs[job_id]["job_index"]}')
             for task_id in sorted(tasks, key=lambda t:tasks[t]['task_index']):
