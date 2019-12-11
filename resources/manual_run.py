@@ -116,7 +116,7 @@ def main():
                         job=jobs[job_id]['job_index'],
                         task=tasks[task_id]['name'],
                         clean=args['clean'])
-                except SubprocessError:
+                except subprocess.SubprocessError:
                     if args['ignore_error']:
                         logging.warn("error in subprocess", exc_info=True)
                         continue
