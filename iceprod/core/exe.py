@@ -536,8 +536,10 @@ async def setupClass(env, class_obj, logger=None):
                 env['options']['local_temp'] = local_temp
             if not os.path.exists(local_temp):
                 os.makedirs(local_temp)
-            if local_temp not in os.environ['PYTHONPATH']:
+            if 'PYTHONPATH' in os.environ and local_temp not in os.environ['PYTHONPATH']:
                 os.environ['PYTHONPATH'] += ':'+local_temp
+            elif 'PYTHONPATH' not in os.environ:
+                os.environ['PYTHONPATH'] = local_temp
 
             local = os.path.join(local_temp,class_obj['name'].replace(' ','_'))
 
@@ -925,17 +927,17 @@ class ForkModule:
 
             shebang = False
             if os.path.exists(module_src):
-                with open(module_src) as f:
-                    if f.read(10).startswith('#!'):
-                        # shebang found
-                        try:
+                try:
+                    with open(module_src) as f:
+                        if f.read(10).startswith('#!'):
+                            # shebang found
                             mode = os.stat(module_src).st_mode
                             if not (mode & stat.S_IXUSR):
                                 os.chmod(module_src, mode | stat.S_IXUSR)
                             shebang = True
-                        except Exception:
-                            self.logger.warning('cannot get shebang for %s', module_src,
-                                           exc_info=True)
+                except Exception:
+                    self.logger.warning('cannot get shebang for %s', module_src,
+                                   exc_info=True)
 
             if (not shebang) and module_src[-3:] == '.py':
                 # call as python script

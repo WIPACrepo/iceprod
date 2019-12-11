@@ -41,7 +41,7 @@ import shutil
 from tornado.ioloop import IOLoop
 
 import iceprod
-from iceprod.core import to_file, constants
+from iceprod.core import to_file, to_log, constants
 import iceprod.core.dataclasses
 import iceprod.core.serialization
 import iceprod.core.exe
@@ -146,12 +146,9 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
                 logging.error('comms error', exc_info=True)
 
             # set up stdout and stderr
-            stdout = partial(to_file,sys.stdout,constants['stdout'])
-            stderr = partial(to_file,sys.stderr,constants['stderr'])
             try:
-                with stdout(), stderr():
-                    async for proc in runner(config, rpc=rpc, debug=debug):
-                        await proc.wait()
+                async for proc in runner(config, rpc=rpc, debug=debug):
+                    await proc.wait()
             finally:
                 try:
                     if pilot_id2:
@@ -169,6 +166,8 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
             pilot_kwargs = {}
             if 'run_timeout' in config['options']:
                 pilot_kwargs['run_timeout'] = config['options']['run_timeout']
+            if 'restrict_site' in config['options']:
+                pilot_kwargs['restrict_site'] = config['options']['restrict_site']
             async with iceprod.core.pilot.Pilot(config, rpc=rpc, debug=debug,
                                      runner=partial(runner, rpc=rpc, debug=debug),
                                      pilot_id=pilot_id, **pilot_kwargs) as p:

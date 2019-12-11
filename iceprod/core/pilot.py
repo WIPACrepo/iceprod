@@ -62,9 +62,10 @@ class Pilot:
         debug (bool): debug mode (default False)
         run_timeout (int): how often to check if a task is running
         backoff_delay (int): what starting delay to use for exponential backoff
+        restrict_site (bool): restrict running tasks to explicitly requiring this site
     """
     def __init__(self, config, runner, pilot_id, rpc=None, debug=False,
-                 run_timeout=180, backoff_delay=1):
+                 run_timeout=180, backoff_delay=1, restrict_site=False):
         self.config = config
         self.runner = runner
         self.pilot_id = pilot_id
@@ -74,6 +75,7 @@ class Pilot:
         self.run_timeout = run_timeout
         self.backoff_delay = backoff_delay
         self.resource_interval = 1.0 # seconds between resouce measurements
+        self.query_params = {}
 
         self.running = True
         self.tasks = {}
@@ -96,6 +98,11 @@ class Pilot:
                     name += 'S'
                 os.environ[name] = str(v)
         self.resources = Resources(debug=self.debug)
+        if restrict_site:
+            if not self.resources.site:
+                logger.error('cannot restrict site, as the site is unknown')
+            else:
+                self.query_params['requirements.site'] = self.resources.site
 
         self.start_time = time.time()
         
@@ -267,7 +274,8 @@ class Pilot:
                     task_configs = await self.rpc.download_task(
                             self.config['options']['gridspec'],
                             resources=self.resources.get_available(),
-                            site=self.resources.site)
+                            site=self.resources.site,
+                            query_params=self.query_params)
                 except Exception:
                     download_errors -= 1
                     if download_errors < 1:
@@ -373,36 +381,31 @@ class Pilot:
                     proc = self.tasks[task_id]['p']
                     clean = False
                     if proc.returncode is not None:
-                        if proc.returncode != 0:
-                            logger.info('task %s exited with bad code: %r',
-                                        task_id, proc.returncode)
+                        f = self.tasks[task_id]['iter']
+                        try:
+                            task = await f.__anext__()
+                        except StopAsyncIteration:
+                            logger.warning('task %s finished', task_id)
+                        except Exception:
+                            logger.warning('task %s failed', task_id,
+                                           exc_info=True)
                             task_errors -= 1
-                            clean = True
                         else:
-                            f = self.tasks[task_id]['iter']
-                            try:
-                                task = await f.__anext__()
-                            except StopAsyncIteration:
-                                # the normal exit for a successful task
-                                logger.warning('task %s finished', task_id)
-                                clean = True
-                            except Exception:
-                                # an internal iceprod error, but should be
-                                # caught by i3exec runner
-                                logger.warning('failed to get next yielded task',
-                                               exc_info=True)
-                                clean = True
-                            else:
-                                logger.warning('task %s yielded again', task_id)
-                                task['iter'] = f
-                                self.tasks[task_id] = task
-                                continue
-                        # make sure the task is reset
+                            logger.warning('task %s yielded again', task_id)
+                            task['iter'] = f
+                            self.tasks[task_id] = task
+                            continue
+
+                        # if we got here, the task is done
+                        clean = True
+
+                        # make sure the task is not running anymore
                         try:
                             await self.rpc.still_running(task_id)
                         except Exception:
                             pass
                         else:
+                            logger.warning('task %s is still running, so killing it', task_id)
                             kwargs = {
                                 'reason': 'task exited with return code {}'.format(proc.returncode),
                                 'message': 'task exited with return code {}'.format(proc.returncode),

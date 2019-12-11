@@ -5,32 +5,29 @@ import subprocess
 import argparse
 import json
 import glob
+import tempfile
+import shutil
 import logging
 from contextlib import contextmanager
 
 from rest_tools.client import RestClient
 
 def cleanup():
-    for file in glob.glob('*.i3*'):
-        os.remove(file)
     for file in glob.glob('iceprod_*'):
         os.remove(file)
     try:
-        os.remove('summary.json')
-    except Exception:
-        pass
-    try:
-        os.remove('rng.state')
+        shutil.rmtree('local_temp')
     except Exception:
         pass
 
-def run(token, config, jobs_submitted, job, task):
+def run(token, config, jobs_submitted, job, task, clean=True):
     cleanup()
     subprocess.check_call(['python', '-m', 'iceprod.core.i3exec', '-p', token,
                            '-u', 'https://iceprod2-api.icecube.wisc.edu',
                            '--jobs_submitted', f'{jobs_submitted}', '-f', config,
                            '--job', f'{job}', '--task', f'{task}'])
-    cleanup()
+    if clean:
+        cleanup()
 
 @contextmanager
 def make_pilot(rpc):
@@ -55,27 +52,30 @@ def make_pilot(rpc):
     finally:
         rpc.request_seq('DELETE', f'/pilots/{pilot_id}')
 
-def write_config(config, filename, dataset_id, dataset, task_id):
+def write_config(config, filename, dataset_id, dataset, task_id, subprocess_dir=os.getcwd()):
     data = config.copy()
     data['dataset'] = dataset
     data['options'] = {
         'dataset_id': dataset_id,
         'dataset': dataset,
         'task_id': task_id,
+        'subprocess_dir': subprocess_dir,
     }
     with open(filename, 'w') as f:
         json.dump(data, f)
 
 def main():
     parser = argparse.ArgumentParser(description='manually run IceProd i3exec')
-    parser.add_argument('-t', '--token',help='auth token')
-    parser.add_argument('-d','--dataset',type=int,help='dataset number')
-    parser.add_argument('-j','--job',type=int,help='job number (optional)')
+    parser.add_argument('-t', '--token', help='auth token')
+    parser.add_argument('-d','--dataset', type=int, help='dataset number')
+    parser.add_argument('-j','--job', type=int, help='job number (optional)')
+    parser.add_argument('--no-clean', dest='clean', action='store_false', help='do not clean up after job')
+    parser.add_argument('--log-level', default='DEBUG', choices=['ERROR','WARNING','INFO','DEBUG'], help='log level')
     
     args = parser.parse_args()
     args = vars(args)
 
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=args['log_level'])
 
     rpc = RestClient('https://iceprod2-api.icecube.wisc.edu', args['token'])
     
@@ -91,7 +91,7 @@ def main():
     config = rpc.request_seq('GET', f'/config/{dataset_id}')
 
     jobs = rpc.request_seq('GET', f'/datasets/{dataset_id}/jobs', {'status': 'processing|errors'})
-    if args['job']:
+    if args['job'] is not None:
         jobs = {j:jobs[j] for j in jobs if jobs[j]['job_index'] == args['job']}
     if not jobs:
         raise Exception('no jobs found')
@@ -101,14 +101,28 @@ def main():
             tasks = rpc.request_seq('GET', f'/datasets/{dataset_id}/tasks',
                                     {'job_id': job_id, 'keys': 'task_id|task_index|name|depends',
                                      'status': 'waiting|queued|reset|failed'})
+            if not tasks:
+                logging.warning(f'no tasks available for {dataset["dataset"]} {jobs[job_id]["job_index"]}')
             for task_id in sorted(tasks, key=lambda t:tasks[t]['task_index']):
                 print(f'processing {dataset["dataset"]} {jobs[job_id]["job_index"]} {tasks[task_id]["name"]}')
-                write_config(config, 'config.json', dataset_id, args['dataset'], task_id)
-                pilot(task_id)
-                run(token=args['token'], config='config.json',
-                    jobs_submitted=dataset['jobs_submitted'],
-                    job=jobs[job_id]['job_index'],
-                    task=tasks[task_id]['name'])
+
+                tmpdir = tempfile.mkdtemp(suffix='.{}'.format(task_id), dir=os.getcwd())
+                try:
+                    write_config(config, 'config.json', dataset_id, args['dataset'], task_id, subprocess_dir=tmpdir)
+                    pilot(task_id)
+                    run(token=args['token'], config='config.json',
+                        jobs_submitted=dataset['jobs_submitted'],
+                        job=jobs[job_id]['job_index'],
+                        task=tasks[task_id]['name'],
+                        clean=args['clean'])
+                finally:
+                    shutil.rmtree(tmpdir)
+            
+
+    try:
+        os.remove('config.json')
+    except Exception:
+        pass
 
 if __name__ == '__main__':
     main()

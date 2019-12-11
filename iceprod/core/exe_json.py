@@ -35,7 +35,7 @@ class ServerComms:
     def __init__(self, url, passkey, config, **kwargs):
         self.rest = RestClient(address=url,token=passkey,**kwargs)
 
-    async def download_task(self, gridspec, resources={}, site=''):
+    async def download_task(self, gridspec, resources={}, site='', query_params=None):
         """
         Download new task(s) from the server.
 
@@ -61,13 +61,16 @@ class ServerComms:
             resources['os'] = os_type
         if site:
             resources['site'] = site
-        task = await self.rest.request('POST', '/task_actions/process',
-                {'gridspec': gridspec,
-                 'hostname': hostname, 
-                 'domain': domain,
-                 'ifaces': ifaces,
-                 'requirements': resources,
-                })
+        args = {
+            'gridspec': gridspec,
+            'hostname': hostname, 
+            'domain': domain,
+            'ifaces': ifaces,
+            'requirements': resources,
+        }
+        if query_params:
+            args['query_params'] = query_params
+        task = await self.rest.request('POST', '/task_actions/process', args)
         if not task:
             return None
 
