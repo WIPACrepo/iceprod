@@ -71,6 +71,7 @@ def main():
     parser.add_argument('-j','--job', type=int, help='job number (optional)')
     parser.add_argument('--no-clean', dest='clean', action='store_false', help='do not clean up after job')
     parser.add_argument('--log-level', default='DEBUG', choices=['ERROR','WARNING','INFO','DEBUG'], help='log level')
+    parser.add_argument('--ignore-error', action='store_true', help='keep going if a job fails')
     
     args = parser.parse_args()
     args = vars(args)
@@ -115,9 +116,13 @@ def main():
                         job=jobs[job_id]['job_index'],
                         task=tasks[task_id]['name'],
                         clean=args['clean'])
+                except SubprocessError:
+                    if args['ignore_error']:
+                        logging.warn("error in subprocess", exc_info=True)
+                        continue
+                    raise
                 finally:
                     shutil.rmtree(tmpdir)
-            
 
     try:
         os.remove('config.json')
