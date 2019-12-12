@@ -49,11 +49,10 @@ class SiteGlobusProxy(object):
             raise Exception('passphrase missing')
         if 'duration' not in self.cfg:
             raise Exception('duration missing')
-        FNULL = open(os.devnull, 'w')
         logger.info('duration: %r',self.cfg['duration'])
         if subprocess.call(['grid-proxy-info','-e',
                             '-valid','%d:0'%self.cfg['duration'],
-                           ], stdout=FNULL, stderr=FNULL):
+                           ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL):
             # proxy needs updating
             if 'voms_vo' in self.cfg and self.cfg['voms_vo']:
                 cmd = ['voms-proxy-init']
@@ -68,15 +67,11 @@ class SiteGlobusProxy(object):
             cmd.extend(['-pwstdin','-valid','%d:0'%(self.cfg['duration']+1)])
             if 'out' in self.cfg:
                 cmd.extend(['-out', self.cfg['out']])
-            p = subprocess.Popen(cmd, stdin=subprocess.PIPE,
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE)
-            inputbytes = self.cfg['passphrase']+'\n'
-            stdout,stderr = p.communicate(input=inputbytes.encode('utf-8'))
-            logger.info('proxy cmd: %r', cmd)
-            logger.info('stdout: %s', stdout)
-            logger.info('stderr: %s', stderr)
-            p.wait()
+            inputbytes = (self.cfg['passphrase']+'\n').encode('utf-8')
+            p = subprocess.run(cmd, input=inputbytes, capture_output=True, timeout=60, check=True)
+            logger.info('proxy cmd: %r', p.args)
+            logger.info('stdout: %s', p.stdout)
+            logger.info('stderr: %s', p.stderr)
             if 'voms_vo' in self.cfg and self.cfg['voms_vo']:
                 for line in stdout.decode('utf-8').split('\n'):
                     if line.startswith('Creating proxy') and line.endswith('Done'):
