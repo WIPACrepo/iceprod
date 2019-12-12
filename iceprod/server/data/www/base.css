@@ -415,6 +415,10 @@ div.logs div.log_body {
     padding: 5px 10px;
 }
 
+div.logs {
+    margin-top: 1em;
+}
+
 div.action {
     padding: 1em;
 }
