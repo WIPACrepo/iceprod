@@ -109,6 +109,9 @@ def main():
             if not tasks:
                 logging.warning(f'no tasks available for {dataset["dataset"]} {jobs[job_id]["job_index"]}')
             for task_id in sorted(tasks, key=lambda t:tasks[t]['task_index']):
+                ret = rpc.request_seq('GET', f'/datasets/{dataset_id}/tasks/{task_id}')
+                if ret['status'] not in status.split('|'):
+                    continue
                 print(f'processing {dataset["dataset"]} {jobs[job_id]["job_index"]} {tasks[task_id]["name"]}')
 
                 tmpdir = tempfile.mkdtemp(suffix='.{}'.format(task_id), dir=os.getcwd())
