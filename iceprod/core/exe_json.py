@@ -334,9 +334,9 @@ class ServerComms:
         else:
             data['data'] = 'task killed'
         await self.rest.request('POST', '/logs', data)
-        data.update({'name':'stdout', 'data': ''})
+        data['name'] = 'stdout'
         await self.rest.request('POST', '/logs', data)
-        data.update({'name':'stderr', 'data': ''})
+        data['name'] = 'stderr'
         await self.rest.request('POST', '/logs', data)
 
     async def _upload_logfile(self, name, filename, task_id=None, dataset_id=None):
@@ -482,9 +482,9 @@ class ServerComms:
         else:
             data['data'] = 'task killed'
         self.rest.request_seq('POST', '/logs', data)
-        data.update({'name':'stdout', 'data': ''})
+        data['name'] = 'stdout'
         self.rest.request_seq('POST', '/logs', data)
-        data.update({'name':'stderr', 'data': ''})
+        data['name'] = 'stderr'
         self.rest.request_seq('POST', '/logs', data)
 
     def update_pilot_sync(self, pilot_id, **kwargs):
