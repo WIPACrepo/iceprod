@@ -635,10 +635,14 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">log</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
                 <span class="k">if</span> <span class="s1">&#39;data&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">log</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">s3</span><span class="p">:</span>
-                        <span class="n">log</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">s3</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">log</span><span class="p">[</span><span class="s1">&#39;log_id&#39;</span><span class="p">])</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;no data field and s3 disabled&#39;</span><span class="p">)</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">s3</span><span class="p">:</span>
+                            <span class="n">log</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">s3</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">log</span><span class="p">[</span><span class="s1">&#39;log_id&#39;</span><span class="p">])</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;no data field and s3 disabled&#39;</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">send_error</span><span class="p">(</span><span class="mi">500</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+                        <span class="k">return</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">({</span><span class="s1">&#39;logs&#39;</span><span class="p">:</span><span class="n">ret</span><span class="p">})</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span></div></div>
 </pre></div>
