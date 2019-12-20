@@ -325,8 +325,18 @@ div.task_stats div.stat_body {
     line-height: 1.1em;
     word-wrap: break-word;
 }
-div.logs p.log_name {
+
+section.logs {
+    margin-top: 2em;
+}
+div.logs {
+    margin-bottom: 2em;
+}
+div.logs span.log_name, div.logs span.log_link {
     font-weight: bold;
+}
+div.logs span.log_link, div.logs span.log_extra {
+    margin-left: 1em;
 }
 div.logs div.log_body {
     background: pink;
@@ -413,10 +423,6 @@ div.logs div.log_body {
 .task_table td, .task_table th
 {
     padding: 5px 10px;
-}
-
-div.logs {
-    margin-top: 1em;
 }
 
 div.action {

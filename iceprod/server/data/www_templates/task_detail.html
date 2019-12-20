@@ -44,16 +44,57 @@
 </div>
 {% end %}
 
-{% for log in logs %}
-  {% if 'data' in log and log['data'] %}
+<section class="logs">
+{% if 'stdlog' in logs %}
   <div class="logs">
-    <p class="log_name"><a href='/dataset/{{ url_escape(task['dataset_id']) }}/log/{{ url_escape(log['log_id']) }}'>{{ escape(log['name']) }}</a></p>
-    {% if log['name'] != 'stdlog' %}
-      <div class="log_body">{{ '<br />'.join(map(escape,log['data'].replace('\r','').split('\n')[-40:])) }}</div>
+    <span class="log_name"><a href='/dataset/{{ url_escape(task['dataset_id']) }}/log/{{ url_escape(logs['stdlog'][0]['log_id']) }}'>stdlog</a></span>
+    {% for i,log in enumerate(logs['stdlog'][1:10]) %}
+        <span class="log_link"><a href='/dataset/{{ url_escape(task['dataset_id']) }}/log/{{ url_escape(log['log_id']) }}'>{{ i+2 }}</a></span>
     {% end %}
+    {% if len(logs['stdlog']) > 10 %}
+        <span class="log_extra"> (+ {{ len(logs['stdlog'])-10 }} more)</span>
+    {% end %}
+  </div>
+{% end %}
+{% if 'stdout' in logs %}
+  <div class="logs">
+    <span class="log_name"><a href='/dataset/{{ url_escape(task['dataset_id']) }}/log/{{ url_escape(logs['stdout'][0]['log_id']) }}'>stdout</a></span>
+    {% for i,log in enumerate(logs['stdout'][1:10]) %}
+        <span class="log_link"><a href='/dataset/{{ url_escape(task['dataset_id']) }}/log/{{ url_escape(log['log_id']) }}'>{{ i+2 }}</a></span>
+    {% end %}
+    {% if len(logs['stdout']) > 10 %}
+        <span class="log_extra"> (+ {{ len(logs['stdout'])-10 }} more)</span>
+    {% end %}
+    <div class="log_body">{{ '<br />'.join(map(escape,logs['stdout'][0]['data'].replace('\r','').split('\n')[-20:])) }}</div>
+  </div>
+{% end %}
+{% if 'stderr' in logs %}
+  <div class="logs">
+    <span class="log_name"><a href='/dataset/{{ url_escape(task['dataset_id']) }}/log/{{ url_escape(logs['stderr'][0]['log_id']) }}'>stderr</a></span>
+    {% for i,log in enumerate(logs['stderr'][1:10]) %}
+        <span class="log_link"><a href='/dataset/{{ url_escape(task['dataset_id']) }}/log/{{ url_escape(log['log_id']) }}'>{{ i+2 }}</a></span>
+    {% end %}
+    {% if len(logs['stderr']) > 10 %}
+        <span class="log_extra"> (+ {{ len(logs['stderr'])-10 }} more)</span>
+    {% end %}
+    <div class="log_body">{{ '<br />'.join(map(escape,logs['stderr'][0]['data'].replace('\r','').split('\n')[-20:])) }}</div>
+  </div>
+{% end %}
+{% for name in logs %}
+  {% if name not in ('stdlog', 'stdout', 'stderr') %}
+  <div class="logs">
+    <span class="log_name"><a href='/dataset/{{ url_escape(task['dataset_id']) }}/log/{{ url_escape(logs[name][0]['log_id']) }}'>{{ escape(name) }}</a></span>
+    {% for i,log in enumerate(logs[name][1:10]) %}
+        <span class="log_link"><a href='/dataset/{{ url_escape(task['dataset_id']) }}/log/{{ url_escape(log['log_id']) }}'>{{ i+2 }}</a></span>
+    {% end %}
+    {% if len(logs[name]) > 10 %}
+        <span class="log_extra"> (+ {{ len(logs[name])-10 }} more)</span>
+    {% end %}
+    <div class="log_body">{{ '<br />'.join(map(escape,logs[name][0]['data'].replace('\r','').split('\n')[-10:])) }}</div>
   </div>
   {% end %}
 {% end %}
+</section>
 
 {% end %}
 

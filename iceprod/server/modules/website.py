@@ -26,6 +26,7 @@ try:
 except ImportError:
     from urllib.parse import urlparse
 from datetime import timedelta
+from collections import defaultdict
 
 from iceprod.core.jsonUtil import json_encode,json_decode
 
@@ -111,7 +112,7 @@ class website(module.module):
                 'modules':self.modules,
                 'statsd':self.statsd,
                 'rest_api':rest_address,
-                'debug':False,
+                'debug':True,
             }
             login_handler_args = handler_args.copy()
             login_handler_args['module_rest_client'] = self.rest_client
@@ -474,26 +475,18 @@ class Task(PublicHandler):
         try:
             ret = await self.rest_client.request('GET','/datasets/{}/tasks/{}/logs?group=true'.format(dataset_id, task_id))
             logs = ret['logs']
-            try:
-                names = {}
-                for log in logs:#sorted(logs,key=lambda l:l['timestamp'] if 'timestamp' in l else '',reverse=True):
-                    if log['name'] in names:
-                        continue
-                    names[log['name']] = log
-                def namesort(n):
-                    if 'log' in n:
-                        return (-1, n)
-                    elif 'err' in n:
-                        return (0, n)
-                    elif 'out' in n:
-                        return (1, n)
-                    return (2, n)
-                logs = [names[n] for n in sorted(names, key=namesort)]
-            except Exception:
-                logger.info('error sorting logs', exc_info=True)
+            #logger.info("logs: %r", logs)
+            ret2 = await self.rest_client.request('GET','/datasets/{}/tasks/{}/logs?keys=log_id|name|timestamp'.format(dataset_id, task_id))
+            logs2 = ret2['logs']
+            logger.info("logs2: %r", logs2)
+            log_by_name = defaultdict(list)
+            for log in sorted(logs2,key=lambda l:l['timestamp'] if 'timestamp' in l else '',reverse=True):
+                log_by_name[log['name']].append(log)
+            for log in logs:
+                log_by_name[log['name']][0] = log
         except Exception:
-            logs = []
-        self.render('task_detail.html', dataset=dataset, task=task_details, task_stats=task_stats, logs=logs, passkey=passkey)
+            log_by_name = {}
+        self.render('task_detail.html', dataset=dataset, task=task_details, task_stats=task_stats, logs=log_by_name, passkey=passkey)
 
 class JobBrowse(PublicHandler):
     """Handle /job urls"""
