@@ -13,6 +13,7 @@ import motor
 try:
     import boto3
     import botocore.client
+    import botocore.exceptions
 except ImportError:
     boto3 = None
 
@@ -45,10 +46,16 @@ class S3:
         ret = ''
         with io.BytesIO() as f:
             loop = asyncio.get_event_loop()
-            await loop.run_in_executor(self.executor,
-                    partial(self.s3.download_fileobj, Bucket=self.bucket,
-                            Key=key, Fileobj=f))
-            ret = f.getvalue()
+            try:
+                await loop.run_in_executor(self.executor,
+                        partial(self.s3.download_fileobj, Bucket=self.bucket,
+                                Key=key, Fileobj=f))
+                ret = f.getvalue()
+            except botocore.exceptions.ClientError as e:
+                error_code = e.response['Error']['Code']
+                if error_code == '404':
+                    return '' # don't error on a 404
+                raise
         return ret.decode('utf-8')
 
     async def put(self, key, data):
@@ -400,7 +407,7 @@ class DatasetTaskLogsHandler(BaseHandler):
             self.send_error(404, reason="Log not found")
         else:
             for log in ret:
-                if 'data' not in log:
+                if 'data' not in log and ((not keys) or 'data' in keys.split('|')):
                     try:
                         if self.s3:
                             log['data'] = await self.s3.get(log['log_id'])
