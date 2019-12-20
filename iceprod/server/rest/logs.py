@@ -401,9 +401,13 @@ class DatasetTaskLogsHandler(BaseHandler):
         else:
             for log in ret:
                 if 'data' not in log:
-                    if self.s3:
-                        log['data'] = await self.s3.get(log['log_id'])
-                    else:
-                        raise Exception('no data field and s3 disabled')
+                    try:
+                        if self.s3:
+                            log['data'] = await self.s3.get(log['log_id'])
+                        else:
+                            raise Exception('no data field and s3 disabled')
+                    except Exception as e:
+                        self.send_error(500, reason=str(e))
+                        return
             self.write({'logs':ret})
             self.finish()
