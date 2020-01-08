@@ -297,6 +297,7 @@ async def runner(config, rpc=None, debug=False, offline=False,
         try:
             # keep track of the start time
             start_time = time.time()
+            stats = {}
 
             async with iceprod.core.exe.SetupEnv(cfg, config['steering'], {'options':env_opts}, logger=logger) as env:
                 logger.warning("config options: %r",config['options'])
@@ -332,15 +333,7 @@ async def runner(config, rpc=None, debug=False, offline=False,
                         logger.critical('task specified in options is %r, but no task found',
                                         name)
                         raise Exception('cannot find specified task')
-                    # finish task
-                    if not offline:
-                        logger.warning('task finishing')
-                        await rpc.finish_task(config['options']['task_id'],
-                                dataset_id=config['options']['dataset_id'],
-                                stats=env['stats'], start_time=start_time,
-                                resources=resources.get_final(config['options']['task_id']) if resources else None,
-                                site=resources.site if resources else None,
-                        )
+                    stats = env['stats']
                 elif offline:
                     # run all tasks in order
                     for task in config['tasks']:
@@ -348,6 +341,16 @@ async def runner(config, rpc=None, debug=False, offline=False,
                             yield proc
                 else:
                     raise Exception('task to run not specified')
+
+            if (not offline) and 'task' in config['options']:
+                # finish task
+                logger.warning('task finishing')
+                await rpc.finish_task(config['options']['task_id'],
+                        dataset_id=config['options']['dataset_id'],
+                        stats=stats, start_time=start_time,
+                        resources=resources.get_final(config['options']['task_id']) if resources else None,
+                        site=resources.site if resources else None,
+                )
 
         except Exception as e:
             logger.error('task failed, exiting without running completion steps.',
@@ -357,7 +360,7 @@ async def runner(config, rpc=None, debug=False, offline=False,
                 try:
                     await rpc.task_error(config['options']['task_id'],
                             dataset_id=config['options']['dataset_id'],
-                            stats=env['stats'], start_time=start_time,
+                            stats=stats, start_time=start_time,
                             reason=str(e),
                             resources=resources.get_final(config['options']['task_id']) if resources else None,
                             site=resources.site if resources else None,
