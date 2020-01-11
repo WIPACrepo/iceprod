@@ -58,7 +58,10 @@ async def run(rest_client, statsd, debug=False):
                 for name in tasks:
                     for status in tasks[name]:
                         if dataset_status in ('suspended','errors') and status in ('waiting','queued','processing'):
-                            tasks[name]['suspended'] += tasks[name][status]
+                            if 'suspended' not in tasks[name]:
+                                tasks[name]['suspended'] = tasks[name][status]
+                            else:
+                                tasks[name]['suspended'] += tasks[name][status]
                             tasks[name][status] = 0
                     for status in ('idle','waiting','queued','processing','reset','failed','suspended','complete'):
                         if status not in tasks[name]:
