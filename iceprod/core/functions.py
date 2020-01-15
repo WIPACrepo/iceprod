@@ -385,6 +385,10 @@ async def upload(local, url, options={}):
     # actually upload the file
     if url.startswith('http'):
         logging.info('http from %s to %s', local, url)
+        # http_proxy fix
+        for k in os.environ:
+            if k.lower() == 'http_proxy' and not os.environ[k].startswith('http'):
+                os.environ[k] = 'http://'+os.environ[k]
         def _d():
             with _http_helper(options) as s:
                 with open(local, 'rb') as f:
