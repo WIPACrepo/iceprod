@@ -325,6 +325,10 @@ async def download(url, local, options={}):
     try:
         if url.startswith('http'):
             logging.info('http from %s to %s', url, local)
+            # http_proxy fix
+            for k in os.environ:
+                if k.lower() == 'http_proxy' and not os.environ[k].startswith('http'):
+                    os.environ[k] = 'http://'+os.environ[k]
             def _d():
                 with _http_helper(options) as s:
                     r = s.get(url, stream=True, timeout=300)
