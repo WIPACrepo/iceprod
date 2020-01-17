@@ -481,6 +481,20 @@ class BaseGrid(object):
                                  exc_info=True)
                     raise
             filelist.append(dest)
+        if 'extra_file_tranfers' in self.cfg['queue'] and self.cfg['queue']['extra_file_tranfers']:
+            for f in self.cfg['queue']['extra_file_tranfers']:
+                logger.info('submit_dir %r  extra_files %r', task['submit_dir'], f)
+                dest = os.path.join(task['submit_dir'],os.path.basename(f))
+                try:
+                    os.symlink(f,dest)
+                except Exception as e:
+                    try:
+                        functions.copy(f,dest)
+                    except Exception:
+                        logger.error('Error creating symlink or copy of extra file %s',
+                                     f, exc_info=True)
+                        raise
+                filelist.append(dest)
 
         # write to file
         serialization.serialize_json.dump(config,filename)

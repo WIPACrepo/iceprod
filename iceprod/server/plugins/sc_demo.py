@@ -532,8 +532,8 @@ class sc_demo(grid.BaseGrid):
                     await self.rest_client.request('DELETE', f'/pilots/{task["pilot"]["pilot_id"]}')
 
         # DEMO: put jobs on hold, to releaes when it's time
-        cmd = ['condor_hold']+grid_queue_ids
-        out = await check_output_clean_env(*cmd)
+        #cmd = ['condor_hold']+grid_queue_ids
+        #out = await check_output_clean_env(*cmd)
 
     async def download_input(self, task):
         """
@@ -656,8 +656,8 @@ class sc_demo(grid.BaseGrid):
             if 'gpu' in task['requirements'] and task['requirements']['gpu']:
                 p('request_gpus = {}'.format(task['requirements']['gpu']))
                 # DEMO: gpu jobs need region set by condor_qedit
-                p('+CHUNK_Locations="NONE"')
-                requirements.append('stringListIMember(CLOUD_DATARegion, CHUNK_Locations)')
+                #p('+CHUNK_Locations="NONE"')
+                #requirements.append('stringListIMember(CLOUD_DATARegion, CHUNK_Locations)')
             else:
                 p('+CPU_START=False')
                 requirements.append('(!isUndefined(Target.GPUs) ? Target.GPUs == 0 : True) && CPU_START')
