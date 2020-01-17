@@ -486,7 +486,7 @@ class BaseGrid(object):
                 logger.info('submit_dir %r  extra_files %r', task['submit_dir'], f)
                 dest = os.path.join(task['submit_dir'],os.path.basename(f))
                 try:
-                    os.symlink(f,dest)
+                    os.symlink(os.path.abspath(f),dest)
                 except Exception as e:
                     try:
                         functions.copy(f,dest)
