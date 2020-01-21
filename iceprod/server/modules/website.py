@@ -262,7 +262,7 @@ class PublicHandler(tornado.web.RequestHandler):
             self.current_user = data['username']
             self.current_user_data = data
             self.current_user_secure = (user_secure is not None)
-            self.rest_client = RestClient(self.rest_api, data['token'], timeout=10)
+            self.rest_client = RestClient(self.rest_api, data['token'], timeout=50)
         except Exception:
             logger.info('error getting current user', exc_info=True)
             self.clear_cookie("user")
