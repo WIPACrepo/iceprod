@@ -287,12 +287,9 @@ class PublicHandler(tornado.web.RequestHandler):
 class Default(PublicHandler):
     """Handle / urls"""
     @catch_error
-    @tornado.web.authenticated
     async def get(self):
         self.statsd.incr('default')
-        ret = await self.rest_client.request('GET','/dataset_summaries/status')
-        datasets = {k:len(ret[k]) for k in ret}
-        self.render('main.html',datasets=datasets)
+        self.render('main.html')
 
 class Submit(PublicHandler):
     """Handle /submit urls"""
