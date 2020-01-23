@@ -68,7 +68,7 @@ class SiteGlobusProxy(object):
             if 'out' in self.cfg:
                 cmd.extend(['-out', self.cfg['out']])
             inputbytes = (self.cfg['passphrase']+'\n').encode('utf-8')
-            p = subprocess.run(cmd, input=inputbytes, capture_output=True, timeout=60, check=True)
+            p = subprocess.run(cmd, input=inputbytes, capture_output=True, timeout=60, check=False)
             logger.info('proxy cmd: %r', p.args)
             logger.info('stdout: %s', p.stdout)
             logger.info('stderr: %s', p.stderr)
