@@ -18,6 +18,8 @@ logger = logging.getLogger()
 
 async def run(rest_client, only_dataset=None, num=10, debug=True):
     datasets = await rest_client.request('GET', '/dataset_summaries/status')
+    if 'truncated' in datasets and only_dataset:
+        datasets['processing'].extend(datasets['truncated'])
     if 'processing' in datasets:
         for dataset_id in datasets['processing']:
             if only_dataset and dataset_id != only_dataset:
