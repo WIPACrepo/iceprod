@@ -76,6 +76,7 @@ class Pilot:
         self.backoff_delay = backoff_delay
         self.resource_interval = 1.0 # seconds between resouce measurements
         self.query_params = {}
+        self.last_download = None
 
         self.running = True
         self.tasks = {}
@@ -260,13 +261,18 @@ class Pilot:
         tasks_running = 0
         async def backoff():
             """Backoff for rate limiting"""
-            delay = self.backoff_delay*(1+random.random())
+            delay = 60+self.backoff_delay*(1+random.random())
             logger.info('backoff %d', delay)
             await asyncio.sleep(delay)
             self.backoff_delay *= 2
         while self.running or self.tasks:
             while self.running:
                 # retrieve new task(s)
+                if self.last_download and time.time()-self.last_download < 60:
+                    logger.warning('last download attempt too recent, backing off')
+                    await asyncio.sleep(time.time()-self.last_download+1)
+                    break
+                self.last_download = time.time()
                 #if self.resources.total['gpu'] and not self.resources.available['gpu']:
                 #    logger.info('gpu pilot with no gpus left - not queueing')
                 #    break
