@@ -341,7 +341,7 @@
         <span class="n">host</span> <span class="o">=</span> <span class="n">get_host</span><span class="p">()</span>
         <span class="n">args</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s1">&#39;queue_host&#39;</span><span class="p">:</span> <span class="n">host</span><span class="p">,</span>
-            <span class="s1">&#39;keys&#39;</span><span class="p">:</span> <span class="s1">&#39;pilot_id|queue_host|grid_queue_id|submit_date&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;keys&#39;</span><span class="p">:</span> <span class="s1">&#39;pilot_id|queue_host|grid_queue_id|submit_date|tasks&#39;</span><span class="p">,</span>
         <span class="p">}</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">rest_client</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/pilots&#39;</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
 
@@ -533,11 +533,10 @@
 
         <span class="c1"># get already queued pilots</span>
         <span class="n">pilot_groups</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">()</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">rest_client</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/pilots&#39;</span><span class="p">)</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">rest_client</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/pilots&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;host&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;keys&#39;</span><span class="p">:</span><span class="s1">&#39;resources&#39;</span><span class="p">})</span>
         <span class="k">for</span> <span class="n">pilot</span> <span class="ow">in</span> <span class="n">ret</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">pilot</span><span class="p">[</span><span class="s1">&#39;host&#39;</span><span class="p">]:</span>
-                <span class="n">k</span> <span class="o">=</span> <span class="n">group_hasher</span><span class="p">(</span><span class="n">pilot</span><span class="p">[</span><span class="s1">&#39;resources&#39;</span><span class="p">])</span>
-                <span class="n">pilot_groups</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">k</span> <span class="o">=</span> <span class="n">group_hasher</span><span class="p">(</span><span class="n">pilot</span><span class="p">[</span><span class="s1">&#39;resources&#39;</span><span class="p">])</span>
+            <span class="n">pilot_groups</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
 
         <span class="c1"># remove already queued groups from consideration</span>
         <span class="n">groups_considered</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">()</span>
