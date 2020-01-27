@@ -107,7 +107,7 @@ class BaseGrid(object):
         host = get_host()
         args = {
             'queue_host': host,
-            'keys': 'pilot_id|queue_host|grid_queue_id|submit_date',
+            'keys': 'pilot_id|queue_host|grid_queue_id|submit_date|tasks',
         }
         ret = await self.rest_client.request('GET', '/pilots', args)
 
@@ -299,11 +299,10 @@ class BaseGrid(object):
 
         # get already queued pilots
         pilot_groups = Counter()
-        ret = await self.rest_client.request('GET', '/pilots')
+        ret = await self.rest_client.request('GET', '/pilots', {'host': '', 'keys':'resources'})
         for pilot in ret.values():
-            if not pilot['host']:
-                k = group_hasher(pilot['resources'])
-                pilot_groups[k] += 1
+            k = group_hasher(pilot['resources'])
+            pilot_groups[k] += 1
 
         # remove already queued groups from consideration
         groups_considered = Counter()

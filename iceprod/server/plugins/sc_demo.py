@@ -250,7 +250,7 @@ class sc_demo(grid.BaseGrid):
         # get pilots from iceprod
         args = {
             'queue_host': host,
-            'keys': 'pilot_id|queue_host|grid_queue_id|submit_date',
+            'keys': 'pilot_id|queue_host|grid_queue_id|submit_date|tasks',
         }
         ret = await self.rest_client.request('GET', '/pilots', args)
 
