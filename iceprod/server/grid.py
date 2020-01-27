@@ -105,7 +105,11 @@ class BaseGrid(object):
 
         # get pilots from iceprod
         host = get_host()
-        ret = await self.rest_client.request('GET', '/pilots')
+        args = {
+            'queue_host': host,
+            'keys': 'pilot_id|queue_host|grid_queue_id|submit_date',
+        }
+        ret = await self.rest_client.request('GET', '/pilots', args)
 
         # filter by queue host
         # index by grid_queue_id

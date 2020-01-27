@@ -248,7 +248,11 @@ class sc_demo(grid.BaseGrid):
         now = datetime.utcnow()
         
         # get pilots from iceprod
-        ret = await self.rest_client.request('GET', '/pilots')
+        args = {
+            'queue_host': host,
+            'keys': 'pilot_id|queue_host|grid_queue_id|submit_date',
+        }
+        ret = await self.rest_client.request('GET', '/pilots', args)
 
         # filter by queue host
         # index by grid_queue_id

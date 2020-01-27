@@ -55,14 +55,32 @@ class MultiPilotsHandler(BaseHandler):
         """
         Get pilot entries.
 
+        Params (optional):
+            queue_host: queue_host to filter by
+            queue_version: queue_version to filter by
+            host: host to filter by
+            version: version to filter by
+            keys: | separated list of keys to return for each pilot
+
         Returns:
             dict: {'uuid': {pilot_data}}
         """
+        filters = {}
+        for k in ('queue_host','queue_version','host','version'):
+            tmp = self.get_argument(k, None)
+            if tmp:
+                filters[k] = tmp
+
+        projection = {'_id': False}
+        keys = self.get_argument('keys','')
+        if keys:
+            projection.update({x:True for x in keys.split('|') if x})
+            projection['pilot_id'] = True
+
         ret = {}
-        async for row in self.db.pilots.find(projection={'_id':False}):
+        async for row in self.db.pilots.find(filters,projection=projection):
             ret[row['pilot_id']] = row
         self.write(ret)
-        self.finish()
 
     @authorization(roles=['admin','client'])
     async def post(self):
