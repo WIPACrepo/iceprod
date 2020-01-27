@@ -289,14 +289,32 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get pilot entries.</span>
 
+<span class="sd">        Params (optional):</span>
+<span class="sd">            queue_host: queue_host to filter by</span>
+<span class="sd">            queue_version: queue_version to filter by</span>
+<span class="sd">            host: host to filter by</span>
+<span class="sd">            version: version to filter by</span>
+<span class="sd">            keys: | separated list of keys to return for each pilot</span>
+
 <span class="sd">        Returns:</span>
 <span class="sd">            dict: {&#39;uuid&#39;: {pilot_data}}</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">filters</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;queue_host&#39;</span><span class="p">,</span><span class="s1">&#39;queue_version&#39;</span><span class="p">,</span><span class="s1">&#39;host&#39;</span><span class="p">,</span><span class="s1">&#39;version&#39;</span><span class="p">):</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_argument</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">tmp</span><span class="p">:</span>
+                <span class="n">filters</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span>
+
+        <span class="n">projection</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_argument</span><span class="p">(</span><span class="s1">&#39;keys&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">keys</span><span class="p">:</span>
+            <span class="n">projection</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">x</span><span class="p">:</span><span class="kc">True</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">keys</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;|&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span><span class="p">})</span>
+            <span class="n">projection</span><span class="p">[</span><span class="s1">&#39;pilot_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
         <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">async</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">pilots</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">projection</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span><span class="kc">False</span><span class="p">}):</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">pilots</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">filters</span><span class="p">,</span><span class="n">projection</span><span class="o">=</span><span class="n">projection</span><span class="p">):</span>
             <span class="n">ret</span><span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;pilot_id&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">row</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="MultiPilotsHandler.post"><a class="viewcode-back" href="../../../../server/rest_api/pilots.html#iceprod.server.rest.pilots.MultiPilotsHandler.post">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">,</span><span class="s1">&#39;client&#39;</span><span class="p">])</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>

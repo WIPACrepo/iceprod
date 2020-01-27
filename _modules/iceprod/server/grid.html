@@ -339,7 +339,11 @@
 
         <span class="c1"># get pilots from iceprod</span>
         <span class="n">host</span> <span class="o">=</span> <span class="n">get_host</span><span class="p">()</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">rest_client</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/pilots&#39;</span><span class="p">)</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;queue_host&#39;</span><span class="p">:</span> <span class="n">host</span><span class="p">,</span>
+            <span class="s1">&#39;keys&#39;</span><span class="p">:</span> <span class="s1">&#39;pilot_id|queue_host|grid_queue_id|submit_date&#39;</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">rest_client</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/pilots&#39;</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
 
         <span class="c1"># filter by queue host</span>
         <span class="c1"># index by grid_queue_id</span>
