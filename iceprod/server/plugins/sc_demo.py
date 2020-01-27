@@ -269,9 +269,9 @@ class sc_demo(grid.BaseGrid):
         grid_jobs = await self.get_grid_status()
         grid_history = await self.get_grid_completions()
 
-        logger.info("iceprod pilots: %r", list(pilots))
-        logger.info("grid jobs: %r", list(grid_jobs))
-        logger.info("grid history: %r", list(grid_history))
+        logger.debug("iceprod pilots: %r", list(pilots))
+        logger.debug("grid jobs: %r", list(grid_jobs))
+        logger.debug("grid history: %r", list(grid_history))
 
         if grid_history:
             pilot_futures = []

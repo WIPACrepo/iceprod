@@ -123,8 +123,8 @@ class BaseGrid(object):
         # get grid status
         grid_jobs = await asyncio.ensure_future(self.get_grid_status())
 
-        logger.info("iceprod pilots: %r", list(pilots))
-        logger.info("grid jobs: %r", list(grid_jobs))
+        logger.debug("iceprod pilots: %r", list(pilots))
+        logger.debug("grid jobs: %r", list(grid_jobs))
 
         reset_pilots = set(pilots).difference(grid_jobs)
         remove_grid_jobs = set(grid_jobs).difference(pilots)
