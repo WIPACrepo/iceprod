@@ -54,6 +54,7 @@ async def run(rest_client, debug=False):
             dataset_tasks[dataset_id] = await rest_client.request('GET', '/datasets/{}/task_summaries/status'.format(dataset_id))
 
         async def reset(dataset_id, task_id):
+            args = {'status':'reset'}
             await rest_client.request('PUT', f'/datasets/{dataset_id}/tasks/{task_id}/status', args)
             data = {
                 'name': 'stdlog',
@@ -67,17 +68,25 @@ async def run(rest_client, debug=False):
             data.update({'name':'stderr', 'data': ''})
             await rest_client.request('POST', '/logs', data)
 
+        def get_datetime(str_date):
+            if '.' in str_date:
+                return datetime.strptime(str_date, '%Y-%m-%dT%H:%M:%S.%f')
+            else:
+                return datetime.strptime(str_date, '%Y-%m-%dT%H:%M:%S')
+
         awaitables = set()
         for dataset_id in dataset_ids:
             tasks = dataset_tasks[dataset_id]
             if 'processing' in tasks:
                 reset_tasks = set(tasks['processing'])-task_ids_in_pilots
-                if reset_tasks:
-                    logger.info('dataset %s reset tasks: %s', dataset_id, reset_tasks)
-                    args = {'status':'reset'}
-                    for t in reset_tasks:
-                        awaitables.add(reset(dataset_id,t))
-        
+                for task_id in reset_tasks:
+                    args = {'keys': 'status|status_changed'}
+                    task = await rest_client.request('GET', f'/datasets/{dataset_id}/tasks/{task_id}', args)
+                    # check status, and that we haven't just changed status
+                    if task['status'] == 'processing' and (datetime.utc_now()-get_datetime(task['status_changed'])).total_seconds() > 600:
+                        logger.info('dataset %s reset tasks: %s', dataset_id, reset_tasks)
+                        awaitables.add(reset(dataset_id,task_id))
+
         for fut in asyncio.as_completed(awaitables):
             try:
                 await fut
