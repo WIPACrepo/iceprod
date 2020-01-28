@@ -84,7 +84,7 @@ async def run(rest_client, debug=False):
                     task = await rest_client.request('GET', f'/datasets/{dataset_id}/tasks/{task_id}', args)
                     # check status, and that we haven't just changed status
                     if task['status'] == 'processing' and (datetime.utc_now()-get_datetime(task['status_changed'])).total_seconds() > 600:
-                        logger.info('dataset %s reset tasks: %s', dataset_id, reset_tasks)
+                        logger.info('dataset %s reset task %s', dataset_id, task_id)
                         awaitables.add(reset(dataset_id,task_id))
 
         for fut in asyncio.as_completed(awaitables):
