@@ -246,7 +246,7 @@ class sc_demo(grid.BaseGrid):
         for t in time_dict:
             logger.debug("time limit: %s - %s",t,time_dict[t])
         now = datetime.utcnow()
-        
+
         # get pilots from iceprod
         args = {
             'queue_host': host,
@@ -725,13 +725,11 @@ class sc_demo(grid.BaseGrid):
                 continue
             if status in ('0', '1', '5'): # DEMO: treat held jobs as queued
                 status = 'queued'
-            elif status == '2':
+            elif status in ('2', '3', '6', '7'):
                 status = 'processing'
             elif status == '4':
                 status = 'completed'
-            elif status == '3':
-                continue # skip already removed jobs
-            elif status in ('5', '6'):
+            elif status in ('5',):
                 status = 'error'
             else:
                 status = 'unknown'
