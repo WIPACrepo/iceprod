@@ -302,6 +302,7 @@ class sc_demo(grid.BaseGrid):
                     except Exception:
                         logger.error('error handling task', exc_info=True)
 
+                    logger.info('deleting completed pilot %s, with gid %s', pilot_id, gid)
                     pilots_to_delete.add(pilot_id)
 
             for fut in asyncio.as_completed(pilot_futures):
