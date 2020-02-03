@@ -273,6 +273,8 @@ class sc_demo(grid.BaseGrid):
         logger.debug("grid jobs: %r", list(grid_jobs))
         logger.debug("grid history: %r", list(grid_history))
 
+        remove_grid_jobs = set(grid_jobs).difference(pilots)
+
         if grid_history:
             pilot_futures = []
             pilots_to_delete = set()
@@ -339,7 +341,6 @@ class sc_demo(grid.BaseGrid):
 
         ### Now do the regular check and clean
         reset_pilots = set(pilots).difference(grid_jobs)
-        remove_grid_jobs = set(grid_jobs).difference(pilots)
         prechecked_dirs = set()
 
         # check the queue
