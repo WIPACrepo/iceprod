@@ -105,6 +105,8 @@ class sc_demo(grid.BaseGrid):
         logger.info('resources: %r', self.resources)
         logger.info('queue params: %r', self.queue_params)
 
+        self.grid_remove_once = set()
+
     async def upload_logfiles(self, task_id, dataset_id, submit_dir='', reason=''):
         """upload logfiles"""
         data = {'name': 'stdlog', 'task_id': task_id, 'dataset_id': dataset_id}
@@ -340,8 +342,17 @@ class sc_demo(grid.BaseGrid):
 
         ### Now do the regular check and clean
         reset_pilots = set(pilots).difference(grid_jobs)
-        remove_grid_jobs = set(grid_jobs).difference(pilots)
         prechecked_dirs = set()
+
+        # give two attempts to find a grid job before removing it
+        remove_grid_jobs = set()
+        remove_once = set()
+        for gid in set(grid_jobs).difference(pilots):
+            if gid in self.grid_remove_once:
+                remove_grid_jobs.add(gid)
+            else:
+                remove_once.add(gid)
+        self.grid_remove_once = remove_once
 
         # check the queue
         grid_idle = 0
