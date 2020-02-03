@@ -47,12 +47,13 @@ async def check_call_clean_env(*args, **kwargs):
 async def check_output_clean_env(*args, **kwargs):
     logger.info('subprocess_check_output: %r', args)
     kwargs['stdout'] = subprocess.PIPE
-    kwargs['stderr'] = subprocess.STDOUT
+    kwargs['stderr'] = subprocess.PIPE
     env = os.environ.copy()
     del env['LD_LIBRARY_PATH']
     kwargs['env'] = env
     p = await asyncio.create_subprocess_exec(*args, **kwargs)
-    out,_ = await p.communicate()
+    out,err = await p.communicate()
+    out = out+b'\n'+err
     if p.returncode:
         raise Exception(f'command failed, return code {p.returncode}')
     return out.decode('utf-8')
