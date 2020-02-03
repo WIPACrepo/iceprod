@@ -273,8 +273,6 @@ class sc_demo(grid.BaseGrid):
         logger.debug("grid jobs: %r", list(grid_jobs))
         logger.debug("grid history: %r", list(grid_history))
 
-        remove_grid_jobs = set(grid_jobs).difference(pilots)
-
         if grid_history:
             pilot_futures = []
             pilots_to_delete = set()
@@ -341,6 +339,7 @@ class sc_demo(grid.BaseGrid):
 
         ### Now do the regular check and clean
         reset_pilots = set(pilots).difference(grid_jobs)
+        remove_grid_jobs = set(grid_jobs).difference(pilots)
         prechecked_dirs = set()
 
         # check the queue
@@ -721,7 +720,10 @@ class sc_demo(grid.BaseGrid):
         for line in out.split('\n'):
             if not line.strip():
                 continue
-            gid,status,cmd = line.split()
+            parts = line.split()
+            gid = parts[0]
+            status = parts[1]
+            cmd = parts[-1]
             if 'loader.sh' not in cmd:
                 continue
             if status in ('0', '1', '5'): # DEMO: treat held jobs as queued
