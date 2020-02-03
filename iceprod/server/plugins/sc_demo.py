@@ -279,7 +279,7 @@ class sc_demo(grid.BaseGrid):
 
         if grid_history:
             pilot_futures = []
-            pilots_to_delete = set()
+            pilots_to_delete = {}
             for gid in pilots:
                 if gid in grid_history:
                     pilot_id = None
@@ -307,7 +307,7 @@ class sc_demo(grid.BaseGrid):
 
                     if pilot_id:
                         logger.info('deleting completed pilot %s, with gid %s', pilot_id, gid)
-                        pilots_to_delete.add(pilot_id)
+                        pilots_to_delete[pilot_id] = gid
 
             for fut in asyncio.as_completed(pilot_futures):
                 pilot,e = await fut # upload is done
@@ -341,8 +341,9 @@ class sc_demo(grid.BaseGrid):
                     await self.rest_client.request('DELETE', f'/pilots/{pilot_id}')
                 except Exception:
                     logger.info('delete pilot error', exc_info=True)
-                if pilot_id in pilots:
-                    del pilots[pilot_id]
+                gid = pilots_to_delete[pilot_id]
+                if gid in pilots:
+                    del pilots[gid]
 
 
         ### Now do the regular check and clean
