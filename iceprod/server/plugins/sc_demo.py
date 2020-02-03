@@ -281,8 +281,10 @@ class sc_demo(grid.BaseGrid):
             pilots_to_delete = set()
             for gid in pilots:
                 if gid in grid_history:
+                    pilot_id = None
                     try:
                         pilot = pilots[gid]
+                        pilot_id = pilot['pilot_id']
                         pilot['submit_dir'] = grid_history[gid]['submit_dir']
                         if pilot['tasks']:
                             task_id = pilot['tasks'][0]
@@ -302,8 +304,9 @@ class sc_demo(grid.BaseGrid):
                     except Exception:
                         logger.error('error handling task', exc_info=True)
 
-                    logger.info('deleting completed pilot %s, with gid %s', pilot_id, gid)
-                    pilots_to_delete.add(pilot_id)
+                    if pilot_id:
+                        logger.info('deleting completed pilot %s, with gid %s', pilot_id, gid)
+                        pilots_to_delete.add(pilot_id)
 
             for fut in asyncio.as_completed(pilot_futures):
                 pilot,e = await fut # upload is done
