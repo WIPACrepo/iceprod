@@ -15,6 +15,7 @@ import gzip
 
 import tornado.gen
 from tornado.concurrent import run_on_executor
+import requests.exceptions
 
 import iceprod
 from iceprod.core import dataclasses
@@ -416,6 +417,10 @@ class sc_demo(grid.BaseGrid):
                     await self.rest_client.request('DELETE', '/pilots/{}'.format(pilot_id))
                 except KeyError:
                     pass
+                except requests.exceptions.HTTPError as e:
+                    if e.response.status_code == 404:
+                        pass # a missing pilot is the point of deleting it
+                    logger.info('delete pilot error', exc_info=True)
                 except Exception:
                     logger.info('delete pilot error', exc_info=True)
 
