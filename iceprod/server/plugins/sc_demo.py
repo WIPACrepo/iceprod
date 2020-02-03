@@ -531,11 +531,10 @@ class sc_demo(grid.BaseGrid):
         for fut in asyncio.as_completed(awaitables):
             ret = await fut
             task = ret['args'][0]
-            if 'grid_queue_id' in task['pilot'] and task['pilot']['grid_queue_id']:
-                grid_queue_ids.append(task['pilot']['grid_queue_id'])
 
             if 'exception' in ret:
                 reason = f'failed queue task\n{ret["exception"]}'
+                logger.warning(reason)
                 await self.upload_logfiles(task['task_id'],
                                            dataset_id=task['dataset_id'],
                                            submit_dir=task['submit_dir'],
@@ -545,7 +544,14 @@ class sc_demo(grid.BaseGrid):
                                       submit_dir=task['submit_dir'],
                                       reason=reason)
                 if task['pilot']['pilot_id']:
+                    logger.info("deleting just submitted pilot: %s", task["pilot"]["pilot_id"])
                     await self.rest_client.request('DELETE', f'/pilots/{task["pilot"]["pilot_id"]}')
+                if 'grid_queue_id' in task['pilot'] and task['pilot']['grid_queue_id']:
+                    logger.info("deleting just submitted job: %s", task['pilot']['grid_queue_id'])
+                    await self.remove([task['pilot']['grid_queue_id']])
+            else:
+                if 'grid_queue_id' in task['pilot'] and task['pilot']['grid_queue_id']:
+                    grid_queue_ids.append(task['pilot']['grid_queue_id'])
 
         # DEMO: put jobs on hold, to releaes when it's time
         #cmd = ['condor_hold']+grid_queue_ids
