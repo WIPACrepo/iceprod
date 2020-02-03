@@ -419,7 +419,7 @@ class sc_demo(grid.BaseGrid):
                     pass
                 except requests.exceptions.HTTPError as e:
                     if e.response.status_code == 404:
-                        pass # a missing pilot is the point of deleting it
+                        continue # a missing pilot is the point of deleting it
                     logger.info('delete pilot error', exc_info=True)
                 except Exception:
                     logger.info('delete pilot error', exc_info=True)
