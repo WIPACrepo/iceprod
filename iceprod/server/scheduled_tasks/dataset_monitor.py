@@ -56,17 +56,20 @@ async def run(rest_client, statsd, debug=False):
                     statsd.gauge('datasets.{}.jobs.{}'.format(dataset_num,status), jobs[status])
                 tasks = await rest_client.request('GET', '/datasets/{}/task_counts/name_status'.format(dataset_id))
                 for name in tasks:
+                    tasks2 = {}
                     for status in tasks[name]:
                         if dataset_status in ('suspended','errors') and status in ('waiting','queued','processing'):
-                            if 'suspended' not in tasks[name]:
-                                tasks[name]['suspended'] = tasks[name][status]
+                            if 'suspended' not in tasks2:
+                                tasks2['suspended'] = tasks[name][status]
                             else:
-                                tasks[name]['suspended'] += tasks[name][status]
-                            tasks[name][status] = 0
+                                tasks2['suspended'] += tasks[name][status]
+                            tasks2[status] = 0
+                        else:
+                            tasks2[status] = tasks[status]
                     for status in ('idle','waiting','queued','processing','reset','failed','suspended','complete'):
-                        if status not in tasks[name]:
-                            tasks[name][status] = 0
-                        statsd.gauge('datasets.{}.tasks.{}.{}'.format(dataset_num,name,status), tasks[name][status])
+                        if status not in tasks2:
+                            tasks2[status] = 0
+                        statsd.gauge('datasets.{}.tasks.{}.{}'.format(dataset_num,name,status), tasks2[status])
     except Exception:
         logger.error('error monitoring datasets', exc_info=True)
         if debug:
