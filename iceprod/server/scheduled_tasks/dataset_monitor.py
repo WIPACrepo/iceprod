@@ -65,7 +65,7 @@ async def run(rest_client, statsd, debug=False):
                                 tasks2['suspended'] += tasks[name][status]
                             tasks2[status] = 0
                         else:
-                            tasks2[status] = tasks[status]
+                            tasks2[status] = tasks[name][status]
                     for status in ('idle','waiting','queued','processing','reset','failed','suspended','complete'):
                         if status not in tasks2:
                             tasks2[status] = 0
