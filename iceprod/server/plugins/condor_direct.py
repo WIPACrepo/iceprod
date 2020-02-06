@@ -469,6 +469,11 @@ class condor_direct(grid.BaseGrid):
                                                task['task_id'])
                 task_cfg['data'].extend(files)
 
+            if task_cfg and 'requirements' in task_cfg:
+                reqs = task_cfg['requirements']
+            else:
+                reqs = self.resources.copy()
+
             config['dataset'] = dataset['dataset']
             task.update({
                 'config': config,
@@ -477,7 +482,7 @@ class condor_direct(grid.BaseGrid):
                 'jobs_submitted': dataset['jobs_submitted'],
                 'tasks_submitted': dataset['tasks_submitted'],
                 'debug': dataset['debug'],
-                'requirements': self.resources.copy(),
+                'requirements': reqs,
             })
             await self.setup_submit_directory(task)
             task['pilot']['submit_dir'] = task['submit_dir']
