@@ -638,7 +638,7 @@ class condor_direct(grid.BaseGrid):
                     image = imageoptions[os_type]
                 else:
                     raise Exception(f'bad OS selection: {os_type}')
-                p(f'+SingularityImage = /cvmfs/singularity.opensciencegrid.org/opensciencegrid/{image}')
+                p(f'+SingularityImage="/cvmfs/singularity.opensciencegrid.org/opensciencegrid/{image}"')
 
             for b in batch_opts:
                 p(f'{b}={batch_opts[b]}')
