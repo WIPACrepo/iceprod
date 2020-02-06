@@ -549,7 +549,7 @@ class sc_demo(grid.BaseGrid):
                                            dataset_id=task['dataset_id'],
                                            submit_dir=task['submit_dir'],
                                            reason=reason)
-                await self.task_error(task['task']['task_id'],
+                await self.task_error(task['task_id'],
                                       dataset_id=task['dataset_id'],
                                       submit_dir=task['submit_dir'],
                                       reason=reason)
