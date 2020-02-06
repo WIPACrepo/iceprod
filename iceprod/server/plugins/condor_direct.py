@@ -625,15 +625,19 @@ class condor_direct(grid.BaseGrid):
                 # extra 10 min for pilot
                 p('+OriginalTime = {}'.format(int(task['requirements']['time'])*3600+600))
             if 'os' in task['requirements'] and task['requirements']['os']:
+                if isinstance(task['requirements']['os'], list):
+                    os_type = task['requirements']['os'][0]
+                else:
+                    os_type = task['requirements']['os']
                 imageoptions = {
                     'RHEL_6_x86_64': 'osgvo-el6:latest',
                     'RHEL_7_x86_64': 'osgvo-el7:latest',
                     'RHEL_8_x86_64': 'osgvo-el8:latest',
                 }
-                if task['requirements']['os'] in imageoptions:
-                    image = imageoptions[task['requirements']['os']]
+                if os_type in imageoptions:
+                    image = imageoptions[os_type]
                 else:
-                    raise Exception('bad OS selection')
+                    raise Exception(f'bad OS selection: {os_type}')
                 p(f'+SingularityImage = /cvmfs/singularity.opensciencegrid.org/opensciencegrid/{image}')
 
             for b in batch_opts:
