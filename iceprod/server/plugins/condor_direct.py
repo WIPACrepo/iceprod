@@ -497,7 +497,6 @@ class condor_direct(grid.BaseGrid):
                 'requirements': self.resources.copy(),
                 'query_params': self.queue_params,
             }
-            args['requirements']['os'] = 'RHEL_7_x86_64'
             try:
                 ret = await self.rest_client.request('POST', f'/task_actions/process', args)
             except Exception:
