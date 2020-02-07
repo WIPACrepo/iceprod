@@ -298,6 +298,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">statsd</span> <span class="o">=</span> <span class="n">statsd</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">rest_client</span> <span class="o">=</span> <span class="n">rest_client</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">site</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="s1">&#39;site&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_cfg</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">site</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_cfg</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">submit_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;queue&#39;</span><span class="p">][</span><span class="s1">&#39;submit_dir&#39;</span><span class="p">]))</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">submit_dir</span><span class="p">):</span>
@@ -441,7 +445,11 @@
             <span class="s1">&#39;keys&#39;</span><span class="p">:</span> <span class="s1">&#39;task_id|dataset_id|status_changed|requirements&#39;</span><span class="p">,</span>
         <span class="p">}</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">rest_client</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/tasks&#39;</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
-        <span class="n">tasks</span> <span class="o">=</span> <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;tasks&#39;</span><span class="p">]</span>
+        <span class="n">tasks</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;tasks&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="s1">&#39;site&#39;</span> <span class="ow">in</span> <span class="n">t</span><span class="p">[</span><span class="s1">&#39;requirements&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">t</span><span class="p">[</span><span class="s1">&#39;requirements&#39;</span><span class="p">][</span><span class="s1">&#39;site&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">site</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
         <span class="n">dataset_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;dataset_id&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">)</span>
 
         <span class="c1"># get dataset priorities</span>
