@@ -219,7 +219,7 @@ class condor_direct(grid.BaseGrid):
 
         comms = MyServerComms(self.rest_client)
         await comms.finish_task(task_id, dataset_id=dataset_id, 
-                                resources=resources)
+                                resources=resources, site=self.site)
 
     async def check_and_clean(self):
         """Check and clean the grid"""
