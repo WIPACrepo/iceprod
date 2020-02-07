@@ -295,6 +295,7 @@ class condor_direct(grid.BaseGrid):
                                 await self.upload_logfiles(task_id, pilot['dataset_id'],
                                                            submit_dir=pilot['submit_dir'])
                                 if grid_history[gid]['status'] == 'ok':
+                                    logger.info('finished task %s', task_id)
                                     await self.finish_task(task_id,
                                                            dataset_id=pilot['dataset_id'],
                                                            submit_dir=pilot['submit_dir'])
