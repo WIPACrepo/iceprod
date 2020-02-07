@@ -425,28 +425,6 @@ class condor_direct(grid.BaseGrid):
             """take a TaskInfo as input"""
             resources = self.resources.copy()
 
-            # create pilot
-            if 'time' in resources:
-                resources_available = {'time': resources['time']}
-            else:
-                resources_available = {'time': 1}
-            for k in ('cpu','gpu','memory','disk'):
-                if k in resources:
-                    resources_available[k] = resources[k]-task['requirements'][k]
-                else:
-                    resources_available[k] = 0
-            pilot = {'resources': resources,
-                     'resources_available': resources_available,
-                     'resources_claimed': task['requirements'],
-                     'tasks': [task['task_id']],
-                     'queue_host': host,
-                     'queue_version': iceprod.__version__,
-                     'version': iceprod.__version__,
-            }
-            ret = await self.rest_client.request('POST', '/pilots', pilot)
-            pilot['pilot_id'] = ret['result']
-            task['pilot'] = pilot
-
             # get full job, dataset, config info
             job = await self.rest_client.request('GET', f'/jobs/{task["job_id"]}')
             if task['dataset_id'] in dataset_cache:
@@ -456,7 +434,6 @@ class condor_direct(grid.BaseGrid):
                 config = await self.rest_client.request('GET', f'/config/{task["dataset_id"]}')
                 dataset_cache[task['dataset_id']] = (dataset, config)
 
-            # check if we have any files in the task_files API
             task_cfg = None
             for t in config['tasks']:
                 if t['name'] == task['name']:
@@ -465,16 +442,40 @@ class condor_direct(grid.BaseGrid):
             else:
                 raise Exception(f'cannot find task in config for {task["task_id"]}')
 
+            # get task requirements
+            if task_cfg and 'requirements' in task_cfg:
+                reqs = sanitized_requirements(task_cfg['requirements'])
+            else:
+                reqs = self.resources.copy()
+
+            # create pilot
+            if 'time' in resources:
+                resources_available = {'time': resources['time']}
+            else:
+                resources_available = {'time': 1}
+            for k in ('cpu','gpu','memory','disk'):
+                if k in resources:
+                    resources_available[k] = resources[k]-reqs[k]
+                else:
+                    resources_available[k] = 0
+            pilot = {'resources': resources,
+                     'resources_available': resources_available,
+                     'resources_claimed': reqs,
+                     'tasks': [task['task_id']],
+                     'queue_host': host,
+                     'queue_version': iceprod.__version__,
+                     'version': iceprod.__version__,
+            }
+            ret = await self.rest_client.request('POST', '/pilots', pilot)
+            pilot['pilot_id'] = ret['result']
+            task['pilot'] = pilot
+
+            # check if we have any files in the task_files API
             if 'task_files' in task_cfg and task_cfg['task_files']:
                 comms = MyServerComms(self.rest_client)
                 files = await comms.task_files(task['dataset_id'],
                                                task['task_id'])
                 task_cfg['data'].extend(files)
-
-            if task_cfg and 'requirements' in task_cfg:
-                reqs = sanitized_requirements(task_cfg['requirements'])
-            else:
-                reqs = self.resources.copy()
 
             config['dataset'] = dataset['dataset']
             task.update({

@@ -813,6 +813,7 @@ def sanitized_requirements(reqs):
     Returns:
         dict: sanitized requirements
     """
+    reqs = {k.lower():v for k,v in reqs.iter()}
     ret = {}
     all_keys = set(reqs).union(Resources.defaults)
     for k in all_keys:
