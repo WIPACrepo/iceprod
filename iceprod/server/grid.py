@@ -64,6 +64,10 @@ class BaseGrid(object):
         self.statsd = statsd
         self.rest_client = rest_client
 
+        self.site = None
+        if 'site' in self.queue_cfg:
+            self.site = self.queue_cfg['site']
+
         self.submit_dir = os.path.expanduser(os.path.expandvars(
                 self.cfg['queue']['submit_dir']))
         if not os.path.exists(self.submit_dir):
@@ -207,7 +211,11 @@ class BaseGrid(object):
             'keys': 'task_id|dataset_id|status_changed|requirements',
         }
         ret = await self.rest_client.request('GET', '/tasks', args)
-        tasks = ret['tasks']
+        tasks = []
+        for t in ret['tasks']:
+            if 'site' in t['requirements'] and t['requirements']['site'] != self.site:
+                continue
+            tasks.append(t)
         dataset_ids = set(row['dataset_id'] for row in tasks)
 
         # get dataset priorities
