@@ -803,3 +803,31 @@ def group_hasher(resources):
     if 'os' in resources:
         ret ^= hash(resources['os'])&(0b11111111<<32)
     return ret
+
+def sanitized_requirements(reqs):
+    """
+    Sanitize a dict of requirements (resources) for a task.
+
+    Args:
+        reqs (dict): dict of requirements
+    Returns:
+        dict: sanitized requirements
+    """
+    ret = {}
+    all_keys = set(reqs).union(Resources.defaults)
+    for k in all_keys:
+        if k in reqs:
+            try:
+                if k in Resources.defaults:
+                    if isinstance(Resources.defaults[k], (int,list)):
+                        ret[k] = int(reqs[k])
+                    elif isinstance(Resources.defaults[k], float):
+                        ret[k] = float(reqs[k])
+                else:
+                    ret[k] = reqs[k]
+            except ValueError:
+                pass
+        if k not in ret and k in Resources.defaults:
+            if isinstance(Resources.defaults[k], (int,float,str)):
+                ret[k] = Resources.defaults[k]
+    return ret

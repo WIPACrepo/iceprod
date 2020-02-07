@@ -562,6 +562,22 @@ class resources_test(unittest.TestCase):
             hashes.add(iceprod.core.resources.group_hasher(r))
         logger.info('hashes: %r', hashes)
         self.assertLess(len(hashes),15)
+
+    @unittest_reporter
+    def test_400_sanitized_requirements(self):
+        r = {'cpu':2,'gpu':1}
+        ret = iceprod.core.resources.sanitized_requirements(r)
+        self.assertEqual(r['cpu'], ret['cpu'])
+        self.assertEqual(r['gpu'], ret['gpu'])
+        self.assertEqual(iceprod.core.resources.Resources.defaults['memory'], ret['memory'])
+
+        r = {'os':['RHEL_7_x86_64'], 'site':'foo'}
+        ret = iceprod.core.resources.sanitized_requirements(r)
+        self.assertEqual(r['os'], ret['os'])
+        self.assertEqual(r['site'], ret['site'])
+        self.assertFalse('gpu' in ret)
+        self.assertEqual(iceprod.core.resources.Resources.defaults['memory'], ret['memory'])
+        
         
 
 def load_tests(loader, tests, pattern):

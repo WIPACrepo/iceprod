@@ -19,6 +19,7 @@ import iceprod
 from iceprod.core import dataclasses
 from iceprod.core import constants
 from iceprod.core import functions
+from iceprod.core.resources import sanitized_requirements
 from iceprod.core.exe_json import ServerComms
 from iceprod.server import grid
 from iceprod.server.globus import SiteGlobusProxy
@@ -470,7 +471,7 @@ class condor_direct(grid.BaseGrid):
                 task_cfg['data'].extend(files)
 
             if task_cfg and 'requirements' in task_cfg:
-                reqs = task_cfg['requirements']
+                reqs = sanitized_requirements(task_cfg['requirements'])
             else:
                 reqs = self.resources.copy()
 
@@ -624,6 +625,9 @@ class condor_direct(grid.BaseGrid):
             if 'time' in task['requirements'] and task['requirements']['time']:
                 # extra 10 min for pilot
                 p('+OriginalTime = {}'.format(int(task['requirements']['time'])*3600+600))
+                p('+TargetTime = (!isUndefined(Target.PYGLIDEIN_TIME_TO_LIVE) ? Target.PYGLIDEIN_TIME_TO_LIVE : Target.TimeToLive)')
+                p('Rank = Rank + (TargetTime - OriginalTime)/86400')
+                requirements.append('TargetTime > OriginalTime')
             if 'os' in task['requirements'] and task['requirements']['os']:
                 if isinstance(task['requirements']['os'], list):
                     os_type = task['requirements']['os'][0]
