@@ -48,7 +48,7 @@ async def run(rest_client, statsd, debug=False):
                 jobs = await rest_client.request('GET', '/datasets/{}/job_counts/status'.format(dataset_id))
                 for status in jobs:
                     if dataset_status in ('suspended','errors') and status == 'processing':
-                        jobs['suspended'] == jobs[status]
+                        jobs['suspended'] = jobs[status]
                         jobs[status] = 0
                 for status in ('processing','failed','suspended','errors','complete'):
                     if status not in jobs:
