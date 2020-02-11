@@ -45,7 +45,7 @@ async def run(rest_client, debug=False):
         dataset_prios = {}
         datasets = await rest_client.request('GET', '/dataset_summaries/status')
         if 'truncated' in datasets:
-            if 'processing' in dataests:
+            if 'processing' in datasets:
                 datasets['processing'].extend(datasets['truncated'])
             else:
                 datasets['processing'] = datasets['truncated']
