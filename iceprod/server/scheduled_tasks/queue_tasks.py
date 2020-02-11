@@ -44,6 +44,11 @@ async def run(rest_client, debug=False):
         num_tasks_queued = 0
         dataset_prios = {}
         datasets = await rest_client.request('GET', '/dataset_summaries/status')
+        if 'truncated' in datasets:
+            if 'processing' in dataests:
+                datasets['processing'].extend(datasets['truncated'])
+            else:
+                datasets['processing'] = datasets['truncated']
         if 'processing' in datasets:
             for dataset_id in datasets['processing']:
                 tasks = await rest_client.request('GET', '/datasets/{}/task_counts/status'.format(dataset_id))
