@@ -238,10 +238,21 @@ class MultiUserHandler(AuthHandler):
         """
         Get a list of users.
 
+        Body args:
+            username: username to filter by
+
         Returns:
             dict: {'results': list of users}
         """
-        ret = await self.db.users.find(projection={'_id':False}).to_list(length=1000)
+        filters = {}
+        try:
+            data = json.loads(self.request.body)
+            if 'username' in data:
+                filters['username'] = data['username']
+        except Exception:
+            pass
+
+        ret = await self.db.users.find(filters, projection={'_id':False}).to_list(length=1000)
         self.write({'results':ret})
         self.finish()
 
@@ -264,6 +275,8 @@ class MultiUserHandler(AuthHandler):
             data['groups'] = []
         if 'roles' not in data:
             data['roles'] = []
+        if 'priority' not in data:
+            data['priority'] = 1
         ret = await self.db.users.insert_one(data)
         self.set_status(201)
         self.set_header('Location', '/users/'+data['user_id'])
