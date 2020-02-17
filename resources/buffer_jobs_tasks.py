@@ -58,6 +58,7 @@ async def run(rest_client, only_dataset=None, num=10, debug=True):
                                     'dataset_id': dataset_id,
                                     'job_id': job_id['result'],
                                     'task_index': task_index,
+                                    'job_index': job_index,
                                     'name': name,
                                     'depends': depends,
                                     'requirements': get_reqs(config, task_index, parser),

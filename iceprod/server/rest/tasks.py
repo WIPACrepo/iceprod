@@ -123,6 +123,7 @@ class MultiTasksHandler(BaseHandler):
             'dataset_id': str,
             'job_id': str,
             'task_index': int,
+            'job_index': int,
             'name': str,
             'depends': list,
             'requirements': dict,
