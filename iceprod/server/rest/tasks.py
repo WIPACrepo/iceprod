@@ -40,7 +40,7 @@ def setup(config, *args, **kwargs):
     if 'status_index' not in db.tasks.index_information():
         db.tasks.create_index('status', name='status_index', unique=False)
     if 'priority_index' not in db.tasks.index_information():
-        db.tasks.create_index([('status',pymongo.ASCENDING),('priority',pymongo.DESCENDING)]), name='priority_index', unique=False)
+        db.tasks.create_index([('status',pymongo.ASCENDING),('priority',pymongo.DESCENDING)], name='priority_index', unique=False)
 
     if 'dataset_id_index' not in db.dataset_files.index_information():
         db.dataset_files.create_index('dataset_id', name='dataset_id_index', unique=False)
