@@ -39,6 +39,8 @@ def setup(config, *args, **kwargs):
         db.tasks.create_index('job_id', name='job_id_index', unique=False)
     if 'status_index' not in db.tasks.index_information():
         db.tasks.create_index('status', name='status_index', unique=False)
+    if 'priority_index' not in db.tasks.index_information():
+        db.tasks.create_index([('status',pymongo.ASCENDING),('priority',pymongo.DESCENDING)]), name='priority_index', unique=False)
 
     if 'dataset_id_index' not in db.dataset_files.index_information():
         db.dataset_files.create_index('dataset_id', name='dataset_id_index', unique=False)
@@ -140,6 +142,7 @@ class MultiTasksHandler(BaseHandler):
             'task_id': uuid.uuid1().hex,
             'status': 'waiting',
             'status_changed': nowstr(),
+            'priority': 1.,
             'failures': 0,
             'evictions': 0,
             'walltime': 0.0,
