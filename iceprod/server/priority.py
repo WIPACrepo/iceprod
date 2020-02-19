@@ -119,7 +119,7 @@ class Priority:
         priority = 1. * dataset_prio / max_dataset_prio * user_prio / max_user_prio * group_prio / max_group_prio
 
         # bias against large datasets
-        priority -= (1. - 1. * (num_all_tasks - num_dataset_tasks) / num_all_tasks) / 3.
+        priority -= (1. * num_dataset_tasks / num_all_tasks) / 3.
 
         if priority < 0.:
             priority = 0.
@@ -149,7 +149,10 @@ class Priority:
         # bias towards finishing jobs
         priority += (1. * task['task_index'] / tasks_per_job) / 10.
 
-        # bias towards first 100 jobs (or small datasets)
+        # bias towards first jobs in dataset
+        priority += (1. * (dataset['jobs_submitted'] - task['job_index']) / dataset['jobs_submitted']) / 100.
+
+        # boost towards first 100 jobs (or small datasets)
         if task['job_index'] < 100:
             priority += (100. - task['job_index']) / 100.
 
