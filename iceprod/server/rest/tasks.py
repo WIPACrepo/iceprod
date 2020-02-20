@@ -58,6 +58,7 @@ def setup(config, *args, **kwargs):
         (r'/tasks/(?P<task_id>\w+)/status', TasksStatusHandler, handler_cfg),
         (r'/task_actions/queue', TasksActionsQueueHandler, handler_cfg),
         (r'/task_actions/process', TasksActionsProcessingHandler, handler_cfg),
+        (r'/task_counts/status', TaskCountsStatusHandler, handler_cfg),
         (r'/tasks/(?P<task_id>\w+)/task_actions/reset', TasksActionsErrorHandler, handler_cfg),
         (r'/tasks/(?P<task_id>\w+)/task_actions/complete', TasksActionsCompleteHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/tasks', DatasetMultiTasksHandler, handler_cfg),
@@ -88,23 +89,45 @@ class MultiTasksHandler(BaseHandler):
         Get task entries.
 
         Params (optional):
-            status: task status to filter by
+            status: | separated list of task status to filter by
             keys: | separated list of keys to return for each task
+            sort: | separated list of sort key=values, with values of 1 or -1
+            limit: number of tasks to return
 
         Returns:
             dict: {'tasks': [<task>]}
         """
         filters = {}
 
-        status = self.get_argument('status',None)
+        status = self.get_argument('status', None)
         if status:
-            filters['status'] = status
+            filters['status'] = {'$in': status.split('|')}
+
+        sort = self.get_argument('sort', None)
+        mongo_sort = []
+        if sort:
+            for s in sort.split('|'):
+                if '=' in s:
+                    name, order = s.split('=', 1)
+                    if order == '-1':
+                        mongo_sort.append((name, pymongo.DESCENDING))
+                    else:
+                        mongo_sort.append((name, pymongo.ASCENDING))
+                else:
+                    mongo_sort.append((s, pymongo.ASCENDING))
+
+        limit = self.get_argument('limit', 0)
+        if limit:
+            try:
+                limit = int(limit)
+            except Exception:
+                limit = 0
 
         projection = {x:True for x in self.get_argument('keys','').split('|') if x}
         projection['_id'] = False
 
         ret = []
-        async for row in self.db.tasks.find(filters, projection=projection):
+        async for row in self.db.tasks.find(filters, projection=projection, sort=mongo_sort, limit=limit):
             ret.append(row)
         self.write({'tasks': ret})
 
@@ -140,9 +163,7 @@ class MultiTasksHandler(BaseHandler):
         # set some fields
         data.update({
             'task_id': uuid.uuid1().hex,
-            'status': 'waiting',
             'status_changed': nowstr(),
-            'priority': 1.,
             'failures': 0,
             'evictions': 0,
             'walltime': 0.0,
@@ -150,6 +171,10 @@ class MultiTasksHandler(BaseHandler):
             'walltime_err_n': 0,
             'site': '',
         })
+        if 'status' not in data:
+            data['status'] = 'waiting'
+        if 'priority' not in data:
+            data['priority'] = 1.
 
         ret = await self.db.tasks.insert_one(data)
         self.set_status(201)
@@ -242,6 +267,29 @@ class TasksStatusHandler(BaseHandler):
             self.write({})
             self.finish()
 
+class TaskCountsStatusHandler(BaseHandler):
+    """
+    Handle task summary grouping by status.
+    """
+    @authorization(roles=['admin','client','system'])
+    async def get(self):
+        """
+        Get the task counts for all tasks, group by status.
+
+        Returns:
+            dict: {<status>: num}
+        """
+        statuses = ['idle','waiting','queued','processing','reset','failed','suspended','complete']
+        ret = {}
+        for status in statuses:
+            ret['statuses'] = await self.db.tasks.find({"status":status}).count()
+
+        ret2 = {}
+        for k in sorted(ret, key=status_sort):
+            ret2[k] = ret[k]
+        self.write(ret2)
+        self.finish()
+
 class DatasetMultiTasksHandler(BaseHandler):
     """
     Handle multi tasks requests.
@@ -297,11 +345,20 @@ class DatasetTasksHandler(BaseHandler):
             dataset_id (str): dataset id
             task_id (str): the task id
 
+        Params (optional):
+            keys: | separated list of keys to return for each task
+
         Returns:
             dict: task entry
         """
+        projection = {'_id': False}
+        keys = self.get_argument('keys','')
+        if keys:
+            projection.update({x:True for x in keys.split('|') if x})
+            projection['task_id'] = True
+
         ret = await self.db.tasks.find_one({'task_id':task_id,'dataset_id':dataset_id},
-                projection={'_id':False})
+                projection=projection)
         if not ret:
             self.send_error(404, reason="Task not found")
         else:
@@ -486,11 +543,10 @@ class TasksActionsQueueHandler(BaseHandler):
         """
         Take a number of waiting tasks and queue them.
 
-        Order by dataset priority.
+        Order by priority.
 
         Body args (json):
             num_tasks: int
-            dataset_prio: dict of weights
 
         Returns:
             dict: {queued: num tasks queued}
@@ -498,48 +554,20 @@ class TasksActionsQueueHandler(BaseHandler):
         data = json.loads(self.request.body)
         num_tasks = data.get('num_tasks', 100)
 
-        steps = [
-            {'$match':{'status':'waiting'}},
-        ]
-        if 'dataset_prio' in data and data['dataset_prio']:
-            weights = {}
-            last_weight = weights
-            last_cond = None
-            for d in data['dataset_prio']:
-                last_weight['$cond'] = [
-                    {'$eq': ['$dataset_id', d]},
-                    data['dataset_prio'][d],
-                    {}
-                ]
-                last_cond = last_weight['$cond']
-                last_weight = last_cond[-1]
-            last_cond[-1] = 0
-            logger.info('weights: %r', weights)
-            steps.extend([
-                {'$addFields':{'weight': weights}},
-                {'$sort': {'weight': -1}},
-            ])
+        query = {'status': 'waiting'}
+        val = {'$set': {'status': 'queued'}}
 
-        cursor = self.db.tasks.aggregate(steps, allowDiskUse=True)
-        ret = {}
-        updated = 0
-        async for row in cursor:
-            logger.info('row: %r', row)
-            passed = True
-            for d in row['depends']:
-                ret = await self.db.tasks.find_one({'task_id':d})
-                if (not ret) or ret['status'] != 'complete':
-                    passed = False
-                    break
-            if not passed:
-                continue
-            ret = await self.db.tasks.update_one({'task_id':row['task_id']},
-                    {'$set':{'status':'queued'}})
-            updated += ret.modified_count
-            if updated >= num_tasks:
+        queued = 0
+        while queued < num_tasks:
+            ret = await self.db.tasks.find_one_and_update(query, val,
+                    projection={'_id':False,'task_id':True},
+                    sort=[('priority', -1)])
+            if not ret:
+                logger.debug('no more tasks to queue')
                 break
-        self.write({'queued':updated})
-        self.finish()
+            queued += 1
+        logger.info(f'queued {queued} tasks')
+        self.write({'queued': queued})
 
 class TasksActionsProcessingHandler(BaseHandler):
     """

@@ -1,8 +1,5 @@
 """
-Queue tasks.
-
-Move task statuses from waiting to queued, for a certain number of
-tasks.  Also uses priority for ordering.
+Update task priority.
 
 Initial delay: rand(1 minute)
 Periodic delay: 5 minutes
@@ -16,12 +13,11 @@ from collections import defaultdict
 from tornado.ioloop import IOLoop
 
 from iceprod.server import GlobalID
+from iceprod.server.priority import Priority
 
-logger = logging.getLogger('queue_tasks')
+logger = logging.getLogger('update_task_priority')
 
-NTASKS = 250000
-
-def queue_tasks(module):
+def update_task_priority(module):
     """
     Initial entrypoint.
 
@@ -40,26 +36,20 @@ async def run(rest_client, debug=False):
         debug (bool): debug flag to propagate exceptions
     """
     start_time = time.time()
+    prio = Priority(rest_client)
     try:
-        num_tasks_waiting = 0
-        num_tasks_queued = 0
-        tasks = await rest_client.request('GET', '/task_counts/status')
-        if 'waiting' in tasks:
-            num_tasks_waiting = tasks['waiting']
-        if 'queued' in tasks:
-            num_tasks_queued = tasks['queued']
-        tasks_to_queue = min(num_tasks_waiting, NTASKS - num_tasks_queued)
+        args = {
+            'status': 'waiting|queued|processing|reset',
+            'keys': 'task_id|dataset_id',
+        }
+        ret = await rest_client.request('GET', '/tasks', args)
 
-        while tasks_to_queue > 0:
-            num = min(tasks_to_queue, 100)
-            tasks_to_queue -= num
-
-            ret = await rest_client.request('POST', '/task_actions/queue', {'num_tasks': num})
-            if ret < num:
-                break
+        for task in ret['tasks']:
+            p = await prio.get_task_prio(task['dataset_id'], task['task_id'])
+            await rest_client.request('PATCH', f'/tasks/{task["task_id"]}', {'priority': p})
 
     except Exception:
-        logger.error('error queueing tasks', exc_info=True)
+        logger.error('error updating task priority', exc_info=True)
         if debug:
             raise
 

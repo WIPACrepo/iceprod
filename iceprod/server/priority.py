@@ -15,24 +15,34 @@ class Priority:
             'keys': 'dataset_id|priority|jobs_submitted|tasks_submitted|group|username',
             'status': 'processing|truncated',
         }
-        self.dataset_cache = await rest_client.request('GET', '/datasets', args)
+        self.dataset_cache = await self.rest_client.request('GET', '/datasets', args)
         for dataset_id in self.dataset_cache:
             args = {
                 'keys': 'task_id|job_index|task_index',
                 'status': 'waiting|queued|processing|reset',
             }
-            ret = await rest_client.request('GET', f'/datasets/{dataset_id}/tasks', args)
+            ret = await self.rest_client.request('GET', f'/datasets/{dataset_id}/tasks', args)
             self.dataset_cache[dataset_id]['tasks'] = ret
 
+    async def _populate_dataset_task_cache(self, dataset_id, task_id):
+        if dataset_id not in self.dataset_cache:
+            await self._populate_dataset_cache()
+        if task_id not in self.dataset_cache[dataset_id]['tasks']:
+            args = {
+                'keys': 'task_id|job_index|task_index',
+            }
+            ret = await self.rest_client.request('GET', f'/datasets/{dataset_id}/tasks/{task_id}', args)
+            self.dataset_cache[dataset_id]['tasks'][task_id] = ret
+
     async def _populate_user_cache(self):
-        ret = await rest_client.request('GET', '/users')
+        ret = await self.rest_client.request('GET', '/users')
         for user in ret['results']:
             self.user_cache[user['username']] = user
 
     async def _populate_group_cache(self):
-        ret = await rest_client.request('GET', '/groups')
+        ret = await self.rest_client.request('GET', '/groups')
         for group in ret['results']:
-            self.user_cache[group['name']] = group
+            self.group_cache[group['name']] = group
 
     async def _get_dataset(self, dataset_id):
         if not self.dataset_cache:
@@ -139,8 +149,10 @@ class Priority:
         Returns:
             float: priority between 0 and 1
         """
-        priority = await self.get_dataset_prio(dataset_id)
+        await self._populate_dataset_task_cache(dataset_id, task_id)
 
+        priority = await self.get_dataset_prio(dataset_id)
+    
         dataset = await self._get_dataset(dataset_id)
         task = dataset['tasks'][task_id]
 

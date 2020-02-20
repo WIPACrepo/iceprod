@@ -13,10 +13,12 @@ from rest_tools.client import RestClient
 from iceprod.core.parser import ExpParser
 from iceprod.core.resources import Resources
 from iceprod.server.scheduled_tasks.buffer_jobs_tasks import get_reqs, get_depends
+from iceprod.server.priority import Priority
 
 logger = logging.getLogger()
 
 async def run(rest_client, only_dataset=None, num=10, debug=True):
+    prio = Priority(rest_client)
     datasets = await rest_client.request('GET', '/dataset_summaries/status')
     if 'truncated' in datasets and only_dataset:
         datasets['processing'].extend(datasets['truncated'])
@@ -61,10 +63,13 @@ async def run(rest_client, only_dataset=None, num=10, debug=True):
                                     'job_index': job_index,
                                     'name': name,
                                     'depends': depends,
-                                    'requirements': get_reqs(config, task_index, parser),
+                                    'requirements': get_reqs(config, task_index, parser)
                                 }
                                 task_id = await rest_client.request('POST', '/tasks', args)
                                 task_ids.append(task_id['result'])
+                                
+                                p = prio.get_task_prio(dataset_id, task_id)
+                                await rest_client.request('PATCH', f'/tasks/{task_id}', {'priority': p})
                             job_index += 1
             except Exception:
                 logger.error('error buffering dataset %s', dataset_id, exc_info=True)

@@ -15,6 +15,8 @@ import tempfile
 import random
 import unittest
 
+from tornado.testing import AsyncTestCase
+
 import iceprod.server
 from iceprod.server import priority
 
@@ -71,7 +73,7 @@ def prio_setup():
     p.group_cache = groups
     return p
 
-class priority_test(unittest.TestCase):
+class priority_test(AsyncTestCase):
     def setUp(self):
         super(priority_test,self).setUp()
         self.test_dir = tempfile.mkdtemp(dir=os.getcwd())

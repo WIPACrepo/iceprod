@@ -43,6 +43,7 @@ class rest_tasks_test(RestTestCase):
             'dataset_id': 'foo',
             'job_id': 'foo1',
             'task_index': 0,
+            'job_index': 0,
             'name': 'bar',
             'depends': [],
             'requirements': {},
@@ -61,6 +62,7 @@ class rest_tasks_test(RestTestCase):
             'dataset_id': 'foo',
             'job_id': 'foo1',
             'task_index': 0,
+            'job_index': 0,
             'name': 'bar',
             'depends': [],
             'requirements': {},
@@ -119,6 +121,7 @@ class rest_tasks_test(RestTestCase):
             'dataset_id': 'foo',
             'job_id': 'foo1',
             'task_index': 0,
+            'job_index': 0,
             'name': 'bar',
             'depends': [],
             'requirements': {},
@@ -149,6 +152,7 @@ class rest_tasks_test(RestTestCase):
             'dataset_id': 'foo',
             'job_id': 'foo1',
             'task_index': 0,
+            'job_index': 0,
             'name': 'bar',
             'depends': [],
             'requirements': {},
@@ -180,6 +184,7 @@ class rest_tasks_test(RestTestCase):
             'dataset_id': 'foo',
             'job_id': 'foo1',
             'task_index': 0,
+            'job_index': 0,
             'name': 'bar',
             'depends': [],
             'requirements': {},
@@ -211,6 +216,7 @@ class rest_tasks_test(RestTestCase):
             'dataset_id': 'foo',
             'job_id': 'foo1',
             'task_index': 0,
+            'job_index': 0,
             'name': 'bar',
             'depends': [],
             'requirements': {},
@@ -238,6 +244,7 @@ class rest_tasks_test(RestTestCase):
             'dataset_id': 'foo',
             'job_id': 'foo1',
             'task_index': 0,
+            'job_index': 0,
             'name': 'bar',
             'depends': [],
             'requirements': {},
@@ -268,6 +275,7 @@ class rest_tasks_test(RestTestCase):
             'dataset_id': 'foo',
             'job_id': 'foo1',
             'task_index': 0,
+            'job_index': 0,
             'name': 'bar',
             'depends': [],
             'requirements': {},
@@ -299,6 +307,7 @@ class rest_tasks_test(RestTestCase):
             'dataset_id': 'foo',
             'job_id': 'foo1',
             'task_index': 0,
+            'job_index': 0,
             'name': 'bar',
             'depends': [],
             'requirements': {},
@@ -323,6 +332,7 @@ class rest_tasks_test(RestTestCase):
             'dataset_id': 'foo',
             'job_id': 'foo1',
             'task_index': 0,
+            'job_index': 0,
             'name': 'bar',
             'depends': [],
             'requirements': {},
@@ -347,6 +357,7 @@ class rest_tasks_test(RestTestCase):
             'dataset_id': 'foo',
             'job_id': 'foo1',
             'task_index': 0,
+            'job_index': 0,
             'name': 'bar',
             'depends': [],
             'requirements': {},
@@ -371,6 +382,7 @@ class rest_tasks_test(RestTestCase):
             'dataset_id': 'foo',
             'job_id': 'foo1',
             'task_index': 0,
+            'job_index': 0,
             'name': 'bar',
             'depends': [],
             'requirements': {},
@@ -411,6 +423,9 @@ class rest_tasks_test(RestTestCase):
             'dataset_id': 'foo',
             'job_id': 'foo1',
             'task_index': 0,
+            'job_index': 0,
+            'status': 'waiting',
+            'priority': .5,
             'name': 'bar',
             'depends': [],
             'requirements': {},
@@ -421,12 +436,6 @@ class rest_tasks_test(RestTestCase):
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         task_id = ret['result']
-
-        data2 = {'status':'waiting'}
-        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/status'%(self.port,data['dataset_id'],task_id),
-                method='PUT', body=json.dumps(data2),
-                headers={'Authorization': b'bearer '+self.token})
-        self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:%d/task_actions/queue'%(self.port,),
                 method='POST', body=json.dumps({}),
@@ -441,12 +450,19 @@ class rest_tasks_test(RestTestCase):
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret['status'], 'queued')
-        
+
+    @unittest_reporter(name='REST POST   /task_actions/queue - with priorities')
+    def test_501_tasks(self):
         # now try with dataset priorities
+        client = AsyncHTTPClient()
+
         data = {
             'dataset_id': 'foo',
             'job_id': 'foo1',
             'task_index': 0,
+            'job_index': 0,
+            'status': 'waiting',
+            'priority': 1,
             'name': 'bar',
             'depends': [],
             'requirements': {},
@@ -458,16 +474,13 @@ class rest_tasks_test(RestTestCase):
         ret = json.loads(r.body)
         task_id = ret['result']
 
-        data2 = {'status':'waiting'}
-        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/status'%(self.port,data['dataset_id'],task_id),
-                method='PUT', body=json.dumps(data2),
-                headers={'Authorization': b'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-
         data = {
             'dataset_id': 'bar',
             'job_id': 'bar1',
             'task_index': 0,
+            'job_index': 0,
+            'status': 'waiting',
+            'priority': 10,
             'name': 'bar',
             'depends': [],
             'requirements': {},
@@ -479,14 +492,8 @@ class rest_tasks_test(RestTestCase):
         ret = json.loads(r.body)
         task_id2 = ret['result']
 
-        data2 = {'status':'waiting'}
-        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/status'%(self.port,data['dataset_id'],task_id2),
-                method='PUT', body=json.dumps(data2),
-                headers={'Authorization': b'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-
         r = yield client.fetch('http://localhost:%d/task_actions/queue'%(self.port,),
-                method='POST', body=json.dumps({'num_tasks':1,'dataset_prio':{'bar':0.9, 'foo':0.1}}),
+                method='POST', body=json.dumps({'num_tasks':1}),
                 headers={'Authorization': b'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
@@ -512,6 +519,7 @@ class rest_tasks_test(RestTestCase):
             'dataset_id': 'foo',
             'job_id': 'foo1',
             'task_index': 0,
+            'job_index': 0,
             'name': 'bar',
             'depends': [],
             'requirements': {},
@@ -548,6 +556,7 @@ class rest_tasks_test(RestTestCase):
             'dataset_id': 'foo',
             'job_id': 'foo1',
             'task_index': 0,
+            'job_index': 0,
             'name': 'bar',
             'depends': [],
             'requirements': {'memory':4.5, 'disk':100},
@@ -596,6 +605,7 @@ class rest_tasks_test(RestTestCase):
             'dataset_id': 'foo',
             'job_id': 'foo1',
             'task_index': 0,
+            'job_index': 0,
             'name': 'bar',
             'depends': [],
             'requirements': {'memory':5.6, 'gpu':1},
@@ -687,6 +697,7 @@ class rest_tasks_test(RestTestCase):
             'dataset_id': 'foo',
             'job_id': 'foo1',
             'task_index': 0,
+            'job_index': 0,
             'name': 'bar',
             'depends': [],
             'requirements': {},
@@ -755,6 +766,7 @@ class rest_tasks_test(RestTestCase):
             'dataset_id': 'foo',
             'job_id': 'foo1',
             'task_index': 0,
+            'job_index': 0,
             'name': 'bar',
             'depends': [],
             'requirements': {},
@@ -783,6 +795,7 @@ class rest_tasks_test(RestTestCase):
             'dataset_id': 'foo',
             'job_id': 'foo2',
             'task_index': 0,
+            'job_index': 0,
             'name': 'bar',
             'depends': [],
             'requirements': {},
@@ -832,6 +845,7 @@ class rest_tasks_test(RestTestCase):
             'dataset_id': 'foo',
             'job_id': 'foo1',
             'task_index': 0,
+            'job_index': 0,
             'name': 'bar',
             'depends': [],
             'requirements': {},
@@ -847,6 +861,7 @@ class rest_tasks_test(RestTestCase):
             'dataset_id': 'foo',
             'job_id': 'foo1',
             'task_index': 0,
+            'job_index': 0,
             'name': 'baz',
             'depends': [],
             'requirements': {},

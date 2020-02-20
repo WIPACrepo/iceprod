@@ -17,6 +17,7 @@ from tornado.ioloop import IOLoop
 
 from iceprod.core.parser import ExpParser
 from iceprod.core.resources import Resources
+from iceprod.server.priority import Priority
 
 logger = logging.getLogger('buffer_jobs_tasks')
 
@@ -41,6 +42,7 @@ async def run(rest_client, debug=False):
         debug (bool): debug flag to propagate exceptions
     """
     start_time = time.time()
+    prio = Priority(rest_client)
     datasets = await rest_client.request('GET', '/dataset_summaries/status')
     if 'processing' in datasets:
         for dataset_id in datasets['processing']:
@@ -82,6 +84,9 @@ async def run(rest_client, debug=False):
                                 }
                                 task_id = await rest_client.request('POST', '/tasks', args)
                                 task_ids.append(task_id['result'])
+                                
+                                p = prio.get_task_prio(dataset_id, task_id)
+                                await rest_client.request('PATCH', f'/tasks/{task_id}', {'priority': p})
                             job_index += 1
             except Exception:
                 logger.error('error buffering dataset %s', dataset_id, exc_info=True)
