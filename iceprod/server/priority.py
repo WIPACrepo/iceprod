@@ -26,8 +26,6 @@ class Priority:
 
     async def _populate_dataset_task_cache(self, dataset_id, task_id):
         if dataset_id not in self.dataset_cache:
-            await self._populate_dataset_cache()
-        if dataset_id not in self.dataset_cache:
             return
         if task_id not in self.dataset_cache[dataset_id]['tasks']:
             args = {
@@ -161,16 +159,16 @@ class Priority:
         Returns:
             float: priority between 0 and 1
         """
-        await self._populate_dataset_task_cache(dataset_id, task_id)
-
-        priority = await self.get_dataset_prio(dataset_id)
-
         try:
             dataset = await self._get_dataset(dataset_id)
         except KeyError:
             return 0.
         if dataset['tasks_submitted'] < 1:
-            return priority
+            return 0.
+
+        await self._populate_dataset_task_cache(dataset_id, task_id)
+
+        priority = await self.get_dataset_prio(dataset_id)
 
         task = dataset['tasks'][task_id]
         tasks_per_job = dataset['jobs_submitted'] / dataset['tasks_submitted']
