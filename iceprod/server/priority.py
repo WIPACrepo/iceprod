@@ -126,7 +126,13 @@ class Priority:
         num_dataset_tasks = await self._get_num_tasks(dataset_id)
 
         # general priority
-        priority = 1. * dataset_prio / max_dataset_prio * user_prio / max_user_prio * group_prio / max_group_prio
+        priority = 1.
+        if max_dataset_prio > 0:
+            priority *= dataset_prio / max_dataset_prio
+        if max_user_prio > 0:
+            priority *= user_prio / max_user_prio
+        if max_group_prio > 0:
+            priority *= group_prio / max_group_prio
 
         # bias against large datasets
         priority -= (1. * num_dataset_tasks / num_all_tasks) / 3.
@@ -154,8 +160,10 @@ class Priority:
         priority = await self.get_dataset_prio(dataset_id)
     
         dataset = await self._get_dataset(dataset_id)
-        task = dataset['tasks'][task_id]
+        if dataset['tasks_submitted'] < 1:
+            return priority
 
+        task = dataset['tasks'][task_id]
         tasks_per_job = dataset['jobs_submitted'] / dataset['tasks_submitted']
 
         # bias towards finishing jobs
