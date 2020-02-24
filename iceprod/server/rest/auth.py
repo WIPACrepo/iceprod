@@ -276,7 +276,7 @@ class MultiUserHandler(AuthHandler):
         if 'roles' not in data:
             data['roles'] = []
         if 'priority' not in data:
-            data['priority'] = 1
+            data['priority'] = 0.5
         ret = await self.db.users.insert_one(data)
         self.set_status(201)
         self.set_header('Location', '/users/'+data['user_id'])
