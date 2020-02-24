@@ -292,6 +292,7 @@
         <span class="p">(</span><span class="sa">r</span><span class="s1">&#39;/tasks/(?P&lt;task_id&gt;\w+)/status&#39;</span><span class="p">,</span> <span class="n">TasksStatusHandler</span><span class="p">,</span> <span class="n">handler_cfg</span><span class="p">),</span>
         <span class="p">(</span><span class="sa">r</span><span class="s1">&#39;/task_actions/queue&#39;</span><span class="p">,</span> <span class="n">TasksActionsQueueHandler</span><span class="p">,</span> <span class="n">handler_cfg</span><span class="p">),</span>
         <span class="p">(</span><span class="sa">r</span><span class="s1">&#39;/task_actions/process&#39;</span><span class="p">,</span> <span class="n">TasksActionsProcessingHandler</span><span class="p">,</span> <span class="n">handler_cfg</span><span class="p">),</span>
+        <span class="p">(</span><span class="sa">r</span><span class="s1">&#39;/task_counts/status&#39;</span><span class="p">,</span> <span class="n">TaskCountsStatusHandler</span><span class="p">,</span> <span class="n">handler_cfg</span><span class="p">),</span>
         <span class="p">(</span><span class="sa">r</span><span class="s1">&#39;/tasks/(?P&lt;task_id&gt;\w+)/task_actions/reset&#39;</span><span class="p">,</span> <span class="n">TasksActionsErrorHandler</span><span class="p">,</span> <span class="n">handler_cfg</span><span class="p">),</span>
         <span class="p">(</span><span class="sa">r</span><span class="s1">&#39;/tasks/(?P&lt;task_id&gt;\w+)/task_actions/complete&#39;</span><span class="p">,</span> <span class="n">TasksActionsCompleteHandler</span><span class="p">,</span> <span class="n">handler_cfg</span><span class="p">),</span>
         <span class="p">(</span><span class="sa">r</span><span class="s1">&#39;/datasets/(?P&lt;dataset_id&gt;\w+)/tasks&#39;</span><span class="p">,</span> <span class="n">DatasetMultiTasksHandler</span><span class="p">,</span> <span class="n">handler_cfg</span><span class="p">),</span>
@@ -322,23 +323,45 @@
 <span class="sd">        Get task entries.</span>
 
 <span class="sd">        Params (optional):</span>
-<span class="sd">            status: task status to filter by</span>
+<span class="sd">            status: | separated list of task status to filter by</span>
 <span class="sd">            keys: | separated list of keys to return for each task</span>
+<span class="sd">            sort: | separated list of sort key=values, with values of 1 or -1</span>
+<span class="sd">            limit: number of tasks to return</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            dict: {&#39;tasks&#39;: [&lt;task&gt;]}</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">filters</span> <span class="o">=</span> <span class="p">{}</span>
 
-        <span class="n">status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_argument</span><span class="p">(</span><span class="s1">&#39;status&#39;</span><span class="p">,</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_argument</span><span class="p">(</span><span class="s1">&#39;status&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">status</span><span class="p">:</span>
-            <span class="n">filters</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">status</span>
+            <span class="n">filters</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;$in&#39;</span><span class="p">:</span> <span class="n">status</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;|&#39;</span><span class="p">)}</span>
+
+        <span class="n">sort</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_argument</span><span class="p">(</span><span class="s1">&#39;sort&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">mongo_sort</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">sort</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sort</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;|&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="s1">&#39;=&#39;</span> <span class="ow">in</span> <span class="n">s</span><span class="p">:</span>
+                    <span class="n">name</span><span class="p">,</span> <span class="n">order</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">order</span> <span class="o">==</span> <span class="s1">&#39;-1&#39;</span><span class="p">:</span>
+                        <span class="n">mongo_sort</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">name</span><span class="p">,</span> <span class="n">pymongo</span><span class="o">.</span><span class="n">DESCENDING</span><span class="p">))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">mongo_sort</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">name</span><span class="p">,</span> <span class="n">pymongo</span><span class="o">.</span><span class="n">ASCENDING</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">mongo_sort</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">s</span><span class="p">,</span> <span class="n">pymongo</span><span class="o">.</span><span class="n">ASCENDING</span><span class="p">))</span>
+
+        <span class="n">limit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_argument</span><span class="p">(</span><span class="s1">&#39;limit&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">limit</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">limit</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">limit</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">limit</span> <span class="o">=</span> <span class="mi">0</span>
 
         <span class="n">projection</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span><span class="kc">True</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_argument</span><span class="p">(</span><span class="s1">&#39;keys&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;|&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span><span class="p">}</span>
         <span class="n">projection</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
 
         <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">async</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">filters</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="n">projection</span><span class="p">):</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">filters</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="n">projection</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="n">mongo_sort</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">):</span>
             <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">({</span><span class="s1">&#39;tasks&#39;</span><span class="p">:</span> <span class="n">ret</span><span class="p">})</span></div>
 
@@ -374,9 +397,7 @@
         <span class="c1"># set some fields</span>
         <span class="n">data</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
             <span class="s1">&#39;task_id&#39;</span><span class="p">:</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid1</span><span class="p">()</span><span class="o">.</span><span class="n">hex</span><span class="p">,</span>
-            <span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="s1">&#39;waiting&#39;</span><span class="p">,</span>
             <span class="s1">&#39;status_changed&#39;</span><span class="p">:</span> <span class="n">nowstr</span><span class="p">(),</span>
-            <span class="s1">&#39;priority&#39;</span><span class="p">:</span> <span class="mf">1.</span><span class="p">,</span>
             <span class="s1">&#39;failures&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
             <span class="s1">&#39;evictions&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
             <span class="s1">&#39;walltime&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
@@ -384,6 +405,10 @@
             <span class="s1">&#39;walltime_err_n&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
             <span class="s1">&#39;site&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
         <span class="p">})</span>
+        <span class="k">if</span> <span class="s1">&#39;status&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;waiting&#39;</span>
+        <span class="k">if</span> <span class="s1">&#39;priority&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;priority&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.</span>
 
         <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">insert_one</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_status</span><span class="p">(</span><span class="mi">201</span><span class="p">)</span>
@@ -476,6 +501,29 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">({})</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span></div></div>
 
+<div class="viewcode-block" id="TaskCountsStatusHandler"><a class="viewcode-back" href="../../../../server/rest_api/tasks.html#iceprod.server.rest.tasks.TaskCountsStatusHandler">[docs]</a><span class="k">class</span> <span class="nc">TaskCountsStatusHandler</span><span class="p">(</span><span class="n">BaseHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handle task summary grouping by status.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="TaskCountsStatusHandler.get"><a class="viewcode-back" href="../../../../server/rest_api/tasks.html#iceprod.server.rest.tasks.TaskCountsStatusHandler.get">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">,</span><span class="s1">&#39;client&#39;</span><span class="p">,</span><span class="s1">&#39;system&#39;</span><span class="p">])</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the task counts for all tasks, group by status.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: {&lt;status&gt;: num}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">statuses</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;idle&#39;</span><span class="p">,</span><span class="s1">&#39;waiting&#39;</span><span class="p">,</span><span class="s1">&#39;queued&#39;</span><span class="p">,</span><span class="s1">&#39;processing&#39;</span><span class="p">,</span><span class="s1">&#39;reset&#39;</span><span class="p">,</span><span class="s1">&#39;failed&#39;</span><span class="p">,</span><span class="s1">&#39;suspended&#39;</span><span class="p">,</span><span class="s1">&#39;complete&#39;</span><span class="p">]</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">status</span> <span class="ow">in</span> <span class="n">statuses</span><span class="p">:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;statuses&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">find</span><span class="p">({</span><span class="s2">&quot;status&quot;</span><span class="p">:</span><span class="n">status</span><span class="p">})</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
+
+        <span class="n">ret2</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">status_sort</span><span class="p">):</span>
+            <span class="n">ret2</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">ret</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">ret2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span></div></div>
+
 <div class="viewcode-block" id="DatasetMultiTasksHandler"><a class="viewcode-back" href="../../../../server/rest_api/tasks.html#iceprod.server.rest.tasks.DatasetMultiTasksHandler">[docs]</a><span class="k">class</span> <span class="nc">DatasetMultiTasksHandler</span><span class="p">(</span><span class="n">BaseHandler</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Handle multi tasks requests.</span>
@@ -531,11 +579,20 @@
 <span class="sd">            dataset_id (str): dataset id</span>
 <span class="sd">            task_id (str): the task id</span>
 
+<span class="sd">        Params (optional):</span>
+<span class="sd">            keys: | separated list of keys to return for each task</span>
+
 <span class="sd">        Returns:</span>
 <span class="sd">            dict: task entry</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">projection</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_argument</span><span class="p">(</span><span class="s1">&#39;keys&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">keys</span><span class="p">:</span>
+            <span class="n">projection</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">x</span><span class="p">:</span><span class="kc">True</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">keys</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;|&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span><span class="p">})</span>
+            <span class="n">projection</span><span class="p">[</span><span class="s1">&#39;task_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
         <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s1">&#39;task_id&#39;</span><span class="p">:</span><span class="n">task_id</span><span class="p">,</span><span class="s1">&#39;dataset_id&#39;</span><span class="p">:</span><span class="n">dataset_id</span><span class="p">},</span>
-                <span class="n">projection</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span><span class="kc">False</span><span class="p">})</span>
+                <span class="n">projection</span><span class="o">=</span><span class="n">projection</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">send_error</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;Task not found&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -720,11 +777,10 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Take a number of waiting tasks and queue them.</span>
 
-<span class="sd">        Order by dataset priority.</span>
+<span class="sd">        Order by priority.</span>
 
 <span class="sd">        Body args (json):</span>
 <span class="sd">            num_tasks: int</span>
-<span class="sd">            dataset_prio: dict of weights</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            dict: {queued: num tasks queued}</span>
@@ -732,48 +788,20 @@
         <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">body</span><span class="p">)</span>
         <span class="n">num_tasks</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;num_tasks&#39;</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
 
-        <span class="n">steps</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="p">{</span><span class="s1">&#39;$match&#39;</span><span class="p">:{</span><span class="s1">&#39;status&#39;</span><span class="p">:</span><span class="s1">&#39;waiting&#39;</span><span class="p">}},</span>
-        <span class="p">]</span>
-        <span class="k">if</span> <span class="s1">&#39;dataset_prio&#39;</span> <span class="ow">in</span> <span class="n">data</span> <span class="ow">and</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;dataset_prio&#39;</span><span class="p">]:</span>
-            <span class="n">weights</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="n">last_weight</span> <span class="o">=</span> <span class="n">weights</span>
-            <span class="n">last_cond</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;dataset_prio&#39;</span><span class="p">]:</span>
-                <span class="n">last_weight</span><span class="p">[</span><span class="s1">&#39;$cond&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
-                    <span class="p">{</span><span class="s1">&#39;$eq&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;$dataset_id&#39;</span><span class="p">,</span> <span class="n">d</span><span class="p">]},</span>
-                    <span class="n">data</span><span class="p">[</span><span class="s1">&#39;dataset_prio&#39;</span><span class="p">][</span><span class="n">d</span><span class="p">],</span>
-                    <span class="p">{}</span>
-                <span class="p">]</span>
-                <span class="n">last_cond</span> <span class="o">=</span> <span class="n">last_weight</span><span class="p">[</span><span class="s1">&#39;$cond&#39;</span><span class="p">]</span>
-                <span class="n">last_weight</span> <span class="o">=</span> <span class="n">last_cond</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-            <span class="n">last_cond</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;weights: </span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">weights</span><span class="p">)</span>
-            <span class="n">steps</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span>
-                <span class="p">{</span><span class="s1">&#39;$addFields&#39;</span><span class="p">:{</span><span class="s1">&#39;weight&#39;</span><span class="p">:</span> <span class="n">weights</span><span class="p">}},</span>
-                <span class="p">{</span><span class="s1">&#39;$sort&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;weight&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">}},</span>
-            <span class="p">])</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="s1">&#39;waiting&#39;</span><span class="p">}</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;$set&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="s1">&#39;queued&#39;</span><span class="p">}}</span>
 
-        <span class="n">cursor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">aggregate</span><span class="p">(</span><span class="n">steps</span><span class="p">,</span> <span class="n">allowDiskUse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="n">updated</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">async</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">cursor</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;row: </span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">row</span><span class="p">)</span>
-            <span class="n">passed</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;depends&#39;</span><span class="p">]:</span>
-                <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">find_one</span><span class="p">({</span><span class="s1">&#39;task_id&#39;</span><span class="p">:</span><span class="n">d</span><span class="p">})</span>
-                <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">ret</span><span class="p">)</span> <span class="ow">or</span> <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;complete&#39;</span><span class="p">:</span>
-                    <span class="n">passed</span> <span class="o">=</span> <span class="kc">False</span>
-                    <span class="k">break</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">passed</span><span class="p">:</span>
-                <span class="k">continue</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">update_one</span><span class="p">({</span><span class="s1">&#39;task_id&#39;</span><span class="p">:</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;task_id&#39;</span><span class="p">]},</span>
-                    <span class="p">{</span><span class="s1">&#39;$set&#39;</span><span class="p">:{</span><span class="s1">&#39;status&#39;</span><span class="p">:</span><span class="s1">&#39;queued&#39;</span><span class="p">}})</span>
-            <span class="n">updated</span> <span class="o">+=</span> <span class="n">ret</span><span class="o">.</span><span class="n">modified_count</span>
-            <span class="k">if</span> <span class="n">updated</span> <span class="o">&gt;=</span> <span class="n">num_tasks</span><span class="p">:</span>
+        <span class="n">queued</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">queued</span> <span class="o">&lt;</span> <span class="n">num_tasks</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">find_one_and_update</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span>
+                    <span class="n">projection</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span><span class="kc">False</span><span class="p">,</span><span class="s1">&#39;task_id&#39;</span><span class="p">:</span><span class="kc">True</span><span class="p">},</span>
+                    <span class="n">sort</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;priority&#39;</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)])</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;no more tasks to queue&#39;</span><span class="p">)</span>
                 <span class="k">break</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">({</span><span class="s1">&#39;queued&#39;</span><span class="p">:</span><span class="n">updated</span><span class="p">})</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span></div></div>
+            <span class="n">queued</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;queued </span><span class="si">{queued}</span><span class="s1"> tasks&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">({</span><span class="s1">&#39;queued&#39;</span><span class="p">:</span> <span class="n">queued</span><span class="p">})</span></div></div>
 
 <div class="viewcode-block" id="TasksActionsProcessingHandler"><a class="viewcode-back" href="../../../../server/rest_api/tasks.html#iceprod.server.rest.tasks.TasksActionsProcessingHandler">[docs]</a><span class="k">class</span> <span class="nc">TasksActionsProcessingHandler</span><span class="p">(</span><span class="n">BaseHandler</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
