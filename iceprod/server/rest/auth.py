@@ -117,7 +117,7 @@ class RoleHandler(AuthHandler):
         self.write({})
         self.finish()
 
-    @authorization(roles=['admin'])
+    @authorization(roles=['admin','client'])
     async def get(self, role_name):
         """
         Get a role.
@@ -155,7 +155,7 @@ class MultiGroupHandler(AuthHandler):
     """
     Handle multi-group requests.
     """
-    @authorization(roles=['admin'])
+    @authorization(roles=['admin','client'])
     async def get(self):
         """
         Get a list of groups.
@@ -195,7 +195,7 @@ class GroupHandler(AuthHandler):
         self.write({})
         self.finish()
 
-    @authorization(roles=['admin'])
+    @authorization(roles=['admin','client'])
     async def get(self, group_name):
         """
         Get a group.
@@ -233,7 +233,7 @@ class MultiUserHandler(AuthHandler):
     """
     Handle multi-user requests.
     """
-    @authorization(roles=['admin'])
+    @authorization(roles=['admin','client'])
     async def get(self):
         """
         Get a list of users.
@@ -287,7 +287,7 @@ class UserHandler(AuthHandler):
     """
     Handle individual user requests.
     """
-    @authorization(roles=['admin'])
+    @authorization(roles=['admin','client'])
     async def get(self, user_id):
         """
         Get a user.
@@ -355,7 +355,7 @@ class UserGroupsHandler(AuthHandler):
     """
     Handle groups for an individual user.
     """
-    @authorization(roles=['admin'])
+    @authorization(roles=['admin','client'])
     async def get(self, user_id):
         """
         Get the groups for a user.
