@@ -85,7 +85,7 @@ async def run(rest_client, debug=False):
                                 task_id = await rest_client.request('POST', '/tasks', args)
                                 task_ids.append(task_id['result'])
                                 
-                                p = prio.get_task_prio(dataset_id, task_id)
+                                p = await prio.get_task_prio(dataset_id, task_id)
                                 await rest_client.request('PATCH', f'/tasks/{task_id}', {'priority': p})
                             job_index += 1
             except Exception:
