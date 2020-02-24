@@ -820,7 +820,7 @@
 <span class="sd">            dict: &lt;task dict&gt;</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">filter_query</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;status&#39;</span><span class="p">:</span><span class="s1">&#39;queued&#39;</span><span class="p">}</span>
-        <span class="n">sort_by</span> <span class="o">=</span> <span class="p">[(</span><span class="s1">&#39;status_changed&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)]</span>
+        <span class="n">sort_by</span> <span class="o">=</span> <span class="p">[(</span><span class="s1">&#39;priority&#39;</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">),(</span><span class="s1">&#39;status_changed&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)]</span>
         <span class="n">site</span> <span class="o">=</span> <span class="s1">&#39;unknown&#39;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">body</span><span class="p">:</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">body</span><span class="p">)</span>
