@@ -282,7 +282,7 @@ class TaskCountsStatusHandler(BaseHandler):
         statuses = ['idle','waiting','queued','processing','reset','failed','suspended','complete']
         ret = {}
         for status in statuses:
-            ret['statuses'] = await self.db.tasks.find({"status":status}).count()
+            ret['statuses'] = await self.db.tasks.count_documents({"status":status})
 
         ret2 = {}
         for k in sorted(ret, key=status_sort):
