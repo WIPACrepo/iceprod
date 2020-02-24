@@ -27,7 +27,7 @@ class Priority:
     async def _populate_dataset_task_cache(self, dataset_id, task_id):
         if dataset_id not in self.dataset_cache:
             await self._populate_dataset_cache()
-        if dataset_id not in self.dataset_cahce:
+        if dataset_id not in self.dataset_cache:
             return
         if task_id not in self.dataset_cache[dataset_id]['tasks']:
             args = {
