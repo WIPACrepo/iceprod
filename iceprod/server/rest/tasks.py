@@ -586,7 +586,7 @@ class TasksActionsProcessingHandler(BaseHandler):
             dict: <task dict>
         """
         filter_query = {'status':'queued'}
-        sort_by = [('status_changed',1)]
+        sort_by = [('priority',-1),('status_changed',1)]
         site = 'unknown'
         if self.request.body:
             data = json.loads(self.request.body)
