@@ -351,7 +351,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">({})</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="RoleHandler.get"><a class="viewcode-back" href="../../../../server/rest_api/auth.html#iceprod.server.rest.auth.RoleHandler.get">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">])</span>
+<div class="viewcode-block" id="RoleHandler.get"><a class="viewcode-back" href="../../../../server/rest_api/auth.html#iceprod.server.rest.auth.RoleHandler.get">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">,</span><span class="s1">&#39;client&#39;</span><span class="p">])</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">role_name</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get a role.</span>
@@ -389,7 +389,7 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Handle multi-group requests.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="MultiGroupHandler.get"><a class="viewcode-back" href="../../../../server/rest_api/auth.html#iceprod.server.rest.auth.MultiGroupHandler.get">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">])</span>
+<div class="viewcode-block" id="MultiGroupHandler.get"><a class="viewcode-back" href="../../../../server/rest_api/auth.html#iceprod.server.rest.auth.MultiGroupHandler.get">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">,</span><span class="s1">&#39;client&#39;</span><span class="p">])</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get a list of groups.</span>
@@ -429,7 +429,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">({})</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="GroupHandler.get"><a class="viewcode-back" href="../../../../server/rest_api/auth.html#iceprod.server.rest.auth.GroupHandler.get">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">])</span>
+<div class="viewcode-block" id="GroupHandler.get"><a class="viewcode-back" href="../../../../server/rest_api/auth.html#iceprod.server.rest.auth.GroupHandler.get">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">,</span><span class="s1">&#39;client&#39;</span><span class="p">])</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group_name</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get a group.</span>
@@ -467,7 +467,7 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Handle multi-user requests.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="MultiUserHandler.get"><a class="viewcode-back" href="../../../../server/rest_api/auth.html#iceprod.server.rest.auth.MultiUserHandler.get">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">])</span>
+<div class="viewcode-block" id="MultiUserHandler.get"><a class="viewcode-back" href="../../../../server/rest_api/auth.html#iceprod.server.rest.auth.MultiUserHandler.get">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">,</span><span class="s1">&#39;client&#39;</span><span class="p">])</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get a list of users.</span>
@@ -521,7 +521,7 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Handle individual user requests.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="UserHandler.get"><a class="viewcode-back" href="../../../../server/rest_api/auth.html#iceprod.server.rest.auth.UserHandler.get">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">])</span>
+<div class="viewcode-block" id="UserHandler.get"><a class="viewcode-back" href="../../../../server/rest_api/auth.html#iceprod.server.rest.auth.UserHandler.get">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">,</span><span class="s1">&#39;client&#39;</span><span class="p">])</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get a user.</span>
@@ -589,7 +589,7 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Handle groups for an individual user.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="UserGroupsHandler.get"><a class="viewcode-back" href="../../../../server/rest_api/auth.html#iceprod.server.rest.auth.UserGroupsHandler.get">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">])</span>
+<div class="viewcode-block" id="UserGroupsHandler.get"><a class="viewcode-back" href="../../../../server/rest_api/auth.html#iceprod.server.rest.auth.UserGroupsHandler.get">[docs]</a>    <span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">,</span><span class="s1">&#39;client&#39;</span><span class="p">])</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get the groups for a user.</span>
