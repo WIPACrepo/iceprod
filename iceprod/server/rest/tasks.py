@@ -45,7 +45,7 @@ def setup(config, *args, **kwargs):
     if 'dataset_id_index' not in db.dataset_files.index_information():
         db.dataset_files.create_index('dataset_id', name='dataset_id_index', unique=False)
     if 'task_id_index' not in db.dataset_files.index_information():
-        db.dataset_files.create_index('task_id', name='task_id_index', unique=True)
+        db.dataset_files.create_index('task_id', name='task_id_index', unique=False)
 
     handler_cfg = RESTHandlerSetup(config, *args, **kwargs)
     handler_cfg.update({
