@@ -194,7 +194,7 @@ class Priority:
         priority = await self.get_dataset_prio(dataset_id)
 
         task = dataset['tasks'][task_id]
-        tasks_per_job = dataset['jobs_submitted'] / dataset['tasks_submitted']
+        tasks_per_job = dataset['tasks_submitted'] / dataset['jobs_submitted']
 
         # bias towards finishing jobs
         priority += (1. * task['task_index'] / tasks_per_job) / 10.

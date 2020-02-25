@@ -51,7 +51,7 @@ async def run(rest_client, debug=False):
                 done, pending = await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED)
                 futures = pending
             p = await prio.get_task_prio(task['dataset_id'], task['task_id'])
-            logger.info('updating priority for %s.%s = %.2f', task['dataset_id'], task['task_id'], p)
+            logger.info('updating priority for %s.%s = %.4f', task['dataset_id'], task['task_id'], p)
             t = asyncio.create_task(rest_client.request('PATCH', f'/tasks/{task["task_id"]}', {'priority': p}))
             futures.add(t)
         while futures:
