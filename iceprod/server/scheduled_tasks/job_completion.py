@@ -46,20 +46,24 @@ async def run(rest_client, debug=False):
             if 'processing' not in jobs:
                 continue
             for job_id in jobs['processing']:
-                tasks = await rest_client.request('GET', '/datasets/{}/tasks?keys=task_id|status&job_id={}'.format(dataset_id,job_id))
-                task_statuses = set(t['status'] for t in tasks.values())
-                if task_statuses == set(['complete']):
+                tasks = await rest_client.request('GET', '/datasets/{}/tasks?keys=task_id|task_index|status&job_id={}'.format(dataset_id,job_id))
+                task_statuses = []
+                for task_id in sorted(tasks, key=lambda t:tasks[t]['task_index']):
+                    task_statuses.append(tasks[task_id]['status'])
+                if set(task_statuses) == set(['complete']):
                     logger.info('dataset %s job %s status -> complete', dataset_id, job_id)
                     args = {'status':'complete'}
                     await rest_client.request('PUT', '/datasets/{}/jobs/{}/status'.format(dataset_id,job_id), args)
-                elif all(s not in task_statuses for s in ('idle','waiting','queued','processing','reset','resume')):
-                    if 'failed' in task_statuses:
-                        logger.info('dataset %s job %s status -> errors', dataset_id, job_id)
-                        args = {'status':'errors'}
-                    else:
-                        logger.info('dataset %s job %s status -> suspended', dataset_id, job_id)
-                        args = {'status':'suspended'}
-                    await rest_client.request('PUT', '/datasets/{}/jobs/{}/status'.format(dataset_id,job_id), args)
+                for status in task_statuses:
+                    if status not in ('idle','waiting','queued','processing','reset','complete'):
+                        if status == 'failed':
+                            logger.info('dataset %s job %s status -> errors', dataset_id, job_id)
+                            args = {'status':'errors'}
+                        else:
+                            logger.info('dataset %s job %s status -> suspended', dataset_id, job_id)
+                            args = {'status':'suspended'}
+                        await rest_client.request('PUT', '/datasets/{}/jobs/{}/status'.format(dataset_id,job_id), args)
+                        break
         except Exception:
             logger.error('error completing a job in dataset %s', dataset_id, exc_info=True)
             if debug:
