@@ -8,6 +8,7 @@ Periodic delay: 5 minutes
 import logging
 import random
 import time
+import asyncio
 from collections import defaultdict
 
 from tornado.ioloop import IOLoop
@@ -44,10 +45,18 @@ async def run(rest_client, debug=False):
         }
         ret = await rest_client.request('GET', '/tasks', args)
 
+        futures = set()
         for task in ret['tasks']:
+            if len(futures) >= 20:
+                done, pending = await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED)
+                futures = pending
             p = await prio.get_task_prio(task['dataset_id'], task['task_id'])
             logger.info('updating priority for %s.%s = %.2f', task['dataset_id'], task['task_id'], p)
-            await rest_client.request('PATCH', f'/tasks/{task["task_id"]}', {'priority': p})
+            t = asyncio.create_task(rest_client.request('PATCH', f'/tasks/{task["task_id"]}', {'priority': p}))
+            futures.add(t)
+        while futures:
+            done, pending = await asyncio.wait(futures)
+            futures = pending
 
     except Exception:
         logger.error('error updating task priority', exc_info=True)

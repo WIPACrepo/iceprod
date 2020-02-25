@@ -1,7 +1,8 @@
 """
 Functions used to calculate dataset and task priority.
 """
-
+import asyncio
+import logging
 
 class Priority:
     def __init__(self, rest_client):
@@ -16,13 +17,35 @@ class Priority:
             'status': 'processing|truncated',
         }
         self.dataset_cache = await self.rest_client.request('GET', '/datasets', args)
-        for dataset_id in self.dataset_cache:
-            args = {
-                'keys': 'task_id|job_index|task_index',
-                'status': 'waiting|queued|processing|reset',
-            }
-            ret = await self.rest_client.request('GET', f'/datasets/{dataset_id}/tasks', args)
-            self.dataset_cache[dataset_id]['tasks'] = ret
+        dataset_ids = list(self.dataset_cache)
+        args = {
+            'keys': 'task_id|dataset_id|job_index|task_index',
+            'status': 'waiting|queued|processing|reset',
+        }
+        futures = set()
+        while dataset_ids:
+            if len(futures) >= 10:
+                done, pending = await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED)
+                futures = pending
+                for f in done:
+                    ret = await f
+                    if ret:
+                        d = list(ret.values())[0]['dataset_id']
+                        self.dataset_cache[d]['tasks'] = {k:
+                            {'task_index': ret[k]['task_index'], 'job_index': ret[k]['job_index']}
+                            for k in ret}
+
+            dataset_id = dataset_ids.pop()
+            self.dataset_cache[dataset_id]['tasks'] = {}
+            t = asyncio.create_task(self.rest_client.request('GET', f'/datasets/{dataset_id}/tasks', args))
+            futures.add(t)
+        while futures:
+            done, pending = await asyncio.wait(futures)
+            futures = pending
+            for f in done:
+                ret = await f
+                d = ret.pop('dataset_id')
+                self.dataset_cache[d]['tasks'] = ret
 
     async def _populate_dataset_task_cache(self, dataset_id, task_id):
         if dataset_id not in self.dataset_cache:
