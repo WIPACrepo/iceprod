@@ -44,7 +44,7 @@ async def run(rest_client, debug=False):
     try:
         num_tasks_waiting = 0
         num_tasks_queued = 0
-        tasks = await rest_client.request('GET', '/task_counts/status', args)
+        tasks = await rest_client.request('GET', '/task_counts/status')
         if 'waiting' in tasks:
             num_tasks_waiting = tasks['waiting']
         if 'queued' in tasks:
@@ -63,15 +63,17 @@ async def run(rest_client, debug=False):
             ret = await rest_client.request('GET', '/tasks', args)
             queue_tasks = []
             for task in ret['tasks']:
-                for dep in task['depends'].split(','):
+                for dep in task['depends']:
                     ret = await rest_client.request('GET', f'/tasks/{dep}')
                     if ret['status'] != 'complete':
+                        logger.debug('dependency not met for task %s', task['task_id'])
                         break
                 else:
                     queue_tasks.append(task['task_id'])
                     if len(queue_tasks) >= tasks_to_queue:
                         break
 
+            logger.info('queueing %d tasks', len(queue_tasks))
             if queue_tasks:
                 args = {'tasks': queue_tasks}
                 await rest_client.request('PUT', '/task_actions/bulk_status/queued', args)
