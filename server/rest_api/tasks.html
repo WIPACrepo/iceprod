@@ -687,6 +687,31 @@ limit: number of tasks to return</dd>
 </dd></dl>
 
 <dl class="class">
+<dt id="iceprod.server.rest.tasks.TaskBulkStatusHandler">
+<em class="property">class </em><code class="descclassname">iceprod.server.rest.tasks.</code><code class="descname">TaskBulkStatusHandler</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/tasks.html#TaskBulkStatusHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.tasks.TaskBulkStatusHandler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the status of multiple tasks at once.</p>
+<dl class="method">
+<dt id="iceprod.server.rest.tasks.TaskBulkStatusHandler.post">
+<code class="descname">post</code><span class="sig-paren">(</span><em>status</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/tasks.html#TaskBulkStatusHandler.post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.tasks.TaskBulkStatusHandler.post" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set multiple tasks’ status.</p>
+<p>Body should have {‘tasks’: [&lt;task_id&gt;, &lt;task_id&gt;, …]}</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>status</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – the status</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">empty dict</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
 <dt id="iceprod.server.rest.tasks.TaskCountsStatusHandler">
 <em class="property">class </em><code class="descclassname">iceprod.server.rest.tasks.</code><code class="descname">TaskCountsStatusHandler</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/tasks.html#TaskCountsStatusHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.tasks.TaskCountsStatusHandler" title="Permalink to this definition">¶</a></dt>
 <dd><p>Handle task summary grouping by status.</p>
