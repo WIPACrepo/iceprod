@@ -820,7 +820,7 @@
 <span class="sd">            dict: &lt;task dict&gt;</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">filter_query</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;status&#39;</span><span class="p">:</span><span class="s1">&#39;queued&#39;</span><span class="p">}</span>
-        <span class="n">sort_by</span> <span class="o">=</span> <span class="p">[(</span><span class="s1">&#39;priority&#39;</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">),(</span><span class="s1">&#39;status_changed&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)]</span>
+        <span class="n">sort_by</span> <span class="o">=</span> <span class="p">[(</span><span class="s1">&#39;priority&#39;</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)]</span>
         <span class="n">site</span> <span class="o">=</span> <span class="s1">&#39;unknown&#39;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">body</span><span class="p">:</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">body</span><span class="p">)</span>
@@ -836,10 +836,10 @@
                         <span class="p">{</span><span class="s1">&#39;requirements.&#39;</span><span class="o">+</span><span class="n">k</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;$exists&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}},</span>
                         <span class="p">{</span><span class="s1">&#39;requirements.&#39;</span><span class="o">+</span><span class="n">k</span><span class="p">:</span> <span class="n">reqs</span><span class="p">[</span><span class="n">k</span><span class="p">]},</span>
                     <span class="p">]</span>
-            <span class="k">if</span> <span class="s1">&#39;gpu&#39;</span> <span class="ow">in</span> <span class="n">reqs</span> <span class="ow">and</span> <span class="n">reqs</span><span class="p">[</span><span class="s1">&#39;gpu&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="n">sort_by</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s1">&#39;requirements.gpu&#39;</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
-            <span class="k">elif</span> <span class="s1">&#39;memory&#39;</span> <span class="ow">in</span> <span class="n">reqs</span><span class="p">:</span>
-                <span class="n">sort_by</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s1">&#39;requirements.memory&#39;</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+            <span class="c1">#if &#39;gpu&#39; in reqs and reqs[&#39;gpu&#39;] &gt; 0:</span>
+            <span class="c1">#    sort_by.append((&#39;requirements.gpu&#39;,-1))</span>
+            <span class="c1">#elif &#39;memory&#39; in reqs:</span>
+            <span class="c1">#    sort_by.append((&#39;requirements.memory&#39;,-1))</span>
             <span class="k">if</span> <span class="s1">&#39;site&#39;</span> <span class="ow">in</span> <span class="n">reqs</span><span class="p">:</span>
                 <span class="n">site</span> <span class="o">=</span> <span class="n">reqs</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]</span>
             <span class="c1"># handle query_params</span>
