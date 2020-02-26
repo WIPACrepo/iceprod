@@ -586,7 +586,7 @@ class TasksActionsProcessingHandler(BaseHandler):
             dict: <task dict>
         """
         filter_query = {'status':'queued'}
-        sort_by = [('priority',-1),('status_changed',1)]
+        sort_by = [('priority',-1)]
         site = 'unknown'
         if self.request.body:
             data = json.loads(self.request.body)
@@ -602,10 +602,10 @@ class TasksActionsProcessingHandler(BaseHandler):
                         {'requirements.'+k: {'$exists': False}},
                         {'requirements.'+k: reqs[k]},
                     ]
-            if 'gpu' in reqs and reqs['gpu'] > 0:
-                sort_by.append(('requirements.gpu',-1))
-            elif 'memory' in reqs:
-                sort_by.append(('requirements.memory',-1))
+            #if 'gpu' in reqs and reqs['gpu'] > 0:
+            #    sort_by.append(('requirements.gpu',-1))
+            #elif 'memory' in reqs:
+            #    sort_by.append(('requirements.memory',-1))
             if 'site' in reqs:
                 site = reqs['site']
             # handle query_params
