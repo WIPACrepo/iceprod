@@ -20,6 +20,7 @@ from iceprod.server import GlobalID
 logger = logging.getLogger('queue_tasks')
 
 NTASKS = 250000
+NTASKS_PER_CYCLE = 1000
 
 def queue_tasks(module):
     """
@@ -48,13 +49,13 @@ async def run(rest_client, debug=False):
             num_tasks_waiting = tasks['waiting']
         if 'queued' in tasks:
             num_tasks_queued = tasks['queued']
-        tasks_to_queue = min(num_tasks_waiting, NTASKS - num_tasks_queued)
+        tasks_to_queue = min(num_tasks_waiting, NTASKS - num_tasks_queued, NTASKS_PER_CYCLE)
         logger.info(f'num tasks waiting: {num_tasks_waiting}')
         logger.info(f'num tasks queued: {num_tasks_queued}')
         logger.info(f'tasks to queue: {tasks_to_queue}')
 
         while tasks_to_queue > 0:
-            num = min(tasks_to_queue, 100)
+            num = min(tasks_to_queue, 10)
             tasks_to_queue -= num
 
             ret = await rest_client.request('POST', '/task_actions/queue', {'num_tasks': num})
