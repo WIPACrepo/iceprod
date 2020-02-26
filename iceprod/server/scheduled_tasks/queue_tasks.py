@@ -44,7 +44,7 @@ async def run(rest_client, debug=False):
     try:
         num_tasks_waiting = 0
         num_tasks_queued = 0
-        tasks = await rest_client.request('GET', '/task_counts/status')
+        tasks = await rest_client.request('GET', '/task_counts/status', args)
         if 'waiting' in tasks:
             num_tasks_waiting = tasks['waiting']
         if 'queued' in tasks:
@@ -54,14 +54,36 @@ async def run(rest_client, debug=False):
         logger.info(f'num tasks queued: {num_tasks_queued}')
         logger.info(f'tasks to queue: {tasks_to_queue}')
 
-        while tasks_to_queue > 0:
-            num = min(tasks_to_queue, 10)
-            tasks_to_queue -= num
+        if tasks_to_queue > 0:
+            args = {
+                'status': 'waiting',
+                'keys': 'task_id|depends',
+                'sort': 'priority=-1',
+            }
+            ret = await rest_client.request('GET', '/tasks', args)
+            queue_tasks = []
+            for task in ret['tasks']:
+                for dep in task['depends'].split(','):
+                    ret = await rest_client.request('GET', f'/tasks/{dep}')
+                    if ret['status'] != 'complete':
+                        break
+                else:
+                    queue_tasks.append(task['task_id'])
+                    if len(queue_tasks) >= tasks_to_queue:
+                        break
 
-            ret = await rest_client.request('POST', '/task_actions/queue', {'num_tasks': num})
-            logger.info(f'num queued: {ret["queued"]}')
-            if ret['queued'] < num:
-                break
+            if queue_tasks:
+                args = {'tasks': queue_tasks}
+                await rest_client.request('PUT', '/task_actions/bulk_status/queued', args)
+
+        # ~ while tasks_to_queue > 0:
+            # ~ num = min(tasks_to_queue, 10)
+            # ~ tasks_to_queue -= num
+
+            # ~ ret = await rest_client.request('POST', '/task_actions/queue', {'num_tasks': num})
+            # ~ logger.info(f'num queued: {ret["queued"]}')
+            # ~ if ret['queued'] < num:
+                # ~ break
 
     except Exception:
         logger.error('error queueing tasks', exc_info=True)

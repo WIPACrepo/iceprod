@@ -57,6 +57,7 @@ def setup(config, *args, **kwargs):
         (r'/tasks/(?P<task_id>\w+)', TasksHandler, handler_cfg),
         (r'/tasks/(?P<task_id>\w+)/status', TasksStatusHandler, handler_cfg),
         (r'/task_actions/queue', TasksActionsQueueHandler, handler_cfg),
+        (r'/task_actions/bulk_status/(?P<status>\w+)', TaskBulkStatusHandler, handler_cfg),
         (r'/task_actions/process', TasksActionsProcessingHandler, handler_cfg),
         (r'/task_counts/status', TaskCountsStatusHandler, handler_cfg),
         (r'/tasks/(?P<task_id>\w+)/task_actions/reset', TasksActionsErrorHandler, handler_cfg),
@@ -747,6 +748,47 @@ class TasksActionsCompleteHandler(BaseHandler):
             self.write(ret)
             self.finish()
 
+class TaskBulkStatusHandler(BaseHandler):
+    """
+    Update the status of multiple tasks at once.
+    """
+    @authorization(roles=['admin','client','system'])
+    async def post(self, status):
+        """
+        Set multiple tasks' status.
+
+        Body should have {'tasks': [<task_id>, <task_id>, ...]}
+
+        Args:
+            status (str): the status
+
+        Returns:
+            dict: empty dict
+        """
+        data = json.loads(self.request.body)
+        if (not data) or 'tasks' not in data or not data['tasks']:
+            raise tornado.web.HTTPError(400, reason='Missing tasks in body')
+        tasks = list(data['tasks'])
+        if len(tasks) > 100000:
+            raise tornado.web.HTTPError(400, reason='Too many tasks specified (limit: 100k)')
+        if status not in ('idle','waiting','queued','processing','reset','failed','suspended','complete'):
+            raise tornado.web.HTTPError(400, reason='Bad status')
+        query = {
+            'task_id': {'$in': tasks},
+        }
+        update_data = {
+            'status': status,
+            'status_changed': nowstr(),
+        }
+        if status == 'reset':
+            update_data['failures'] = 0
+
+        ret = await self.db.tasks.update_many(query, {'$set':update_data})
+        if (not ret) or ret.modified_count < 1:
+            self.send_error(404, reason="Tasks not found")
+        else:
+            self.write({})
+            self.finish()
 
 class DatasetTaskBulkStatusHandler(BaseHandler):
     """
