@@ -76,7 +76,7 @@ async def run(rest_client, debug=False):
             logger.info('queueing %d tasks', len(queue_tasks))
             if queue_tasks:
                 args = {'tasks': queue_tasks}
-                await rest_client.request('PUT', '/task_actions/bulk_status/queued', args)
+                await rest_client.request('POST', '/task_actions/bulk_status/queued', args)
 
         # ~ while tasks_to_queue > 0:
             # ~ num = min(tasks_to_queue, 10)
