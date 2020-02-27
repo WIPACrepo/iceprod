@@ -99,9 +99,9 @@ class condor_direct(grid.BaseGrid):
         self.resources = {'site': self.site}
         if 'gpu' in self.site.lower():
             self.resources['gpu'] = 1
-        self.queue_params = {
-            'requirements.site': self.site,
-        }
+        self.queue_params = {}
+        if 'exclusive' in self.queue_cfg and self.queue_cfg['exclusive']:
+            self.queue_params['requirements.site'] = self.site
         logger.info('resources: %r', self.resources)
         logger.info('queue params: %r', self.queue_params)
 
