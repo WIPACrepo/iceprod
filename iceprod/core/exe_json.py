@@ -126,7 +126,7 @@ class ServerComms:
         Returns:
             list: list of :py:class:`iceprod.core.dataclasses.Data` objects
         """
-        ret = await self.rest.request('GET', '/datasets/{}/task_files/{}'.format(dataset_id, task_id))
+        ret = await self.rest.request('GET', '/datasets/{}/files/{}'.format(dataset_id, task_id))
         data = []
         for r in ret['files']:
             d = dataclasses.Data(r)
