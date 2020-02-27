@@ -536,7 +536,7 @@ class condor_direct(grid.BaseGrid):
                              filelist=None):
         """Generate queueing system submit file for task in dir."""
         args = self.get_submit_args(task,cfg=cfg)
-        args.extend(['--offline', '--offline_transfer', '--gzip-logs'])
+        args.extend(['--offline', '--offline_transfer', 'True', '--gzip-logs'])
 
         # get requirements and batchopts
         requirements = []
