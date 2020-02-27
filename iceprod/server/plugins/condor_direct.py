@@ -470,13 +470,6 @@ class condor_direct(grid.BaseGrid):
             pilot['pilot_id'] = ret['result']
             task['pilot'] = pilot
 
-            # check if we have any files in the task_files API
-            if 'task_files' in task_cfg and task_cfg['task_files']:
-                comms = MyServerComms(self.rest_client)
-                files = await comms.task_files(task['dataset_id'],
-                                               task['task_id'])
-                task_cfg['data'].extend(files)
-
             config['dataset'] = dataset['dataset']
             task.update({
                 'config': config,
@@ -543,7 +536,7 @@ class condor_direct(grid.BaseGrid):
                              filelist=None):
         """Generate queueing system submit file for task in dir."""
         args = self.get_submit_args(task,cfg=cfg)
-        args.extend(['--offline', '--gzip-logs'])
+        args.extend(['--offline', '--offline_transfer', '--gzip-logs'])
 
         # get requirements and batchopts
         requirements = []
