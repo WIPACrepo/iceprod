@@ -981,7 +981,7 @@ class DatasetTaskFilesHandler(BaseHandler):
     """
     Handle multi files requests, by task.
     """
-    @authorization(roles=['admin','system','client'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin','system','client','pilot'], attrs=['dataset_id:read'])
     async def get(self, dataset_id, task_id):
         """
         Get dataset_files entries.
