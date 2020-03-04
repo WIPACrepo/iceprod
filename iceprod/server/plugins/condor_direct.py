@@ -395,6 +395,7 @@ class condor_direct(grid.BaseGrid):
 
                 pilot = pilots[grid_queue_id]
                 task_id = pilot['tasks'][0]
+                pilot['submit_dir'] = grid_jobs[grid_queue_id]['submit_dir']
                 logger.info('post-processing task %s', task_id)
                 ret = await self.rest_client.request('GET', f'/tasks/{task_id}')
                 if ret['status'] == 'processing':
