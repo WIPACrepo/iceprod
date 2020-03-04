@@ -237,7 +237,7 @@ class condor_direct(grid.BaseGrid):
                         if 'Error from' in line:
                             host = line.split()[2].strip(':')
             submitter = grid.get_host()
-            message = reason + f'\n\npilot_id: {pilot_id}\nhostname: {host}\nsubmitter: {host}\nsite: {self.site}'
+            message = reason + f'\n\npilot_id: {pilot_id}\nhostname: {host}\nsubmitter: {submitter}\nsite: {self.site}'
             await comms.task_kill(task_id, dataset_id=dataset_id, reason=reason,
                                   resources=resources, message=message, site=self.site)
         else:
@@ -415,7 +415,7 @@ class condor_direct(grid.BaseGrid):
                 ret = await self.rest_client.request('GET', f'/tasks/{task_id}')
                 if ret['status'] == 'processing':
                     pilot['dataset_id'] = ret['dataset_id']
-                    await self.task_error(task_id, pilot['dataset_id'],
+                    await self.task_error(task_id, pilot['dataset_id'], pilot_id=pilot['pilot_id'],
                                           submit_dir=pilot['submit_dir'], kill=True)
             elif status == 'queued':
                 grid_idle += 1
