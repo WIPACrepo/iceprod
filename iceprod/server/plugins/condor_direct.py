@@ -395,8 +395,12 @@ class condor_direct(grid.BaseGrid):
 
                 pilot = pilots[grid_queue_id]
                 task_id = pilot['tasks'][0]
-                await self.task_error(task_id, pilot['dataset_id'],
-                                      submit_dir=pilot['submit_dir'])
+                logger.info('post-processing task %s', task_id)
+                ret = await self.rest_client.request('GET', f'/tasks/{task_id}')
+                if ret['status'] == 'processing':
+                    pilot['dataset_id'] = ret['dataset_id']
+                    await self.task_error(task_id, pilot['dataset_id'],
+                                          submit_dir=pilot['submit_dir'])
             elif status == 'queued':
                 grid_idle += 1
 
