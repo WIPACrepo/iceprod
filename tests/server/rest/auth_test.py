@@ -40,7 +40,7 @@ class rest_auth_test(RestTestCase):
     def test_100_role(self):
         client = AsyncHTTPClient()
         r = yield client.fetch('http://localhost:%d/roles'%self.port,
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
         self.assertIn('results', data)
@@ -54,11 +54,11 @@ class rest_auth_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/roles/%s'%(self.port,data['name']),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:%d/roles'%self.port,
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
         self.assertIn('results', data)
@@ -72,11 +72,11 @@ class rest_auth_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/roles/%s'%(self.port,data['name']),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:%d/roles/%s'%(self.port,data['name']),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
         self.assertEqual(data, {'name': 'foo'})
@@ -89,26 +89,26 @@ class rest_auth_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/roles/%s'%(self.port,data['name']),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:%d/roles/%s'%(self.port,data['name']),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
         self.assertEqual(data, {'name': 'foo'})
 
         r = yield client.fetch('http://localhost:%d/roles/%s'%(self.port,data['name']),
                 method='DELETE',
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         with self.assertRaises(Exception):
             r = yield client.fetch('http://localhost:%d/roles/%s'%(self.port,data['name']),
-                    headers={'Authorization': b'bearer '+self.token})
+                    headers={'Authorization': 'bearer '+self.token})
 
         r = yield client.fetch('http://localhost:%d/roles'%self.port,
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
         self.assertIn('results', data)
@@ -124,13 +124,13 @@ class rest_auth_test(RestTestCase):
         with self.assertRaises(Exception):
             r = yield client.fetch('http://localhost:%d/roles/%s'%(self.port,data['name']),
                     method='PUT', body=json.dumps(data),
-                    headers={'Authorization': b'bearer '+user_token})
+                    headers={'Authorization': 'bearer '+user_token})
 
     @unittest_reporter(name='REST GET    /groups')
     def test_200_group(self):
         client = AsyncHTTPClient()
         r = yield client.fetch('http://localhost:%d/groups'%self.port,
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
         self.assertIn('results', data)
@@ -144,11 +144,11 @@ class rest_auth_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:{}/groups/{}'.format(self.port, data['name']),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:%d/groups'%self.port,
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
         self.assertIn('results', data)
@@ -162,11 +162,11 @@ class rest_auth_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:{}/groups/{}'.format(self.port, data['name']),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:{}/groups/{}'.format(self.port, data['name']),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
         self.assertEqual(data, {'name': 'foo/bar'})
@@ -179,26 +179,26 @@ class rest_auth_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:{}/groups/{}'.format(self.port, data['name']),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:{}/groups/{}'.format(self.port, data['name']),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
         self.assertEqual(data, {'name': 'foo/bar'})
 
         r = yield client.fetch('http://localhost:{}/groups/{}'.format(self.port, data['name']),
                 method='DELETE',
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         with self.assertRaises(Exception):
             yield client.fetch('http://localhost:{}/groups/{}'.format(self.port, data['name']),
-                    headers={'Authorization': b'bearer '+self.token})
+                    headers={'Authorization': 'bearer '+self.token})
         
         r = yield client.fetch('http://localhost:%d/groups'%self.port,
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
         self.assertIn('results', data)
@@ -214,13 +214,13 @@ class rest_auth_test(RestTestCase):
         with self.assertRaises(Exception):
             yield client.fetch('http://localhost:{}/groups/{}'.format(self.port, data['name']),
                     method='PUT', body=json.dumps(data),
-                    headers={'Authorization': b'bearer '+user_token})
+                    headers={'Authorization': 'bearer '+user_token})
 
     @unittest_reporter(name='REST GET    /users')
     def test_300_user(self):
         client = AsyncHTTPClient()
         r = yield client.fetch('http://localhost:%d/users'%self.port,
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
         self.assertIn('results', data)
@@ -234,7 +234,7 @@ class rest_auth_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/users'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         data = json.loads(r.body)
         self.assertIn('result', data)
@@ -242,7 +242,7 @@ class rest_auth_test(RestTestCase):
         user_id = data['result'].rsplit('/')[-1]
 
         r = yield client.fetch('http://localhost:%d/users'%self.port,
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
         self.assertIn('results', data)
@@ -259,7 +259,7 @@ class rest_auth_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/users'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         data = json.loads(r.body)
         self.assertIn('result', data)
@@ -267,7 +267,7 @@ class rest_auth_test(RestTestCase):
         user_id = data['result'].rsplit('/')[-1]
 
         r = yield client.fetch('http://localhost:%d/users/%s'%(self.port, user_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
         for k,v in {'user_id':user_id, 'username':'foo'}.items():
@@ -282,7 +282,7 @@ class rest_auth_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/users'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         data = json.loads(r.body)
         self.assertIn('result', data)
@@ -290,7 +290,7 @@ class rest_auth_test(RestTestCase):
         user_id = data['result'].rsplit('/')[-1]
 
         r = yield client.fetch('http://localhost:%d/users/%s'%(self.port, user_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
         for k,v in {'user_id':user_id, 'username':'foo'}.items():
@@ -299,15 +299,15 @@ class rest_auth_test(RestTestCase):
 
         r = yield client.fetch('http://localhost:%d/users/%s'%(self.port, user_id),
                 method='DELETE',
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         with self.assertRaises(Exception):
             yield client.fetch('http://localhost:%d/users/%s'%(self.port, user_id),
-                    headers={'Authorization': b'bearer '+self.token})
+                    headers={'Authorization': 'bearer '+self.token})
         
         r = yield client.fetch('http://localhost:%d/users'%self.port,
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
         self.assertIn('results', data)
@@ -323,7 +323,7 @@ class rest_auth_test(RestTestCase):
         with self.assertRaises(Exception):
             r = yield client.fetch('http://localhost:%d/users'%self.port,
                     method='POST', body=json.dumps(data),
-                    headers={'Authorization': b'bearer '+user_token})
+                    headers={'Authorization': 'bearer '+user_token})
 
     @unittest_reporter(name='REST POST   /users/<user_id>/groups')
     def test_410_user(self):
@@ -334,7 +334,7 @@ class rest_auth_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/users'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         data = json.loads(r.body)
         self.assertIn('result', data)
@@ -342,7 +342,7 @@ class rest_auth_test(RestTestCase):
         user_id = data['result'].rsplit('/')[-1]
 
         r = yield client.fetch('http://localhost:%d/users/%s/groups'%(self.port, user_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
         self.assertEqual(data, {'results': ['bar']})
@@ -353,17 +353,17 @@ class rest_auth_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:{}/groups/{}'.format(self.port,data['name']),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         data = {'group': data['name']}
         r = yield client.fetch('http://localhost:%d/users/%s/groups'%(self.port, user_id),
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:%d/users/%s/groups'%(self.port, user_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
         self.assertEqual(data, {'results': ['bar','baz']})
@@ -377,7 +377,7 @@ class rest_auth_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/users'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         data = json.loads(r.body)
         self.assertIn('result', data)
@@ -385,7 +385,7 @@ class rest_auth_test(RestTestCase):
         user_id = data['result'].rsplit('/')[-1]
 
         r = yield client.fetch('http://localhost:%d/users/%s/groups'%(self.port, user_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
         self.assertEqual(data, {'results': ['bar']})
@@ -396,7 +396,7 @@ class rest_auth_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:{}/groups/{}'.format(self.port,data['name']),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         data = {
@@ -404,17 +404,17 @@ class rest_auth_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:{}/groups/{}'.format(self.port,data['name']),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         data = {'groups': ['baz', 'blah']}
         r = yield client.fetch('http://localhost:%d/users/%s/groups'%(self.port, user_id),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:%d/users/%s/groups'%(self.port, user_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
         self.assertEqual(data, {'results': ['baz', 'blah']})
@@ -428,7 +428,7 @@ class rest_auth_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/users'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         data = json.loads(r.body)
         self.assertIn('result', data)
@@ -436,7 +436,7 @@ class rest_auth_test(RestTestCase):
         user_id = data['result'].rsplit('/')[-1]
 
         r = yield client.fetch('http://localhost:%d/users/%s'%(self.port, user_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
         self.assertEqual(data['roles'], ['bar'])
@@ -447,7 +447,7 @@ class rest_auth_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/roles/%s'%(self.port, 'baz'),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         data = {
@@ -455,17 +455,17 @@ class rest_auth_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/roles/%s'%(self.port, 'blah'),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         data = {'roles': ['baz','blah']}
         r = yield client.fetch('http://localhost:%d/users/%s/roles'%(self.port, user_id),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:%d/users/%s'%(self.port, user_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
         self.assertEqual(data['roles'], ['baz','blah'])
@@ -488,7 +488,7 @@ class rest_auth_test(RestTestCase):
         self.assertIn('groups',data)
 
     @unittest_reporter(name='REST POST   /create_token')
-    def test_800_auths(self):
+    def test_800_create_token(self):
         client = AsyncHTTPClient()
 
         # test temp token
@@ -498,7 +498,7 @@ class rest_auth_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/users'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
 
         data = {
@@ -507,9 +507,11 @@ class rest_auth_test(RestTestCase):
         }
         token2 = Auth('secret').create_token('bar', type='user',
                 payload={'username':'bar','role':'user','groups':['baz']})
+        if isinstance(token2, bytes):
+            token2 = token2.decode('utf-8')
         r = yield client.fetch('http://localhost:%d/create_token'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+token2})
+                headers={'Authorization': 'bearer '+token2})
         self.assertEqual(r.code, 200)
         tok = json.loads(r.body)['result']
         data = Auth('secret').validate(tok)
@@ -526,7 +528,7 @@ class rest_auth_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/users'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
 
         data = {
@@ -536,9 +538,11 @@ class rest_auth_test(RestTestCase):
         }
         token2 = Auth('secret').create_token('foo', type='user',
                 payload={'username':'foo','role':'user','groups':['baz']})
+        if isinstance(token2, bytes):
+            token2 = token2.decode('utf-8')
         r = yield client.fetch('http://localhost:%d/create_token'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+token2})
+                headers={'Authorization': 'bearer '+token2})
         self.assertEqual(r.code, 200)
         tok = json.loads(r.body)['result']
         data = Auth('secret').validate(tok)
@@ -556,9 +560,11 @@ class rest_auth_test(RestTestCase):
         }
         token2 = Auth('secret').create_token('foo', type='system',
                 payload={'username':'foo','role':'client','groups':[]})
+        if isinstance(token2, bytes):
+            token2 = token2.decode('utf-8')
         r = yield client.fetch('http://localhost:%d/create_token'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+token2})
+                headers={'Authorization': 'bearer '+token2})
         self.assertEqual(r.code, 200)
         tok = json.loads(r.body)['result']
         data = Auth('secret').validate(tok)
@@ -577,7 +583,7 @@ class rest_auth_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:{}/groups/{}'.format(self.port,data['name']),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         # add dataset auth
@@ -588,7 +594,7 @@ class rest_auth_test(RestTestCase):
         dataset_id = '123'
         r = yield client.fetch('http://localhost:%d/auths/%s'%(self.port,dataset_id),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
 
@@ -602,7 +608,7 @@ class rest_auth_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:{}/groups/{}'.format(self.port,data['name']),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         # add dataset auth
@@ -613,14 +619,14 @@ class rest_auth_test(RestTestCase):
         dataset_id = '123'
         r = yield client.fetch('http://localhost:%d/auths/%s'%(self.port,dataset_id),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         
         # get dataset auth
         r = yield client.fetch('http://localhost:%d/auths/%s'%(self.port,dataset_id),
                 method='GET',
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(data, ret)
@@ -635,11 +641,13 @@ class rest_auth_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:{}/groups/{}'.format(self.port,data['name']),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         
         token2 = Auth('secret').create_token('foo', type='user',
                 payload={'role':'user','groups':['foo/bar']})
+        if isinstance(token2, bytes):
+            token2 = token2.decode('utf-8')
 
         # add dataset auth
         data = {
@@ -649,14 +657,14 @@ class rest_auth_test(RestTestCase):
         dataset_id = '123'
         r = yield client.fetch('http://localhost:%d/auths/%s'%(self.port,dataset_id),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         
         # get authorization
         r = yield client.fetch('http://localhost:%d/auths/%s/actions/read'%(self.port,dataset_id),
                 method='GET',
-                headers={'Authorization': b'bearer '+token2})
+                headers={'Authorization': 'bearer '+token2})
         self.assertEqual(r.code, 200)
 
         # add bad dataset auth
@@ -667,7 +675,7 @@ class rest_auth_test(RestTestCase):
         dataset_id = '456'
         r = yield client.fetch('http://localhost:%d/auths/%s'%(self.port,dataset_id),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         
@@ -675,7 +683,7 @@ class rest_auth_test(RestTestCase):
         with self.assertRaises(tornado.httpclient.HTTPError) as e:
             r = yield client.fetch('http://localhost:%d/auths/%s/actions/read'%(self.port,dataset_id),
                     method='GET',
-                    headers={'Authorization': b'bearer '+token2})
+                    headers={'Authorization': 'bearer '+token2})
         self.assertEqual(e.exception.code, 403)
 
     @unittest_reporter(name='REST GET    /auths/<dataset_id>/actions/write')
@@ -688,11 +696,13 @@ class rest_auth_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:{}/groups/{}'.format(self.port,data['name']),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         
         token2 = Auth('secret').create_token('foo', type='user',
                 payload={'role':'user','groups':['foo/bar']})
+        if isinstance(token2, bytes):
+            token2 = token2.decode('utf-8')
 
         # add dataset auth
         data = {
@@ -702,14 +712,14 @@ class rest_auth_test(RestTestCase):
         dataset_id = '123'
         r = yield client.fetch('http://localhost:%d/auths/%s'%(self.port,dataset_id),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         
         # get authorization
         r = yield client.fetch('http://localhost:%d/auths/%s/actions/write'%(self.port,dataset_id),
                 method='GET',
-                headers={'Authorization': b'bearer '+token2})
+                headers={'Authorization': 'bearer '+token2})
         self.assertEqual(r.code, 200)
 
         # add bad dataset auth
@@ -720,7 +730,7 @@ class rest_auth_test(RestTestCase):
         dataset_id = '456'
         r = yield client.fetch('http://localhost:%d/auths/%s'%(self.port,dataset_id),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         
@@ -728,7 +738,7 @@ class rest_auth_test(RestTestCase):
         with self.assertRaises(tornado.httpclient.HTTPError) as e:
             r = yield client.fetch('http://localhost:%d/auths/%s/actions/write'%(self.port,dataset_id),
                     method='GET',
-                    headers={'Authorization': b'bearer '+token2})
+                    headers={'Authorization': 'bearer '+token2})
         self.assertEqual(e.exception.code, 403)
 
 

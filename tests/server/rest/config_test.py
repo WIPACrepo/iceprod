@@ -42,7 +42,7 @@ class rest_config_test(RestTestCase):
         client = AsyncHTTPClient()
         with self.assertRaises(HTTPError) as e:
             r = yield client.fetch('http://localhost:%d/config/bar'%self.port,
-                    headers={'Authorization': b'bearer '+self.token})
+                    headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(e.exception.code, 404)
 
     @unittest_reporter(name='REST PUT    /config/<dataset_id>')
@@ -53,11 +53,11 @@ class rest_config_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/config/bar'%self.port,
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:%d/config/bar'%self.port,
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(data, ret)

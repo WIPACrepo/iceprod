@@ -52,7 +52,7 @@ class rest_datasets_test(RestTestCase):
     def test_100_datasets(self):
         client = AsyncHTTPClient()
         r = yield client.fetch('http://localhost:%d/datasets'%self.port,
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret, {})
@@ -77,14 +77,14 @@ class rest_datasets_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/datasets'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         uri = ret['result']
         dataset_id = uri.split('/')[-1]
         
         r = yield client.fetch('http://localhost:%d/datasets'%self.port,
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn(dataset_id, ret)
@@ -93,20 +93,20 @@ class rest_datasets_test(RestTestCase):
             self.assertEqual(data[k], ret[dataset_id][k])
         
         r = yield client.fetch('http://localhost:%d/datasets?status=suspended'%self.port,
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertNotIn(dataset_id, ret)
         
         r = yield client.fetch('http://localhost:%d/datasets?keys=dataset_id|dataset'%self.port,
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn(dataset_id, ret)
         self.assertCountEqual(['dataset_id','dataset'], ret[dataset_id])
 
         r = yield client.fetch('http://localhost:%d/datasets/%s'%(self.port,dataset_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         for k in data:
@@ -118,7 +118,7 @@ class rest_datasets_test(RestTestCase):
         client = AsyncHTTPClient()
         with self.assertRaises(HTTPError) as e:
             r = yield client.fetch('http://localhost:%d/datasets/bar'%self.port,
-                    headers={'Authorization': b'bearer '+self.token})
+                    headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(e.exception.code, 404)
 
     @patch('tornado.httpclient.AsyncHTTPClient.fetch', autospec=True)
@@ -141,7 +141,7 @@ class rest_datasets_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/datasets'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         uri = ret['result']
@@ -150,13 +150,13 @@ class rest_datasets_test(RestTestCase):
         data = {'description': 'foo bar baz'}
         r = yield client.fetch('http://localhost:%d/datasets/%s/description'%(self.port,dataset_id),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret, {})
         
         r = yield client.fetch('http://localhost:%d/datasets/%s'%(self.port,dataset_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret['description'], data['description'])
@@ -181,7 +181,7 @@ class rest_datasets_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/datasets'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         uri = ret['result']
@@ -190,13 +190,13 @@ class rest_datasets_test(RestTestCase):
         data = {'status': 'suspended'}
         r = yield client.fetch('http://localhost:%d/datasets/%s/status'%(self.port,dataset_id),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret, {})
         
         r = yield client.fetch('http://localhost:%d/datasets/%s'%(self.port,dataset_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret['status'], data['status'])
@@ -221,7 +221,7 @@ class rest_datasets_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/datasets'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         uri = ret['result']
@@ -230,13 +230,13 @@ class rest_datasets_test(RestTestCase):
         data = {'jobs_submitted': 2}
         r = yield client.fetch('http://localhost:%d/datasets/%s/jobs_submitted'%(self.port,dataset_id),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret, {})
         
         r = yield client.fetch('http://localhost:%d/datasets/%s'%(self.port,dataset_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret['jobs_submitted'], data['jobs_submitted'])
@@ -244,25 +244,25 @@ class rest_datasets_test(RestTestCase):
         with self.assertRaises(Exception):
             yield client.fetch('http://localhost:%d/datasets/%s/jobs_submitted'%(self.port,'blah'),
                     method='PUT', body=json.dumps(data),
-                    headers={'Authorization': b'bearer '+self.token})
+                    headers={'Authorization': 'bearer '+self.token})
 
         data = {}
         with self.assertRaises(Exception):
             yield client.fetch('http://localhost:%d/datasets/%s/jobs_submitted'%(self.port,dataset_id),
                     method='PUT', body=json.dumps(data),
-                    headers={'Authorization': b'bearer '+self.token})
+                    headers={'Authorization': 'bearer '+self.token})
         
         data = {'jobs_submitted': 'foo'}
         with self.assertRaises(Exception):
             yield client.fetch('http://localhost:%d/datasets/%s/jobs_submitted'%(self.port,dataset_id),
                     method='PUT', body=json.dumps(data),
-                    headers={'Authorization': b'bearer '+self.token})
+                    headers={'Authorization': 'bearer '+self.token})
 
         data = {'jobs_submitted': 0}
         with self.assertRaises(Exception):
             yield client.fetch('http://localhost:%d/datasets/%s/jobs_submitted'%(self.port,dataset_id),
                     method='PUT', body=json.dumps(data),
-                    headers={'Authorization': b'bearer '+self.token})
+                    headers={'Authorization': 'bearer '+self.token})
 
         data = {
             'description': 'blah',
@@ -273,7 +273,7 @@ class rest_datasets_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/datasets'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         uri = ret['result']
@@ -283,7 +283,7 @@ class rest_datasets_test(RestTestCase):
         with self.assertRaises(Exception):
             yield client.fetch('http://localhost:%d/datasets/%s/jobs_submitted'%(self.port,dataset_id),
                     method='PUT', body=json.dumps(data),
-                    headers={'Authorization': b'bearer '+self.token})
+                    headers={'Authorization': 'bearer '+self.token})
 
     @patch('tornado.httpclient.AsyncHTTPClient.fetch', autospec=True)
     @unittest_reporter(name='REST GET    /dataset_summaries/status')
@@ -305,14 +305,14 @@ class rest_datasets_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/datasets'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         uri = ret['result']
         dataset_id = uri.split('/')[-1]
         
         r = yield client.fetch('http://localhost:%d/dataset_summaries/status'%self.port,
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret, {'processing': [dataset_id]})

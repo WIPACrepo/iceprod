@@ -40,7 +40,7 @@ class rest_pilots_test(RestTestCase):
     def test_100_pilots(self):
         client = AsyncHTTPClient()
         r = yield client.fetch('http://localhost:%d/pilots'%self.port,
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret, {})
@@ -55,13 +55,13 @@ class rest_pilots_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/pilots'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         pilot_id = ret['result']
 
         r = yield client.fetch('http://localhost:%d/pilots'%self.port,
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn(pilot_id, ret)
@@ -79,13 +79,13 @@ class rest_pilots_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/pilots'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         pilot_id = ret['result']
 
         r = yield client.fetch('http://localhost:%d/pilots/%s'%(self.port,pilot_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         for k in data:
@@ -104,7 +104,7 @@ class rest_pilots_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/pilots'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         pilot_id = ret['result']
@@ -116,7 +116,7 @@ class rest_pilots_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/pilots/%s'%(self.port,pilot_id),
                 method='PATCH', body=json.dumps(new_data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         for k in new_data:
@@ -133,19 +133,19 @@ class rest_pilots_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/pilots'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         pilot_id = ret['result']
 
         r = yield client.fetch('http://localhost:%d/pilots/%s'%(self.port,pilot_id),
                 method='DELETE',
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         with self.assertRaises(Exception):
             r = yield client.fetch('http://localhost:%d/pilots/%s'%(self.port,pilot_id),
-                    headers={'Authorization': b'bearer '+self.token})
+                    headers={'Authorization': 'bearer '+self.token})
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

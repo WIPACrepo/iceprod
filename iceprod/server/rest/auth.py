@@ -475,8 +475,10 @@ class LDAPHandler(AuthHandler):
                 'groups': ret['groups'],
             }
             tok = self.auth.create_token(username, type='user', payload=data)
+            if isinstance(tok, bytes):
+                tok = tok.decode('utf-8')
             self.write({
-                'token': tok.decode('utf-8'),
+                'token': tok,
                 'username': username,
                 'roles': ret['roles'],
                 'current_role': data['role'],
@@ -572,7 +574,9 @@ class CreateTokenHandler(AuthHandler):
         logger.debug('making new token with payload: %r', data)
         tok = self.auth.create_token(data['username'], expiration=exp,
                                      type=tok_type, payload=data)
-        self.write({'result': tok.decode('utf-8')})
+        if isinstance(tok, bytes):
+            tok = tok.decode('utf-8')
+        self.write({'result': tok})
 
 class AuthDatasetHandler(AuthHandler):
     """

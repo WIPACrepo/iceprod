@@ -50,7 +50,7 @@ class rest_logs_test(RestTestCase):
         data = {'data':'foo bar baz'}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         log_id = ret['result']
@@ -61,14 +61,14 @@ class rest_logs_test(RestTestCase):
         data = {'name': 'stdlog', 'data': 'foo bar baz'}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         log_id = ret['result']
 
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
                 method='GET',
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         ret = json.loads(r.body)
         self.assertIn(log_id, ret)
         self.assertEqual(len(ret), 1)
@@ -79,7 +79,7 @@ class rest_logs_test(RestTestCase):
         args = {'name': 'stdlog', 'keys': 'log_id|name|data'}
         r = yield client.fetch(url_concat('http://localhost:%d/logs'%self.port, args),
                 method='GET',
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         ret = json.loads(r.body)
         self.assertIn(log_id, ret)
 
@@ -89,13 +89,13 @@ class rest_logs_test(RestTestCase):
         data = {'data':'foo bar baz'}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         log_id = ret['result']
 
         r = yield client.fetch('http://localhost:%d/logs/%s'%(self.port,log_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(data['data'], ret['data'])
@@ -106,7 +106,7 @@ class rest_logs_test(RestTestCase):
         data = {'data':'foo bar baz'}
         r = yield client.fetch('http://localhost:%d/datasets/12345/logs'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         log_id = ret['result']
@@ -117,13 +117,13 @@ class rest_logs_test(RestTestCase):
         data = {'dataset_id':'12345','data':'foo bar baz'}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         log_id = ret['result']
 
         r = yield client.fetch('http://localhost:%d/datasets/12345/logs/%s'%(self.port,log_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(data['data'], ret['data'])
@@ -134,13 +134,13 @@ class rest_logs_test(RestTestCase):
         data = {'data':'foo', 'dataset_id': 'foo', 'task_id': 'bar', 'name': 'stdout'}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         log_id = ret['result']
 
         r = yield client.fetch('http://localhost:%d/datasets/foo/tasks/bar/logs'%(self.port,),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn('logs', ret)
@@ -152,17 +152,17 @@ class rest_logs_test(RestTestCase):
         data = {'data':'bar', 'dataset_id': 'foo', 'task_id': 'bar', 'name': 'stderr'}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         
         data = {'data':'baz', 'dataset_id': 'foo', 'task_id': 'bar', 'name': 'stdout'}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         
         r = yield client.fetch('http://localhost:%d/datasets/foo/tasks/bar/logs?group=true'%(self.port,),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn('logs', ret)
@@ -173,7 +173,7 @@ class rest_logs_test(RestTestCase):
 
         # now check order, num, and keys
         r = yield client.fetch('http://localhost:%d/datasets/foo/tasks/bar/logs?order=asc&num=1&keys=log_id|data'%(self.port,),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn('logs', ret)
@@ -206,7 +206,7 @@ class rest_logs_test2(RestTestCase):
         data = {'data':fake_data(2000000)}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         log_id = ret['result']
@@ -217,7 +217,7 @@ class rest_logs_test2(RestTestCase):
         data = {'data':fake_data(200000)}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         log_id = ret['result']
@@ -235,7 +235,7 @@ class rest_logs_test2(RestTestCase):
         data = {'data':fake_data(2000000)}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         log_id = ret['result']
@@ -244,7 +244,7 @@ class rest_logs_test2(RestTestCase):
         self.assertEqual(body, data['data'])
 
         r = yield client.fetch('http://localhost:%d/logs/%s'%(self.port,log_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(data['data'], ret['data'])
@@ -252,7 +252,7 @@ class rest_logs_test2(RestTestCase):
         data = {'data':fake_data(200000)}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         log_id = ret['result']
@@ -261,7 +261,7 @@ class rest_logs_test2(RestTestCase):
             conn.Object('iceprod2-logs', log_id).get()
 
         r = yield client.fetch('http://localhost:%d/logs/%s'%(self.port,log_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(data['data'], ret['data'])
@@ -276,7 +276,7 @@ class rest_logs_test2(RestTestCase):
         data = {'data':fake_data(2000000)}
         r = yield client.fetch('http://localhost:%d/datasets/12345/logs'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         log_id = ret['result']
@@ -287,7 +287,7 @@ class rest_logs_test2(RestTestCase):
         data = {'data':fake_data(200000)}
         r = yield client.fetch('http://localhost:%d/datasets/12345/logs'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         log_id = ret['result']
@@ -305,7 +305,7 @@ class rest_logs_test2(RestTestCase):
         data = {'dataset_id':'12345','data':fake_data(2000000)}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         log_id = ret['result']
@@ -314,7 +314,7 @@ class rest_logs_test2(RestTestCase):
         self.assertEqual(body, data['data'])
 
         r = yield client.fetch('http://localhost:%d/datasets/12345/logs/%s'%(self.port,log_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(data['data'], ret['data'])
@@ -322,7 +322,7 @@ class rest_logs_test2(RestTestCase):
         data = {'dataset_id':'12345','data':fake_data(200000)}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         log_id = ret['result']
@@ -331,7 +331,7 @@ class rest_logs_test2(RestTestCase):
             conn.Object('iceprod2-logs', log_id).get()
 
         r = yield client.fetch('http://localhost:%d/datasets/12345/logs/%s'%(self.port,log_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(data['data'], ret['data'])
@@ -346,7 +346,7 @@ class rest_logs_test2(RestTestCase):
         data = {'data':fake_data(2000000), 'dataset_id': 'foo', 'task_id': 'bar'}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         log_id = ret['result']
@@ -355,7 +355,7 @@ class rest_logs_test2(RestTestCase):
         self.assertEqual(body, data['data'])
 
         r = yield client.fetch('http://localhost:%d/datasets/foo/tasks/bar/logs'%(self.port,),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn('logs', ret)
@@ -366,7 +366,7 @@ class rest_logs_test2(RestTestCase):
         data = {'data':fake_data(200000), 'dataset_id': 'foo', 'task_id': 'bar'}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         log_id = ret['result']
@@ -375,7 +375,7 @@ class rest_logs_test2(RestTestCase):
             conn.Object('iceprod2-logs', log_id).get()
 
         r = yield client.fetch('http://localhost:%d/datasets/foo/tasks/bar/logs?order=asc'%(self.port,),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn('logs', ret)

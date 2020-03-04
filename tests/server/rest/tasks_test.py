@@ -50,7 +50,7 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         self.assertIn('result', ret)
@@ -69,13 +69,13 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         task_id = ret['result']
 
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn('tasks', ret)
@@ -84,7 +84,7 @@ class rest_tasks_test(RestTestCase):
         self.assertEqual(ret['tasks'][0]['task_id'], task_id)
 
         r = yield client.fetch('http://localhost:%d/tasks?keys=dataset_id|name'%self.port,
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn('tasks', ret)
@@ -96,17 +96,17 @@ class rest_tasks_test(RestTestCase):
         data = {'status':'queued'}
         r = yield client.fetch('http://localhost:%d/tasks/%s/status'%(self.port,task_id),
                 method='PUT', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
 
         r = yield client.fetch('http://localhost:%d/tasks?status=waiting'%self.port,
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn('tasks', ret)
         self.assertEqual(len(ret['tasks']), 0)
 
         r = yield client.fetch('http://localhost:%d/tasks?status=queued'%self.port,
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn('tasks', ret)
@@ -128,13 +128,13 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         task_id = ret['result']
 
         r = yield client.fetch('http://localhost:%d/tasks/%s'%(self.port,task_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         for k in data:
@@ -159,7 +159,7 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         task_id = ret['result']
@@ -170,7 +170,7 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks/%s'%(self.port,task_id),
                 method='PATCH', body=json.dumps(new_data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         for k in new_data:
@@ -191,7 +191,7 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         task_id = ret['result']
@@ -199,11 +199,11 @@ class rest_tasks_test(RestTestCase):
         data2 = {'status':'failed'}
         r = yield client.fetch('http://localhost:%d/tasks/%s/status'%(self.port,task_id),
                 method='PUT', body=json.dumps(data2),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:%d/tasks/%s'%(self.port,task_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn('status', ret)
@@ -223,13 +223,13 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         task_id = ret['result']
 
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks'%(self.port,data['dataset_id']),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn(task_id, ret)
@@ -251,13 +251,13 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         task_id = ret['result']
 
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         for k in data:
@@ -282,7 +282,7 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         task_id = ret['result']
@@ -290,11 +290,11 @@ class rest_tasks_test(RestTestCase):
         data2 = {'status':'failed'}
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/status'%(self.port,data['dataset_id'],task_id),
                 method='PUT', body=json.dumps(data2),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn('status', ret)
@@ -314,13 +314,13 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         task_id = ret['result']
 
         r = yield client.fetch('http://localhost:%d/datasets/%s/task_summaries/status'%(self.port,data['dataset_id']),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret, {'waiting': [task_id]})
@@ -339,13 +339,13 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         task_id = ret['result']
 
         r = yield client.fetch('http://localhost:%d/datasets/%s/task_counts/status'%(self.port,data['dataset_id']),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret, {'waiting': 1})
@@ -364,13 +364,13 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         task_id = ret['result']
 
         r = yield client.fetch('http://localhost:%d/datasets/%s/task_counts/name_status'%(self.port,data['dataset_id']),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret, {'bar':{'waiting': 1}})
@@ -389,13 +389,13 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         task_id = ret['result']
 
         r = yield client.fetch('http://localhost:%d/datasets/%s/task_stats'%(self.port,data['dataset_id']),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret, {})
@@ -404,11 +404,11 @@ class rest_tasks_test(RestTestCase):
         data2 = {'status':'complete'}
         r = yield client.fetch('http://localhost:%d/tasks/%s/status'%(self.port,task_id),
                 method='PUT', body=json.dumps(data2),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:%d/datasets/%s/task_stats'%(self.port,data['dataset_id']),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         logger.info('ret: %r', ret)
@@ -432,21 +432,21 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         task_id = ret['result']
 
         r = yield client.fetch('http://localhost:%d/task_actions/queue'%(self.port,),
                 method='POST', body=json.dumps({}),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn('queued', ret)
         self.assertEqual(ret['queued'], 1)
         
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret['status'], 'queued')
@@ -469,7 +469,7 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         task_id = ret['result']
@@ -487,27 +487,27 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         task_id2 = ret['result']
 
         r = yield client.fetch('http://localhost:%d/task_actions/queue'%(self.port,),
                 method='POST', body=json.dumps({'num_tasks':1}),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn('queued', ret)
         self.assertEqual(ret['queued'], 1)
         
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,'foo',task_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret['status'], 'waiting')
         
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,'bar',task_id2),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret['status'], 'queued')
@@ -526,7 +526,7 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         task_id = ret['result']
@@ -534,18 +534,18 @@ class rest_tasks_test(RestTestCase):
         data2 = {'status':'queued'}
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/status'%(self.port,data['dataset_id'],task_id),
                 method='PUT', body=json.dumps(data2),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:%d/task_actions/process'%(self.port,),
                 method='POST', body=json.dumps({}),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(task_id, ret['task_id'])
         
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret['status'], 'processing')
@@ -563,7 +563,7 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         task_id = ret['result']
@@ -571,29 +571,29 @@ class rest_tasks_test(RestTestCase):
         data2 = {'status':'queued'}
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/status'%(self.port,data['dataset_id'],task_id),
                 method='PUT', body=json.dumps(data2),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         with self.assertRaises(Exception):
             r = yield client.fetch('http://localhost:%d/task_actions/process'%(self.port,),
                     method='POST', body=json.dumps({'requirements':{'memory':2.0,'disk':120}}),
-                    headers={'Authorization': b'bearer '+self.token})
+                    headers={'Authorization': 'bearer '+self.token})
 
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret['status'], 'queued')
 
         r = yield client.fetch('http://localhost:%d/task_actions/process'%(self.port,),
                 method='POST', body=json.dumps({'requirements':{'memory':6.0,'disk':120}}),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(task_id, ret['task_id'])
 
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret['status'], 'processing')
@@ -612,7 +612,7 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         task_id = ret['result']
@@ -620,16 +620,16 @@ class rest_tasks_test(RestTestCase):
         data2 = {'status':'queued'}
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/status'%(self.port,data['dataset_id'],task_id),
                 method='PUT', body=json.dumps(data2),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:%d/tasks/%s/task_actions/reset'%(self.port,task_id),
                 method='POST', body=json.dumps({}),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret['status'], 'reset')
@@ -638,16 +638,16 @@ class rest_tasks_test(RestTestCase):
         data2 = {'status':'queued'}
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/status'%(self.port,data['dataset_id'],task_id),
                 method='PUT', body=json.dumps(data2),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:%d/tasks/%s/task_actions/reset'%(self.port,task_id),
                 method='POST', body=json.dumps({'time_used':7200}),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret['status'], 'reset')
@@ -658,16 +658,16 @@ class rest_tasks_test(RestTestCase):
         data2 = {'status':'queued'}
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/status'%(self.port,data['dataset_id'],task_id),
                 method='PUT', body=json.dumps(data2),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:%d/tasks/%s/task_actions/reset'%(self.port,task_id),
                 method='POST', body=json.dumps({'resources':{'time':2.5, 'memory':3.5, 'disk': 20.3, 'gpu': 23}}),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret['status'], 'reset')
@@ -682,13 +682,13 @@ class rest_tasks_test(RestTestCase):
         data2 = {'status':'complete'}
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/status'%(self.port,data['dataset_id'],task_id),
                 method='PUT', body=json.dumps(data2),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         with self.assertRaises(Exception):
             r = yield client.fetch('http://localhost:%d/tasks/%s/task_actions/reset'%(self.port,task_id),
                     method='POST', body=json.dumps({}),
-                    headers={'Authorization': b'bearer '+self.token})
+                    headers={'Authorization': 'bearer '+self.token})
 
     @unittest_reporter(name='REST POST   /tasks/<task_id>/task_actions/complete')
     def test_710_tasks(self):
@@ -704,7 +704,7 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         task_id = ret['result']
@@ -712,16 +712,16 @@ class rest_tasks_test(RestTestCase):
         data2 = {'status':'processing'}
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/status'%(self.port,data['dataset_id'],task_id),
                 method='PUT', body=json.dumps(data2),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:%d/tasks/%s/task_actions/complete'%(self.port,task_id),
                 method='POST', body=json.dumps({}),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret['status'], 'complete')
@@ -730,16 +730,16 @@ class rest_tasks_test(RestTestCase):
         data2 = {'status':'processing'}
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/status'%(self.port,data['dataset_id'],task_id),
                 method='PUT', body=json.dumps(data2),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:%d/tasks/%s/task_actions/complete'%(self.port,task_id),
                 method='POST', body=json.dumps({'time_used':7200}),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret['status'], 'complete')
@@ -749,13 +749,13 @@ class rest_tasks_test(RestTestCase):
         data2 = {'status':'idle'}
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/status'%(self.port,data['dataset_id'],task_id),
                 method='PUT', body=json.dumps(data2),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         with self.assertRaises(Exception):
             r = yield client.fetch('http://localhost:%d/tasks/%s/task_actions/complete'%(self.port,task_id),
                     method='POST', body=json.dumps({}),
-                    headers={'Authorization': b'bearer '+self.token})
+                    headers={'Authorization': 'bearer '+self.token})
 
 
 
@@ -773,7 +773,7 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         task_id = ret['result']
@@ -781,11 +781,11 @@ class rest_tasks_test(RestTestCase):
         data2 = {'tasks':[task_id]}
         r = yield client.fetch('http://localhost:%d/datasets/%s/task_actions/bulk_status/%s'%(self.port,data['dataset_id'],'failed'),
                 method='POST', body=json.dumps(data2),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn('status', ret)
@@ -802,7 +802,7 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         task_id2 = ret['result']
@@ -810,18 +810,18 @@ class rest_tasks_test(RestTestCase):
         data2 = {'tasks':[task_id, task_id2]}
         r = yield client.fetch('http://localhost:%d/datasets/%s/task_actions/bulk_status/%s'%(self.port,data['dataset_id'],'reset'),
                 method='POST', body=json.dumps(data2),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn('status', ret)
         self.assertEqual(ret['status'], 'reset')
 
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id2),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn('status', ret)
@@ -830,12 +830,12 @@ class rest_tasks_test(RestTestCase):
         with self.assertRaises(Exception):
             yield client.fetch('http://localhost:%d/datasets/%s/task_actions/bulk_status/%s'%(self.port,data['dataset_id'],'blah'),
                     method='POST', body=json.dumps(data2),
-                    headers={'Authorization': b'bearer '+self.token})
+                    headers={'Authorization': 'bearer '+self.token})
 
         with self.assertRaises(Exception):
             yield client.fetch('http://localhost:%d/datasets/%s/task_actions/bulk_status/%s'%(self.port,data['dataset_id'],'failed'),
                     method='POST', body=json.dumps({}),
-                    headers={'Authorization': b'bearer '+self.token})
+                    headers={'Authorization': 'bearer '+self.token})
                     
 
     @unittest_reporter(name='REST PATCH   /datasets/<dataset_id>/task_actions/bulk_requirements/<name>')
@@ -852,7 +852,7 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         task_id = ret['result']
@@ -868,7 +868,7 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         task_id2 = ret['result']
@@ -876,11 +876,11 @@ class rest_tasks_test(RestTestCase):
         data2 = {'cpu':2}
         r = yield client.fetch('http://localhost:%d/datasets/%s/task_actions/bulk_requirements/%s'%(self.port,data['dataset_id'],'bar'),
                 method='PATCH', body=json.dumps(data2),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn('requirements', ret)
@@ -888,7 +888,7 @@ class rest_tasks_test(RestTestCase):
         self.assertEqual(ret['requirements']['cpu'], 2)
 
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id2),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn('requirements', ret)
@@ -897,11 +897,11 @@ class rest_tasks_test(RestTestCase):
         data2 = {'gpu':4}
         r = yield client.fetch('http://localhost:%d/datasets/%s/task_actions/bulk_requirements/%s'%(self.port,data['dataset_id'],'baz'),
                 method='PATCH', body=json.dumps(data2),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id2),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn('requirements', ret)
@@ -911,11 +911,11 @@ class rest_tasks_test(RestTestCase):
         data2 = {'os':['foo','bar']}
         r = yield client.fetch('http://localhost:%d/datasets/%s/task_actions/bulk_requirements/%s'%(self.port,data['dataset_id'],'baz'),
                 method='PATCH', body=json.dumps(data2),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id2),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn('requirements', ret)
@@ -926,25 +926,25 @@ class rest_tasks_test(RestTestCase):
         with self.assertRaises(Exception):
             r = yield client.fetch('http://localhost:%d/datasets/%s/task_actions/bulk_requirements/%s'%(self.port,data['dataset_id'],'bar'),
                     method='PATCH', body=json.dumps(data2),
-                    headers={'Authorization': b'bearer '+self.token})
+                    headers={'Authorization': 'bearer '+self.token})
 
         data2 = {'memory':'ten'}
         with self.assertRaises(Exception):
             r = yield client.fetch('http://localhost:%d/datasets/%s/task_actions/bulk_requirements/%s'%(self.port,data['dataset_id'],'bar'),
                     method='PATCH', body=json.dumps(data2),
-                    headers={'Authorization': b'bearer '+self.token})
+                    headers={'Authorization': 'bearer '+self.token})
 
         data2 = {'gpu':3.5}
         with self.assertRaises(Exception):
             r = yield client.fetch('http://localhost:%d/datasets/%s/task_actions/bulk_requirements/%s'%(self.port,data['dataset_id'],'bar'),
                     method='PATCH', body=json.dumps(data2),
-                    headers={'Authorization': b'bearer '+self.token})
+                    headers={'Authorization': 'bearer '+self.token})
 
     @unittest_reporter(name='REST GET     /datasets/<dataset_id>/files')
     def test_900_tasks(self):
         client = AsyncHTTPClient()
         r = yield client.fetch('http://localhost:%d/datasets/%s/files'%(self.port, 'foo'),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret, {'files':[]})
@@ -965,7 +965,7 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
 
@@ -977,11 +977,11 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/datasets/%s/files'%(self.port, 'foo'),
                 method='POST', body=json.dumps(file_data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
 
         r = yield client.fetch('http://localhost:%d/datasets/%s/files'%(self.port, 'foo'),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn('files', ret)
@@ -1004,7 +1004,7 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         task_id = ret['result']
@@ -1017,11 +1017,11 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/datasets/%s/files'%(self.port, 'foo'),
                 method='POST', body=json.dumps(file_data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
 
         r = yield client.fetch('http://localhost:%d/datasets/%s/files/%s'%(self.port, 'foo', task_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn('files', ret)
@@ -1044,7 +1044,7 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         task_id = ret['result']
@@ -1055,11 +1055,11 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/datasets/%s/files/%s'%(self.port, 'foo', task_id),
                 method='POST', body=json.dumps(file_data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
 
         r = yield client.fetch('http://localhost:%d/datasets/%s/files/%s'%(self.port, 'foo', task_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn('files', ret)
@@ -1082,7 +1082,7 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
         task_id = ret['result']
@@ -1093,16 +1093,16 @@ class rest_tasks_test(RestTestCase):
         }
         r = yield client.fetch('http://localhost:%d/datasets/%s/files/%s'%(self.port, 'foo', task_id),
                 method='POST', body=json.dumps(file_data),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 201)
 
         r = yield client.fetch('http://localhost:%d/datasets/%s/files/%s'%(self.port, 'foo', task_id),
                 method='DELETE',
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:%d/datasets/%s/files/%s'%(self.port, 'foo', task_id),
-                headers={'Authorization': b'bearer '+self.token})
+                headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn('files', ret)

@@ -43,6 +43,7 @@ class RestTestCase(AsyncTestCase):
                                       '--dbpath', dbpath, '--smallfiles',
                                       '--quiet', '--nounixsocket',
                                       '--logpath', dblog])
+                time.sleep(0.05)
                 self.addCleanup(partial(time.sleep, 0.05))
                 self.addCleanup(m.terminate)
 
@@ -61,7 +62,10 @@ class RestTestCase(AsyncTestCase):
             for r in routes:
                 self.server.add_route(*r)
             self.server.startup(port=self.port)
-            self.token = Auth('secret').create_token('foo', type='user', payload={'role':'admin','username':'admin'}).encode('utf-8')
+            self.token = Auth('secret').create_token('foo', type='user', payload={'role':'admin','username':'admin'})
+            if isinstance(self.token, bytes):
+                self.token = self.token.decode('utf-8')
+
         except Exception:
             logger.error('failed setup', exc_info=True)
             raise
