@@ -386,6 +386,17 @@ class condor_direct(grid.BaseGrid):
             if now - submit_time > time_dict[status]:
                 logger.info('pilot over time: %r', pilots[grid_queue_id]['pilot_id'])
                 reset_pilots.add(grid_queue_id)
+                remove_grid_jobs.add(grid_queue_id)
+            elif status == 'error':
+                logger.info('job error. pilot_id: %r, grid_id: %r',
+                            pilots[grid_queue_id]['pilot_id'], grid_queue_id)
+                reset_pilots.add(grid_queue_id)
+                remove_grid_jobs.add(grid_queue_id)
+
+                pilot = pilots[grid_queue_id]
+                task_id = pilot['tasks'][0]
+                await self.task_error(task_id, pilot['dataset_id'],
+                                      submit_dir=pilot['submit_dir'])
             elif status == 'queued':
                 grid_idle += 1
 
