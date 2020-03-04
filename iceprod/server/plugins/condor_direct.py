@@ -141,7 +141,7 @@ class condor_direct(grid.BaseGrid):
         data['data'] = read_filename(os.path.join(submit_dir, constants['stdout']))
         await self.rest_client.request('POST', '/logs', data)
 
-    async def task_error(self, task_id, dataset_id, submit_dir, reason=''):
+    async def task_error(self, task_id, dataset_id, submit_dir, reason='', pilot_id=None, kill=False):
         """reset a task"""
         # search for resources in stdout
         resources = {}
@@ -225,9 +225,24 @@ class condor_direct(grid.BaseGrid):
             reason = 'unknown failure'
 
         comms = MyServerComms(self.rest_client)
-        await comms.task_error(task_id, dataset_id=dataset_id, 
-                               reason=reason, resources=resources,
-                               site=self.site)
+        if kill:
+            host = None
+            filename = os.path.join(submit_dir, 'condor.log')
+            if os.path.exists(filename):
+                with open(filename) as f:
+                    for line in f:
+                        line = line.strip()
+                        if 'Job executing on host' in line:
+                            host = line.split('<')[-1].split(':')[0]
+                        if 'Error from' in line:
+                            host = line.split()[2].strip(':')
+            submitter = grid.get_host()
+            message = reason + f'\n\npilot_id: {pilot_id}\nhostname: {host}\nsubmitter: {host}\nsite: {self.site}'
+            await comms.task_kill(task_id, dataset_id=dataset_id, reason=reason,
+                                  resources=resources, message=message, site=self.site)
+        else:
+            await comms.task_error(task_id, dataset_id=dataset_id, reason=reason,
+                                  resources=resources, site=self.site)
 
     async def finish_task(self, task_id, dataset_id, submit_dir):
         """complete a task"""
@@ -401,7 +416,7 @@ class condor_direct(grid.BaseGrid):
                 if ret['status'] == 'processing':
                     pilot['dataset_id'] = ret['dataset_id']
                     await self.task_error(task_id, pilot['dataset_id'],
-                                          submit_dir=pilot['submit_dir'])
+                                          submit_dir=pilot['submit_dir'], kill=True)
             elif status == 'queued':
                 grid_idle += 1
 
