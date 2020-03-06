@@ -141,7 +141,8 @@ class condor_direct(grid.BaseGrid):
         data['data'] = read_filename(os.path.join(submit_dir, constants['stdout']))
         await self.rest_client.request('POST', '/logs', data)
 
-    async def task_error(self, task_id, dataset_id, submit_dir, reason='', pilot_id=None, kill=False):
+    async def task_error(self, task_id, dataset_id, submit_dir, reason='',
+                         site=None, pilot_id=None, kill=False):
         """reset a task"""
         # search for resources in stdout
         resources = {}
@@ -224,6 +225,9 @@ class condor_direct(grid.BaseGrid):
         if not reason:
             reason = 'unknown failure'
 
+        if not site:
+            site = self.site
+
         comms = MyServerComms(self.rest_client)
         if kill:
             host = None
@@ -237,14 +241,14 @@ class condor_direct(grid.BaseGrid):
                         if 'Error from' in line:
                             host = line.split()[2].strip(':')
             submitter = grid.get_host()
-            message = reason + f'\n\npilot_id: {pilot_id}\nhostname: {host}\nsubmitter: {submitter}\nsite: {self.site}'
+            message = reason + f'\n\npilot_id: {pilot_id}\nhostname: {host}\nsubmitter: {submitter}\nsite: {site}'
             await comms.task_kill(task_id, dataset_id=dataset_id, reason=reason,
-                                  resources=resources, message=message, site=self.site)
+                                  resources=resources, message=message, site=site)
         else:
             await comms.task_error(task_id, dataset_id=dataset_id, reason=reason,
-                                  resources=resources, site=self.site)
+                                  resources=resources, site=site)
 
-    async def finish_task(self, task_id, dataset_id, submit_dir):
+    async def finish_task(self, task_id, dataset_id, submit_dir, site=None):
         """complete a task"""
         # search for reasources in slurm stdout
         resources = {}
@@ -271,9 +275,12 @@ class condor_direct(grid.BaseGrid):
                         else:
                             break
 
+        if not site:
+            site = self.site
+
         comms = MyServerComms(self.rest_client)
         await comms.finish_task(task_id, dataset_id=dataset_id, 
-                                resources=resources, site=self.site)
+                                resources=resources, site=site)
 
     async def check_and_clean(self):
         """Check and clean the grid"""
@@ -352,11 +359,13 @@ class condor_direct(grid.BaseGrid):
                                     logger.info('finished task %s', task_id)
                                     await self.finish_task(task_id,
                                                            dataset_id=pilot['dataset_id'],
-                                                           submit_dir=pilot['submit_dir'])
+                                                           submit_dir=pilot['submit_dir'],
+                                                           site=grid_history[gid]['site'])
                                 else:
                                     logger.info('error in task %s', task_id)
                                     await self.task_error(task_id, pilot['dataset_id'],
-                                                          submit_dir=pilot['submit_dir'])
+                                                          submit_dir=pilot['submit_dir'],
+                                                          site=grid_history[gid]['site'])
                     except Exception:
                         logger.error('error handling task', exc_info=True)
 
@@ -784,21 +793,23 @@ class condor_direct(grid.BaseGrid):
         Get completions in the last 4 days.
 
         Returns:
-            dict: {grid_queue_id: {status, submit_dir} }
+            dict: {grid_queue_id: {status, submit_dir, site} }
         """
         ret = {}
-        cmd = ['condor_history',getpass.getuser(),'-match','50000','-af:j','jobstatus','exitcode','exitbysignal','cmd']
+        cmd = ['condor_history',getpass.getuser(),'-match','50000','-af:j','jobstatus','exitcode','exitbysignal','MATCH_EXP_JOBGLIDEIN_ResourceName','cmd']
         out = await check_output_clean_env(*cmd)
         print('get_grid_completions():',out)
         for line in out.split('\n'):
             if not line.strip():
                 continue
-            gid,status,exitstatus,exitsignal,cmd = line.split()
+            gid,status,exitstatus,exitsignal,site,cmd = line.split()
             if 'loader.sh' not in cmd:
                 continue
             if status == '4' and exitstatus == '0' and exitsignal == 'false':
                 status = 'ok'
             else:
                 status = 'error'
-            ret[gid] = {'status':status,'submit_dir':os.path.dirname(cmd)}
+            if site == 'undefined':
+                site = None
+            ret[gid] = {'status':status,'submit_dir':os.path.dirname(cmd),'site':site}
         return ret

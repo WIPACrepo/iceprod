@@ -51,6 +51,7 @@ class non_active_tasks_test(AsyncTestCase):
         rc = MagicMock(spec=RestClient)
         pilots = {}
         dataset_summaries = {'processing':['foo']}
+        task = {'status':'processing','status_changed':'2000-01-01T00:00:00'}
         tasks = {}
         pilots = {}
         async def client(method, url, args=None):
@@ -61,8 +62,12 @@ class non_active_tasks_test(AsyncTestCase):
                 return pilots
             elif url.startswith('/datasets/foo/task_summaries'):
                 return tasks
+            elif url == '/datasets/foo/tasks/bar' and method == 'GET':
+                return task
             elif url == '/datasets/foo/tasks/bar/status' and method == 'PUT':
                 client.called = True
+                return {}
+            elif url.startswith('/logs'):
                 return {}
             else:
                 raise Exception()

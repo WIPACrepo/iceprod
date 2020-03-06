@@ -16,6 +16,8 @@ from datetime import datetime
 
 from tornado.ioloop import IOLoop
 
+from iceprod.server.util import str2datetime
+
 logger = logging.getLogger('non_active_tasks')
 
 def non_active_tasks(module):
@@ -69,12 +71,6 @@ async def run(rest_client, debug=False):
             data.update({'name':'stderr', 'data': ''})
             await rest_client.request('POST', '/logs', data)
 
-        def get_datetime(str_date):
-            if '.' in str_date:
-                return datetime.strptime(str_date, '%Y-%m-%dT%H:%M:%S.%f')
-            else:
-                return datetime.strptime(str_date, '%Y-%m-%dT%H:%M:%S')
-
         awaitables = set()
         for dataset_id in dataset_ids:
             tasks = dataset_tasks[dataset_id]
@@ -84,7 +80,7 @@ async def run(rest_client, debug=False):
                     args = {'keys': 'status|status_changed'}
                     task = await rest_client.request('GET', f'/datasets/{dataset_id}/tasks/{task_id}', args)
                     # check status, and that we haven't just changed status
-                    if task['status'] == 'processing' and (datetime.utcnow()-get_datetime(task['status_changed'])).total_seconds() > 600:
+                    if task['status'] == 'processing' and (datetime.utcnow()-str2datetime(task['status_changed'])).total_seconds() > 600:
                         logger.info('dataset %s reset task %s', dataset_id, task_id)
                         awaitables.add(reset(dataset_id,task_id))
 
