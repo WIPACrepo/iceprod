@@ -692,12 +692,14 @@ class condor_direct(grid.BaseGrid):
             else:
                 requirements.append('(!isUndefined(Target.GPUs) ? Target.GPUs == 0 : True)')
             if 'memory' in task['requirements'] and task['requirements']['memory']:
-                p('request_memory = {}'.format(int(task['requirements']['memory']*1000+100)))
+                # ask for a little extra, in case we use more
+                p('request_memory = {}'.format(int(task['requirements']['memory']*1000*1.1)))
             if 'disk' in task['requirements'] and task['requirements']['disk']:
-                p('request_disk = {}'.format(int(task['requirements']['disk']*1000000)))
+                # ask for a little extra, in case we use more
+                p('request_disk = {}'.format(int(task['requirements']['disk']*1000000*1.1)))
             if 'time' in task['requirements'] and task['requirements']['time']:
-                # extra 10 min for pilot
-                p('+OriginalTime = {}'.format(int(task['requirements']['time'])*3600+600))
+                # ask for a little extra, in case we use more
+                p('+OriginalTime = {}'.format(int(task['requirements']['time'])*3600*1.1))
                 p('+TargetTime = (!isUndefined(Target.PYGLIDEIN_TIME_TO_LIVE) ? Target.PYGLIDEIN_TIME_TO_LIVE : Target.TimeToLive)')
                 p('Rank = Rank + (TargetTime - OriginalTime)/86400')
                 requirements.append('TargetTime > OriginalTime')
