@@ -419,13 +419,12 @@ class condor_direct(grid.BaseGrid):
 
                 pilot = pilots[grid_queue_id]
                 task_id = pilot['tasks'][0]
-                pilot['submit_dir'] = grid_jobs[grid_queue_id]['submit_dir']
                 logger.info('post-processing task %s', task_id)
                 ret = await self.rest_client.request('GET', f'/tasks/{task_id}')
                 if ret['status'] == 'processing':
-                    pilot['dataset_id'] = ret['dataset_id']
-                    await self.task_error(task_id, pilot['dataset_id'], pilot_id=pilot['pilot_id'],
-                                          submit_dir=pilot['submit_dir'], kill=True)
+                    await self.task_error(task_id, ret['dataset_id'], pilot_id=pilot['pilot_id'],
+                                          submit_dir=grid_jobs[grid_queue_id]['submit_dir'],
+                                          kill=True, site=grid_jobs[grid_queue_id]['site'])
             elif status == 'queued':
                 grid_idle += 1
 
@@ -757,16 +756,13 @@ class condor_direct(grid.BaseGrid):
            Returns {grid_queue_id:{status,submit_dir}}
         """
         ret = {}
-        cmd = ['condor_q',getpass.getuser(),'-af:j','jobstatus','cmd']
+        cmd = ['condor_q',getpass.getuser(),'-af:j,','jobstatus','MATCH_EXP_JOBGLIDEIN_ResourceName','cmd']
         out = await check_output_clean_env(*cmd)
         print('get_grid_status():',out)
         for line in out.split('\n'):
             if not line.strip():
                 continue
-            parts = line.split()
-            gid = parts[0]
-            status = parts[1]
-            cmd = parts[-1]
+            gid,status,site,cmd = [x.strip() for x in line.split(',') if x.strip()]
             if 'loader.sh' not in cmd:
                 continue
             if status in ('0', '1'):
@@ -779,7 +775,7 @@ class condor_direct(grid.BaseGrid):
                 status = 'error'
             else:
                 status = 'unknown'
-            ret[gid] = {'status':status,'submit_dir':os.path.dirname(cmd)}
+            ret[gid] = {'status':status,'submit_dir':os.path.dirname(cmd),'site':site}
         return ret
 
     async def remove(self,tasks):
