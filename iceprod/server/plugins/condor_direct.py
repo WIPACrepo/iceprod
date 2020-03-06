@@ -796,13 +796,13 @@ class condor_direct(grid.BaseGrid):
             dict: {grid_queue_id: {status, submit_dir, site} }
         """
         ret = {}
-        cmd = ['condor_history',getpass.getuser(),'-match','50000','-af:j','jobstatus','exitcode','exitbysignal','MATCH_EXP_JOBGLIDEIN_ResourceName','cmd']
+        cmd = ['condor_history',getpass.getuser(),'-match','50000','-af:j,','jobstatus','exitcode','exitbysignal','MATCH_EXP_JOBGLIDEIN_ResourceName','cmd']
         out = await check_output_clean_env(*cmd)
         print('get_grid_completions():',out)
         for line in out.split('\n'):
             if not line.strip():
                 continue
-            gid,status,exitstatus,exitsignal,site,cmd = line.split()
+            gid,status,exitstatus,exitsignal,site,cmd = [x.strip() for x in line.split(',') if x.strip()]
             if 'loader.sh' not in cmd:
                 continue
             if status == '4' and exitstatus == '0' and exitsignal == 'false':
