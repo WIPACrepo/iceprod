@@ -193,25 +193,25 @@ class condor_direct(grid.BaseGrid):
                         if 'policy violation' in line:
                             resource_type = None
                             val = 0
-                            if 'memory limit exceeded' in line:
+                            if 'memory limit' in line:
                                 resource_type = 'memory'
                                 try:
                                     val = float(line.split('used')[-1].split('mb')[0].strip())/1024.
                                 except Exception:
                                     pass
-                            elif 'cpu limit exceeded' in line:
+                            elif 'cpu limit' in line or 'cpu consumption limit':
                                 resource_type = 'cpu'
                                 try:
                                     val = float(line.split('used')[-1].split('cores')[0].strip())
                                 except Exception:
                                     pass
-                            elif 'execution time limit exceeded' in line:
+                            elif 'execution time limit' in line:
                                 resource_type = 'time'
                                 try:
                                     val = float(line.split('used')[-1].split('.').strip())/3600.
                                 except Exception:
                                     pass
-                            elif 'local storage limit exceeded' in line:
+                            elif 'local storage limit' in line:
                                 resource_type = 'disk'
                                 try:
                                     val = float(line.split('used')[-1].split('mb').strip())/1024.
