@@ -708,16 +708,19 @@ class condor_direct(grid.BaseGrid):
                     os_type = task['requirements']['os'][0]
                 else:
                     os_type = task['requirements']['os']
-                imageoptions = {
-                    'RHEL_6_x86_64': 'osgvo-el6:latest',
-                    'RHEL_7_x86_64': 'osgvo-el7:latest',
-                    'RHEL_8_x86_64': 'osgvo-el8:latest',
-                }
-                if os_type in imageoptions:
-                    image = imageoptions[os_type]
+                if 'singularity' in self.queue_cfg and not self.queue_cfg['singularity']:
+                    requirements.append(condor_os_reqs(os_type))
                 else:
-                    raise Exception(f'bad OS selection: {os_type}')
-                p(f'+SingularityImage="/cvmfs/singularity.opensciencegrid.org/opensciencegrid/{image}"')
+                    imageoptions = {
+                        'RHEL_6_x86_64': 'osgvo-el6:latest',
+                        'RHEL_7_x86_64': 'osgvo-el7:latest',
+                        'RHEL_8_x86_64': 'osgvo-el8:latest',
+                    }
+                    if os_type in imageoptions:
+                        image = imageoptions[os_type]
+                    else:
+                        raise Exception(f'bad OS selection: {os_type}')
+                    p(f'+SingularityImage="/cvmfs/singularity.opensciencegrid.org/opensciencegrid/{image}"')
 
             for b in batch_opts:
                 p(f'{b}={batch_opts[b]}')
