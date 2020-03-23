@@ -526,6 +526,14 @@ class condor_direct(grid.BaseGrid):
             else:
                 reqs = self.resources.copy()
 
+            # get task files
+            if 'task_files' in task_cfg and task_cfg['task_files']:
+                comms = MyServerComms(self.rest_client)
+                files = await comms.task_files(task['dataset_id'],
+                                               task['task_id'])
+                task_cfg['data'].extend(files)
+                task_cfg['task_files'] = False
+
             # create pilot
             if 'time' in resources:
                 resources_available = {'time': resources['time']}
