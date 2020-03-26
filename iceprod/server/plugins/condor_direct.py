@@ -571,6 +571,7 @@ class condor_direct(grid.BaseGrid):
 
             # get task files
             if 'task_files' in task_cfg and task_cfg['task_files']:
+                logger.info("getting task_files for %s", task['task_id'])
                 comms = MyServerComms(self.rest_client)
                 files = await comms.task_files(task['dataset_id'],
                                                task['task_id'])
