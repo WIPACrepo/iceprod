@@ -1,6 +1,6 @@
 """
 A supercomputer plugin, specificially for
-`Graham <https://docs.computecanada.ca/wiki/Graham>`_.
+`Cedar <https://docs.computecanada.ca/wiki/Cedar>`_.
 """
 import os
 import sys

@@ -33,30 +33,16 @@ Installation
 
 IceProd should run on any Unix-like platform, although only
 Linux has been extensively tested and can be recommented for production
-deployment (even though Mac OS X is derived from BSD and supports kqueue, its
-networking performance is generally poor so it is recommended only for
-development use).
+deployment.
 
 **Prerequisites**:
 
-IceProd runs on python 2.7 and 3.3+
+Listed here are any packages outside pip:
 
-There are two types of database interface available:
-
-* sqlite:  depends on apsw: https://github.com/rogerbinns/apsw
-* mysql:   depends on mysqldb: https://pypi.python.org/pypi/MySQL-python
-
-Other non-essential dependencies:
-
-* nginx       (for ssl offloading and better security)
-* squid       (for http proxy)
-* libtool     (a globus dependency)
-* perl 5.10   (a globus dependency)
-
-  * perl modules: Archive::Tar Compress::Zlib Digest::MD5 File::Spec IO::Zlib Pod::Parser XML::Parser
-
-* globus      (for gridftp)
-
+* Python 3.7+
+* MongoDB 3.6+    (for the REST API)
+* nginx           (for ssl offloading and better security)
+* globus          (for data transfer)
 
 **Installation**:
 
