@@ -127,7 +127,10 @@ class supercomp_cedar(condor_direct):
                 if 'time' in task['requirements'] and task['requirements']['time']:
                     p(f'export NUM_TIME={task["requirements"]["time"]}')
 
-            p('{} {}'.format(os.path.join(task['submit_dir'],'loader.sh'), ' '.join(args)))
+            p('module load singularity/3.2')
+            p('/opt/software/singularity-3.2/bin/singularity exec --nv --cleanenv -C '
+              '-B /tmp -B /cvmfs -B /scratch /cvmfs/singularity.opensciencegrid.org/opensciencegrid/osgvo-el7-cuda10:latest '
+              '{} {}'.format(os.path.join(task['submit_dir'],'loader.sh'), ' '.join(args)))
 
         # make it executable
         st = os.stat(submit_file)
