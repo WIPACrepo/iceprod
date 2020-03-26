@@ -613,7 +613,7 @@ class condor_direct(grid.BaseGrid):
             task['pilot']['submit_dir'] = task['submit_dir']
 
             # download files (may be a no-op)
-            await download_input(task)
+            await self.download_input(task)
 
             # submit to queue
             await self.submit(task['pilot'])
