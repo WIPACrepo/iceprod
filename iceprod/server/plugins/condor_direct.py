@@ -44,6 +44,16 @@ async def check_call_clean_env(*args, **kwargs):
         raise Exception(f'command failed, return code {p.returncode}')
     return p
 
+async def check_output(*args, **kwargs):
+    kwargs['stdout'] = subprocess.PIPE
+    kwargs['stderr'] = subprocess.STDOUT
+    logger.info('subprocess_check_output: %r', args)
+    p = await asyncio.create_subprocess_exec(*args, **kwargs)
+    out,_ = await p.communicate()
+    if p.returncode:
+        raise Exception(f'command failed, return code {p.returncode}')
+    return out.decode('utf-8')
+
 async def check_output_clean_env(*args, **kwargs):
     logger.info('subprocess_check_output: %r', args)
     kwargs['stdout'] = subprocess.PIPE
@@ -88,15 +98,20 @@ class condor_direct(grid.BaseGrid):
 
     ### Plugin Overrides ###
 
+    batch_site = 'CondorDirect'
+    batch_outfile = 'condor.out'
+    batch_resources = {}
+
     def __init__(self, *args, **kwargs):
         super(condor_direct, self).__init__(*args, **kwargs)
         self.x509proxy = SiteGlobusProxy()
 
         # queue requirements
-        self.site = 'CondorDirect'
+        self.site = self.batch_site.copy()
         if 'site' in self.queue_cfg:
             self.site = self.queue_cfg['site']
-        self.resources = {'site': self.site}
+        self.resources = self.batch_resources.copy()
+        self.resources['site'] = self.site
         if 'gpu' in self.site.lower():
             self.resources['gpu'] = 1
         self.queue_params = {}
@@ -146,7 +161,7 @@ class condor_direct(grid.BaseGrid):
         """reset a task"""
         # search for resources in stdout
         resources = {}
-        filename = os.path.join(submit_dir, 'condor.out')
+        filename = os.path.join(submit_dir, self.batch_outfile)
         if os.path.exists(filename):
             with open(filename) as f:
                 resource_lines = False
@@ -252,7 +267,7 @@ class condor_direct(grid.BaseGrid):
         """complete a task"""
         # search for reasources in slurm stdout
         resources = {}
-        filename = os.path.join(submit_dir, 'condor.out')
+        filename = os.path.join(submit_dir, self.batch_outfile)
         if os.path.exists(filename):
             with open(filename) as f:
                 resource_lines = False
@@ -337,8 +352,33 @@ class condor_direct(grid.BaseGrid):
         logger.debug("grid jobs: %r", list(grid_jobs))
         logger.debug("grid history: %r", list(grid_history))
 
+        async def post_process(task):
+            task_id = task['task_id']
+            ret = await self.rest_client.request('GET', f'/tasks/{task_id}')
+            if ret['status'] == 'processing':
+                task['dataset_id'] = ret['dataset_id']
+                
+                logger.info('uploading logs for task %s', task_id)
+                await self.upload_logfiles(task_id, task['dataset_id'],
+                                           submit_dir=task['submit_dir'])
+                if task['grid']['status'] == 'ok':
+                    # upload files (may be a no-op)
+                    await self.upload_output(task)
+
+                    logger.info('finished task %s', task_id)
+                    await self.finish_task(task_id,
+                                           dataset_id=task['dataset_id'],
+                                           submit_dir=task['submit_dir'],
+                                           site=task['grid']['site'])
+                else:
+                    logger.info('error in task %s', task_id)
+                    await self.task_error(task_id, task['dataset_id'],
+                                          submit_dir=task['submit_dir'],
+                                          site=task['grid']['site'])
+
         if grid_history:
             pilots_to_delete = {}
+            awaitables = set()
             for gid in pilots:
                 if gid in grid_history:
                     pilot_id = None
@@ -349,29 +389,32 @@ class condor_direct(grid.BaseGrid):
                         if pilot['tasks']:
                             task_id = pilot['tasks'][0]
                             logger.info('post-processing task %s', task_id)
-                            ret = await self.rest_client.request('GET', f'/tasks/{task_id}')
-                            if ret['status'] == 'processing':
-                                pilot['dataset_id'] = ret['dataset_id']
-                                logger.info('uploading logs for task %s', task_id)
-                                await self.upload_logfiles(task_id, pilot['dataset_id'],
-                                                           submit_dir=pilot['submit_dir'])
-                                if grid_history[gid]['status'] == 'ok':
-                                    logger.info('finished task %s', task_id)
-                                    await self.finish_task(task_id,
-                                                           dataset_id=pilot['dataset_id'],
-                                                           submit_dir=pilot['submit_dir'],
-                                                           site=grid_history[gid]['site'])
-                                else:
-                                    logger.info('error in task %s', task_id)
-                                    await self.task_error(task_id, pilot['dataset_id'],
-                                                          submit_dir=pilot['submit_dir'],
-                                                          site=grid_history[gid]['site'])
+                            task = TaskInfo(task_id=task_id, pilot=pilot,
+                                            submit_dir=pilot['submit_dir'],
+                                            grid=grid_history[gid])
+                            awaitables.add(run_async(post_process, task))
                     except Exception:
                         logger.error('error handling task', exc_info=True)
 
                     if pilot_id:
                         logger.info('deleting completed pilot %s, with gid %s', pilot_id, gid)
                         pilots_to_delete[pilot_id] = gid
+
+            for fut in asyncio.as_completed(awaitables):
+                ret = await fut
+                task = ret['args'][0]
+
+                if 'exception' in ret:
+                    reason = f'failed post-processing task\n{ret["exception"]}'
+                    logger.warning(reason)
+                    await self.upload_logfiles(task['task_id'],
+                                               dataset_id=task['dataset_id'],
+                                               submit_dir=task['submit_dir'],
+                                               reason=reason)
+                    await self.task_error(task['task_id'],
+                                          dataset_id=task['dataset_id'],
+                                          submit_dir=task['submit_dir'],
+                                          reason=reason)
 
             for pilot_id in pilots_to_delete:
                 try:
@@ -569,6 +612,9 @@ class condor_direct(grid.BaseGrid):
             await self.setup_submit_directory(task)
             task['pilot']['submit_dir'] = task['submit_dir']
 
+            # download files (may be a no-op)
+            await download_input(task)
+
             # submit to queue
             await self.submit(task['pilot'])
 
@@ -617,6 +663,12 @@ class condor_direct(grid.BaseGrid):
                 if 'grid_queue_id' in task['pilot'] and task['pilot']['grid_queue_id']:
                     grid_queue_ids.append(task['pilot']['grid_queue_id'])
 
+
+    async def download_input(self, task):
+        pass
+
+    async def upload_output(self, task):
+        pass
 
     async def generate_submit_file(self, task, cfg=None, passkey=None,
                              filelist=None):
