@@ -107,7 +107,7 @@ class condor_direct(grid.BaseGrid):
         self.x509proxy = SiteGlobusProxy()
 
         # queue requirements
-        self.site = self.batch_site.copy()
+        self.site = self.batch_site
         if 'site' in self.queue_cfg:
             self.site = self.queue_cfg['site']
         self.resources = self.batch_resources.copy()
