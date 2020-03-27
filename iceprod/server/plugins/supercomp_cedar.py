@@ -129,7 +129,7 @@ class supercomp_cedar(condor_direct):
 
             p('module load singularity/3.2')
             p('/opt/software/singularity-3.2/bin/singularity exec --nv --cleanenv -C '
-              '-B /tmp -B /cvmfs -B /scratch /cvmfs/singularity.opensciencegrid.org/opensciencegrid/osgvo-el7-cuda10:latest '
+              '-B /tmp -B /cvmfs -B /scratch -B /home /cvmfs/singularity.opensciencegrid.org/opensciencegrid/osgvo-el7-cuda10:latest '
               '{} {}'.format(os.path.join(task['submit_dir'],'loader.sh'), ' '.join(args)))
 
         # make it executable
