@@ -119,9 +119,10 @@ def get_reqs(config, task_index, parser):
         else:
             req[k] = parser.parse(req[k],config)
     for k in Resources.defaults:
-        if k not in req or not req[k]:
-            req[k] = Resources.defaults[k]
-        if k == 'gpu' and isinstance(req[k], (tuple,list)):
+        # don't add if not needed?
+        #if k not in req or not req[k]:
+        #    req[k] = Resources.defaults[k]
+        if k == 'gpu' and k in req and isinstance(req[k], (tuple,list)):
             req[k] = len(req[k])
     return req
 
