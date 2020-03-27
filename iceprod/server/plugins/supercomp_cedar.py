@@ -80,7 +80,7 @@ class supercomp_cedar(condor_direct):
                              filelist=None):
         """Generate queueing system submit file for task in dir."""
         args = self.get_submit_args(task,cfg=cfg)
-        args.extend(['--offline', '--gzip-logs'])
+        args.extend(['--offline',])
 
         # write the submit file
         submit_file = os.path.join(task['submit_dir'],'submit.sh')

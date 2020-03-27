@@ -93,6 +93,20 @@ def run_async(func,*args,**kwargs):
         return return_obj
     return asyncio.ensure_future(myfunc())
 
+def read_filename(filename):
+    """Read a file that may potentially be gzipped"""
+    if os.path.exists(filename):
+        with open(filename) as f:
+            return f.read()
+    elif os.path.exists(filename+'.gz'):
+        try:
+            with gzip.open(filename+'.gz', 'rt', encoding='utf-8') as f:
+                return f.read()
+        except EOFError:
+            pass
+        except Exception:
+            logging.info('error reading gzip file', exc_info=True)
+    return ''
 
 class condor_direct(grid.BaseGrid):
 
@@ -125,20 +139,6 @@ class condor_direct(grid.BaseGrid):
     async def upload_logfiles(self, task_id, dataset_id, submit_dir='', reason=''):
         """upload logfiles"""
         data = {'name': 'stdlog', 'task_id': task_id, 'dataset_id': dataset_id}
-
-        def read_filename(filename):
-            if os.path.exists(filename):
-                with open(filename) as f:
-                    return f.read()
-            elif os.path.exists(filename+'.gz'):
-                try:
-                    with gzip.open(filename+'.gz', 'rt', encoding='utf-8') as f:
-                        return f.read()
-                except EOFError:
-                    pass
-                except Exception:
-                    logging.info('stdlog:', exc_info=True)
-            return ''
 
         # upload stdlog
         data['data'] = read_filename(os.path.join(submit_dir, constants['stdlog']))
@@ -186,18 +186,16 @@ class condor_direct(grid.BaseGrid):
         if not reason:
             # search for reason in logfile
             filename = os.path.join(submit_dir, constants['stdlog'])
-            if os.path.exists(filename):
-                with open(filename) as f:
-                    for line in f:
-                        line = line.strip()
-                        if 'failed to download' in line:
-                            reason = 'failed to download input file(s)'
-                        if 'failed to upload' in line:
-                            reason = 'failed to upload output file(s)'
-                        if 'Exception' in line and not reason:
-                            reason = line
-                        if 'return code:' in line and not reason:
-                            reason = 'task error: return code '+line.rsplit(':',1)[-1]
+            for line in read_filename(filename):
+                line = line.strip()
+                if 'failed to download' in line:
+                    reason = 'failed to download input file(s)'
+                if 'failed to upload' in line:
+                    reason = 'failed to upload output file(s)'
+                if 'Exception' in line and not reason:
+                    reason = line
+                if 'return code:' in line and not reason:
+                    reason = 'task error: return code '+line.rsplit(':',1)[-1]
         if not reason:
             # search for a hold reason in the condor.log
             filename = os.path.join(submit_dir, 'condor.log')
