@@ -587,14 +587,17 @@ class condor_direct(grid.BaseGrid):
                 resources_available = {'time': resources['time']}
             else:
                 resources_available = {'time': 1}
+            resources_claimed = {}
             for k in ('cpu','gpu','memory','disk'):
-                if k in resources:
+                if k in resources and k in reqs:
                     resources_available[k] = resources[k]-reqs[k]
+                    resources_claimed[k] = reqs[k]
                 else:
                     resources_available[k] = 0
+                    resources_claimed[k] = resources[k]
             pilot = {'resources': resources,
                      'resources_available': resources_available,
-                     'resources_claimed': reqs,
+                     'resources_claimed': resources_claimed,
                      'tasks': [task['task_id']],
                      'queue_host': host,
                      'queue_version': iceprod.__version__,
