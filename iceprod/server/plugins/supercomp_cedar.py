@@ -54,12 +54,16 @@ class supercomp_cedar(condor_direct):
             task (dict): task info
         """
         proxy = self.x509proxy.get_proxy()
-        await check_call(
-            'python', '-m', 'iceprod.core.data_transfer', '-f',
-            os.path.join(task['submit_dir'],'task.cfg'),
-            '-d', task['submit_dir'],
-            'input'
-        )
+        try:
+            await check_call(
+                'python', '-m', 'iceprod.core.data_transfer', '-f',
+                os.path.join(task['submit_dir'],'task.cfg'),
+                '-d', task['submit_dir'],
+                'input'
+            )
+        except Exception as e:
+            logger.info('failed to download input', exc_info=True)
+            raise Exception(f'download input failed for {task["dataset_id"]}.{task["task_id"]}')
 
     async def upload_output(self, task):
         """
@@ -69,12 +73,16 @@ class supercomp_cedar(condor_direct):
             task (dict): task info
         """
         proxy = self.x509proxy.get_proxy()
-        await check_call(
-            'python', '-m', 'iceprod.core.data_transfer', '-f',
-            os.path.join(task['submit_dir'],'task.cfg'),
-            '-d', task['submit_dir'],
-            'output'
-        )
+        try:
+            await check_call(
+                'python', '-m', 'iceprod.core.data_transfer', '-f',
+                os.path.join(task['submit_dir'],'task.cfg'),
+                '-d', task['submit_dir'],
+                'output'
+            )
+        except Exception as e:
+            logger.info('failed to upload output', exc_info=True)
+            raise Exception(f'upload output failed for {task["dataset_id"]}.{task["task_id"]}')
 
     async def generate_submit_file(self, task, cfg=None, passkey=None,
                              filelist=None):
