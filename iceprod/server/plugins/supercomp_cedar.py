@@ -40,6 +40,7 @@ class supercomp_cedar(condor_direct):
     # Cedar queue requirements
     batch_resources = {
         'cpu': 1,
+        'gpu': 0,
         'memory': 3.75,
         'disk': 48.,
         'time': 20.,
