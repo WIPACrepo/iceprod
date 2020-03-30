@@ -804,7 +804,7 @@ def group_hasher(resources):
         ret ^= hash(resources['os'])&(0b11111111<<32)
     return ret
 
-def sanitized_requirements(reqs):
+def sanitized_requirements(reqs, use_defaults=False):
     """
     Sanitize a dict of requirements (resources) for a task.
 
@@ -828,7 +828,7 @@ def sanitized_requirements(reqs):
                     ret[k] = reqs[k]
             except ValueError:
                 pass
-        if k not in ret and k in Resources.defaults:
+        if use_defaults and k not in ret and k in Resources.defaults:
             if isinstance(Resources.defaults[k], (int,float,str)):
                 ret[k] = Resources.defaults[k]
     return ret
