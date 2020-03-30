@@ -30,7 +30,7 @@ logger = logging.getLogger('plugin-condor_direct')
 async def check_call(*args, **kwargs):
     logger.info('subprocess_check_call: %r', args)
     p = await asyncio.create_subprocess_exec(*args, **kwargs)
-    if p.returncode:
+    if await p.wait():
         raise Exception(f'command failed, return code {p.returncode}')
     return p
 
@@ -40,7 +40,7 @@ async def check_call_clean_env(*args, **kwargs):
     del env['LD_LIBRARY_PATH']
     kwargs['env'] = env
     p = await asyncio.create_subprocess_exec(*args, **kwargs)
-    if p.returncode:
+    if await p.wait():
         raise Exception(f'command failed, return code {p.returncode}')
     return p
 
