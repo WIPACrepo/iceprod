@@ -156,6 +156,48 @@ class condor_direct(grid.BaseGrid):
         data['data'] = read_filename(os.path.join(submit_dir, constants['stdout']))
         await self.rest_client.request('POST', '/logs', data)
 
+    async def get_hold_reason(self, submit_dir, resources=None):
+        """Search for a hold reason in the condor.log"""
+        reason = None
+        filename = os.path.join(submit_dir, 'condor.log')
+        if os.path.exists(filename):
+            with open(filename) as f:
+                for line in f:
+                    line = line.strip().lower()
+                    if 'policy violation' in line:
+                        resource_type = None
+                        val = 0
+                        if 'memory limit' in line:
+                            resource_type = 'memory'
+                            try:
+                                val = float(line.split('used')[-1].split('mb')[0].strip())/1024.
+                            except Exception:
+                                pass
+                        elif 'cpu limit' in line or 'cpu consumption limit':
+                            resource_type = 'cpu'
+                            try:
+                                val = float(line.split('used')[-1].split('cores')[0].strip())
+                            except Exception:
+                                pass
+                        elif 'execution time limit' in line:
+                            resource_type = 'time'
+                            try:
+                                val = float(line.split('used')[-1].split('.').strip())/3600.
+                            except Exception:
+                                pass
+                        elif 'local storage limit' in line:
+                            resource_type = 'disk'
+                            try:
+                                val = float(line.split('used')[-1].split('mb').strip())/1024.
+                            except Exception:
+                                pass
+                        if resource_type:
+                            reason = f'Resource overusage for {resource_type}: {val}'
+                            if val:
+                                resources[resource_type] = val
+                            break
+        return reason
+
     async def task_error(self, task_id, dataset_id, submit_dir, reason='',
                          site=None, pilot_id=None, kill=False):
         """reset a task"""
@@ -197,44 +239,8 @@ class condor_direct(grid.BaseGrid):
                 if 'return code:' in line and not reason:
                     reason = 'task error: return code '+line.rsplit(':',1)[-1]
         if not reason:
-            # search for a hold reason in the condor.log
-            filename = os.path.join(submit_dir, 'condor.log')
-            if os.path.exists(filename):
-                with open(filename) as f:
-                    for line in f:
-                        line = line.strip().lower()
-                        if 'policy violation' in line:
-                            resource_type = None
-                            val = 0
-                            if 'memory limit' in line:
-                                resource_type = 'memory'
-                                try:
-                                    val = float(line.split('used')[-1].split('mb')[0].strip())/1024.
-                                except Exception:
-                                    pass
-                            elif 'cpu limit' in line or 'cpu consumption limit':
-                                resource_type = 'cpu'
-                                try:
-                                    val = float(line.split('used')[-1].split('cores')[0].strip())
-                                except Exception:
-                                    pass
-                            elif 'execution time limit' in line:
-                                resource_type = 'time'
-                                try:
-                                    val = float(line.split('used')[-1].split('.').strip())/3600.
-                                except Exception:
-                                    pass
-                            elif 'local storage limit' in line:
-                                resource_type = 'disk'
-                                try:
-                                    val = float(line.split('used')[-1].split('mb').strip())/1024.
-                                except Exception:
-                                    pass
-                            if resource_type:
-                                reason = f'Resource overusage for {resource_type}: {val}'
-                                if val and resource_type not in resources:
-                                    resources[resource_type] = val
-                                break
+            # check the batch system logs
+            reason = await self.get_hold_reason(submit_dir, resources=resources)
         if not reason:
             reason = 'unknown failure'
 

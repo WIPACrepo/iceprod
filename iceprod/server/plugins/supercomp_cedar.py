@@ -46,6 +46,44 @@ class supercomp_cedar(condor_direct):
         'os': 'RHEL_7_x86_64',
     }
 
+    async def get_hold_reason(self, submit_dir, resources=None):
+        """Search for a hold reason in the slurm stderr"""
+        reason = None
+        filename = os.path.join(submit_dir, 'slurm.err')
+        if os.path.exists(filename):
+            with open(filename) as f:
+                for line in f:
+                    line = line.strip().lower()
+                    if line.startswith('slurmstepd: error:'):
+                        resource_type = None
+                        val = 0
+                        if 'oom-kill' in line:
+                            resource_type = 'memory'
+                            with open(os.path.join(submit_dir, 'submit.sh')) as f2:
+                                for line2 in f2:
+                                    if line2.startswith('export NUM_MEMORY='):
+                                        try:
+                                            val = float(line2.split('=')[-1].strip())
+                                        except Exception:
+                                            pass
+                                        break
+                        elif 'due to time limit' in line:
+                            resource_type = 'time'
+                            with open(os.path.join(submit_dir, 'submit.sh')) as f2:
+                                for line2 in f2:
+                                    if line2.startswith('export NUM_TIME='):
+                                        try:
+                                            val = float(line2.split('=')[-1].strip())
+                                        except Exception:
+                                            pass
+                                        break
+                        if resource_type:
+                            reason = f'Resource overusage for {resource_type}: {val}'
+                            if val:
+                                resources[resource_type] = val
+                            break
+        return reason
+
     async def download_input(self, task):
         """
         Download input files for task.
