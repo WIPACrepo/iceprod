@@ -593,20 +593,20 @@ class TasksActionsProcessingHandler(BaseHandler):
             data = json.loads(self.request.body)
             # handle requirements
             reqs = data.get('requirements', {})
+            req_filters = []
             for k in reqs:
                 if k == 'gpu' and reqs[k] > 0:
-                    filter_query['requirements.'+k] = {'$lte': reqs[k], '$gte': 1}
+                    val = {'$lte': reqs[k], '$gte': 1}
                 elif isinstance(reqs[k], (int,float)):
-                    filter_query['requirements.'+k] = {'$lte': reqs[k]}
+                    val = {'$lte': reqs[k]}
                 else:
-                    filter_query['$or'] = [
-                        {'requirements.'+k: {'$exists': False}},
-                        {'requirements.'+k: reqs[k]},
-                    ]
-            #if 'gpu' in reqs and reqs['gpu'] > 0:
-            #    sort_by.append(('requirements.gpu',-1))
-            #elif 'memory' in reqs:
-            #    sort_by.append(('requirements.memory',-1))
+                    val = reqs[k]
+                req_filters.append({'$or': [
+                    {'requirements.'+k: {'$exists': False}},
+                    {'requirements.'+k: val},
+                ]})
+            if req_filters:
+                filter_query['$and'] = req_filters
             if 'site' in reqs:
                 site = reqs['site']
             # handle query_params
@@ -615,6 +615,7 @@ class TasksActionsProcessingHandler(BaseHandler):
                 if k in filter_query:
                     raise tornado.web.HTTPError(400, reason=f'param {k} would override an already set filter')
                 filter_query[k] = params[k]
+        print('filter_query', filter_query)
         ret = await self.db.tasks.find_one_and_update(filter_query,
                 {'$set':{'status':'processing'}},
                 projection={'_id':False},

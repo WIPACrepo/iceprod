@@ -550,7 +550,8 @@ class rest_tasks_test(RestTestCase):
         ret = json.loads(r.body)
         self.assertEqual(ret['status'], 'processing')
 
-        # now try with requirements
+    @unittest_reporter(name='REST POST   /task_actions/process - with reqs')
+    def test_601_tasks(self):
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
@@ -578,6 +579,7 @@ class rest_tasks_test(RestTestCase):
             r = yield client.fetch('http://localhost:%d/task_actions/process'%(self.port,),
                     method='POST', body=json.dumps({'requirements':{'memory':2.0,'disk':120}}),
                     headers={'Authorization': 'bearer '+self.token})
+            print(r.body)
 
         r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id),
                 headers={'Authorization': 'bearer '+self.token})
