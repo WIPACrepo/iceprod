@@ -32,6 +32,7 @@ async def process(config):
         async with SetupEnv(cfg, task, env, logger=logger) as env2:
             for tray in task['trays']:
                 for i in range(tray['iterations']):
+                    cfg.config['options']['iter'] = i
                     async with SetupEnv(cfg, tray, env2, logger=logger) as env3:
                         for module in tray['modules']:
                             async with SetupEnv(cfg, module, env3, logger=logger) as env:
