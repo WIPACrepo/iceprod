@@ -380,6 +380,21 @@ class condor_direct(grid.BaseGrid):
                                           submit_dir=task['submit_dir'],
                                           site=task['grid']['site'])
 
+        async def post_process_complete(fut):
+            ret = await fut
+            task = ret['args'][0]
+            if 'exception' in ret:
+                reason = f'failed post-processing task\n{ret["exception"]}'
+                logger.warning(reason)
+                await self.upload_logfiles(task['task_id'],
+                                           dataset_id=task['dataset_id'],
+                                           submit_dir=task['submit_dir'],
+                                           reason=reason)
+                await self.task_error(task['task_id'],
+                                      dataset_id=task['dataset_id'],
+                                      submit_dir=task['submit_dir'],
+                                      reason=reason)
+
         if grid_history:
             pilots_to_delete = {}
             awaitables = set()
@@ -397,6 +412,12 @@ class condor_direct(grid.BaseGrid):
                                             submit_dir=pilot['submit_dir'],
                                             grid=grid_history[gid])
                             awaitables.add(run_async(post_process, task))
+                            while len(awaitables) >= 10:
+                                done, pending = await asyncio.wait(awaitables,
+                                        return_when=asyncio.FIRST_COMPLETED)
+                                awaitables = pending
+                                for fut in done:
+                                    await post_process_complete(fut)
                     except Exception:
                         logger.error('error handling task', exc_info=True)
 
@@ -405,20 +426,7 @@ class condor_direct(grid.BaseGrid):
                         pilots_to_delete[pilot_id] = gid
 
             for fut in asyncio.as_completed(awaitables):
-                ret = await fut
-                task = ret['args'][0]
-
-                if 'exception' in ret:
-                    reason = f'failed post-processing task\n{ret["exception"]}'
-                    logger.warning(reason)
-                    await self.upload_logfiles(task['task_id'],
-                                               dataset_id=task['dataset_id'],
-                                               submit_dir=task['submit_dir'],
-                                               reason=reason)
-                    await self.task_error(task['task_id'],
-                                          dataset_id=task['dataset_id'],
-                                          submit_dir=task['submit_dir'],
-                                          reason=reason)
+                await post_process_complete(fut)
 
             for pilot_id in pilots_to_delete:
                 try:
