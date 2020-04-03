@@ -608,10 +608,14 @@ class condor_direct(grid.BaseGrid):
             for k in ('cpu','gpu','memory','disk'):
                 if k in resources and k in reqs:
                     resources_available[k] = resources[k]-reqs[k]
-                    resources_claimed[k] = reqs[k]
                 else:
                     resources_available[k] = 0
-                    resources_claimed[k] = resources[k] if k in resources else 0
+                if k in reqs:
+                    resources_claimed[k] = reqs[k]
+                elif k in resources:
+                    resources_claimed[k] = resources[k]
+                else:
+                    resources_claimed[k] = 0
             pilot = {'resources': resources,
                      'resources_available': resources_available,
                      'resources_claimed': resources_claimed,
