@@ -136,8 +136,11 @@ class condor_direct(grid.BaseGrid):
 
         self.grid_remove_once = set()
 
-    async def upload_logfiles(self, task_id, dataset_id, submit_dir='', reason=''):
+    async def upload_logfiles(self, task_id, dataset_id, submit_dir=None, reason=''):
         """upload logfiles"""
+        if submit_dir is None:
+            submit_dir = ''
+
         data = {'name': 'stdlog', 'task_id': task_id, 'dataset_id': dataset_id}
 
         # upload stdlog
@@ -158,6 +161,8 @@ class condor_direct(grid.BaseGrid):
 
     async def get_hold_reason(self, submit_dir, resources=None):
         """Search for a hold reason in the condor.log"""
+        if submit_dir is None:
+            submit_dir = ''
         reason = None
         filename = os.path.join(submit_dir, 'condor.log')
         if os.path.exists(filename):
@@ -201,6 +206,8 @@ class condor_direct(grid.BaseGrid):
     async def task_error(self, task_id, dataset_id, submit_dir, reason='',
                          site=None, pilot_id=None, kill=False):
         """reset a task"""
+        if submit_dir is None:
+            submit_dir = ''
         # search for resources in stdout
         resources = {}
         filename = os.path.join(submit_dir, self.batch_outfile)
@@ -269,6 +276,8 @@ class condor_direct(grid.BaseGrid):
 
     async def finish_task(self, task_id, dataset_id, submit_dir, site=None):
         """complete a task"""
+        if submit_dir is None:
+            submit_dir = ''
         # search for reasources in slurm stdout
         resources = {}
         filename = os.path.join(submit_dir, self.batch_outfile)
@@ -602,7 +611,7 @@ class condor_direct(grid.BaseGrid):
                     resources_claimed[k] = reqs[k]
                 else:
                     resources_available[k] = 0
-                    resources_claimed[k] = resources[k]
+                    resources_claimed[k] = resources[k] if k in resources else 0
             pilot = {'resources': resources,
                      'resources_available': resources_available,
                      'resources_claimed': resources_claimed,
