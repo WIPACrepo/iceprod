@@ -9,73 +9,10 @@ import logging
 import asyncio
 
 from rest_tools.client import RestClient
-
-from iceprod.core.parser import ExpParser
-from iceprod.core.resources import Resources
-from iceprod.server.scheduled_tasks.buffer_jobs_tasks import get_reqs, get_depends
-from iceprod.server.priority import Priority
+from iceprod.server.scheduled_tasks.buffer_jobs_tasks import run
 
 logger = logging.getLogger()
 
-async def run(rest_client, only_dataset=None, num=10, debug=True):
-    prio = Priority(rest_client)
-    datasets = await rest_client.request('GET', '/dataset_summaries/status')
-    if 'truncated' in datasets and only_dataset:
-        datasets['processing'].extend(datasets['truncated'])
-    if 'processing' in datasets:
-        for dataset_id in datasets['processing']:
-            if only_dataset and dataset_id != only_dataset:
-                continue
-            try:
-                logging.warning('buffering dataset %s', dataset_id)
-                dataset = await rest_client.request('GET', '/datasets/{}'.format(dataset_id))
-                tasks = await rest_client.request('GET', '/datasets/{}/task_counts/status'.format(dataset_id))
-                if 'waiting' not in tasks or tasks['waiting'] < num:
-                    # buffer for this dataset
-                    jobs = await rest_client.request('GET', '/datasets/{}/jobs'.format(dataset_id))
-                    jobs_to_buffer = min(num, dataset['jobs_submitted'] - len(jobs))
-                    if jobs_to_buffer > 0:
-                        logger.warning('buffering %d jobs', jobs_to_buffer)
-                        config = await rest_client.request('GET', '/config/{}'.format(dataset_id))
-                        parser = ExpParser()
-                        task_names = [task['name'] if task['name'] else str(i) for i,task in enumerate(config['tasks'])]
-                        job_index = max(jobs[i]['job_index'] for i in jobs)+1 if jobs else 0
-                        for i in range(jobs_to_buffer):
-                            logging.info('buffering job %d', job_index)
-                            # buffer job
-                            args = {'dataset_id': dataset_id, 'job_index': job_index}
-                            job_id = await rest_client.request('POST', '/jobs', args)
-                            # buffer tasks
-                            task_ids = []
-                            for task_index,name in enumerate(task_names):
-                                depends = await get_depends(rest_client, config, job_index,
-                                                            task_index, task_ids)
-                                config['options']['job'] = job_index
-                                config['options']['task'] = task_index
-                                config['options']['dataset'] = dataset['dataset']
-                                config['options']['jobs_submitted'] = dataset['jobs_submitted']
-                                config['options']['tasks_submitted'] = dataset['tasks_submitted']
-                                config['options']['debug'] = dataset['debug']
-                                args = {
-                                    'dataset_id': dataset_id,
-                                    'job_id': job_id['result'],
-                                    'task_index': task_index,
-                                    'job_index': job_index,
-                                    'name': name,
-                                    'depends': depends,
-                                    'requirements': get_reqs(config, task_index, parser)
-                                }
-                                ret = await rest_client.request('POST', '/tasks', args)
-                                task_id = ret['result']
-                                task_ids.append(task_id)
-                                
-                                p = await prio.get_task_prio(dataset_id, task_id)
-                                await rest_client.request('PATCH', f'/tasks/{task_id}', {'priority': p})
-                            job_index += 1
-            except Exception:
-                logger.error('error buffering dataset %s', dataset_id, exc_info=True)
-                if debug:
-                    raise
 
 def main():
     parser = argparse.ArgumentParser(description='clean up processing tasks not in pilots')
@@ -92,7 +29,7 @@ def main():
     
     rpc = RestClient('https://iceprod2-api.icecube.wisc.edu', args['token'])
 
-    asyncio.run(run(rpc, args['dataset'], num=args['num'], debug=args['debug']))
+    asyncio.run(run(rpc, only_dataset=args['dataset'], num=args['num'], run_once=True, debug=args['debug']))
 
 if __name__ == '__main__':
     main()

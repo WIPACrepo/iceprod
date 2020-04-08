@@ -21,8 +21,6 @@ from iceprod.server.priority import Priority
 
 logger = logging.getLogger('buffer_jobs_tasks')
 
-NJOBS = 20000
-
 def buffer_jobs_tasks(module):
     """
     Initial entrypoint.
@@ -33,33 +31,43 @@ def buffer_jobs_tasks(module):
     # initial delay
     IOLoop.current().call_later(random.randint(10,60*10), run, module.rest_client)
 
-async def run(rest_client, debug=False):
+async def run(rest_client, only_dataset=None, num=20000, run_once=False, debug=False):
     """
     Actual runtime / loop.
 
     Args:
         rest_client (:py:class:`iceprod.core.rest_client.Client`): rest client
+        only_dataset (str): dataset_id if we should only buffer a single dataset
+        num (int): max number of jobs to buffer
+        run_once (bool): flag to only run once and stop
         debug (bool): debug flag to propagate exceptions
     """
     start_time = time.time()
     prio = Priority(rest_client)
     datasets = await rest_client.request('GET', '/dataset_summaries/status')
+    if 'truncated' in datasets and only_dataset:
+        datasets['processing'].extend(datasets['truncated'])
     if 'processing' in datasets:
         for dataset_id in datasets['processing']:
+            if only_dataset and dataset_id != only_dataset:
+                continue
             try:
                 dataset = await rest_client.request('GET', '/datasets/{}'.format(dataset_id))
                 tasks = await rest_client.request('GET', '/datasets/{}/task_counts/status'.format(dataset_id))
-                if 'waiting' not in tasks or tasks['waiting'] < NJOBS:
+                if 'waiting' not in tasks or tasks['waiting'] < num or only_dataset:
                     # buffer for this dataset
+                    logger.warning('buffering dataset %s', dataset_id)
                     jobs = await rest_client.request('GET', '/datasets/{}/jobs'.format(dataset_id))
-                    jobs_to_buffer = min(NJOBS, dataset['jobs_submitted'] - len(jobs))
+                    jobs_to_buffer = min(num, dataset['jobs_submitted'] - len(jobs))
                     if jobs_to_buffer > 0:
+                        logger.info('buffering %d jobs for dataset %s', jobs_to_buffer, dataset_id)
                         config = await rest_client.request('GET', '/config/{}'.format(dataset_id))
                         parser = ExpParser()
                         task_names = [task['name'] if task['name'] else str(i) for i,task in enumerate(config['tasks'])]
                         job_index = max(jobs[i]['job_index'] for i in jobs)+1 if jobs else 0
                         for i in range(jobs_to_buffer):
                             # buffer job
+                            logger.info('buffering dataset %s job %d', dataset_id, job_index)
                             args = {'dataset_id': dataset_id, 'job_index': job_index}
                             job_id = await rest_client.request('POST', '/jobs', args)
                             # buffer tasks
@@ -94,10 +102,11 @@ async def run(rest_client, debug=False):
                 if debug:
                     raise
 
-    # run again after 10 minute delay
-    stop_time = time.time()
-    delay = max(60*10 - (stop_time-start_time), 60)
-    IOLoop.current().call_later(delay, run, rest_client)
+    if not run_once:
+        # run again after 10 minute delay
+        stop_time = time.time()
+        delay = max(60*10 - (stop_time-start_time), 60)
+        IOLoop.current().call_later(delay, run, rest_client)
 
 def get_reqs(config, task_index, parser):
     """
