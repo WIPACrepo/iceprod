@@ -772,6 +772,15 @@ class condor_direct(grid.BaseGrid):
             p('+SpoolOnEvict = False')
             p('transfer_output_files = iceprod_log.gz, iceprod_out.gz, iceprod_err.gz')
 
+            # put some info about the task in the classads
+            p(f'+IceProdDatasetId = {task["dataset_id"]}')
+            p(f'+IceProdDataset = {task["dataset"]}')
+            p(f'+IceProdJobId = {task["job_id"]}')
+            p(f'+IceProdJobIndex = {task["job"]}')
+            p(f'+IceProdTaskId = {task["task_id"]}')
+            p(f'+IceProdTaskIndex = {task["task_index"]}')
+            p(f'+IceProdTaskName = {task["name"]}')
+
             # handle resources
             p('+JobIsRunning = (JobStatus =!= 1) && (JobStatus =!= 5)')
             if 'cpu' in task['requirements'] and task['requirements']['cpu']:
