@@ -177,25 +177,34 @@ class condor_direct(grid.BaseGrid):
                             try:
                                 val = float(line.split('used')[-1].split('mb')[0].strip())/1024.
                             except Exception:
-                                pass
+                                try:
+                                    val = float(line.split(':')[-1].split('mb')[0].strip())/1024.
+                                except Exception:
+                                    pass
                         elif 'cpu limit' in line or 'cpu consumption limit':
                             resource_type = 'cpu'
                             try:
                                 val = float(line.split('used')[-1].split('cores')[0].strip())
                             except Exception:
-                                pass
+                                try:
+                                    val = float(line.split('used')[-1].split(',')[0].strip())
+                                except Exception:
+                                    pass
                         elif 'execution time limit' in line:
                             resource_type = 'time'
                             try:
-                                val = float(line.split('used')[-1].split('.').strip())/3600.
+                                val = float(line.split('used')[-1].split('.')[0].strip())/3600.
                             except Exception:
                                 pass
                         elif 'local storage limit' in line:
                             resource_type = 'disk'
                             try:
-                                val = float(line.split('used')[-1].split('mb').strip())/1024.
+                                val = float(line.split('used')[-1].split('mb')[0].strip())/1024.
                             except Exception:
-                                pass
+                                try:
+                                    val = float(line.split('used')[-1].split('gb')[0].strip())
+                                except Exception:
+                                    pass
                         if resource_type:
                             reason = f'Resource overusage for {resource_type}: {val}'
                             if val:
