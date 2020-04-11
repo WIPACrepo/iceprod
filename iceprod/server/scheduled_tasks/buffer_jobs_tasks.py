@@ -70,10 +70,10 @@ async def run(rest_client, only_dataset=None, num=20000, run_once=False, debug=F
         await asyncio.sleep(30)
         ret = await rest_client.request('GET', f'/status/{materialization_id}')
         if ret['status'] == 'complete':
-            logger.info('materialization request {materialization_id} complete')
+            logger.info(f'materialization request {materialization_id} complete')
             break
         elif ret['status'] == 'error':
-            logger.warning('materialization request {materialization_id} failed')
+            logger.warning(f'materialization request {materialization_id} failed')
             break
 
     if not run_once:
