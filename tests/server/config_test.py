@@ -27,55 +27,66 @@ class config_test(unittest.TestCase):
             shutil.rmtree(self.test_dir)
         self.addCleanup(cleanup)
 
+        os.chdir(self.test_dir)
+        original_dir = os.getcwd()
+        def reset_dir():
+            os.chdir(original_dir)
+        self.addCleanup(reset_dir)
+
     @unittest_reporter
     def test_01_IceProdConfig(self):
         """Test config.IceProdConfig()"""
-        os.chdir(self.test_dir)
-        try:
-            cfg = iceprod.server.config.IceProdConfig()
-            cfg.save()
-            if not os.path.exists(cfg.filename):
-                raise Exception('did not save configfile')
+        cfg = iceprod.server.config.IceProdConfig()
+        cfg.save()
+        if not os.path.exists(cfg.filename):
+            raise Exception('did not save configfile')
 
-            cfg['testing'] = [1,2,3]
-            if cfg['testing'] != [1,2,3]:
-                raise Exception('did not set param')
-            expected = dict(cfg)
-            with open(cfg.filename) as f:
-                actual = json.load(f)
-            if actual != expected:
-                logger.info('expected: %s',expected)
-                logger.info('actual: %s',actual)
-                raise Exception('did not save addition to file')
+        cfg['testing'] = [1,2,3]
+        if cfg['testing'] != [1,2,3]:
+            raise Exception('did not set param')
+        expected = dict(cfg)
+        with open(cfg.filename) as f:
+            actual = json.load(f)
+        if actual != expected:
+            logger.info('expected: %s',expected)
+            logger.info('actual: %s',actual)
+            raise Exception('did not save addition to file')
 
-            cfg.load()
-            if cfg['testing'] != [1,2,3]:
-                raise Exception('param does not exist after load')
+        cfg.load()
+        if cfg['testing'] != [1,2,3]:
+            raise Exception('param does not exist after load')
 
-            del cfg['testing']
-            if 'testing' in cfg:
-                raise Exception('did not delete param')
-            expected = dict(cfg)
-            with open(cfg.filename) as f:
-                actual = json.load(f)
-            if actual != expected:
-                logger.info('expected: %s',expected)
-                logger.info('actual: %s',actual)
-                raise Exception('did not save delete to file')
-
-        finally:
-            os.chdir('..')
+        del cfg['testing']
+        if 'testing' in cfg:
+            raise Exception('did not delete param')
+        expected = dict(cfg)
+        with open(cfg.filename) as f:
+            actual = json.load(f)
+        if actual != expected:
+            logger.info('expected: %s',expected)
+            logger.info('actual: %s',actual)
+            raise Exception('did not save delete to file')
 
     @unittest_reporter(name='IceProdConfig(filename)')
     def test_02_IceProdConfig(self):
         """Test config.IceProdConfig()"""
-        os.chdir(self.test_dir)
-        try:
-            cfg = iceprod.server.config.IceProdConfig(filename='test.json')
-            if cfg.filename != 'test.json':
-                raise Exception('did not use given filename')
-        finally:
-            os.chdir('..')
+        cfg = iceprod.server.config.IceProdConfig(filename='test.json')
+        if cfg.filename != 'test.json':
+            raise Exception('did not use given filename')
+
+    @unittest_reporter(name='IceProdConfig.apply_overrides')
+    def test_10_config_override(self):
+        vals = ['test=foo']
+        cfg = iceprod.server.config.IceProdConfig(override=vals)
+        assert cfg['test'] == 'foo'
+        del cfg['test']
+
+        vals = ['test.test2.test3=123', 'test.test4=456.5', 'test2={"foo":123}','test3=true']
+        cfg = iceprod.server.config.IceProdConfig(override=vals)
+        assert cfg['test']['test2']['test3'] == 123
+        assert cfg['test']['test4'] == 456.5
+        assert cfg['test2'] == {'foo': 123}
+        assert cfg['test3'] is True
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

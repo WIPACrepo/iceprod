@@ -1,0 +1,201 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: iceprod-materialization
+  labels:
+    app: iceprod
+    component: materialization
+spec:
+  type: NodePort
+  ports:
+  - name: https
+    port: 443
+    protocol: TCP
+  selector:
+    app: iceprod
+    component: materialization
+---
+apiVersion: cert-manager.io/v1alpha2
+kind: Certificate
+metadata:
+  name: materialization-iceprod-icecube-aq
+  namespace: default
+spec:
+  secretName: materialization-iceprod-icecube-aq-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  commonName: 'materialization.iceprod.icecube.aq'
+  dnsNames:
+  - materialization.iceprod.icecube.aq
+  acme:
+    config:
+    - dns01:
+        provider: route53
+      domains:
+      - 'materialization.iceprod.icecube.aq'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: iceprod-materialization-nginx-config
+data:
+  nginx.conf: |
+    server {
+        # Enable SSL and http2
+        listen 443 ssl http2 default_server;
+
+        server_name materialization.iceprod.icecube.aq;
+
+        root html;
+        index index.html index.htm;
+
+        ssl_certificate /opt/server.crt;
+        ssl_certificate_key /opt/server.key;
+
+        # put a one day session timeout for websockets to stay longer
+        ssl_session_cache shared:SSL:10m;
+        ssl_session_timeout 1440m;
+
+        # please consult latest nginx documentation for current secure encryption settings
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;
+        ssl_ciphers HIGH:!aNULL:!MD5;
+        ssl_prefer_server_ciphers on;
+
+        # force https
+        add_header Strict-Transport-Security "max-age=31536000; includeSubdomains;";
+
+        proxy_set_header HOST $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Server $host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_buffering off;
+
+        # you could use / if you use domain based proxy instead of path based proxy
+        location / {
+            proxy_pass http://localhost:8080/;
+
+            proxy_buffer_size          128k;
+            proxy_buffers              4 256k;
+            proxy_busy_buffers_size    256k;
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iceprod-materialization
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: iceprod
+      component: materialization
+  template:
+    metadata:
+      labels:
+        app: iceprod
+        component: materialization
+    spec:
+      containers:
+      - name: iceprod-materialization
+        image: wipac/iceprod:latest
+        imagePullPolicy: Always
+        command: ["bin/iceprod_server.py", "-n",
+                  "-c", "rest_api.url=https://iceprod2-api.icecube.wisc.edu",
+                  "-c", "rest_api.auth_key=$(TOKEN)",
+                  "-c", "auth.secret=$(AUTH_SECRET)",
+                  "-c", "auth.auth_url=https://iceprod2-api.icecube.wisc.edu",
+                  "-c", "modules.materialization=true",
+                  "-c", "materialization.port=8080"]
+        env:
+          - name: TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: iceprod-materialization-secrets
+                key: TOKEN
+          - name: AUTH_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: iceprod-materialization-secrets
+                key: SECRET
+        resources:
+          requests:
+            cpu: 100m
+            memory: 200Mi
+          limits:
+            cpu: 400m
+            memory: 800Mi
+      - name: iceprod-materialization-mongodb
+        image: mongo:3.6
+        command: ["mongod", "--wiredTigerCacheSizeGB", "0.5"]
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1000Mi
+          limits:
+            cpu: 2
+            memory: 2000Mi
+        volumeMounts:
+        - mountPath: /data/db
+          name: mongo-volume
+      - name: iceprod-materialization-nginx
+        image: nginx:1.17-alpine
+        resources:
+          requests:
+            cpu: 100m
+            memory: 200Mi
+          limits:
+            cpu: 200m
+            memory: 300Mi
+        volumeMounts:
+        - name: iceprod-materialization-nginx-config
+          mountPath: /etc/nginx/conf.d/
+        - name: materialization-iceprod-icecube-aq-tls
+          mountPath: /opt/
+        ports:
+        - containerPort: 443
+          name: https
+          protocol: TCP
+      volumes:
+      - name: mongo-volume
+        emptyDir:
+          medium: "Memory"
+      - name: materialization-iceprod-icecube-aq-tls
+        secret:
+          secretName: materialization-iceprod-icecube-aq-tls
+          items:
+          - key: tls.crt
+            path: server.crt
+          - key: tls.key
+            path: server.key
+      - name: iceprod-materialization-nginx-config
+        configMap:
+          name: iceprod-materialization-nginx-config
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: iceprod-materialization-network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: iceprod
+      component: materialization
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - ports:
+    - port: 443
+      protocol: TCP
+  egress:
+  - ports:
+    - port: 53
+      protocol: TCP
+    - port: 53
+      protocol: UDP
+    - port: 443
+      protocol: TCP

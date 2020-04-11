@@ -1,11 +1,26 @@
-FROM alpine:3.6
+FROM python:3.8
 
-RUN apk update \
- && apk upgrade \
- && apk add build-base git libffi-dev linux-headers openssl-dev python3 python3-dev
+RUN apt-get update && apt-get install -y \
+    globus-gass-copy-progs globus-proxy-utils voms-clients \
+    && apt-get clean
 
-RUN python3 -m ensurepip --upgrade
+RUN useradd -m -U iceprod
 
-RUN pip3 install git+git://github.com/WIPACrepo/iceprod.git@2.4#egg=iceprod
+WORKDIR /home/iceprod
 
-ENTRYPOINT ["/usr/bin/iceprod_server.py", "-n", "start"]
+COPY requirements.txt ./
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+USER iceprod
+
+COPY bin bin
+COPY iceprod iceprod
+COPY resources resources
+COPY env.sh ./
+
+RUN mkdir etc
+
+ENTRYPOINT ["/home/iceprod/env.sh"]
+
+CMD ["/home/iceprod/bin/iceprod_server.py", "-n", "start"]

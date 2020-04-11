@@ -28,10 +28,10 @@ class Server(object):
     The actual server.
 
     """
-    def __init__(self):
+    def __init__(self, config_params=None):
         self.io_loop = IOLoop.current()
         self.executor = ThreadPoolExecutor(max_workers=10)
-        self.cfg = IceProdConfig()
+        self.cfg = IceProdConfig(override=config_params)
         self.modules = {}
         self.services = {'daemon': {'restart': self.restart,
                                     'reload': self.reload,

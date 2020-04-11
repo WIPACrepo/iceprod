@@ -58,7 +58,7 @@ class IceProdConfig(dict):
     :param defaults: use default values (optional: default True)
     :param validate: turn validation on/off (optional: default True)
     """
-    def __init__(self, filename=None, defaults=True, validate=True):
+    def __init__(self, filename=None, defaults=True, validate=True, override=None):
         if filename:
             self.filename = filename
         else:
@@ -81,6 +81,41 @@ class IceProdConfig(dict):
         if defaults:
             self.defaults()
         self.save()
+
+        if override:
+            self.apply_overrides(override)
+            logger.info('after overrides: %s',self)
+
+    def apply_overrides(self, overrides):
+        for item in overrides:
+            key,val = item.split('=',1)
+
+            # try decoding value
+            if val == 'true':
+                val = True
+            elif val == 'false':
+                val = False
+            elif val.isdigit():
+                val = int(val)
+            else:
+                try:
+                    val = float(val)
+                except ValueError:
+                    try:
+                        val = json_decode(val)
+                    except Exception:
+                        pass
+
+            # put value at right key
+            key = key.split('.')
+            logging.debug(f'setting {key}={val}')
+            obj = self
+            while len(key) > 1:
+                if key[0] not in obj:
+                    obj[key[0]] = {}
+                obj = obj[key[0]]
+                key = key[1:]
+            obj[key[0]] = val
 
     def defaults(self):
         """Set default values if unset."""

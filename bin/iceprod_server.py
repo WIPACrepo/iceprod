@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 """
-Server process for running remote batch jobs.
+Server process for starting IceProd.
 """
-
-from __future__ import absolute_import, division, print_function
 
 import os
 import sys
 import logging
 import signal
 import importlib
+from functools import partial
 
 # Assuming that the directory structure remains constant, this will
 # automatically set the python path to find iceprod
@@ -51,16 +50,14 @@ def check_module(name, message='', required=False):
             exit(0)
 
 def check_dependencies():
-    check_module('apsw', 'SQLite database will not be available.')
     check_module('setproctitle', 'Will not be able to set process title.')
     check_module('tornado', required=True)
     check_module('jsonschema')
-    check_module('concurrent.futures', required=True)
     check_module('rest_tools', required=True)
 
 check_dependencies()
 
-def runner(stdout=False):
+def runner(stdout=False, *args, **kwargs):
     # set logger
     if stdout:
         iceprod.core.logger.set_logger()
@@ -72,13 +69,13 @@ def runner(stdout=False):
         from setproctitle import setproctitle
         setproctitle('iceprod_server.main')
     except Exception:
-        logging.warn("could not rename process")
+        logging.warning("could not rename process")
 
-    s = Server()
+    s = Server(*args, **kwargs)
 
     # set signal handlers
     def sig_handle(signum, frame):
-        logging.warn('signal handler called for %r', signum)
+        logging.warning('signal handler called for %r', signum)
         if signum == signal.SIGINT:
             IOLoop.current().add_callback_from_signal(s.stop)
         else:
@@ -87,7 +84,7 @@ def runner(stdout=False):
     signal.signal(signal.SIGQUIT, sig_handle)
 
     s.run()
-    logging.warn('iceprod exiting')
+    logging.warning('iceprod exiting')
 
 def setup_I3PROD():
     if 'I3PROD' not in os.environ:
@@ -100,6 +97,12 @@ def setup_I3PROD():
 def main():
     import argparse
 
+    def key_val(val):
+        if '=' not in val:
+            msg = f'{val} is not of the form key=val'
+            raise argparse.ArgumentTypeError(msg)
+        return val
+
     # Override values with cmdline options
     parser = argparse.ArgumentParser(description='IceProd Server')
     parser.add_argument('-n','--non-daemon',dest='daemon',action='store_false',
@@ -110,9 +113,13 @@ def main():
                         help='PID lockfile')
     parser.add_argument('--umask',type=int,default=0o077, #octal
                         help='File creation umask')
+    parser.add_argument('-c','--config-param',dest='config',action='append',type=key_val,
+                        help='extra config params, ex: rest_api.auth_key=XXX')
     args = parser.parse_args()
 
     setup_I3PROD()
+
+    run = partial(runner, config_params=args.config)
 
     if args.daemon:
         # now daemonize
@@ -120,7 +127,7 @@ def main():
         pidfile = os.path.expanduser(os.path.expandvars(args.pidfile))
         chdir = os.path.expanduser(os.path.expandvars('$I3PROD'))
         umask = args.umask
-        d = Daemon(pidfile, runner,
+        d = Daemon(pidfile, run,
                    chdir=chdir,
                    umask=umask,
                    stdout='var/log/out',
@@ -130,7 +137,7 @@ def main():
         if args.action != 'start':
             raise Exception('only daemon-mode can execute actions')
         else:
-            runner(stdout=True)
+            run(stdout=True)
 
 if __name__ == '__main__':
     main()

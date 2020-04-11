@@ -117,3 +117,4 @@ test.json
 
 etc/
 
+kubernetes/*secret*
