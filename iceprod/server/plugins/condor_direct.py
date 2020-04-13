@@ -187,7 +187,7 @@ class condor_direct(grid.BaseGrid):
                                 val = float(line.split('used')[-1].split('cores')[0].strip())
                             except Exception:
                                 try:
-                                    val = float(line.split('used')[-1].split(',')[0].strip())
+                                    val = float(line.split('used')[-1].split('usr')[0].strip())
                                 except Exception:
                                     pass
                         elif 'execution time limit' in line:
