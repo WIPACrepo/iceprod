@@ -672,8 +672,10 @@ class TasksActionsErrorHandler(BaseHandler):
             for k in ('cpu','memory','disk','time'):
                 if 'resources' in data and k in data['resources']:
                     try:
-                        # increase new request by 1.5
-                        new_val = float(data['resources'][k])*1.5
+                        new_val = float(data['resources'][k])
+                        if k == 'cpu' and new_val <= 1.1: # special handling for cpu
+                            continue
+                        new_val *= 1.5 # increase new request by 1.5
                         if isinstance(Resources.defaults[k], (int, list)):
                             new_val = math.ceil(new_val)
                     except Exception:
