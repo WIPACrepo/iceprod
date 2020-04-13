@@ -1,6 +1,7 @@
 import logging
 import json
 import uuid
+import math
 from collections import defaultdict
 
 import tornado.web
@@ -668,9 +669,18 @@ class TasksActionsErrorHandler(BaseHandler):
             elif 'resources' in data and 'time' in data['resources']:
                 update_query['$inc']['walltime_err_n'] = 1
                 update_query['$inc']['walltime_err'] = data['resources']['time']
-            for k in ('memory','disk','time'):
+            for k in ('cpu','memory','disk','time'):
                 if 'resources' in data and k in data['resources']:
-                    update_query['$max']['requirements.'+k] = data['resources'][k]
+                    try:
+                        # increase new request by 1.5
+                        new_val = float(data['resources'][k])*1.5
+                        if isinstance(Resources.defaults[k], (int, list)):
+                            new_val = math.ceil(new_val)
+                    except Exception:
+                        logger.info('error converting requirement %r',
+                                    data['resources'][k], exc_info=True)
+                    else:
+                        update_query['$max']['requirements.'+k] = new_val
             site = 'unknown'
             if 'site' in data:
                 site = data['site']

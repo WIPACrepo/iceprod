@@ -675,10 +675,10 @@ class rest_tasks_test(RestTestCase):
         self.assertEqual(ret['status'], 'reset')
         self.assertEqual(ret['walltime_err_n'], 2)
         self.assertEqual(ret['walltime_err'], 4.5)
-        self.assertEqual(ret['requirements']['memory'], data['requirements']['memory'])
-        self.assertEqual(ret['requirements']['time'], 2.5)
-        self.assertEqual(ret['requirements']['disk'], 20.3)
-        self.assertNotEqual(ret['requirements']['gpu'], 23)
+        self.assertEqual(ret['requirements']['memory'], data['requirements']['memory']) # mem doesn't change
+        self.assertGreater(ret['requirements']['time'], 2.5)
+        self.assertGreater(ret['requirements']['disk'], 20.3)
+        self.assertNotEqual(ret['requirements']['gpu'], 23) # gpu doesn't change
 
         # now try with a bad status
         data2 = {'status':'complete'}
