@@ -107,7 +107,7 @@ spec:
                   "-c", "rest_api.url=https://iceprod2-api.icecube.wisc.edu",
                   "-c", "rest_api.auth_key=$(TOKEN)",
                   "-c", "auth.secret=$(AUTH_SECRET)",
-                  "-c", "auth.auth_url=https://iceprod2-api.icecube.wisc.edu",
+                  "-c", "auth.url=https://iceprod2-api.icecube.wisc.edu",
                   "-c", "modules.materialization=true",
                   "-c", "materialization.port=8080"]
         env:

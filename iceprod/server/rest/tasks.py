@@ -939,6 +939,8 @@ class DatasetMultiFilesHandler(BaseHandler):
             job_index (int): the job index to add to
             task_name (str): the name of the task
             local (str): (optional) the local filename the task sees
+            transfer (str): whether to transfer the file (can be bool or str)
+            compression (str): whether to automatically compress/decompress the file
 
         Returns:
             dict: {'result': <task_id>}
@@ -982,8 +984,18 @@ class DatasetMultiFilesHandler(BaseHandler):
                 r = 'key {} should be of type {}'.format('local', str)
                 raise tornado.web.HTTPError(400, reason=r)
             file_data['local'] = data['local']
+        if 'transfer' in data:
+            if not isinstance(data['transfer'], (str,bool)):
+                r = 'key {} should be of type {}'.format('transfer', str)
+                raise tornado.web.HTTPError(400, reason=r)
+            file_data['transfer'] = data['transfer']
+        if 'compression' in data:
+            if not isinstance(data['compression'], (str,bool)):
+                r = 'key {} should be of type {}'.format('compression', str)
+                raise tornado.web.HTTPError(400, reason=r)
+            file_data['compression'] = data['compression']
         if not file_data.valid():
-            raise tornado.web.HTTPError(400, reason='bad file data')
+            raise tornado.web.HTTPError(400, reason='invalid file data')
 
         ret = await self.db.dataset_files.insert_one(dict(file_data))
         self.set_status(201)
@@ -1024,6 +1036,8 @@ class DatasetTaskFilesHandler(BaseHandler):
             filename (str): the full url filename
             movement (str): [input | output | both]
             local (str): (optional) the local filename the task sees
+            transfer (str): whether to transfer the file (can be bool or str)
+            compression (str): whether to automatically compress/decompress the file
 
         Returns:
             dict: {}
@@ -1055,8 +1069,18 @@ class DatasetTaskFilesHandler(BaseHandler):
                 r = 'key {} should be of type {}'.format('local', str)
                 raise tornado.web.HTTPError(400, reason=r)
             file_data['local'] = data['local']
+        if 'transfer' in data:
+            if not isinstance(data['transfer'], (str,bool)):
+                r = 'key {} should be of type {}'.format('transfer', str)
+                raise tornado.web.HTTPError(400, reason=r)
+            file_data['transfer'] = data['transfer']
+        if 'compression' in data:
+            if not isinstance(data['compression'], (str,bool)):
+                r = 'key {} should be of type {}'.format('compression', str)
+                raise tornado.web.HTTPError(400, reason=r)
+            file_data['compression'] = data['compression']
         if not file_data.valid():
-            raise tornado.web.HTTPError(400, reason='bad file data')
+            raise tornado.web.HTTPError(400, reason='invalid file data')
 
         ret = await self.db.dataset_files.insert_one(dict(file_data))
         self.set_status(201)
