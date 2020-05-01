@@ -12,7 +12,7 @@
         <th>Status</th>
         <th>Status Changed</th>
         {% if (current_user) %}
-        <th><button class="set_status" onclick='set_jobs_status(dataset_id, job_ids_on_page, "processing", "{{ passkey }}", ["queued", "processing", "failed", "suspended"]);'>Reset All</button></th>
+        <th><button class="set_status" onclick='set_jobs_status(dataset_id, job_ids_on_page, "processing", "{{ passkey }}", ["queued", "processing", "errors", "suspended"]);'>Reset All</button></th>
         <th><button class="set_status" onclick='set_jobs_status(dataset_id, job_ids_on_page, "processing", "{{ passkey }}");'>Hard Reset All</button></th>
         <th><button class="set_status" onclick='set_jobs_status(dataset_id, job_ids_on_page, "suspended", "{{ passkey }}", ["idle", "waiting", "queued", "processing", "reset"]);'>Suspend All</button></th>
         {% end %}
@@ -23,7 +23,7 @@
         <td>{{ jobs[j]['status'] }}</td>
         <td>{{ jobs[j]['status_changed'] }}</td>
         {% if (current_user) %}
-        <td><button class="set_status" onclick='set_jobs_status(dataset_id, ["{{ jobs[j]['job_id'] }}"], "processing", "{{ passkey }}", ["queued", "processing", "failed", "suspended"]);'>Reset</button></td>
+        <td><button class="set_status" onclick='set_jobs_status(dataset_id, ["{{ jobs[j]['job_id'] }}"], "processing", "{{ passkey }}", ["queued", "processing", "errors", "suspended"]);'>Reset</button></td>
         <td><button class="set_status" onclick='set_jobs_status(dataset_id, ["{{ jobs[j]['job_id'] }}"], "processing", "{{ passkey }}");'>Hard Reset</button></td>
         <td><button class="set_status" onclick='set_jobs_status(dataset_id, ["{{ jobs[j]['job_id'] }}"], "suspended", "{{ passkey }}", ["idle", "waiting", "queued", "processing", "reset"]);'>Suspend</button></td>
         {% end %}

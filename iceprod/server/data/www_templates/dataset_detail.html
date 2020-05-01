@@ -31,10 +31,10 @@
 
 {% if (current_user) %}
 <div class="action">
-    <button onclick='set_dataset_status("{{ dataset_id }}", "processing", "{{ passkey }}", ["queued", "processing", "reset", "failed", "suspended"], ["errors","suspended","failed"]);'>Reset</button>
-    <button onclick='set_dataset_status("{{ dataset_id }}", "processing", "{{ passkey }}", [], ["errors","suspended","failed","complete"]);'>Hard Reset</button>
-    <button onclick='set_dataset_status("{{ dataset_id }}", "suspended", "{{ passkey }}", ["idle", "waiting", "queued", "processing", "reset"], ["processing","errors"]);'>Suspend</button>
-    <button onclick='set_dataset_status("{{ dataset_id }}", "truncated", "{{ passkey }}", propagate=false);'>Truncate</button>
+    <button onclick='set_dataset_status("{{ dataset_id }}", "processing", "{{ passkey }}", ["queued", "processing", "reset", "failed", "suspended"], ["errors","suspended"]).then(x => x && reload())'>Reset</button>
+    <button onclick='set_dataset_status("{{ dataset_id }}", "processing", "{{ passkey }}", [], ["errors","suspended","complete"]).then(x => x && reload())'>Hard Reset</button>
+    <button onclick='set_dataset_status("{{ dataset_id }}", "suspended", "{{ passkey }}", ["idle", "waiting", "queued", "processing", "reset"], ["processing","errors"]).then(x => x && reload())'>Suspend</button>
+    <button onclick='set_dataset_status("{{ dataset_id }}", "truncated", "{{ passkey }}", [], [], propagate=false).then(x => x && reload())'>Truncate</button>
 </div>
 {% end %}
 

@@ -240,6 +240,39 @@ table.browse th, table.browse td {
     padding: .2em;
 }
 
+#message-outer {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+#message-inner {
+  background: #fefefe;
+  border: .15em #000 solid;
+  border-radius: 0.5em;
+  margin-top: 3em;
+  padding: 1em;
+  font-size: 16pt;
+  text-align: center;
+  transform: rotate(0deg);
+}
+#message-inner .close {
+  position: absolute;
+  top: -.5em;
+  right: -.5em;
+  padding: 0 .2em .1em;
+  margin: 0;
+  line-height: 1em;
+  font-size: 14pt;
+  font-weight: bold;
+  background: #ddd;
+  border: .1em solid black;
+  border-radius: .2em;
+  cursor: pointer;
+}
+
 .status_graphs {
     text-align: center;
 }
