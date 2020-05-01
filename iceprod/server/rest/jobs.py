@@ -8,7 +8,7 @@ import pymongo
 import motor
 
 from iceprod.server.rest import RESTHandler, RESTHandlerSetup, authorization
-from iceprod.server.util import nowstr, status_sort
+from iceprod.server.util import nowstr, job_statuses, job_status_sort
 
 logger = logging.getLogger('rest.jobs')
 
@@ -45,6 +45,7 @@ def setup(config, *args, **kwargs):
         (r'/datasets/(?P<dataset_id>\w+)/jobs', DatasetMultiJobsHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/jobs/(?P<job_id>\w+)', DatasetJobsHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/jobs/(?P<job_id>\w+)/status', DatasetJobsStatusHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/job_actions/bulk_status/(?P<status>\w+)', DatasetJobBulkStatusHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/job_summaries/status', DatasetJobSummariesStatusHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/job_counts/status', DatasetJobCountsStatusHandler, handler_cfg),
     ]
@@ -227,7 +228,7 @@ class DatasetJobsStatusHandler(BaseHandler):
         data = json.loads(self.request.body)
         if (not data) or 'status' not in data:
             raise tornado.web.HTTPError(400, reason='Missing status in body')
-        if data['status'] not in ('processing','failed','suspended','errors','complete'):
+        if data['status'] not in job_statuses:
             raise tornado.web.HTTPError(400, reason='Bad status')
         update_data = {
             'status': data['status'],
@@ -241,6 +242,48 @@ class DatasetJobsStatusHandler(BaseHandler):
         else:
             self.write({})
             self.finish
+
+class DatasetJobBulkStatusHandler(BaseHandler):
+    """
+    Update the status of multiple jobs at once.
+    """
+    @authorization(roles=['admin','client','system'], attrs=['dataset_id:write'])
+    async def post(self, dataset_id, status):
+        """
+        Set multiple jobs' status.
+
+        Body should have {'jobs': [<job_id>, <job_id>, ...]}
+
+        Args:
+            dataset_id (str): dataset id
+            status (str): the status
+
+        Returns:
+            dict: empty dict
+        """
+        data = json.loads(self.request.body)
+        if (not data) or 'jobs' not in data or not data['jobs']:
+            raise tornado.web.HTTPError(400, reason='Missing jobs in body')
+        jobs = list(data['jobs'])
+        if len(jobs) > 100000:
+            raise tornado.web.HTTPError(400, reason='Too many jobs specified (limit: 100k)')
+        if status not in job_statuses:
+            raise tornado.web.HTTPError(400, reason='Bad status')
+        query = {
+            'dataset_id': dataset_id,
+            'job_id': {'$in': jobs},
+        }
+        update_data = {
+            'status': status,
+            'status_changed': nowstr(),
+        }
+
+        ret = await self.db.jobs.update_many(query, {'$set':update_data})
+        if (not ret) or ret.modified_count < 1:
+            self.send_error(404, reason="Jobs not found")
+        else:
+            self.write({})
+            self.finish()
 
 class DatasetJobSummariesStatusHandler(BaseHandler):
     """
@@ -263,7 +306,7 @@ class DatasetJobSummariesStatusHandler(BaseHandler):
         async for row in cursor:
             ret[row['status']].append(row['job_id'])
         ret2 = {}
-        for k in sorted(ret, key=status_sort):
+        for k in sorted(ret, key=job_status_sort):
             ret2[k] = ret[k]
         self.write(ret2)
         self.finish()
@@ -291,7 +334,7 @@ class DatasetJobCountsStatusHandler(BaseHandler):
         async for row in cursor:
             ret[row['_id']] = row['total']
         ret2 = {}
-        for k in sorted(ret, key=status_sort):
+        for k in sorted(ret, key=job_status_sort):
             ret2[k] = ret[k]
         self.write(ret2)
         self.finish()

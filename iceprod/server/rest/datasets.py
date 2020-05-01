@@ -10,7 +10,7 @@ import pymongo
 import motor
 
 from iceprod.server.rest import RESTHandler, RESTHandlerSetup, authorization
-from iceprod.server.util import nowstr, status_sort
+from iceprod.server.util import nowstr, dataset_statuses, dataset_status_sort
 
 logger = logging.getLogger('rest.datasets')
 
@@ -226,7 +226,7 @@ class DatasetStatusHandler(BaseHandler):
         data = json.loads(self.request.body)
         if 'status' not in data:
             raise tornado.web.HTTPError(400, reason='missing status')
-        elif data['status'] not in ('processing','suspended','errors','truncated','complete'):
+        elif data['status'] not in dataset_statuses:
             raise tornado.web.HTTPError(400, reason='bad status')
 
         ret = await self.db.datasets.find_one_and_update({'dataset_id':dataset_id},
@@ -301,7 +301,7 @@ class DatasetSummariesStatusHandler(BaseHandler):
         async for row in cursor:
             ret[row['status']].append(row['dataset_id'])
         ret2 = {}
-        for k in sorted(ret, key=status_sort):
+        for k in sorted(ret, key=dataset_status_sort):
             ret2[k] = ret[k]
         self.write(ret2)
         self.finish()

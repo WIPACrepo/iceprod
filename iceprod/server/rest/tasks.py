@@ -11,7 +11,7 @@ import motor
 from iceprod.core import dataclasses
 from iceprod.core.resources import Resources
 from iceprod.server.rest import RESTHandler, RESTHandlerSetup, authorization
-from iceprod.server.util import nowstr, status_sort
+from iceprod.server.util import nowstr, task_statuses, task_status_sort
 
 logger = logging.getLogger('rest.tasks')
 
@@ -254,7 +254,7 @@ class TasksStatusHandler(BaseHandler):
         data = json.loads(self.request.body)
         if (not data) or 'status' not in data:
             raise tornado.web.HTTPError(400, reason='Missing status in body')
-        if data['status'] not in ('idle','waiting','queued','processing','reset','failed','suspended','complete'):
+        if data['status'] not in task_statuses:
             raise tornado.web.HTTPError(400, reason='Bad status')
         update_data = {
             'status': data['status'],
@@ -281,13 +281,12 @@ class TaskCountsStatusHandler(BaseHandler):
         Returns:
             dict: {<status>: num}
         """
-        statuses = ['idle','waiting','queued','processing','reset','failed','suspended','complete']
         ret = {}
-        for status in statuses:
+        for status in task_statuses:
             ret[status] = await self.db.tasks.count_documents({"status":status})
 
         ret2 = {}
-        for k in sorted(ret, key=status_sort):
+        for k in sorted(ret, key=task_status_sort):
             ret2[k] = ret[k]
         self.write(ret2)
         self.finish()
@@ -388,7 +387,7 @@ class DatasetTasksStatusHandler(BaseHandler):
         data = json.loads(self.request.body)
         if (not data) or 'status' not in data:
             raise tornado.web.HTTPError(400, reason='Missing status in body')
-        if data['status'] not in ('idle','waiting','queued','processing','reset','failed','suspended','complete'):
+        if data['status'] not in task_statuses:
             raise tornado.web.HTTPError(400, reason='Bad status')
         update_data = {
             'status': data['status'],
@@ -426,7 +425,7 @@ class DatasetTaskSummaryStatusHandler(BaseHandler):
         async for row in cursor:
             ret[row['status']].append(row['task_id'])
         ret2 = {}
-        for k in sorted(ret, key=status_sort):
+        for k in sorted(ret, key=task_status_sort):
             ret2[k] = ret[k]
         self.write(ret2)
         self.finish()
@@ -454,7 +453,7 @@ class DatasetTaskCountsStatusHandler(BaseHandler):
         async for row in cursor:
             ret[row['_id']] = row['total']
         ret2 = {}
-        for k in sorted(ret, key=status_sort):
+        for k in sorted(ret, key=task_status_sort):
             ret2[k] = ret[k]
         self.write(ret2)
         self.finish()
@@ -784,7 +783,7 @@ class TaskBulkStatusHandler(BaseHandler):
         tasks = list(data['tasks'])
         if len(tasks) > 100000:
             raise tornado.web.HTTPError(400, reason='Too many tasks specified (limit: 100k)')
-        if status not in ('idle','waiting','queued','processing','reset','failed','suspended','complete'):
+        if status not in task_statuses:
             raise tornado.web.HTTPError(400, reason='Bad status')
         query = {
             'task_id': {'$in': tasks},
@@ -827,7 +826,7 @@ class DatasetTaskBulkStatusHandler(BaseHandler):
         tasks = list(data['tasks'])
         if len(tasks) > 100000:
             raise tornado.web.HTTPError(400, reason='Too many tasks specified (limit: 100k)')
-        if status not in ('idle','waiting','queued','processing','reset','failed','suspended','complete'):
+        if status not in task_statuses:
             raise tornado.web.HTTPError(400, reason='Bad status')
         query = {
             'dataset_id': dataset_id,

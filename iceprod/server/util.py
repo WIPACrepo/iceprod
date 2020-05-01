@@ -17,10 +17,25 @@ def str2datetime(st):
     else:
         return datetime.strptime( st, "%Y-%m-%dT%H:%M:%S")
 
-def status_sort(st):
-    statuses = ['idle', 'waiting', 'queued', 'processing', 'reset',
-                'suspended', 'failed', 'complete']
+dataset_statuses = ['processing', 'truncated', 'suspended', 'errors', 'complete']
+job_statuses = ['processing', 'suspended', 'errors', 'complete']
+task_statuses = ['idle', 'waiting', 'queued', 'processing', 'reset',
+                 'suspended', 'failed', 'complete']
+
+def dataset_status_sort(st):
     try:
-        return statuses.index(st)
+        return dataset_statuses.index(st)
+    except ValueError:
+        return len(statuses)
+
+def job_status_sort(st):
+    try:
+        return job_statuses.index(st)
+    except ValueError:
+        return len(statuses)
+
+def task_status_sort(st):
+    try:
+        return task_statuses.index(st)
     except ValueError:
         return len(statuses)
