@@ -44,7 +44,7 @@ function normalizeName(name) {
   if (typeof name !== 'string') {
     name = String(name)
   }
-  if (/[^a-z0-9\-#$%&'*+.^_`|~]/i.test(name)) {
+  if (/[^a-z0-9\-#$%&'*+.^_`|~]/i.test(name) || name === '') {
     throw new TypeError('Invalid character in header field name')
   }
   return name.toLowerCase()
@@ -227,7 +227,7 @@ function Body() {
     } else if (support.arrayBuffer && (ArrayBuffer.prototype.isPrototypeOf(body) || isArrayBufferView(body))) {
       this._bodyArrayBuffer = bufferClone(body)
     } else {
-      throw new Error('unsupported BodyInit type')
+      this._bodyText = body = Object.prototype.toString.call(body)
     }
 
     if (!this.headers.get('content-type')) {
@@ -330,7 +330,7 @@ export function Request(input, options) {
     this.url = String(input)
   }
 
-  this.credentials = options.credentials || this.credentials || 'omit'
+  this.credentials = options.credentials || this.credentials || 'same-origin'
   if (options.headers || !this.headers) {
     this.headers = new Headers(options.headers)
   }
