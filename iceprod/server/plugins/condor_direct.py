@@ -3,6 +3,7 @@ Task submission directly to condor.
 """
 import sys
 import os
+import copy
 import logging
 import getpass
 from datetime import datetime,timedelta
@@ -586,6 +587,7 @@ class condor_direct(grid.BaseGrid):
                 dataset = await self.rest_client.request('GET', f'/datasets/{task["dataset_id"]}')
                 config = await self.rest_client.request('GET', f'/config/{task["dataset_id"]}')
                 dataset_cache[task['dataset_id']] = (dataset, config)
+            config = copy.deepcopy(config)
 
             task_cfg = None
             for t in config['tasks']:
