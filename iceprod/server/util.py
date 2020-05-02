@@ -26,16 +26,16 @@ def dataset_status_sort(st):
     try:
         return dataset_statuses.index(st)
     except ValueError:
-        return len(statuses)
+        return len(dataset_statuses)
 
 def job_status_sort(st):
     try:
         return job_statuses.index(st)
     except ValueError:
-        return len(statuses)
+        return len(job_statuses)
 
 def task_status_sort(st):
     try:
         return task_statuses.index(st)
     except ValueError:
-        return len(statuses)
+        return len(task_statuses)
