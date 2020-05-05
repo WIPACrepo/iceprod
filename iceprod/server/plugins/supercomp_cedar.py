@@ -240,7 +240,7 @@ class supercomp_cedar(condor_direct):
             if not line.strip():
                 continue
             gid,status,name,exit_code,workdir = line.strip().split('|')
-            if not name.startswith('iceprod'):
+            if status in ('PENDING', 'RESIZING', 'REQUEUED', 'RUNNING') or not name.startswith('iceprod'):
                 continue
             if status == 'COMPLETED' and exit_code == '0:0':
                 status = 'ok'
