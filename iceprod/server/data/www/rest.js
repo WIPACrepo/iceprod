@@ -122,11 +122,16 @@ async function set_dataset_status(dataset_id, stat, passkey, task_status_filters
 }
 
 async function set_jobs_status(dataset_id, job_ids, stat, passkey, task_status_filters=[], propagate=true) {
-    let ret = await fetch_json('POST', '/datasets/' + dataset_id + '/job_actions/bulk_status/'+stat,
-                    {'jobs':job_ids}, passkey);
-    if ('error' in ret) {
-        message_alert('error - '+ret['error']);
-        return false;
+    let tmpjobids = job_ids;
+    while (tmpjobids.length > 0) {
+        let curjobids = tmpjobids.slice(0,50000);
+        tmpjobids = tmpjobids.slice(50000);
+        let ret = await fetch_json('POST', '/datasets/' + dataset_id + '/job_actions/bulk_status/'+stat,
+                        {'jobs':curjobids}, passkey);
+        if ('error' in ret) {
+            message_alert('error - '+ret['error']);
+            return false;
+        }
     }
 
     if (propagate) {
@@ -167,11 +172,15 @@ async function set_jobs_status(dataset_id, job_ids, stat, passkey, task_status_f
 
 async function set_tasks_status(dataset_id, task_ids, stat, passkey) {
     try {
-        let ret = await fetch_json('POST', '/datasets/' + dataset_id + '/task_actions/bulk_status/'+stat,
-                        {'tasks':task_ids}, passkey);
-        if ('error' in ret) {
-            message_alert('error - '+ret['error']);
-            return false;
+        while (task_ids.length > 0) {
+            let curtaskids = task_ids.slice(0,50000);
+            task_ids = task_ids.slice(50000);
+            let ret = await fetch_json('POST', '/datasets/' + dataset_id + '/task_actions/bulk_status/'+stat,
+                            {'tasks':curtaskids}, passkey);
+            if ('error' in ret) {
+                message_alert('error - '+ret['error']);
+                return false;
+            }
         }
     } catch(err) {
         message_alert('error - '+err);
