@@ -96,18 +96,27 @@ def run_async(func,*args,**kwargs):
 
 def read_filename(filename):
     """Read a file that may potentially be gzipped"""
+    data = ''
     if os.path.exists(filename):
         with open(filename) as f:
-            return f.read()
+            data = f.read()
     elif os.path.exists(filename+'.gz'):
         try:
             with gzip.open(filename+'.gz', 'rt', encoding='utf-8') as f:
-                return f.read()
-        except EOFError:
-            pass
+                try:
+                    while True:
+                        pos = f.tell()
+                        data += f.read(256)
+                except EOFError:
+                    f.seek(pos)
+                    try:
+                        while True:
+                            data += f.read(1)
+                    except EOFError:
+                        pass
         except Exception:
             logging.info('error reading gzip file', exc_info=True)
-    return ''
+    return data
 
 class condor_direct(grid.BaseGrid):
 
@@ -485,22 +494,23 @@ class condor_direct(grid.BaseGrid):
 
             if now - submit_time > time_dict[status]:
                 logger.info('pilot over time: %r', pilots[grid_queue_id]['pilot_id'])
-                reset_pilots.add(grid_queue_id)
+                #reset_pilots.add(grid_queue_id)
                 remove_grid_jobs.add(grid_queue_id)
             elif status == 'error':
                 logger.info('job error. pilot_id: %r, grid_id: %r',
                             pilots[grid_queue_id]['pilot_id'], grid_queue_id)
-                reset_pilots.add(grid_queue_id)
+                #reset_pilots.add(grid_queue_id)
                 remove_grid_jobs.add(grid_queue_id)
 
                 pilot = pilots[grid_queue_id]
-                task_id = pilot['tasks'][0]
-                logger.info('post-processing task %s', task_id)
-                ret = await self.rest_client.request('GET', f'/tasks/{task_id}')
-                if ret['status'] == 'processing':
-                    await self.task_error(task_id, ret['dataset_id'], pilot_id=pilot['pilot_id'],
-                                          submit_dir=grid_jobs[grid_queue_id]['submit_dir'],
-                                          kill=True, site=grid_jobs[grid_queue_id]['site'])
+                if pilot['tasks']:
+                    task_id = pilot['tasks'][0]
+                    logger.info('post-processing task %s', task_id)
+                    ret = await self.rest_client.request('GET', f'/tasks/{task_id}')
+                    if ret['status'] == 'processing':
+                        await self.task_error(task_id, ret['dataset_id'], pilot_id=pilot['pilot_id'],
+                                              submit_dir=grid_jobs[grid_queue_id]['submit_dir'],
+                                              kill=True, site=grid_jobs[grid_queue_id]['site'])
             elif status == 'queued':
                 grid_idle += 1
 
