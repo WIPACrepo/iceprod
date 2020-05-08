@@ -54,6 +54,9 @@
     {% if len(logs['stdlog']) > 10 %}
         <span class="log_extra"> (+ {{ len(logs['stdlog'])-10 }} more)</span>
     {% end %}
+    {% if not (('stdout' in logs and logs['stdout'][0]['data']) or ('stderr' in logs and logs['stderr'][0]['data'])) %}
+    <div class="log_body">{{ '<br />'.join(map(escape,logs['stdlog'][0]['data'].replace('\r','').split('\n')[-20:])) }}</div>
+    {% end %}
   </div>
 {% end %}
 {% if 'stdout' in logs %}
