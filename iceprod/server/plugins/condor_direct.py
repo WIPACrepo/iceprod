@@ -103,15 +103,22 @@ def read_filename(filename):
     elif os.path.exists(filename+'.gz'):
         try:
             with gzip.open(filename+'.gz', 'rt', encoding='utf-8') as f:
+                
                 try:
                     while True:
                         pos = f.tell()
-                        data += f.read(256)
+                        ret = f.read(256)
+                        if not ret:
+                            break
+                        data += ret
                 except EOFError:
                     f.seek(pos)
                     try:
                         while True:
-                            data += f.read(1)
+                            ret = f.read(1)
+                            if not ret:
+                                break
+                            data += ret
                     except EOFError:
                         pass
         except Exception:
