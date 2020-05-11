@@ -135,6 +135,7 @@ async function set_jobs_status(dataset_id, job_ids, stat, passkey, task_status_f
     }
 
     if (propagate) {
+        message('updating tasks');
         let task_status = 'suspended';
         if (stat == 'processing')
             task_status = 'reset';
@@ -156,7 +157,7 @@ async function set_jobs_status(dataset_id, job_ids, stat, passkey, task_status_f
                 promises.push(fetch_json('GET', url, null, passkey));
             }
             let results = await Promise.all(promises);
-            for (var k=i;k<j;k++) {
+            for (var k=0;k<results.length;k++) {
                 let ret = Object.keys(results[k]);
                 if (ret.length > 0) {
                     task_ids.push.apply(ret);
@@ -166,6 +167,7 @@ async function set_jobs_status(dataset_id, job_ids, stat, passkey, task_status_f
         if (task_ids.length > 0) {
             return set_tasks_status(dataset_id, task_ids, task_status, passkey);
         }
+        message_close();
     }
     return true;
 }
