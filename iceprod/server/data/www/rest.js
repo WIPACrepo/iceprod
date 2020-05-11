@@ -82,7 +82,7 @@ async function set_dataset_status(dataset_id, stat, passkey, task_status_filters
         }
         let job_ids = Object.keys(jobs);
         if (job_ids.length > 0) {
-            let ret = await set_jobs_status(dataset_id, job_ids, job_stat, passkey, [], false);
+            let ret = await set_jobs_status(dataset_id, job_ids, job_stat, passkey, [], false, false);
             if (ret == false) {
                 return false;
             }
@@ -105,7 +105,7 @@ async function set_dataset_status(dataset_id, stat, passkey, task_status_filters
         }
         let task_ids = Object.keys(tasks);
         if (task_ids.length > 0) {
-            let ret = await set_tasks_status(dataset_id, task_ids, task_stat, passkey);
+            let ret = await set_tasks_status(dataset_id, task_ids, task_stat, passkey, false);
             if (ret == false) {
                 return false;
             }
@@ -121,7 +121,7 @@ async function set_dataset_status(dataset_id, stat, passkey, task_status_filters
     return true;
 }
 
-async function set_jobs_status(dataset_id, job_ids, stat, passkey, task_status_filters=[], propagate=true) {
+async function set_jobs_status(dataset_id, job_ids, stat, passkey, task_status_filters=[], propagate=true, messaging=true) {
     let tmpjobids = job_ids;
     while (tmpjobids.length > 0) {
         let curjobids = tmpjobids.slice(0,50000);
@@ -135,7 +135,9 @@ async function set_jobs_status(dataset_id, job_ids, stat, passkey, task_status_f
     }
 
     if (propagate) {
-        message('updating tasks');
+        if (messaging) {
+            message('getting task_ids - 0% complete');
+        }
         let task_status = 'suspended';
         if (stat == 'processing')
             task_status = 'reset';
@@ -150,6 +152,9 @@ async function set_jobs_status(dataset_id, job_ids, stat, passkey, task_status_f
         let task_ids = [];
         // do 10 jobs at once for parallelization
         for (var i=0;i<job_ids.length;i+=10) {
+            if (messaging && i%100 == 0) {
+                message('getting task_ids - '+Math.floor(i/job_ids.length)+'% complete');
+            }
             let promises = [];
             let j=i;
             for (;j<i+10 && j<job_ids.length;j++) {
@@ -165,16 +170,25 @@ async function set_jobs_status(dataset_id, job_ids, stat, passkey, task_status_f
             }
         }
         if (task_ids.length > 0) {
-            return set_tasks_status(dataset_id, task_ids, task_status, passkey);
+            if (messaging) {
+                message("updating tasks");
+            }
+            return set_tasks_status(dataset_id, task_ids, task_status, passkey, false);
         }
-        message_close();
+        if (messaging) {
+            message_close();
+        }
     }
     return true;
 }
 
-async function set_tasks_status(dataset_id, task_ids, stat, passkey) {
+async function set_tasks_status(dataset_id, task_ids, stat, passkey, messaging=true) {
+    let total_tasks = task_ids.length;
     try {
         while (task_ids.length > 0) {
+            if (messaging) {
+                message("updating tasks - "+Math.floor(1-task_ids.length/total_tasks)+"% complete");
+            }
             let curtaskids = task_ids.slice(0,50000);
             task_ids = task_ids.slice(50000);
             let ret = await fetch_json('POST', '/datasets/' + dataset_id + '/task_actions/bulk_status/'+stat,
@@ -188,14 +202,20 @@ async function set_tasks_status(dataset_id, task_ids, stat, passkey) {
         message_alert('error - '+err);
         return false;
     }
+    if (messaging) {
+        message_close();
+    }
     return true;
 }
 
-async function set_tasks_and_jobs_status(dataset_id, task_ids, stat, passkey) {
+async function set_tasks_and_jobs_status(dataset_id, task_ids, stat, passkey, messaging=true) {
     var job_status = stat;
     if (stat == "idle" || stat == "waiting" || stat == "queued" || stat == "processing" || stat == "reset")
         job_status = "processing";
     for (var i=0;i<task_ids.length;i++) {
+        if (messaging && i%10 == 0) {
+            message('updating tasks and jobs - '+Math.floor(i/task_ids.length)+'% complete');
+        }
         let tid = task_ids[i];
         let task = await fetch_json('GET', '/datasets/' + dataset_id + '/tasks/' + tid, null, passkey);
         if ('error' in task) {
@@ -216,5 +236,8 @@ async function set_tasks_and_jobs_status(dataset_id, task_ids, stat, passkey) {
             message_alert('error - '+ret['error']);
             return;
         }
+    }
+    if (messaging) {
+        message_close();
     }
 }
