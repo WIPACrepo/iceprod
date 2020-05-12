@@ -103,7 +103,8 @@ class MultiDatasetHandler(BaseHandler):
             'description': str,
             'jobs_submitted': int,
             'tasks_submitted': int,
-            'group': str
+            'tasks_per_job': int,
+            'group': str,
         }
         for k in req_fields:
             if k not in data:
@@ -111,6 +112,28 @@ class MultiDatasetHandler(BaseHandler):
             if not isinstance(data[k], req_fields[k]):
                 r = 'key "{}" should be of type {}'.format(k, req_fields[k].__name__)
                 raise tornado.web.HTTPError(400, reason=r)
+
+        opt_fields = {
+            'priority': int,
+            'debug': bool,
+            'jobs_immutable': bool,
+        }
+        for k in opt_fields:
+            if k in data and not isinstance(data[k], opt_fields[k]):
+                r = 'key "{}" should be of type {}'.format(k, opt_fields[k].__name__)
+                raise tornado.web.HTTPError(400, reason=r)
+
+        bad_fields = set(data).difference(set(opt_fields).union(req_fields))
+        if bad_fields:
+            r = 'invalid keys found'
+            raise tornado.web.HTTPError(400, reason=r)
+
+        if data['jobs_submitted'] == 0 and data['tasks_per_job'] <= 0:
+            r = '"tasks_per_job" must be > 0'
+            raise tornado.web.HTTPError(400, reason=r)
+        elif data['tasks_submitted'] != 0 and data['jobs_submitted'] / data['tasks_submitted'] != data['tasks_per_job']:
+            r = '"tasks_per_job" does not match "jobs_submitted"/"tasks_submitted"'
+            raise tornado.web.HTTPError(400, reason=r)
 
         # generate dataset number
         ret = await self.db.settings.find_one_and_update(
@@ -273,9 +296,14 @@ class DatasetJobsSubmittedHandler(BaseHandler):
             raise tornado.web.HTTPError(400, reason='jobs_submitted is immutable')
         if ret['jobs_submitted'] > jobs_submitted:
             raise tornado.web.HTTPError(400, reason='jobs_submitted must be larger than before')
+        if 'tasks_per_job' not in ret or ret['tasks_per_job'] <= 0:
+            raise tornado.web.HTTPError(400, reason='tasks_per_job not valid')
 
         ret = await self.db.datasets.find_one_and_update({'dataset_id':dataset_id},
-                {'$set':{'jobs_submitted': jobs_submitted}},
+                {'$set':{
+                    'jobs_submitted': jobs_submitted,
+                    'tasks_submitted': int(jobs_submitted*ret['tasks_per_job']),
+                }},
                 projection=['_id'])
         if not ret:
             self.send_error(404, reason="Dataset not found")

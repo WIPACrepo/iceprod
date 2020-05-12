@@ -111,7 +111,8 @@ async function submit() {
     var submit_data = parse_json($("#submit_box").val());
     if (submit_data == null)
         return;
-    var ntasks = get_num_tasks(submit_data) * njobs;
+    var tasks_per_job = get_num_tasks(submit_data);
+    var ntasks = tasks_per_job * njobs;
     if (ntasks < 0)
         return;
 
@@ -120,6 +121,7 @@ async function submit() {
         {'description': description,
          'jobs_submitted': njobs,
          'tasks_submitted': ntasks,
+         'tasks_per_job': tasks_per_job,
          'group': group,
         },
         passkey
