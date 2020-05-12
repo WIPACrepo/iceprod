@@ -27,7 +27,7 @@ def main():
 
     logging.basicConfig(level=logging.DEBUG if args['debug'] else logging.INFO)
     
-    rpc = RestClient('https://iceprod2-api.icecube.wisc.edu', args['token'])
+    rpc = RestClient('https://materialization.iceprod.icecube.aq', args['token'])
 
     asyncio.run(run(rpc, only_dataset=args['dataset'], num=args['num'], run_once=True, debug=args['debug']))
 

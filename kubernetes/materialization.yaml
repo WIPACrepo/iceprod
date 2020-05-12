@@ -126,8 +126,8 @@ spec:
             cpu: 100m
             memory: 200Mi
           limits:
-            cpu: 400m
-            memory: 800Mi
+            cpu: 1
+            memory: 2Gi
       - name: iceprod-materialization-mongodb
         image: mongo:3.6
         command: ["mongod", "--wiredTigerCacheSizeGB", "0.5"]
