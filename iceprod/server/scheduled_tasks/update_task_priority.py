@@ -28,12 +28,13 @@ def update_task_priority(module):
     # initial delay
     IOLoop.current().call_later(random.randint(60,600), run, module.rest_client)
 
-async def run(rest_client, debug=False):
+async def run(rest_client, dataset_id=None, debug=False):
     """
     Actual runtime / loop.
 
     Args:
         rest_client (:py:class:`iceprod.core.rest_client.Client`): rest client
+        dataset_id (str): (optional) dataset id to update
         debug (bool): debug flag to propagate exceptions
     """
     start_time = time.time()
@@ -43,10 +44,16 @@ async def run(rest_client, debug=False):
             'status': 'waiting|queued|processing|reset',
             'keys': 'task_id|dataset_id',
         }
-        ret = await rest_client.request('GET', '/tasks', args)
+        if dataset_id:
+            ret = await rest_client.request('GET', f'/datasets/{dataset_id}/tasks', args)
+            tasks = ret.values()
+        else:
+            url = f'/datasets/{dataset_id}/tasks'
+            ret = await rest_client.request('GET', '/tasks', args)
+            tasks = ret['tasks']
 
         futures = set()
-        for task in ret['tasks']:
+        for task in tasks:
             if len(futures) >= 20:
                 done, pending = await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED)
                 futures = pending
