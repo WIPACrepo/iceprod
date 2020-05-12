@@ -131,8 +131,8 @@ class MultiDatasetHandler(BaseHandler):
         if data['jobs_submitted'] == 0 and data['tasks_per_job'] <= 0:
             r = '"tasks_per_job" must be > 0'
             raise tornado.web.HTTPError(400, reason=r)
-        elif data['tasks_submitted'] != 0 and data['jobs_submitted'] / data['tasks_submitted'] != data['tasks_per_job']:
-            r = '"tasks_per_job" does not match "jobs_submitted"/"tasks_submitted"'
+        elif data['tasks_submitted'] != 0 and data['tasks_submitted'] / data['jobs_submitted'] != data['tasks_per_job']:
+            r = '"tasks_per_job" does not match "tasks_submitted"/"jobs_submitted"'
             raise tornado.web.HTTPError(400, reason=r)
 
         # generate dataset number
