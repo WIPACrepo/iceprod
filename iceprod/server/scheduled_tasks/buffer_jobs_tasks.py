@@ -58,23 +58,28 @@ async def run(rest_client, only_dataset=None, num=20000, run_once=False, debug=F
     """
     start_time = time.time()
 
-    logger.info('starting materialization request')
-    if only_dataset:
-        ret = await rest_client.request('POST', f'/request/{only_dataset}', {'num': num})
-    else:
-        ret = await rest_client.request('POST', '/', {'num': num})
-    materialization_id = ret['result']
-    logger.info(f'waiting for materialization request {materialization_id}')
+    try:
+        logger.info('starting materialization request')
+        if only_dataset:
+            ret = await rest_client.request('POST', f'/request/{only_dataset}', {'num': num})
+        else:
+            ret = await rest_client.request('POST', '/', {'num': num})
+        materialization_id = ret['result']
+        logger.info(f'waiting for materialization request {materialization_id}')
 
-    while True:
-        await asyncio.sleep(30)
-        ret = await rest_client.request('GET', f'/status/{materialization_id}')
-        if ret['status'] == 'complete':
-            logger.info(f'materialization request {materialization_id} complete')
-            break
-        elif ret['status'] == 'error':
-            logger.warning(f'materialization request {materialization_id} failed')
-            break
+        while True:
+            await asyncio.sleep(30)
+            ret = await rest_client.request('GET', f'/status/{materialization_id}')
+            if ret['status'] == 'complete':
+                logger.info(f'materialization request {materialization_id} complete')
+                break
+            elif ret['status'] == 'error':
+                logger.warning(f'materialization request {materialization_id} failed')
+                break
+    except Exception as e:
+        logger.warning('materialization error', exc_info=True)
+        if debug or run_once:
+            raise
 
     if not run_once:
         # run again after 10 minute delay
