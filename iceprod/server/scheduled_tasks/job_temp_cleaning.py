@@ -68,19 +68,19 @@ async def run(rest_client, cfg, executor, debug=False):
             except Exception:
                 logger.error('failed to get job dirs for dataset %r', d, exc_info=True)
                 continue
-            logger.info('job_dirs: %r', job_dirs)
+            logger.debug('job_dirs: %r', job_dirs)
             try:
                 jobs = await rest_client.request('GET', '/datasets/{}/jobs'.format(datasets[d]))
             except Exception:
                 logger.error('failed to get jobs for dataset %r', d, exc_info=True)
                 continue
-            logger.info('jobs: %r', jobs)
+            logger.debug('jobs: %r', jobs)
             job_indexes = set()
             for job in jobs.values():
                 if job['status'] == 'complete' or (job['status'] != 'processing'
                     and now - get_date(job['status_changed']) > suspend_time):
                     job_indexes.add(job['job_index'])
-            logger.info('job_indexes: %r', job_indexes)
+            logger.debug('job_indexes: %r', job_indexes)
             for job in job_dirs:
                 if not job.directory:
                     continue
