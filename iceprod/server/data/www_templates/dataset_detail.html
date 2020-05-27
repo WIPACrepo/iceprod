@@ -24,7 +24,10 @@
 {% for k in dataset %}
 <tr>
     <td class="key">{{ k }}</td>
-    <td class="value">{{ dataset[k] }}</td>
+    <td class="value">
+    {% if (k == "priority") %}
+        <input id="dataset_priority" value="{{ dataset[k] }}" /><button onclick='set_dataset_priority("{{ dataset_id }}", "{{ passkey }}")'>Update</button>
+    {% else %}{{ dataset[k] }}{% end %}</td>
 </tr>
 {% end %}
 </table>

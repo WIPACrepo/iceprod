@@ -44,6 +44,7 @@ def setup(config, *args, **kwargs):
         (r'/datasets/(?P<dataset_id>\w+)', DatasetHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/description', DatasetDescriptionHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/status', DatasetStatusHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/priority', DatasetPriorityHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/jobs_submitted', DatasetJobsSubmittedHandler, handler_cfg),
         (r'/dataset_summaries/status', DatasetSummariesStatusHandler, handler_cfg),
     ]
@@ -254,6 +255,36 @@ class DatasetStatusHandler(BaseHandler):
 
         ret = await self.db.datasets.find_one_and_update({'dataset_id':dataset_id},
                 {'$set':{'status': data['status']}},
+                projection=['_id'])
+        if not ret:
+            self.send_error(404, reason="Dataset not found")
+        else:
+            self.write({})
+            self.finish()
+
+class DatasetPriorityHandler(BaseHandler):
+    """
+    Handle dataset priority updates.
+    """
+    @authorization(roles=['admin','system','client'], attrs=['dataset_id:write'])
+    async def put(self, dataset_id):
+        """
+        Set a dataset priority.
+
+        Args:
+            dataset_id (str): the dataset
+
+        Returns:
+            dict: empty dict
+        """
+        data = json.loads(self.request.body)
+        if 'priority' not in data:
+            raise tornado.web.HTTPError(400, reason='missing priority')
+        elif not isinstance(data['priority'], (int, float)):
+            raise tornado.web.HTTPError(400, reason='priority is not a number')
+
+        ret = await self.db.datasets.find_one_and_update({'dataset_id':dataset_id},
+                {'$set':{'priority': data['priority']}},
                 projection=['_id'])
         if not ret:
             self.send_error(404, reason="Dataset not found")

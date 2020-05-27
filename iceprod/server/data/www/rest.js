@@ -22,9 +22,18 @@ async function fetch_json(method, url, json, passkey) {
         var response = await fetch(rest_api + url, payload);
         return await response.json();
     } catch(err) {
-        console.log('fetch_json(): method='+method);
-        console.log('fetch_json(): url='+rest_api + url);
-        console.log('fetch_json(): err='+err);
+        if (!response.ok) {
+            console.log('fetch_json(): response failed. '+response.status+': '+response.statusText);
+            if (response.status == 404) {
+                return {'error': 'method not found'}
+            } else if (response.status >= 500) {
+                return {'error': 'server error'}
+            }
+        } else {
+            console.log('fetch_json(): method='+method);
+            console.log('fetch_json(): url='+rest_api + url);
+            console.log('fetch_json(): err='+err);
+        }
         throw err;
     }
 }
@@ -58,6 +67,22 @@ const sleep = (milliseconds) => {
   return new Promise(resolve => setTimeout(resolve, milliseconds))
 }
 
+async function set_dataset_priority(dataset_id, passkey) {
+    try {
+        let val = parseFloat($("#dataset_priority").val);
+        
+        let url = '/datasets/' + dataset_id + '/priority';
+        let ret = await fetch_json('PUT', url, {'priority': val}, passkey);
+        if ('error' in ret) {
+            message_alert('error - '+ret['error']);
+            return false;
+        }
+    } catch(err) {
+        message_alert('error - '+err);
+        return false;
+    }
+    return true;
+}
 
 async function set_dataset_status(dataset_id, stat, passkey, task_status_filters=[], job_status_filters=[], propagate=true) {
     if (propagate) {
