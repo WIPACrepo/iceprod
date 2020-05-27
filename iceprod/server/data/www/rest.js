@@ -69,7 +69,7 @@ const sleep = (milliseconds) => {
 
 async function set_dataset_priority(dataset_id, passkey) {
     try {
-        let val = parseFloat($("#dataset_priority").val);
+        let val = parseFloat($("#dataset_priority").val());
         
         let url = '/datasets/' + dataset_id + '/priority';
         let ret = await fetch_json('PUT', url, {'priority': val}, passkey);
