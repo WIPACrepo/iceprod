@@ -428,7 +428,7 @@ class BaseGrid(object):
         filename = os.path.join(task['submit_dir'],'task.cfg')
 
         if 'config' in task and task['config']:
-            config = task['config']
+            config = serialization.dict_to_dataclasses(task['config'])
         else:
             config = dataclasses.Job()
         filelist = [filename]
