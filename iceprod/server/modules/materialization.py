@@ -67,7 +67,8 @@ class MaterializationService:
         if 'auth_key' not in rest_cfg:
             raise Exception('no auth key for rest api')
         rest_auth_key = rest_cfg.get('auth_key')
-        self.rest_client = RestClient(rest_url, rest_auth_key)
+        rest_client = RestClient(rest_url, rest_auth_key)
+        self.materialize = Materialize(rest_client)
 
         asyncio.get_event_loop().create_task(self.run())
 
@@ -97,7 +98,7 @@ class MaterializationService:
                     kwargs['only_dataset'] = ret['dataset_id']
                 if 'num' in ret and ret['num']:
                     kwargs['num'] = ret['num']
-                await self.run_once(**kwargs)
+                await self.materialize.run_once(**kwargs)
 
                 await self.db.materialization.update_one(
                         {'materialization_id': ret['materialization_id']},
@@ -109,6 +110,11 @@ class MaterializationService:
                         {'materialization_id': ret['materialization_id']},
                         {'$set': {'status': 'error'}},
                 )
+
+
+class Materialize:
+    def __init__(self, rest_client):
+        self.rest_client = rest_client
 
     async def run_once(self, only_dataset=None, num=20000):
         """
@@ -137,6 +143,8 @@ class MaterializationService:
                         if jobs_to_buffer > 0:
                             logger.info('buffering %d jobs for dataset %s', jobs_to_buffer, dataset_id)
                             config = await self.rest_client.request('GET', '/config/{}'.format(dataset_id))
+                            if 'options' not in config:
+                                config['options'] = {}
                             parser = ExpParser()
                             task_names = [task['name'] if task['name'] else str(i) for i,task in enumerate(config['tasks'])]
                             job_index = max(jobs[i]['job_index'] for i in jobs)+1 if jobs else 0
@@ -190,7 +198,7 @@ class MaterializationService:
             dict: task requirements
         """
         task = config['tasks'][task_index]
-        req = task['requirements'].copy()
+        req = task['requirements'].copy() if 'requriements' in task else {}
         for k in req:
             if isinstance(req[k], list):
                 req[k] = [parser.parse(val,config) for val in req[k]]
@@ -218,6 +226,8 @@ class MaterializationService:
             list: list of task_id dependencies
         """
         task = config['tasks'][task_index]
+        if 'depends' not in task:
+            return []
         all_tasks ={task['name'] if task['name'] else str(i):i for i,task in enumerate(config['tasks'])}
         ret = []
         for dep in task['depends']:
@@ -416,3 +426,21 @@ class RequestDatasetHandler(BaseHandler):
         # return success
         self.set_status(201)
         self.write({'result': data['materialization_id']})
+
+
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description='Materialize a dataset')
+    parser.add_argument('dataset_id')
+    parser.add_argument('--rest_url', default='https://iceprod2-api.icecube.wisc.edu')
+    parser.add_argument('-t', '--rest_token', default=None)
+    parser.add_argument('-n','--num', default=100,type=int,help='number of jobs to materialize')
+    parser.add_argument('--debug',action='store_true')
+    args = parser.parse_args()
+    if not args.rest_token:
+        raise Exception('no token for rest api')
+    logging.basicConfig(level=(logging.DEBUG if args.debug else logging.INFO))
+
+    rest_client = RestClient(args.rest_url, args.rest_token)
+    materialize = Materialize(rest_client)
+    asyncio.run(materialize.run_once(only_dataset=args.dataset_id, num=args.num))
