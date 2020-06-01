@@ -6,6 +6,7 @@ import tornado.web
 import tornado.httpclient
 from tornado.platform.asyncio import to_asyncio_future
 
+from rest_tools.client import RestClient
 from rest_tools.server import Auth, RestHandlerSetup, authenticated, catch_error
 from rest_tools.server import RestHandler as BaseRestHandler
 
@@ -85,19 +86,13 @@ def authorization(**_auth):
                     dataset_id = kwargs.get('dataset_id', None)
                     if (not dataset_id) or not isinstance(dataset_id,str):
                         raise tornado.web.HTTPError(403, reason="authorization failed")
-                    url = self.auth_url+'/auths/'+dataset_id+'/actions/'
-                    http_client = tornado.httpclient.AsyncHTTPClient()
-                    if isinstance(self.auth_key, bytes):
-                        auth_header = b'bearer '+self.auth_key
-                    else:
-                        auth_header = 'bearer '+self.auth_key
+                    url = '/auths/'+dataset_id+'/actions/'
+                    http_client = RestClient(self.auth_url, token=self.auth_key)
                     if 'dataset_id:read' in attrs:
-                        await to_asyncio_future(http_client.fetch(url+'read',
-                                headers={'Authorization': auth_header}))
+                        await http_client.request('GET', url+'read')
                         authorized = True
                     elif 'dataset_id:write' in attrs:
-                        await to_asyncio_future(http_client.fetch(url+'write',
-                                headers={'Authorization': auth_header}))
+                        await http_client.request('GET', url+'write')
                         authorized = True
                 except Exception:
                     logger.info('/auths failure', exc_info=True)
