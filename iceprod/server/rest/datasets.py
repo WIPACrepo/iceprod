@@ -9,6 +9,7 @@ from tornado.platform.asyncio import to_asyncio_future
 import pymongo
 import motor
 
+from rest_tools.client import RestClient
 from iceprod.server.rest import RESTHandler, RESTHandlerSetup, authorization
 from iceprod.server.util import nowstr, dataset_statuses, dataset_status_sort
 
@@ -162,16 +163,14 @@ class MultiDatasetHandler(BaseHandler):
         ret = await self.db.datasets.insert_one(data)
 
         # set auth rules
-        url = self.auth_url+'/auths/'+data['dataset_id']
-        http_client = tornado.httpclient.AsyncHTTPClient()
+        url = '/auths/'+data['dataset_id']
+        http_client = RestClient(self.auth_url, token=self.module_auth_key)
         auth_data = {
             'read_groups':[data['group'],'users'],
             'write_groups':[data['group']],
         }
         logger.info('Authorization header: %s', 'bearer '+self.module_auth_key)
-        await to_asyncio_future(http_client.fetch(url,
-                method='PUT', body=json.dumps(auth_data),
-                headers={'Authorization': 'bearer '+self.module_auth_key}))
+        await http_client.request('PUT', url, auth_data)
 
         # return success
         self.set_status(201)
