@@ -254,6 +254,7 @@ class sc_demo(grid.BaseGrid):
         # get pilots from iceprod
         args = {
             'queue_host': host,
+            'host': self.site,
             'keys': 'pilot_id|queue_host|grid_queue_id|submit_date|tasks',
         }
         ret = await self.rest_client.request('GET', '/pilots', args)
@@ -467,6 +468,7 @@ class sc_demo(grid.BaseGrid):
                      'tasks': [task['task_id']],
                      'queue_host': host,
                      'queue_version': iceprod.__version__,
+                     'host': self.site,
                      'version': iceprod.__version__,
             }
             ret = await self.rest_client.request('POST', '/pilots', pilot)
