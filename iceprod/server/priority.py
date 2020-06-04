@@ -85,6 +85,14 @@ class Priority:
         except ValueError:
             return 1.
 
+    async def _get_max_dataset_prio_group(self, group):
+        if not self.dataset_cache:
+            await self._populate_dataset_cache()
+        try:
+            return max(d['priority'] for d in self.dataset_cache.values() if 'priority' in d and d['group'] == group)
+        except ValueError:
+            return 1.
+
     async def _get_user_prio(self, user):
         if not self.user_cache:
             await self._populate_user_cache()
@@ -150,6 +158,8 @@ class Priority:
         logger.debug(f'{dataset_id} dataset_prio: {dataset_prio}')
         max_dataset_prio = await self._get_max_dataset_prio_user(user)
         logger.debug(f'{dataset_id} max_dataset_prio: {max_dataset_prio}')
+        max_dataset_prio_group = await self._get_max_dataset_prio_group(group)
+        logger.debug(f'{dataset_id} max_dataset_prio_group: {max_dataset_prio_group}')
 
         user_prio = await self._get_user_prio(user)
         logger.debug(f'{dataset_id} user_prio: {user_prio}')
@@ -171,6 +181,9 @@ class Priority:
         if max_dataset_prio > 0:
             priority *= dataset_prio / max_dataset_prio
             logger.info(f'{dataset_id} after dataset adjustment: {priority}')
+        if max_dataset_prio_group > 0:
+            priority *= dataset_prio / max_dataset_prio_group
+            logger.info(f'{dataset_id} after dataset group adjustment: {priority}')
         if max_user_prio > 0:
             priority *= user_prio / max_user_prio
             logger.info(f'{dataset_id} after user adjustment: {priority}')
