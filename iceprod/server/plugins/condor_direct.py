@@ -616,10 +616,20 @@ class condor_direct(grid.BaseGrid):
                 raise Exception(f'cannot find task in config for {task["task_id"]}')
 
             # get task requirements
-            if task_cfg and 'requirements' in task_cfg:
-                reqs = sanitized_requirements(task_cfg['requirements'])
+            if 'requirements' in task:
+                reqs = sanitized_requirements(task['requirements'])
             else:
                 reqs = self.resources.copy()
+            if task_cfg and 'requirements' in task_cfg:
+                config_reqs = sanitized_requirements(task_cfg['requirements'])
+                for k in config_reqs:
+                    if k in reqs:
+                        if isinstance(config_reqs[k], (int, float)) and reqs[k] < config_reqs[k]:
+                            reqs[k] = config_reqs[k]
+                        elif isinstance(config_reqs[k], str):
+                            reqs[k] = config_reqs[k]
+                    else:
+                        reqs[k] = config_reqs[k]
 
             # get task files
             if 'task_files' in task_cfg and task_cfg['task_files']:
