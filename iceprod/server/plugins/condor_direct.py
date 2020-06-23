@@ -695,12 +695,14 @@ class condor_direct(grid.BaseGrid):
             await self.rest_client.request('PATCH', f'/pilots/{pilot_id}', args)
 
         awaitables = set()
-        for _ in range(self.get_queue_num()):
+        queue_num = self.get_queue_num()
+        args = {
+            'requirements': self.resources.copy(),
+            'query_params': self.queue_params,
+        }
+        logger.info(f'attempting to queue {queue_num} tasks, with args {args}')
+        for _ in range(queue_num):
             # get a processing task
-            args = {
-                'requirements': self.resources.copy(),
-                'query_params': self.queue_params,
-            }
             try:
                 ret = await self.rest_client.request('POST', f'/task_actions/process', args)
             except Exception:
