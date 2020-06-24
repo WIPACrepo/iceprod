@@ -317,10 +317,17 @@ class DatasetMultiTasksHandler(BaseHandler):
         status = self.get_argument('status', None)
         if status:
             filters['status'] = {'$in': status.split('|')}
-        for k in ('job_id','job_index'):
-            tmp = self.get_argument(k, None)
-            if tmp:
-                filters[k] = tmp
+
+        job_id = self.get_argument('job_id', None)
+        if job_id:
+            filters['job_id'] = job_id
+
+        job_index = self.get_argument('job_index', None)
+        if job_index:
+            try:
+                filters['job_index'] = int(job_index)
+            except ValueError:
+                raise tornado.web.HTTPError(400, reason='Bad argument "job_index": must be integer')
 
         projection = {'_id': False}
         keys = self.get_argument('keys','')
