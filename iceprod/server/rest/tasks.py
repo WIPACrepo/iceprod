@@ -597,6 +597,8 @@ class TasksActionsProcessingHandler(BaseHandler):
             for k in reqs:
                 if k == 'gpu' and reqs[k] > 0:
                     val = {'$lte': reqs[k], '$gte': 1}
+                    req_filters.append(val)
+                    continue
                 elif isinstance(reqs[k], (int,float)):
                     val = {'$lte': reqs[k]}
                 else:
