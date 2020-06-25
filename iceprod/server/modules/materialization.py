@@ -116,13 +116,14 @@ class Materialize:
     def __init__(self, rest_client):
         self.rest_client = rest_client
 
-    async def run_once(self, only_dataset=None, num=20000):
+    async def run_once(self, only_dataset=None, num=20000, dryrun=False):
         """
         Actual materialization work.
 
         Args:
             only_dataset (str): dataset_id if we should only buffer a single dataset
             num (int): max number of jobs to buffer
+            dryrun (bool): if true, do not modify DB, just log changes
         """
         prio = Priority(self.rest_client)
         datasets = await self.rest_client.request('GET', '/dataset_summaries/status')
@@ -152,7 +153,10 @@ class Materialize:
                                 # buffer job
                                 logger.info('buffering dataset %s job %d', dataset_id, job_index)
                                 args = {'dataset_id': dataset_id, 'job_index': job_index}
-                                job_id = await self.rest_client.request('POST', '/jobs', args)
+                                if dryrun:
+                                    job_id = {'result': 'DRYRUN'}
+                                else:
+                                    job_id = await self.rest_client.request('POST', '/jobs', args)
                                 # buffer tasks
                                 task_ids = []
                                 for task_index,name in enumerate(task_names):
@@ -173,12 +177,14 @@ class Materialize:
                                         'depends': depends,
                                         'requirements': self.get_reqs(config, task_index, parser),
                                     }
-                                    ret = await self.rest_client.request('POST', '/tasks', args)
-                                    task_id = ret['result']
-                                    task_ids.append(task_id)
-
-                                    p = await prio.get_task_prio(dataset_id, task_id)
-                                    await self.rest_client.request('PATCH', f'/tasks/{task_id}', {'priority': p})
+                                    if dryrun:
+                                        logger.info(f'DRYRUN: POST /tasks {args}')
+                                    else:
+                                        ret = await self.rest_client.request('POST', '/tasks', args)
+                                        task_id = ret['result']
+                                        task_ids.append(task_id)
+                                        p = await prio.get_task_prio(dataset_id, task_id)
+                                        await self.rest_client.request('PATCH', f'/tasks/{task_id}', {'priority': p})
                                 job_index += 1
                 except Exception:
                     logger.error('error buffering dataset %s', dataset_id, exc_info=True)
@@ -198,7 +204,7 @@ class Materialize:
             dict: task requirements
         """
         task = config['tasks'][task_index]
-        req = task['requirements'].copy() if 'requriements' in task else {}
+        req = task['requirements'].copy() if 'requirements' in task else {}
         for k in req:
             if isinstance(req[k], list):
                 req[k] = [parser.parse(val,config) for val in req[k]]
@@ -436,6 +442,7 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--rest_token', default=None)
     parser.add_argument('-n','--num', default=100,type=int,help='number of jobs to materialize')
     parser.add_argument('--debug',action='store_true')
+    parser.add_argument('--dryrun',action='store_true',help='do not modify database, just log changes')
     args = parser.parse_args()
     if not args.rest_token:
         raise Exception('no token for rest api')
@@ -443,4 +450,4 @@ if __name__ == '__main__':
 
     rest_client = RestClient(args.rest_url, args.rest_token)
     materialize = Materialize(rest_client)
-    asyncio.run(materialize.run_once(only_dataset=args.dataset_id, num=args.num))
+    asyncio.run(materialize.run_once(only_dataset=args.dataset_id, num=args.num, dryrun=args.dryrun))
