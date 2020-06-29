@@ -418,3 +418,28 @@ class DatasetTaskLogsHandler(BaseHandler):
                         return
             self.write({'logs':ret})
             self.finish()
+
+    @authorization(roles=['admin'], attrs=['dataset_id:write'])
+    async def delete(self, dataset_id, task_id):
+        """
+        Delete all logs for a dataset and task.
+
+        Args:
+            dataset_id (str): the dataset id
+            task_id (str): the task id
+
+        Returns:
+            dict: empty dict on success
+        """
+        async for row in self.db.logs.find({'dataset_id': dataset_id, 'task_id': task_id}):
+            log_id = row['log_id']
+            await self.db.logs.delete_one({'log_id':log_id})
+            if 'data' not in row:
+                if self.s3:
+                    e = await self.s3.exists(log_id)
+                    if e:
+                        await self.s3.delete(log_id)
+                else:
+                    logging.warn('no data field and s3 disabled')
+        self.write({})
+        self.finish()

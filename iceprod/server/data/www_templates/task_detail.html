@@ -32,6 +32,7 @@
 <div class="action">
     <button onclick='set_tasks_and_jobs_status(dataset_id, ["{{ task['task_id'] }}"], "reset", "{{ passkey }}");'>Reset</button></td>
     <button onclick='set_tasks_status(dataset_id, ["{{ task['task_id'] }}"], "suspended", "{{ passkey }}");'>Suspend</button></td>
+    <button onclick='delete_task_logs(dataset_id, ["{{ task['task_id'] }}"], "{{ passkey }}");'>Delete Logs</button></td>
 </div>
 {% end %}
 

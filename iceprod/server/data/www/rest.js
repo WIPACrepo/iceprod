@@ -266,3 +266,40 @@ async function set_tasks_and_jobs_status(dataset_id, task_ids, stat, passkey, me
         message_close();
     }
 }
+
+async function delete_dataset_logs(dataset_id, passkey) {
+    message("Getting task_ids to delete...");
+    let url = '/datasets/' + dataset_id + '/tasks?keys=task_id';
+    let tasks = await fetch_json('GET', url, null, passkey);
+    if ('error' in tasks) {
+        message_alert('tasks error - '+tasks['error']);
+        return false;
+    }
+    let task_ids = Object.keys(tasks);
+    if (task_ids.length > 0) {
+        let ret = await delete_task_logs(dataset_id, task_ids, passkey);
+        if (ret == false) {
+            return false;
+        }
+    }
+    message_close();
+    return true;
+}
+
+async function delete_task_logs(dataset_id, task_ids, passkey, messaging=true) {
+    for (var i=0;i<task_ids.length;i++) {
+        if (messaging && i%10 == 0) {
+            message('deleting logs - '+Math.floor(i/task_ids.length)+'% complete');
+        }
+        let tid = task_ids[i];
+        let ret = await fetch_json('DELETE', '/datasets/' + dataset_id + '/tasks/' + tid + '/logs', null, passkey);
+        if ('error' in ret) {
+            message_alert('error - '+ret['error']);
+            return false;
+        }
+    }
+    if (messaging) {
+        message_close();
+    }
+    return true
+}

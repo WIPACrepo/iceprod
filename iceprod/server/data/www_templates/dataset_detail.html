@@ -38,6 +38,7 @@
     <button onclick='set_dataset_status("{{ dataset_id }}", "processing", "{{ passkey }}", [], ["errors","suspended","complete"]).then(x => x && reload())'>Hard Reset</button>
     <button onclick='set_dataset_status("{{ dataset_id }}", "suspended", "{{ passkey }}", ["idle", "waiting", "queued", "processing", "reset"], ["processing","errors"]).then(x => x && reload())'>Suspend</button>
     <button onclick='set_dataset_status("{{ dataset_id }}", "truncated", "{{ passkey }}", [], [], propagate=false).then(x => x && reload())'>Truncate</button>
+    <button onclick='delete_dataset_logs("{{ dataset_id }}", "{{ passkey }}").then(x => x && reload())'>Delete Logs</button>
 </div>
 {% end %}
 
