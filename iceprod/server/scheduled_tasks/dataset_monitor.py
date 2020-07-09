@@ -39,13 +39,14 @@ async def run(rest_client, statsd, debug=False):
     """
     start_time = time.time()
     try:
+        future_resources = {'gpu': 0,'cpu': 0}
         datasets = await rest_client.request('GET', '/dataset_summaries/status')
         for status in datasets:
             for dataset_id in datasets[status]:
-                dataset = await rest_client.request('GET', '/datasets/{}'.format(dataset_id))
+                dataset = await rest_client.request('GET', f'/datasets/{dataset_id}')
                 dataset_num = dataset['dataset']
                 dataset_status = dataset['status']
-                jobs = await rest_client.request('GET', '/datasets/{}/job_counts/status'.format(dataset_id))
+                jobs = await rest_client.request('GET', f'/datasets/{dataset_id}/job_counts/status')
                 jobs2 = {}
                 for status in jobs:
                     if dataset_status in ('suspended','errors') and status == 'processing':
@@ -56,8 +57,10 @@ async def run(rest_client, statsd, debug=False):
                 for status in ('processing','failed','suspended','errors','complete'):
                     if status not in jobs:
                         jobs[status] = 0
-                    statsd.gauge('datasets.{}.jobs.{}'.format(dataset_num,status), jobs[status])
-                tasks = await rest_client.request('GET', '/datasets/{}/task_counts/name_status'.format(dataset_id))
+                    statsd.gauge(f'datasets.{dataset_num}.jobs.{status}', jobs[status])
+                tasks = await rest_client.request('GET', f'/datasets/{dataset_id}/task_counts/name_status')
+                task_stats = await rest_client.request('GET', f'/datasets/{dataset_id}/task_stats')
+
                 for name in tasks:
                     tasks2 = {}
                     for status in tasks[name]:
@@ -72,7 +75,25 @@ async def run(rest_client, statsd, debug=False):
                     for status in ('idle','waiting','queued','processing','reset','failed','suspended','complete'):
                         if status not in tasks2:
                             tasks2[status] = 0
-                        statsd.gauge('datasets.{}.tasks.{}.{}'.format(dataset_num,name,status), tasks2[status])
+                        statsd.gauge(f'datasets.{dataset_num}.tasks.{name}.{status}', tasks2[status])
+
+                        # now add to future resource prediction
+                        if status not in ('idle','failed','suspended','complete'):
+                            if name not in task_stats:
+                                continue
+                            res = 'gpu' if task_stats[name]['gpu'] > 0 else 'cpu'
+                            future_resources[res] += tasks2[status]*task_stats[name]['avg_hrs']
+
+                # add jobs not materialized to future resource prediction
+                if dataset_status not in ('suspended','errors'):
+                    num_jobs_remaining = dataset['jobs_submitted'] - sum(jobs.values())
+                    for name in task_stats:
+                        res = 'gpu' if task_stats[name]['gpu'] > 0 else 'cpu'
+                        future_resources[res] += num_jobs_remaining*task_stats[name]['avg_hrs']
+
+        for res in future_resources:
+            statsd.gauge(f'future_resources.{res}', int(future_resources[res]))
+
     except Exception:
         logger.error('error monitoring datasets', exc_info=True)
         if debug:
