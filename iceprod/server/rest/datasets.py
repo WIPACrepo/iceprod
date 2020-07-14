@@ -69,6 +69,8 @@ class MultiDatasetHandler(BaseHandler):
 
         Params (optional):
             status: | separated list of status filters
+            groups: | separated list of groups to filter on
+            users: | separated list of users to filter on
             keys: | separated list of keys to return for each dataset
 
         Returns:
@@ -78,6 +80,12 @@ class MultiDatasetHandler(BaseHandler):
         status = self.get_argument('status', None)
         if status:
             query['status'] = {'$in': status.split('|')}
+        groups = self.get_argument('groups', None)
+        if groups:
+            query['group'] = {'$in': groups.split('|')}
+        users = self.get_argument('users', None)
+        if users:
+            query['username'] = {'$in': users.split('|')}
 
         projection = {'_id': False}
         keys = self.get_argument('keys', None)
