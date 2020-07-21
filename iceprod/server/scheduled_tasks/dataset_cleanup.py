@@ -81,7 +81,7 @@ async def run(rest_client, debug=False):
             tasks = await rest_client.request('GET', f'/datasets/{dataset_id}/tasks', args)
             task_ids = []
             for tasks in tasks.values():
-                if tasks['status'] not in ('completed','suspended') and tasks['job_id'] in job_ids:
+                if tasks['status'] not in ('complete','suspended') and tasks['job_id'] in job_ids:
                     task_ids.append(tasks['task_id'])
             while task_ids:
                 tids = task_ids[:10000]
