@@ -133,6 +133,8 @@ fi
 # make sure we never use a user's home directory
 export PYTHONNOUSERSITE=1
 
+starttime=`date +%s `
+
 # run i3exec
 cmd="$PYBIN -m iceprod.core.i3exec $@"
 echo $cmd
@@ -141,5 +143,17 @@ err=$?
 
 # clean up after ourselves
 rm -Rf resource_libs $ENV env
+
+# black hold protection: sleep if we fail and finish fast
+endtime=`date +%s `
+totaltime=$(( endtime - starttime ))
+echo "IceProd job took $totaltime secs"
+undertime=$(( totaltime < 600 ))
+if [ $err != 0 ] && [ $undertime = 1 ]; then
+    sleeptime=$(( 600 - totaltime ))
+    echo "sleeping up to the 5 minute min time: $sleeptime secs"
+    sleep $sleeptime
+    echo "done sleeping"
+fi
 
 exit $err
