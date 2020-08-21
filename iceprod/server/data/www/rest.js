@@ -190,7 +190,7 @@ async function set_jobs_status(dataset_id, job_ids, stat, passkey, task_status_f
             for (var k=0;k<results.length;k++) {
                 let ret = Object.keys(results[k]);
                 if (ret.length > 0) {
-                    task_ids.push.apply(ret);
+                    task_ids.push.apply(task_ids, ret);
                 }
             }
         }
