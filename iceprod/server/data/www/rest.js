@@ -198,7 +198,7 @@ async function set_jobs_status(dataset_id, job_ids, stat, passkey, task_status_f
             if (messaging) {
                 message("updating tasks");
             }
-            return set_tasks_status(dataset_id, task_ids, task_status, passkey, false);
+            return await set_tasks_status(dataset_id, task_ids, task_status, passkey, false);
         }
         if (messaging) {
             message_close();
