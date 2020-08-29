@@ -19,7 +19,7 @@ import iceprod.server
 from iceprod.server import module
 from iceprod.server import get_pkgdata_filename
 from iceprod.server.rest import RESTHandler, RESTHandlerSetup, authorization
-from iceprod.server.util import nowstr
+from iceprod.server.util import nowstr, task_statuses
 from iceprod.core.parser import ExpParser
 from iceprod.core.resources import Resources
 from iceprod.server.priority import Priority
@@ -98,6 +98,8 @@ class MaterializationService:
                     kwargs['only_dataset'] = ret['dataset_id']
                 if 'num' in ret and ret['num']:
                     kwargs['num'] = ret['num']
+                if 'set_status' in ret and ret['set_status']:
+                    kwargs['set_status'] = ret['set_status']
                 await self.materialize.run_once(**kwargs)
 
                 await self.db.materialization.update_one(
@@ -116,15 +118,18 @@ class Materialize:
     def __init__(self, rest_client):
         self.rest_client = rest_client
 
-    async def run_once(self, only_dataset=None, num=20000, dryrun=False):
+    async def run_once(self, only_dataset=None, set_status=None, num=20000, dryrun=False):
         """
         Actual materialization work.
 
         Args:
             only_dataset (str): dataset_id if we should only buffer a single dataset
+            set_status (str): status of new tasks
             num (int): max number of jobs to buffer
             dryrun (bool): if true, do not modify DB, just log changes
         """
+        if set_status and set_status not in task_statuses:
+            raise Exception('set_status is not a valid task status')
         prio = Priority(self.rest_client)
         datasets = await self.rest_client.request('GET', '/dataset_summaries/status')
         if 'truncated' in datasets and only_dataset:
@@ -177,6 +182,8 @@ class Materialize:
                                         'depends': depends,
                                         'requirements': self.get_reqs(config, task_index, parser),
                                     }
+                                    if set_status:
+                                        args['status'] = set_status
                                     if dryrun:
                                         logger.info(f'DRYRUN: POST /tasks {args}')
                                     else:
@@ -330,6 +337,7 @@ class BaseHandler(RESTHandler):
         # validate first
         fields = {
             'dataset_id': str,
+            'set_status': str,
             'num': int,
         }
         if set(args)-set(fields): # don't let random args through
@@ -440,6 +448,7 @@ if __name__ == '__main__':
     parser.add_argument('dataset_id')
     parser.add_argument('--rest_url', default='https://iceprod2-api.icecube.wisc.edu')
     parser.add_argument('-t', '--rest_token', default=None)
+    parser.add_argument('--set_status', default=None,help='initial task status')
     parser.add_argument('-n','--num', default=100,type=int,help='number of jobs to materialize')
     parser.add_argument('--debug',action='store_true')
     parser.add_argument('--dryrun',action='store_true',help='do not modify database, just log changes')
@@ -450,4 +459,4 @@ if __name__ == '__main__':
 
     rest_client = RestClient(args.rest_url, args.rest_token)
     materialize = Materialize(rest_client)
-    asyncio.run(materialize.run_once(only_dataset=args.dataset_id, num=args.num, dryrun=args.dryrun))
+    asyncio.run(materialize.run_once(only_dataset=args.dataset_id, set_status=args.set_status, num=args.num, dryrun=args.dryrun))
