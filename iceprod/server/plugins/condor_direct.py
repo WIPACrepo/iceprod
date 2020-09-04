@@ -784,16 +784,20 @@ class condor_direct(grid.BaseGrid):
                                     task,exc_info=True)
             else:
                 alltasks = cfg['tasks']
+            logger.info(f'{task["task_id"]} selected tasks: {alltasks}')
             for t in alltasks:
                 if 'batchsys' in t and t['batchsys']:
+                    logger.info(f'{task["task_id"]} task batchsys: {t["batchsys"]}')
                     for b in t['batchsys']:
                         if self.__class__.__name__.startswith(b.lower()):
                             # these settings apply to this batchsys
                             for bb in t['batchsys'][b]:
                                 value = t['batchsys'][b][bb]
                                 if bb.lower() == 'requirements':
+                                    logger.info(f'{task["task_id"]} task batchsys requirement: {value}')
                                     requirements.append(value)
                                 else:
+                                    logger.info(f'{task["task_id"]} task batchsys other: {bb}={value}')
                                     batch_opts[bb] = value
 
         # write the submit file
