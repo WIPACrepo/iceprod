@@ -761,7 +761,7 @@ class condor_direct(grid.BaseGrid):
             if (cfg['steering'] and 'batchsys' in cfg['steering'] and
                 cfg['steering']['batchsys']):
                 for b in cfg['steering']['batchsys']:
-                    if b.lower().startswith(self.__class__.__name__):
+                    if self.__class__.__name__.startswith(b.lower()):
                         # these settings apply to this batchsys
                         for bb in cfg['steering']['batchsys'][b]:
                             value = cfg['steering']['batchsys'][b][bb]
@@ -787,7 +787,7 @@ class condor_direct(grid.BaseGrid):
             for t in alltasks:
                 if 'batchsys' in t and t['batchsys']:
                     for b in t['batchsys']:
-                        if b.lower().startswith(self.__class__.__name__):
+                        if self.__class__.__name__.startswith(b.lower()):
                             # these settings apply to this batchsys
                             for bb in t['batchsys'][b]:
                                 value = t['batchsys'][b][bb]
