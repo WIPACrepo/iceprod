@@ -351,7 +351,7 @@ async def downloadResource(env, resource, remote_base=None,
                 env['stats']['download'].append(stats)
 
             if (not failed) and 'data_movement_stats' in env['options'] and env['options']['data_movement_stats']:
-                print(f'Data movement: input {stats["duration"]:.3f}s {stats["size"]/1000:.0f}kB {stats["name"]}')
+                print(f'{stats["now"]} Data movement stats: input {stats["duration"]:.3f} {stats["size"]:.0f} {stats["name"]}')
 
     # check compression
     if (resource['compression'] and
@@ -463,7 +463,7 @@ async def uploadData(env, data, logger=None):
             env['stats']['upload'].append(stats)
 
         if (not failed) and 'data_movement_stats' in env['options'] and env['options']['data_movement_stats']:
-            print(f'Data movement: output {stats["duration"]:.3f}s {stats["size"]/1000:.0f}kB {stats["name"]}')
+            print(f'{stats["now"]} Data movement stats: output {stats["duration"]:.3f} {stats["size"]:.0f} {stats["name"]}')
 
     # if successful, add to filecatalog
     try:
