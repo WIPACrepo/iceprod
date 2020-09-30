@@ -335,19 +335,23 @@ async def downloadResource(env, resource, remote_base=None,
             logger.critical('failed to download %s to %s', url, local, exc_info=True)
             raise Exception('failed to download {} to {}'.format(url, local))
         finally:
+            stats = {
+                'name': url,
+                'error': failed,
+                'now': datetime.utcnow().isoformat(),
+                'duration': time.time()-start_time,
+            }
+            if not failed:
+                stats['size'] = os.path.getsize(local)
+                stats['rate_MBps'] = stats['size']/1000/1000/stats['duration']
+
             if 'stats' in env and (execute is True or (execute == 'maybe' and not failed)):
-                stats = {
-                    'name': url,
-                    'error': failed,
-                    'now': datetime.utcnow().isoformat(),
-                    'duration': time.time()-start_time,
-                }
-                if not failed:
-                    stats['size'] = os.path.getsize(local)
-                    stats['rate_MBps'] = stats['size']/1000/1000/stats['duration']
                 if 'download' not in env['stats']:
                     env['stats']['download'] = []
                 env['stats']['download'].append(stats)
+
+            if (not failed) and 'data_movement_stats' in env['options'] and env['options']['data_movement_stats']:
+                print(f'Data movement: input {stats["duration"]:.3f}s {stats["size"]/1000:.0f}kB {stats["name"]}')
 
     # check compression
     if (resource['compression'] and
@@ -457,6 +461,9 @@ async def uploadData(env, data, logger=None):
             stats['rate_MBps'] = stats['size']/1000/1000/stats['duration']
         if 'stats' in env:
             env['stats']['upload'].append(stats)
+
+        if (not failed) and 'data_movement_stats' in env['options'] and env['options']['data_movement_stats']:
+            print(f'Data movement: output {stats["duration"]:.3f}s {stats["size"]/1000:.0f}kB {stats["name"]}')
 
     # if successful, add to filecatalog
     try:

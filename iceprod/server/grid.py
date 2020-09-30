@@ -506,6 +506,8 @@ class BaseGrid(object):
                                      f, exc_info=True)
                         raise
                 filelist.append(dest)
+        if 'data_movement_stats' in self.cfg['queue'] and self.cfg['queue']['data_movement_stats']:
+            config['options']['data_movement_stats'] = self.cfg['queue']['data_movement_stats']
 
         # write to file
         serialization.serialize_json.dump(config,filename)
