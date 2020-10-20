@@ -124,7 +124,7 @@ class DatasetsBulkTaskStatsHandler(BaseHandler):
         task_id = None
         data = []
         n = 0
-        async for row in self.db.task_stats.find({'dataset_id':dataset_id}, projection=projection).sort({'task_id':1}):
+        async for row in self.db.task_stats.find({'dataset_id':dataset_id}, projection=projection).sort([('task_id',1)]):
             if row['task_id'] == task_id:
                 data.append(row)
                 continue
