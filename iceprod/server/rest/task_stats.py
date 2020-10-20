@@ -129,7 +129,9 @@ class DatasetsBulkTaskStatsHandler(BaseHandler):
                 data.append(row)
                 continue
             if data:
-                ret = [{k:d[k] for k in d if k in keys} for d in sorted(data, key=lambda x: x['create_date'])]
+                ret = sorted(data, key=lambda x: x['create_date'])
+                if keys:
+                    ret = [{k:d[k] for k in d if k in keys} for d in ret]
                 if last:
                     self.write(ret[-1])
                 else:
@@ -144,7 +146,9 @@ class DatasetsBulkTaskStatsHandler(BaseHandler):
             task_id = row['task_id']
 
         if data:
-            ret = [{k:d[k] for k in d if k in keys} for d in sorted(data, key=lambda x: x['create_date'])]
+            ret = sorted(data, key=lambda x: x['create_date'])
+            if keys:
+                ret = [{k:d[k] for k in d if k in keys} for d in ret]
             if last:
                 self.write(ret[-1])
             else:
