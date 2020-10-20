@@ -135,6 +135,7 @@ class DatasetsBulkTaskStatsHandler(BaseHandler):
                 else:
                     for ret in data:
                         self.write(ret)
+                self.write('\n')
                 n += 1
                 if n >= buffer_size:
                     n = 0
@@ -149,6 +150,7 @@ class DatasetsBulkTaskStatsHandler(BaseHandler):
             else:
                 for ret in data:
                     self.write(ret)
+            self.write('\n')
         self.finish()
 
 class DatasetsMultiTaskStatsHandler(BaseHandler):
