@@ -43,6 +43,7 @@ def setup(config, *args, **kwargs):
     return [
         (r'/tasks/(?P<task_id>\w+)/task_stats', MultiTaskStatsHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/task_stats', DatasetsMultiTaskStatsHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/task_stats', DatasetsBulkTaskStatsHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/task_stats/(?P<task_stat_id>\w+)', DatasetsTaskStatsHandler, handler_cfg),
     ]
 
@@ -84,6 +85,70 @@ class MultiTaskStatsHandler(BaseHandler):
         ret = await self.db.task_stats.insert_one(data)
         self.set_status(201)
         self.write({'result': data['task_stat_id']})
+        self.finish()
+
+class DatasetsBulkTaskStatsHandler(BaseHandler):
+    """
+    Handle a dataset bulk task_stats requests.
+
+    Stream the output of all stats.
+    """
+    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    async def get(self, dataset_id):
+        """
+        Get task_stats for a dataset and task.
+
+        Args:
+            dataset_id (str): dataset id
+
+        Params (optional):
+            last: bool (True: only last task_stat.  False: all task_stats)
+            keys: | separated list of keys to return for each task_stat
+            buffer_size: number of records to buffer before flushing (default 100)
+
+        Returns:
+            dict: {<task_stat_id>: stats}
+        """
+        last = self.get_argument('last', 'f').lower() in ('true','t','1','yes','y')
+
+        projection = {'_id': False}
+        keys = self.get_argument('keys','')
+        if keys:
+            keys = keys.split('|')
+            projection.update({x:True for x in keys if x})
+            projection['task_stat_id'] = True
+            projection['task_id'] = True
+            projection['create_date'] = True
+        buffer_size = int(self.get_argument('buffer_size', '1000'))
+
+        task_id = None
+        data = []
+        n = 0
+        async for row in self.db.task_stats.find({'dataset_id':dataset_id}, projection=projection).sort({'task_id':1}):
+            if row['task_id'] == task_id:
+                data.append(row)
+                continue
+            if data:
+                ret = [{k:d[k] for k in d if k in keys} for d in sorted(data, key=lambda x: x['create_date'])]
+                if last:
+                    self.write(ret[-1])
+                else:
+                    for ret in data:
+                        self.write(ret)
+                n += 1
+                if n >= buffer_size:
+                    n = 0
+                    await self.flush()
+            data = [row]
+            task_id = row['task_id']
+
+        if data:
+            ret = [{k:d[k] for k in d if k in keys} for d in sorted(data, key=lambda x: x['create_date'])]
+            if last:
+                self.write(ret[-1])
+            else:
+                for ret in data:
+                    self.write(ret)
         self.finish()
 
 class DatasetsMultiTaskStatsHandler(BaseHandler):
