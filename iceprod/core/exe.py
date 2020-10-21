@@ -441,10 +441,13 @@ async def uploadData(env, data, logger=None):
         upload_options['password'] = env['options']['password']
     if 'options' in env and 'ssl' in env['options'] and env['options']['ssl']:
         upload_options.update(env['options']['ssl'])
+    do_checksum = True
+    if 'options' in env and 'upload_checksum' in env['options']:
+        do_checksum = env['options']['upload_checksum']
     failed = False
     try:
         start_time = time.time()
-        await functions.upload(local, url, options=upload_options)
+        await functions.upload(local, url, checksum=do_checksum, options=upload_options)
     except Exception:
         failed = True
         logger.critical('failed to upload %s to %s', local, url, exc_info=True)

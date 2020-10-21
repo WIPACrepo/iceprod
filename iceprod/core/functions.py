@@ -358,7 +358,7 @@ async def download(url, local, options={}):
 
     return local
 
-async def upload(local, url, options={}):
+async def upload(local, url, checksum=True, options={}):
     """Upload a file, checksumming if possible"""
     local = os.path.expandvars(local)
     url  = os.path.expandvars(url)
@@ -381,6 +381,8 @@ async def upload(local, url, options={}):
 
     chksum = sha512sum(local)
     chksum_type = 'sha512'
+    if not checksum:
+        logging.warning(f'not performing checksum {checksum_type}\n{checksum}: {url}')
 
     # actually upload the file
     if url.startswith('http'):
@@ -398,17 +400,17 @@ async def upload(local, url, options={}):
                     r = s.post(url, timeout=300, data=m,
                                headers={'Content-Type': m.content_type})
                     r.raise_for_status()
-                    # get checksum
-                    r = s.get(url, stream=True, timeout=300)
-                    try:
-                        with open(local+'.tmp', 'wb') as f:
-                            for chunk in r.iter_content(65536):
-                                f.write(chunk)
-                        r.raise_for_status()
-                        if sha512sum(local+'.tmp') != chksum:
-                            raise Exception('http checksum error')
-                    finally:
-                        removedirs(local+'.tmp')
+                    if checksum: # get checksum
+                        r = s.get(url, stream=True, timeout=300)
+                        try:
+                            with open(local+'.tmp', 'wb') as f:
+                                for chunk in r.iter_content(65536):
+                                    f.write(chunk)
+                            r.raise_for_status()
+                            if sha512sum(local+'.tmp') != chksum:
+                                raise Exception('http checksum error')
+                        finally:
+                            removedirs(local+'.tmp')
         await asyncio.get_event_loop().run_in_executor(None, _d)
     elif url.startswith('file:'):
         # use copy command
@@ -418,7 +420,7 @@ async def upload(local, url, options={}):
                 logging.warning('put: file already exists. overwriting!')
                 removedirs(url)
             copy(local, url)
-            if sha512sum(url) != chksum:
+            if checksum and sha512sum(url) != chksum:
                 raise Exception('file checksum error')
         await asyncio.get_event_loop().run_in_executor(None, _c)
     elif url.startswith('gsiftp:') or url.startswith('ftp:'):
@@ -429,8 +431,7 @@ async def upload(local, url, options={}):
                 # because d-cache doesn't allow overwriting, try deletion
                 GridFTP.delete(url)
                 GridFTP.put(url, filename=local)
-            ret = GridFTP.sha512sum(url)
-            if ret != chksum:
+            if checksum and GridFTP.sha512sum(url) != chksum:
                 raise Exception('gridftp checksum error')
         await asyncio.get_event_loop().run_in_executor(None, _g)
     else:

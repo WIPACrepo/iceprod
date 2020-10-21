@@ -508,6 +508,8 @@ class BaseGrid(object):
                 filelist.append(dest)
         if 'data_movement_stats' in self.cfg['queue'] and self.cfg['queue']['data_movement_stats']:
             config['options']['data_movement_stats'] = self.cfg['queue']['data_movement_stats']
+        if 'upload_checksum' in self.cfg['queue']:
+            config['options']['upload_checksum'] = self.cfg['queue']['upload_checksum']
 
         # write to file
         serialization.serialize_json.dump(config,filename)
