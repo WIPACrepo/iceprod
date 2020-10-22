@@ -382,7 +382,7 @@ async def upload(local, url, checksum=True, options={}):
     chksum = sha512sum(local)
     chksum_type = 'sha512'
     if not checksum:
-        logging.warning(f'not performing checksum {checksum_type}\n{checksum}: {url}')
+        logging.warning(f'not performing checksum {chksum_type}\n{checksum}: {url}')
 
     # actually upload the file
     if url.startswith('http'):
