@@ -113,7 +113,7 @@ class DatasetsBulkTaskStatsHandler(BaseHandler):
         last = self.get_argument('last', 'f').lower() in ('true','t','1','yes','y')
 
         query = {'dataset_id':dataset_id}
-        after = self.get_argument('after', None):
+        after = self.get_argument('after', None)
         if after:
             query['create_date'] = {"$gte":newer_than}
 
