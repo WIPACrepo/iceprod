@@ -103,6 +103,7 @@ class DatasetsBulkTaskStatsHandler(BaseHandler):
 
         Params (optional):
             last: bool (True: only last task_stat.  False: all task_stats)
+            after: only return stats created more recently than this date
             keys: | separated list of keys to return for each task_stat
             buffer_size: number of records to buffer before flushing (default 100)
 
@@ -110,6 +111,11 @@ class DatasetsBulkTaskStatsHandler(BaseHandler):
             dict: {<task_stat_id>: stats}
         """
         last = self.get_argument('last', 'f').lower() in ('true','t','1','yes','y')
+
+        query = {'dataset_id':dataset_id}
+        after = self.get_argument('after', None):
+        if after:
+            query['create_date'] = {"$gte":newer_than}
 
         projection = {'_id': False}
         keys = self.get_argument('keys','')
@@ -124,7 +130,7 @@ class DatasetsBulkTaskStatsHandler(BaseHandler):
         task_id = None
         data = []
         n = 0
-        async for row in self.db.task_stats.find({'dataset_id':dataset_id}, projection=projection).sort([('task_id',1)]):
+        async for row in self.db.task_stats.find(query, projection=projection).sort([('task_id',1)]):
             if row['task_id'] == task_id:
                 data.append(row)
                 continue
