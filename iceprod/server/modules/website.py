@@ -480,6 +480,8 @@ class Task(PublicHandler):
             for log in sorted(logs2,key=lambda l:l['timestamp'] if 'timestamp' in l else '',reverse=True):
                 log_by_name[log['name']].append(log)
             for log in logs:
+                if 'data' not in log or not log['data']:
+                    log['data'] = ''
                 log_by_name[log['name']][0] = log
         except Exception:
             log_by_name = {}
