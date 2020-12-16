@@ -973,7 +973,7 @@ class ForkModule:
             else:
                 prefix = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
             for k in os.environ:
-                if k in ('OPENCL_VENDOR_PATH','http_proxy'):
+                if k in ('OPENCL_VENDOR_PATH','http_proxy','TMP','TMPDIR','_CONDOR_SCRATCH_DIR'):
                     # pass through unchanged
                     env[k] = os.environ[k]
                 elif ('sroot' in k.lower() or 'iceprod' in k.lower() or
