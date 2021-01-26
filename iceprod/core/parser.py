@@ -223,14 +223,17 @@ class ExpParser:
     
     Grammar Definition::
     
-        char     := 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#%&'*+,-./:;<=>?@\^_`|~{}
+        char     := any unicode character other than $()[]
         word     := char | char + word
         starter  := $
         scopeL   := (
         scopeR   := )
+        bracketL := [
+        bracketR := ]
         symbol   := starter | starter + word
         phrase   := symbol + scopeL + sentence + scopeR
-        sentence := phrase | word | phrase + sentence | word + sentence
+        lookup   := word + bracketL + word + bracketR | phrase + bracketL + word + bracketR
+        sentence := lookup | phrase | word | lookup + sentence | phrase + sentence | word + sentence
     
     Keywords:
     
