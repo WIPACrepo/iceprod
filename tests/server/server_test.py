@@ -17,6 +17,8 @@ import tempfile
 import shutil
 import subprocess
 import importlib
+from datetime import datetime
+import glob
 
 import unittest
 
@@ -25,7 +27,7 @@ try:
 except ImportError:
     from mock import patch, MagicMock
 
-from iceprod.server.server import Server
+from iceprod.server.server import Server, roll_files
 from iceprod.server.module import module
 
 class server_test(unittest.TestCase):
@@ -85,6 +87,23 @@ class server_test(unittest.TestCase):
         s.reload()
         m.stop.assert_called_once_with()
         m.start.assert_called_once_with()
+
+    @unittest_reporter
+    def test_90_roll_files(self):
+        filename = os.path.join(self.test_dir, 'file')
+        fd = open(filename, 'ba+')
+        fd.write(b'foo')
+        fd = roll_files(fd, filename)
+        self.assertTrue(os.path.exists(filename))
+        ext = datetime.utcnow().strftime('%Y-%m')
+        files = glob.glob(f'{filename}.{ext}*')
+        self.assertTrue(len(files) == 1)
+
+        fd.write(b'bar')
+        fd.close()
+
+        with open(files[0], 'br') as f:
+            self.assertEqual(f.read(), b'foo')
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

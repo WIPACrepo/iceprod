@@ -127,6 +127,7 @@ def main():
         pidfile = os.path.expanduser(os.path.expandvars(args.pidfile))
         chdir = os.path.expanduser(os.path.expandvars('$I3PROD'))
         umask = args.umask
+        run = partial(run, outfile=os.path.abspath('var/log/out'), errfile=os.path.abspath('var/log/err'))
         d = Daemon(pidfile, run,
                    chdir=chdir,
                    umask=umask,
