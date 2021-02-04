@@ -681,7 +681,7 @@ class TasksActionsErrorHandler(BaseHandler):
                 if 'resources' in data and k in data['resources']:
                     try:
                         new_val = float(data['resources'][k])
-                        if k == 'cpu' and new_val <= 1.1: # special handling for cpu
+                        if k == 'cpu' and (new_val <= 1.1 or new_val > 20): # special handling for cpu
                             continue
                         new_val *= 1.5 # increase new request by 1.5
                         if isinstance(Resources.defaults[k], (int, list)):
