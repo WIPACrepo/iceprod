@@ -209,8 +209,8 @@ class SetupEnv:
 
             if 'data' not in self.env:
                 self.env['data'] = {}
-            input_files = self.env['options']['input'].split() if 'input' in self.env['options'] else []
-            output_files = self.env['options']['output'].split() if 'output' in self.env['options'] else []
+            input_files = self.cfg.config['options']['input'].split() if 'input' in self.cfg.config['options'] else []
+            output_files = self.cfg.config['options']['output'].split() if 'output' in self.cfg.config['options'] else []
             if 'data' in self.obj:
                 # download data
                 for data in self.obj['data']:
@@ -227,8 +227,11 @@ class SetupEnv:
                             output_files.append(d['local'])
                         elif 'remote' in d and d['remote']:
                             output_files.append(os.path.basename(d['remote']))
-            self.env['options']['input'] = ' '.join(input_files)
-            self.env['options']['output'] = ' '.join(output_files)
+            # add input and output to parseable options
+            self.cfg.config['options']['input'] = ' '.join(input_files)
+            self.cfg.config['options']['output'] = ' '.join(output_files)
+            logging.info('input: %r', self.cfg.config['options']['input'])
+            logging.info('output: %r', self.cfg.config['options']['output'])
 
             if 'classes' not in self.env:
                 self.env['classes'] = {}
@@ -768,7 +771,7 @@ async def runmodule(cfg, globalenv, module, stats={}, logger=None):
         if module['running_class']:
             module['running_class'] = cfg.parseValue(module['running_class'],env)
         if module['args']:
-            module['args'] = cfg.parseValue(module['args'],env)
+            module['args'] = cfg.parseObject(module['args'],env)
         if module['src']:
             module['src'] = cfg.parseValue(module['src'],env)
         if module['env_shell']:
