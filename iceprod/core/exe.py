@@ -209,14 +209,26 @@ class SetupEnv:
 
             if 'data' not in self.env:
                 self.env['data'] = {}
+            input_files = self.env['options']['input'].split() if 'input' in self.env['options'] else []
+            output_files = self.env['options']['output'].split() if 'output' in self.env['options'] else []
             if 'data' in self.obj:
                 # download data
                 for data in self.obj['data']:
                     d = self.cfg.parseObject(data, self.env)
                     if d['movement'] in ('input','both'):
                         await downloadData(self.env, d, logger=self.logger)
+                        if 'local' in d and d['local']:
+                            input_files.append(d['local'])
+                        elif 'remote' in d and d['remote']:
+                            input_files.append(os.path.basename(d['remote']))
                     if d['movement'] in ('output','both'):
                         self.env['uploads'].append(d)
+                        if 'local' in d and d['local']:
+                            output_files.append(d['local'])
+                        elif 'remote' in d and d['remote']:
+                            output_files.append(os.path.basename(d['remote']))
+            self.env['options']['input'] = ' '.join(input_files)
+            self.env['options']['output'] = ' '.join(output_files)
 
             if 'classes' not in self.env:
                 self.env['classes'] = {}
