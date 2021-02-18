@@ -127,6 +127,7 @@ class MultiDatasetHandler(BaseHandler):
             'priority': int,
             'debug': bool,
             'jobs_immutable': bool,
+            'status': str,
         }
         for k in opt_fields:
             if k in data and not isinstance(data[k], opt_fields[k]):
@@ -157,7 +158,8 @@ class MultiDatasetHandler(BaseHandler):
         # set some fields
         data['dataset_id'] = uuid.uuid1().hex
         data['dataset'] = dataset_num
-        data['status'] = 'processing'
+        if 'status' not in data:
+            data['status'] = 'processing'
         data['start_date'] = nowstr()
         data['username'] = self.auth_data['username']
         if 'priority' not in data:
