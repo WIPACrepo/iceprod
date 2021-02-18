@@ -20,12 +20,15 @@ def cleanup():
     except Exception:
         pass
 
-def run(token, config, jobs_submitted, job, task, clean=True):
+def run(token, config, jobs_submitted, job, task, clean=True, debug=False):
     cleanup()
-    subprocess.check_call(['python', '-m', 'iceprod.core.i3exec', '-p', token,
-                           '-u', 'https://iceprod2-api.icecube.wisc.edu',
-                           '--jobs_submitted', f'{jobs_submitted}', '-f', config,
-                           '--job', f'{job}', '--task', f'{task}'])
+    cmd = ['python', '-m', 'iceprod.core.i3exec', '-p', token,
+           '-u', 'https://iceprod2-api.icecube.wisc.edu',
+           '--jobs_submitted', f'{jobs_submitted}', '-f', config,
+           '--job', f'{job}', '--task', f'{task}']
+    if debug:
+        cmd += ['--debug']
+    subprocess.check_call(cmd)
     if clean:
         cleanup()
 
@@ -122,7 +125,8 @@ def main():
                         jobs_submitted=dataset['jobs_submitted'],
                         job=jobs[job_id]['job_index'],
                         task=tasks[task_id]['name'],
-                        clean=args['clean'])
+                        clean=args['clean'],
+                        debug=args['log_level'] == 'DEBUG')
                 except subprocess.SubprocessError:
                     if args['ignore_error']:
                         logging.warn("error in subprocess", exc_info=True)
