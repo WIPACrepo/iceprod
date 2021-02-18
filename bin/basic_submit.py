@@ -131,6 +131,7 @@ async def run(rpc, rpc_materialization, args):
             "gpu": args['request_gpus']
           },
           "name":"BasicSubmit",
+          "task_files":True,
           "resources":[],
           "data":[],
           "classes":[],
