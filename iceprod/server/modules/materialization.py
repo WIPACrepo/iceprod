@@ -134,6 +134,8 @@ class Materialize:
         datasets = await self.rest_client.request('GET', '/dataset_summaries/status')
         if 'truncated' in datasets and only_dataset:
             datasets['processing'].extend(datasets['truncated'])
+        if 'suspended' in datasets and only_dataset:
+            datasets['processing'].extend(datasets['suspended'])
         if 'processing' in datasets:
             for dataset_id in datasets['processing']:
                 if only_dataset and dataset_id != only_dataset:
