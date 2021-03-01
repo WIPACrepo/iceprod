@@ -42,7 +42,7 @@ async def run(rest_client, dataset_id=None, debug=False):
     try:
         args = {
             'status': 'waiting|queued|processing|reset',
-            'keys': 'task_id|dataset_id',
+            'keys': 'task_id|depends|dataset_id',
         }
         if dataset_id:
             ret = await rest_client.request('GET', f'/datasets/{dataset_id}/tasks', args)
@@ -52,6 +52,41 @@ async def run(rest_client, dataset_id=None, debug=False):
             ret = await rest_client.request('GET', '/tasks', args)
             tasks = ret['tasks']
 
+        async def check_deps(task):
+            dep_futures = []
+            for dep in task['depends']:
+                t = asyncio.create_task(rest_client.request('GET', f'/tasks/{dep}'))
+                dep_futures.append(t)
+            for ret in await asyncio.gather(*dep_futures):
+                if ret['status'] != 'complete':
+                    logger.info('dependency not met for task %s', task['task_id'])
+                    return None
+            return task
+
+        # check dependencies
+        futures = set()
+        tasks2 = []
+        for task in tasks:
+            if len(futures) >= 20:
+                done, pending = await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED)
+                for t in done:
+                    ret = await t
+                    if ret:
+                        tasks2.append(ret)
+                futures = pending
+            t = asyncio.create_task(check_deps(task))
+            futures.add(t)
+        while futures:
+            done, pending = await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED)
+            for t in done:
+                ret = await t
+                if ret:
+                    tasks2.append(ret)
+            futures = pending
+        logger.warning(f'len(tasks) = {len(tasks)}')
+        logger.warning(f'len(tasks2) = {len(tasks2)}')
+
+        # update priorities
         futures = set()
         for task in tasks:
             if len(futures) >= 20:
@@ -70,7 +105,7 @@ async def run(rest_client, dataset_id=None, debug=False):
         if debug:
             raise
 
-    # run again after 12 hour delay
+    # run again after 4 hour delay
     stop_time = time.time()
-    delay = max(3600*12 - (stop_time-start_time), 600)
+    delay = max(3600*4 - (stop_time-start_time), 600)
     IOLoop.current().call_later(delay, run, rest_client)
