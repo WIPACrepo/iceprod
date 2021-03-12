@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 
+# fmt:off
+# pylint: skip-file
+
+import glob
 import os
 import sys
-import glob
 
 if sys.version_info < (3, 6):
     print('ERROR: IceProd requires at least Python 3.6+ to run.')
@@ -23,7 +26,7 @@ current_path = os.path.dirname(os.path.realpath(__file__))
 with open(os.path.join(current_path,'iceprod','__init__.py')) as f:
     for line in f.readlines():
         if '__version__' in line:
-            kwargs['version'] = line.split('=')[-1].split('\'')[1]
+            kwargs['version'] = line.replace('"', "'").split("=")[-1].split("'")[1]
             break
     else:
         raise Exception('cannot find __version__')
