@@ -5,11 +5,15 @@
 
 import glob
 import os
+import re
 import sys
+from typing import List
 
+# Check Python Version -----------------------------------------------------------------
 if sys.version_info < (3, 6):
     print('ERROR: IceProd requires at least Python 3.6+ to run.')
     sys.exit(1)
+
 
 try:
     # Use setuptools if available, for install_requires (among other things).
@@ -18,6 +22,7 @@ try:
 except ImportError:
     setuptools = None
     from distutils.core import setup
+
 
 kwargs = {}
 
@@ -33,6 +38,7 @@ with open(os.path.join(current_path,'iceprod','__init__.py')) as f:
 
 with open(os.path.join(current_path,'README.rst')) as f:
     kwargs['long_description'] = f.read()
+
 
 try:
     # make dataclasses.js from dataclasses.py
@@ -52,6 +58,23 @@ try:
 except Exception:
     print('WARN: cannot make dataclasses.js')
 
+
+def _get_git_requirements() -> List[str]:
+    REQUIREMENTS_PATH = os.path.join(current_path, "requirements.txt")
+    REQUIREMENTS = open(REQUIREMENTS_PATH).read().splitlines()
+
+    def valid(req: str) -> bool:
+        pat = r"^git\+https://github\.com/[^/]+/[^/]+@(v)?\d+\.\d+\.\d+#egg=\w+$"
+        if not re.match(pat, req):
+            raise Exception(
+                f"from {REQUIREMENTS_PATH}: "
+                f"pip-install git-package url is not in standardized format {pat} ({req})"
+            )
+        return True
+
+    return [m.replace("git+", "") for m in REQUIREMENTS if "git+" in m and valid(m)]
+
+
 if setuptools is not None:
     # If setuptools is not available, you're on your own for dependencies.
     install_requires = ['certifi','tornado>=5.1', 'setproctitle',
@@ -61,9 +84,10 @@ if setuptools is not None:
                         'cachetools>=2.0.0', 'sphinx>=1.4',
                         'coverage>=4.4.2', 'flexmock', 'requests-mock','boto3',
                         'pymongo','PyJWT','motor','ldap3',
-                        'rest_tools @ git+http://github.com/WIPACrepo/rest-tools',
+                        # 'rest_tools @ git+http://github.com/WIPACrepo/rest-tools',
                        ]
     kwargs['install_requires'] = install_requires
+    kwargs['dependency_links'] = _get_git_requirements()
     kwargs['zip_safe'] = False
 
 setup(
