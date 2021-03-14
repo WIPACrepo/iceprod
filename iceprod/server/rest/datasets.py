@@ -176,8 +176,8 @@ class MultiDatasetHandler(BaseHandler):
         url = '/auths/'+data['dataset_id']
         http_client = RestClient(self.auth_url, token=self.module_auth_key)
         auth_data = {
-            'read_groups':[data['group'],'users'],
-            'write_groups':[data['group']],
+            'read_groups':['admin',data['group'],'users'],
+            'write_groups':['admin',data['group']],
         }
         logger.info('Authorization header: %s', 'bearer '+self.module_auth_key)
         await http_client.request('PUT', url, auth_data)
