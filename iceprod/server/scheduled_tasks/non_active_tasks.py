@@ -47,7 +47,7 @@ async def run(rest_client, debug=False):
             dataset_ids.extend(datasets['processing'])
         if 'truncated' in datasets:
             dataset_ids.extend(datasets['truncated'])
-        pilots = await rest_client.request('GET', '/pilots')
+        pilots = await rest_client.request('GET', '/pilots', {'keys': 'pilot_id|tasks'})
         task_ids_in_pilots = set()
         for p in pilots.values():
             if 'tasks' in p and p['tasks']:
@@ -71,7 +71,15 @@ async def run(rest_client, debug=False):
             data.update({'name':'stderr', 'data': ''})
             await rest_client.request('POST', '/logs', data)
 
+        async def update_pilot(pilot_id, tasks):
+            args = {'tasks': tasks}
+            await rest_client.request('PATCH', '/pilots/{}'.format(pilot_id), args)
+
+        async def delete_pilot(pilot_id):
+            await rest_client.request('DELETE', '/pilots/{}'.format(pilot_id))
+
         awaitables = set()
+        reset_pilots = set()
         for dataset_id in dataset_ids:
             tasks = dataset_tasks[dataset_id]
             if 'processing' in tasks:
@@ -83,6 +91,23 @@ async def run(rest_client, debug=False):
                     if task['status'] == 'processing' and (datetime.utcnow()-str2datetime(task['status_changed'])).total_seconds() > 600:
                         logger.info('dataset %s reset task %s', dataset_id, task_id)
                         awaitables.add(reset(dataset_id,task_id))
+
+            for k in tasks.keys():
+                if k in ('reset', 'waiting', 'failed', 'suspended'):
+                    for task_id in task_ids_in_pilots.intersection(tasks[k]):
+                        args = {'keys': 'status|status_changed'}
+                        task = await rest_client.request('GET', f'/datasets/{dataset_id}/tasks/{task_id}', args)
+                        # check status, and that we haven't just changed status
+                        if task['status'] in ('reset', 'waiting', 'failed', 'suspended') and (datetime.utcnow()-str2datetime(task['status_changed'])).total_seconds() > 600:
+                            reset_pilots.add(task_id)
+
+        for p in pilots.values():
+            if 'tasks' in p:
+                updated_tasks = set(p['tasks']) - reset_pilots
+                if not updated_tasks:
+                    awaitables.add(delete_pilot(p['pilot_id']))
+                elif updated_tasks != set(p['tasks']):
+                    awaitables.add(delete_pilot(p['pilot_id'], updated_tasks))
 
         for fut in asyncio.as_completed(awaitables):
             try:
