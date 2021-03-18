@@ -767,6 +767,7 @@ async def runmodule(cfg, globalenv, module, stats={}, logger=None):
         logger = logging
 
     # set up local env
+    module = module.copy()
     async with SetupEnv(cfg, module, globalenv, logger=logger) as env:
         if module['running_class']:
             module['running_class'] = cfg.parseValue(module['running_class'],env)

@@ -1809,6 +1809,7 @@ def Test():
         module['name'] = 'module2'
         module['running_class'] = 'Test'
         module['src'] = 'file:/test.py'
+        module['args'] = ['$(iter)']
         tray['modules'].append(module)
 
         # make .so file
@@ -1844,7 +1845,8 @@ def Test():
             else:
                 path = os.path.join(options['local_temp'], os.path.basename(module['src']))
                 self.mk_files(path, """
-def Test():
+def Test(*args,**kwargs):
+    print(args,kwargs)
     return 'Tester2'
 """, ext=True)
             return path
