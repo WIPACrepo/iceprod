@@ -91,6 +91,7 @@ if [ -d $PWD/iceprod ]; then
 else
     if [ ! -d $SROOT ]; then
         echo "No contact with CVMFS"
+        sleep 1200 # block site so black hole doesn't kill all jobs
         exit 1
     else
         echo "Using software at $SROOT"
