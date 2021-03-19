@@ -140,10 +140,11 @@ class DatasetsBulkTaskStatsHandler(BaseHandler):
                     ret = [{k:d[k] for k in d if k in keys} for d in ret]
                 if last:
                     self.write(ret[-1])
+                    self.write('\n')
                 else:
                     for ret in data:
                         self.write(ret)
-                self.write('\n')
+                        self.write('\n')
                 n += 1
                 if n >= buffer_size:
                     n = 0
@@ -157,10 +158,11 @@ class DatasetsBulkTaskStatsHandler(BaseHandler):
                 ret = [{k:d[k] for k in d if k in keys} for d in ret]
             if last:
                 self.write(ret[-1])
+                self.write('\n')
             else:
                 for ret in data:
                     self.write(ret)
-            self.write('\n')
+                    self.write('\n')
         self.finish()
 
 class DatasetsMultiTaskStatsHandler(BaseHandler):
