@@ -27,7 +27,7 @@ imagesize==0.7.1
 ipython==7.6.1
 ipython-genutils==0.2.0
 jedi==0.10.2
-Jinja2==2.10.1
+Jinja2==2.11.3
 jmespath==0.9.3
 jsondiff==1.1.1
 jsonpickle==1.0
