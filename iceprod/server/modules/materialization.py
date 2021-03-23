@@ -4,6 +4,8 @@ Materialization service for dataset late materialization.
 import logging
 import importlib
 import os
+import time
+from datetime import datetime
 import json
 import uuid
 import asyncio
@@ -19,7 +21,7 @@ import iceprod.server
 from iceprod.server import module
 from iceprod.server import get_pkgdata_filename
 from iceprod.server.rest import RESTHandler, RESTHandlerSetup, authorization
-from iceprod.server.util import nowstr, task_statuses
+from iceprod.server.util import nowstr, datetime2str, task_statuses
 from iceprod.core.parser import ExpParser
 from iceprod.core.resources import Resources
 from iceprod.server.priority import Priority
@@ -36,10 +38,10 @@ class materialization(module.module):
         super(materialization,self).__init__(*args,**kwargs)
 
         # set up materialization service
-        MaterializationService(self.cfg)
+        ms = MaterializationService(self.cfg)
 
         # set up the REST API
-        routes, args = setup_rest(self.cfg, module=self)
+        routes, args = setup_rest(self.cfg, module=self, materialization_service=ms)
         self.server = RestServer(**args)
         for r in routes:
             self.server.add_route(*r)
@@ -70,6 +72,8 @@ class MaterializationService:
         rest_client = RestClient(rest_url, rest_auth_key)
         self.materialize = Materialize(rest_client)
 
+        self.last_run_time = None
+        self.last_success_time = None
         asyncio.get_event_loop().create_task(self.run())
 
     async def run(self):
@@ -78,6 +82,8 @@ class MaterializationService:
         """
         while True:
             try:
+                self.last_run_time = time.time()
+
                 # get next materialization from DB
                 ret = await self.db.materialization.find_one_and_update(
                         {'status':'waiting'},
@@ -106,6 +112,7 @@ class MaterializationService:
                         {'materialization_id': ret['materialization_id']},
                         {'$set': {'status': 'complete'}},
                 )
+                self.last_success_time = time.time()
             except Exception:
                 logger.error('error running materialization', exc_info=True)
                 await self.db.materialization.update_one(
@@ -288,7 +295,7 @@ class Materialize:
         return ret
 
 
-def setup_rest(config, *args, **kwargs):
+def setup_rest(config, materialization_service=None, **kwargs):
     """
     Setup a REST Tornado server.
 
@@ -312,11 +319,13 @@ def setup_rest(config, *args, **kwargs):
 
     handler_cfg = RESTHandlerSetup(config, *args, **kwargs)
     handler_cfg['database'] = motor.motor_tornado.MotorClient(**db_cfg).datasets
+    handler_cfg['materialization_service'] = materialization_service
 
     routes = [
         (r'/status/(?P<materialization_id>\w+)', StatusHandler, handler_cfg),
         (r'/', RequestHandler, handler_cfg),
         (r'/request/(?P<dataset_id>\w+)', RequestDatasetHandler, handler_cfg),
+        (r'/heathz', HeathHandler, handler_cfg),
     ]
 
     logger.info('REST routes being served:')
@@ -442,6 +451,42 @@ class RequestDatasetHandler(BaseHandler):
         # return success
         self.set_status(201)
         self.write({'result': data['materialization_id']})
+
+class HealthHandler(BaseHandler):
+    """
+    Handle health requests.
+    """
+    async def get(self):
+        """
+        Get health status.
+
+        Returns based on exit code, 200 = ok, 400 = failure
+        """
+        now = time.time()
+        try:
+            if self.materialization_service.last_run_time + 3600 < now:
+                self.send_error(500, reason='materialization has stopped running')
+                return
+            if self.materialization_service.last_success_time + 86400 < now:
+                self.send_error(500, reason='materialization has stopped being successful')
+                return
+        except Exception:
+            self.send_error(500, reason='error from materialization service')
+            return
+
+        try:
+            ret = await self.db.materialization.count_documents({}, maxTimeMS=1000)
+        except Exception:
+            self.send_error(500, reason='bad db request')
+            return
+        if ret is None:
+            self.send_error(500, reason='bad db result')
+        else:
+            self.write({
+                'last_run_time': datetime2str(datetime.utcfromtimestamp(self.materialization_service.last_run_time)),
+                'last_success_time': datetime2str(datetime.utcfromtimestamp(self.materialization_service.last_success_time)),
+                'num_waiting_requests': ret,
+            })
 
 
 if __name__ == '__main__':
