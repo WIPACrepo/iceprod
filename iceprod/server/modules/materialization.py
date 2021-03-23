@@ -5,7 +5,7 @@ import logging
 import importlib
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import uuid
 import asyncio
@@ -74,6 +74,7 @@ class MaterializationService:
 
         self.start_time = time.time()
         self.last_run_time = None
+        self.last_cleanup_time = None
         self.last_success_time = None
         asyncio.get_event_loop().create_task(self.run())
 
@@ -82,15 +83,24 @@ class MaterializationService:
         Run loop.
         """
         while True:
+            ret = None
             try:
                 self.last_run_time = time.time()
+                now = nowstr()
+
+                # periodically cleanup
+                if (not self.last_cleanup_time) or self.last_run_time - self.last_cleanup_time > 86400:
+                    yesterday = datetime2str(datetime.utcfromtimestamp(self.last_run_time)-timedelta(hours=24))
+                    await self.db.materialization.delete_many({'status': {'$in': ['complete', 'error']}, 'modify_timestamp': {'$lt': yesterday}})
+                    await self.db.materialization.update_many({'status': 'processing', 'modify_timestamp': {'$lt': yesterday}}, {'$set': {'status': 'waiting', 'modify_timestamp': now}})
+                    self.last_cleanup_time = time.time()
 
                 # get next materialization from DB
                 ret = await self.db.materialization.find_one_and_update(
-                        {'status':'waiting'},
-                        {'$set': {'status': 'processing'}},
+                        {'status': 'waiting'},
+                        {'$set': {'status': 'processing', 'modify_timestamp': now}},
                         projection={'_id':False},
-                        sort=[('timestamp', 1)],
+                        sort=[('modify_timestamp', 1)],
                         return_document=pymongo.ReturnDocument.AFTER,
                 )
                 if not ret:
@@ -116,10 +126,11 @@ class MaterializationService:
                 self.last_success_time = time.time()
             except Exception:
                 logger.error('error running materialization', exc_info=True)
-                await self.db.materialization.update_one(
-                        {'materialization_id': ret['materialization_id']},
-                        {'$set': {'status': 'error'}},
-                )
+                if ret:
+                    await self.db.materialization.update_one(
+                            {'materialization_id': ret['materialization_id']},
+                            {'$set': {'status': 'error'}},
+                    )
 
 
 class Materialize:
@@ -360,10 +371,12 @@ class BaseHandler(RESTHandler):
                 raise tornado.web.HTTPError(400, reason=r)
 
         # set some fields
+        now = nowstr()
         data = {
             'materialization_id': uuid.uuid1().hex,
             'status': 'waiting',
-            'timestamp': nowstr(),
+            'create_timestamp': now,
+            'modify_timestamp': now,
             'creator': self.auth_data['username'],
             'role': self.auth_data['role'],
         }
@@ -465,10 +478,11 @@ class HealthHandler(BaseHandler):
         """
         now = time.time()
         status = {
-            'now': now,
+            'now': nowstr(),
             'start_time': datetime2str(datetime.utcfromtimestamp(self.materialization_service.start_time)),
             'last_run_time': "",
             'last_success_time': "",
+            'last_cleanup_time': "",
             'num_requests': -1,
         }
         try:
@@ -488,13 +502,15 @@ class HealthHandler(BaseHandler):
                     self.send_error(500, reason='materialization has stopped being successful')
                     return
                 status['last_success_time'] = datetime2str(datetime.utcfromtimestamp(self.materialization_service.last_success_time))
+            if self.materialization_service.last_cleanup_time is not None:
+                status['last_cleanup_time'] = datetime2str(datetime.utcfromtimestamp(self.materialization_service.last_cleanup_time))
         except Exception:
             logger.info('error from materialization service', exc_info=True)
             self.send_error(500, reason='error from materialization service')
             return
 
         try:
-            ret = await self.db.materialization.count_documents({}, maxTimeMS=1000)
+            ret = await self.db.materialization.count_documents({'status':{'$in':['waiting','processing']}}, maxTimeMS=1000)
         except Exception:
             logger.info('bad db request', exc_info=True)
             self.send_error(500, reason='bad db request')
