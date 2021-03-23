@@ -36,7 +36,7 @@ ldap3==2.4
 MarkupSafe==1.1.1
 mock==2.0.0
 moto==1.3.7
-motor==1.3.1
+motor==2.3.1
 pbr==4.2.0
 pexpect==4.7.0
 pickleshare==0.7.4
@@ -48,7 +48,7 @@ pyasn1==0.2.3
 pycparser==2.18
 pycryptodome==3.6.6
 Pygments==2.2.0
-pymongo==3.10.1
+pymongo==3.11.3
 PyMySQL==0.7.11
 pyOpenSSL==19.0.0
 python-dateutil==2.7.3

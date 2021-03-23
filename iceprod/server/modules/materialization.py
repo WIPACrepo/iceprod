@@ -72,6 +72,7 @@ class MaterializationService:
         rest_client = RestClient(rest_url, rest_auth_key)
         self.materialize = Materialize(rest_client)
 
+        self.start_time = time.time()
         self.last_run_time = None
         self.last_success_time = None
         asyncio.get_event_loop().create_task(self.run())
@@ -317,7 +318,7 @@ def setup_rest(config, materialization_service=None, **kwargs):
     if 'status_timestamp_index' not in db.materialization.index_information():
         db.materialization.create_index([('status',pymongo.ASCENDING),('timestamp',pymongo.ASCENDING)], name='status_timestamp_index')
 
-    handler_cfg = RESTHandlerSetup(config, *args, **kwargs)
+    handler_cfg = RESTHandlerSetup(config, **kwargs)
     handler_cfg['database'] = motor.motor_tornado.MotorClient(**db_cfg).datasets
     handler_cfg['materialization_service'] = materialization_service
 
@@ -325,7 +326,7 @@ def setup_rest(config, materialization_service=None, **kwargs):
         (r'/status/(?P<materialization_id>\w+)', StatusHandler, handler_cfg),
         (r'/', RequestHandler, handler_cfg),
         (r'/request/(?P<dataset_id>\w+)', RequestDatasetHandler, handler_cfg),
-        (r'/heathz', HeathHandler, handler_cfg),
+        (r'/healthz', HealthHandler, handler_cfg),
     ]
 
     logger.info('REST routes being served:')
@@ -463,30 +464,46 @@ class HealthHandler(BaseHandler):
         Returns based on exit code, 200 = ok, 400 = failure
         """
         now = time.time()
+        status = {
+            'now': now,
+            'start_time': datetime2str(datetime.utcfromtimestamp(self.materialization_service.start_time)),
+            'last_run_time': "",
+            'last_success_time': "",
+            'num_requests': -1,
+        }
         try:
-            if self.materialization_service.last_run_time + 3600 < now:
-                self.send_error(500, reason='materialization has stopped running')
+            if self.materialization_service.last_run_time is None and self.materialization_service.start_time + 3600 < now:
+                self.send_error(500, reason='materialization was never run')
                 return
-            if self.materialization_service.last_success_time + 86400 < now:
-                self.send_error(500, reason='materialization has stopped being successful')
+            if self.materialization_service.last_run_time is not None:
+                if self.materialization_service.last_run_time + 3600 < now:
+                    self.send_error(500, reason='materialization has stopped running')
+                    return
+                status['last_run_time'] = datetime2str(datetime.utcfromtimestamp(self.materialization_service.last_run_time))
+            if self.materialization_service.last_success_time is None and self.materialization_service.start_time + 86400 < now:
+                self.send_error(500, reason='materialization was never successful')
                 return
+            if self.materialization_service.last_success_time is not None:
+                if self.materialization_service.last_success_time + 86400 < now:
+                    self.send_error(500, reason='materialization has stopped being successful')
+                    return
+                status['last_success_time'] = datetime2str(datetime.utcfromtimestamp(self.materialization_service.last_success_time))
         except Exception:
+            logger.info('error from materialization service', exc_info=True)
             self.send_error(500, reason='error from materialization service')
             return
 
         try:
             ret = await self.db.materialization.count_documents({}, maxTimeMS=1000)
         except Exception:
+            logger.info('bad db request', exc_info=True)
             self.send_error(500, reason='bad db request')
             return
         if ret is None:
             self.send_error(500, reason='bad db result')
         else:
-            self.write({
-                'last_run_time': datetime2str(datetime.utcfromtimestamp(self.materialization_service.last_run_time)),
-                'last_success_time': datetime2str(datetime.utcfromtimestamp(self.materialization_service.last_success_time)),
-                'num_waiting_requests': ret,
-            })
+            status['num_requests'] = ret
+        self.write(status)
 
 
 if __name__ == '__main__':
