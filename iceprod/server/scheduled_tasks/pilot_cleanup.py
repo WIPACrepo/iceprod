@@ -36,7 +36,7 @@ async def run(rest_client, debug=False):
         debug (bool): debug flag to propagate exceptions
     """
     start_time = time.time()
-    time_limit = datetime.utcnow() - timedelta(days=7)
+    time_limit = datetime.utcnow() - timedelta(days=14)
     async def reset_pilot(pilot_id):
         await rest_client.request('DELETE', '/pilots/{}'.format(pilot_id))
     try:
