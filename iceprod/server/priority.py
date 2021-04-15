@@ -65,11 +65,15 @@ class Priority:
     async def _populate_user_cache(self):
         ret = await self.rest_client.request('GET', '/users')
         for user in ret['results']:
+            if 'priority' not in user:
+                user['priority'] = 0.5
             self.user_cache[user['username']] = user
 
     async def _populate_group_cache(self):
         ret = await self.rest_client.request('GET', '/groups')
         for group in ret['results']:
+            if 'priority' not in group:
+                group['priority'] = 0.5
             self.group_cache[group['name']] = group
 
     async def _get_dataset(self, dataset_id):
@@ -96,11 +100,15 @@ class Priority:
     async def _get_user_prio(self, user):
         if not self.user_cache:
             await self._populate_user_cache()
+        if user not in self.user_cache or 'priority' not in self.user_cache[user]:
+            return 0.5
         return self.user_cache[user]['priority']
 
     async def _get_group_prio(self, group):
         if not self.group_cache:
             await self._populate_group_cache()
+        if group not in self.group_cache or 'priority' not in self.group_cache[group]:
+            return 0.5
         return self.group_cache[group]['priority']
 
     async def _get_max_user_prio_group(self, group):
