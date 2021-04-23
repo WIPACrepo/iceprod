@@ -65,7 +65,11 @@ def fail(message):
 
 async def run(rpc, rpc_materialization, args):
     def modify_path(src):
+        if src.startswith('/cvmfs'):
+            return src
         if os.path.exists(src):
+            if not src.startswith('/data'):
+                raise Exception('path must be in /data')
             return 'gsiftp://gridftp.icecube.wisc.edu' + os.path.abspath(src)
         elif not (src.startswith('http://') or src.startswith('https://') or src.startswith('gsiftp://')):
             raise Exception('unknown path: '+src)
@@ -81,7 +85,7 @@ async def run(rpc, rpc_materialization, args):
             files = [x.strip() for x in line.split() if x.strip()]
             if not files:
                 continue
-            jobfiles.append([modify_path(x) for x in files])
+            jobfiles.append([modify_path(x) for x in files[:-1]]+files[-1:])
 
     # make dataset config
     config = {
