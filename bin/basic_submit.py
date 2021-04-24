@@ -197,25 +197,22 @@ async def run(rpc, rpc_materialization, args):
         for i,files in enumerate(jobfiles):
             if i%100 == 0:
                 print('.', end='', flush=True)
-            futures = []
-            for f in files[:-1]:
+            try:
+                for f in files[:-1]:
+                    rpc_args = {
+                        'filename': f,
+                        'movement': 'input',
+                        'job_index': i,
+                        'task_name': 'BasicSubmit',
+                    }
+                    await rpc.request('POST', f'/datasets/{dataset_id}/files', rpc_args)
                 rpc_args = {
-                    'filename': f,
-                    'movement': 'input',
-                    'job_index': i,
-                    'task_name': 'BasicSubmit',
-                }
-                futures.append(rpc.request('POST', f'/datasets/{dataset_id}/files', rpc_args))
-            for f in files[-1:]:
-                rpc_args = {
-                    'filename': f,
+                    'filename': files[-1],
                     'movement': 'output',
                     'job_index': i,
                     'task_name': 'BasicSubmit',
                 }
-                futures.append(rpc.request('POST', f'/datasets/{dataset_id}/files', rpc_args))
-            try:
-                await asyncio.gather(*futures)
+                await rpc.request('POST', f'/datasets/{dataset_id}/files', rpc_args)
             except Exception:
                 logger.warning(f'failed to upload file for job_index {i}', exc_info=True)
                 fail('Failed to upload an input or output file path')
