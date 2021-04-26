@@ -85,8 +85,8 @@ async def run(rpc, rpc_materialization, args):
             files = [x.strip() for x in line.split() if x.strip()]
             if not files:
                 continue
-            outfile = 'gsiftp://gridftp.icecube.wisc.edu' + os.path.abspath(files[-1:])
-            jobfiles.append([modify_path(x) for x in files[:-1]]+outfile)
+            outfiles = ['gsiftp://gridftp.icecube.wisc.edu' + os.path.abspath(files[-1])]
+            jobfiles.append([modify_path(x) for x in files[:-1]]+outfiles)
 
     # make dataset config
     config = {
