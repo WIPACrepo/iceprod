@@ -41,6 +41,16 @@ else:
                 ret[k.lower()] = c[k]
         return ret
 
+# default rounding bins for resources
+RESOURCE_BINS = {
+    'cpu': list(range(1, 1000)),
+    'gpu': list(range(1, 100)),
+    'memory': [x/10. for x in list(range(5, 50, 5)) + list(range(50, 200, 10)) + list(range(200, 1000, 40)) + list(range(1000, 10000, 100))],
+    'disk': list(range(1, 10)) + list(range(10, 50, 2)) + list(range(50, 100, 5)) + list(range(100, 2000, 20)),
+    'time': [x/60. for x in list(range(10, 60, 10)) + list(range(60, 360, 15)) + list(range(360, 1440, 60)) + list(range(1440, 20240, 240))],
+}
+
+
 class Resources:
     """
     Task (and node) resource definition and tracking.
@@ -831,4 +841,31 @@ def sanitized_requirements(reqs, use_defaults=False):
         if use_defaults and k not in ret and k in Resources.defaults:
             if isinstance(Resources.defaults[k], (int,float,str)):
                 ret[k] = Resources.defaults[k]
+    return ret
+
+def rounded_requirements(reqs, bins=None):
+    """
+    Round requirements into bins for submit systems to have
+    fewer "choices" to consider for job matching.
+
+    Args:
+        reqs (dict): dict of requirements
+        bins (dict): dict of binnings to use (None for defaults)
+    Returns:
+        dict: rounded requirements
+    """
+    if not bins:
+        bins = RESOURCE_BINS
+    def round_up(num, bins):
+        """Round up to the next bin value"""
+        for b in bins:
+            if num < b:
+                return b
+        raise Exception('num too big for bin sizes')
+    ret = {}
+    for k in reqs:
+        v = reqs[k]
+        if k in bins:
+            v = round_up(v, bins[k])
+        ret[k] = v
     return ret

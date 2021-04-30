@@ -20,7 +20,7 @@ import iceprod
 from iceprod.core import dataclasses
 from iceprod.core import constants
 from iceprod.core import functions
-from iceprod.core.resources import sanitized_requirements
+from iceprod.core.resources import sanitized_requirements, rounded_requirements
 from iceprod.core.exe_json import ServerComms
 from iceprod.server import grid
 from iceprod.server.globus import SiteGlobusProxy
@@ -103,7 +103,7 @@ def read_filename(filename):
     elif os.path.exists(filename+'.gz'):
         try:
             with gzip.open(filename+'.gz', 'rt', encoding='utf-8') as f:
-                
+
                 try:
                     while True:
                         pos = f.tell()
@@ -335,7 +335,7 @@ class condor_direct(grid.BaseGrid):
             site = self.site
 
         comms = MyServerComms(self.rest_client)
-        await comms.finish_task(task_id, dataset_id=dataset_id, 
+        await comms.finish_task(task_id, dataset_id=dataset_id,
                                 resources=resources, site=site)
 
     async def check_and_clean(self):
@@ -343,7 +343,7 @@ class condor_direct(grid.BaseGrid):
         #return ### for queueing, don't need this
         host = grid.get_host()
         #self.x509proxy.update_proxy()
-        
+
         # get time limits
         try:
             queued_time = timedelta(seconds=self.queue_cfg['max_task_queued_time'])
@@ -399,7 +399,7 @@ class condor_direct(grid.BaseGrid):
             ret = await self.rest_client.request('GET', f'/tasks/{task_id}')
             if ret['status'] == 'processing':
                 task['dataset_id'] = ret['dataset_id']
-                
+
                 logger.info('uploading logs for task %s', task_id)
                 await self.upload_logfiles(task_id, task['dataset_id'],
                                            submit_dir=task['submit_dir'])
@@ -630,6 +630,7 @@ class condor_direct(grid.BaseGrid):
                             reqs[k] = config_reqs[k]
                     else:
                         reqs[k] = config_reqs[k]
+            reqs = rounded_requirements(reqs)
 
             # get task files
             if 'task_files' in task_cfg and task_cfg['task_files']:
@@ -842,7 +843,7 @@ class condor_direct(grid.BaseGrid):
                 p('request_memory = {}'.format(int(task['requirements']['memory']*1000*1.1)))
             if 'disk' in task['requirements'] and task['requirements']['disk']:
                 # ask for a little extra, in case we use more
-                p('request_disk = {}'.format(int(task['requirements']['disk']*1000000*1.1)))
+                p('request_disk = {}'.format(int(round(task['requirements']['disk']*1.1)*1000000)))
             if 'time' in task['requirements'] and task['requirements']['time']:
                 # ask for a little extra, in case we use more
                 p('+OriginalTime = {}'.format(int(task['requirements']['time'])*3600*1.1))
