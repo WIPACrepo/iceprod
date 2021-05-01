@@ -859,7 +859,7 @@ def rounded_requirements(reqs, bins=None):
     def round_up(num, bins):
         """Round up to the next bin value"""
         for b in bins:
-            if num < b:
+            if num <= b*1.05: # within 5%
                 return b
         raise Exception('num too big for bin sizes')
     ret = {}
