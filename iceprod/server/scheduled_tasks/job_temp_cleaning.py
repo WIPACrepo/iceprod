@@ -18,6 +18,7 @@ from asyncio import wrap_future
 from tornado.ioloop import IOLoop
 
 from iceprod.core.gridftp import GridFTP
+from iceprod.server.util import str2datetime
 
 logger = logging.getLogger('job_temp_cleaning')
 
@@ -32,7 +33,7 @@ def job_temp_cleaning(module):
     IOLoop.current().call_later(random.randint(10,60*10), run, module.rest_client,
             module.cfg, module.executor)
 
-async def run(rest_client, cfg, executor, debug=False):
+async def run(rest_client, cfg, executor, dataset=None, debug=False):
     """
     Actual runtime / loop.
 
@@ -53,7 +54,7 @@ async def run(rest_client, cfg, executor, debug=False):
         # get all the job_indexes currently in tmp
         temp_dir = cfg['queue']['site_temp']
         dataset_dirs = await wrap_future(executor.submit(partial(GridFTP.list, temp_dir, details=True)))
-        logger.info('dataset_dirs: %r', dataset_dirs)
+        logger.debug('dataset_dirs: %r', dataset_dirs)
         ret = await rest_client.request('GET', '/datasets?keys=dataset_id|dataset')
         datasets = {}
         for d in ret:
@@ -62,23 +63,29 @@ async def run(rest_client, cfg, executor, debug=False):
             if not entry.directory:
                 continue
             d = entry.name
+            if dataset and d != dataset:
+                continue
             logger.info('temp cleaning for dataset %r', d)
             try:
                 job_dirs = await wrap_future(executor.submit(partial(GridFTP.list, os.path.join(temp_dir, d), details=True)))
             except Exception:
                 logger.error('failed to get job dirs for dataset %r', d, exc_info=True)
+                if debug:
+                    raise
                 continue
             logger.debug('job_dirs: %r', job_dirs)
             try:
-                jobs = await rest_client.request('GET', '/datasets/{}/jobs'.format(datasets[d]))
+                jobs = await rest_client.request('GET', f'/datasets/{datasets[d]}/jobs', {'keys':'status|status_changed|job_index'})
             except Exception:
                 logger.error('failed to get jobs for dataset %r', d, exc_info=True)
+                if debug:
+                    raise
                 continue
             logger.debug('jobs: %r', jobs)
             job_indexes = set()
             for job in jobs.values():
                 if job['status'] == 'complete' or (job['status'] != 'processing'
-                    and now - get_date(job['status_changed']) > suspend_time):
+                    and now - str2datetime(job['status_changed']) > suspend_time):
                     job_indexes.add(job['job_index'])
             logger.debug('job_indexes: %r', job_indexes)
             for job in job_dirs:
@@ -86,6 +93,9 @@ async def run(rest_client, cfg, executor, debug=False):
                     continue
                 j = job.name
                 if not j.isnumeric():
+                    if debug:
+                        logger.info('j is not numeric: %r', j)
+                        raise
                     continue
                 if int(j) in job_indexes:
                     try:
@@ -94,6 +104,8 @@ async def run(rest_client, cfg, executor, debug=False):
                         await wrap_future(executor.submit(partial(GridFTP.rmtree, dagtemp)))
                     except Exception:
                         logger.warning('failed to clean site_temp', exc_info=True)
+                        if debug:
+                            raise
 
     except Exception:
         logger.error('error checking job temp', exc_info=True)
@@ -105,8 +117,37 @@ async def run(rest_client, cfg, executor, debug=False):
     delay = max(60*60 - (stop_time-start_time), 60*10)
     IOLoop.current().call_later(delay, run, rest_client, cfg, executor, debug)
 
-def get_date(strdate):
-    if '.' in strdate:
-        return datetime.strptime(strdate, '%Y-%m-%dT%H:%M:%S.%f')
-    else:
-        return datetime.strptime(strdate, '%Y-%m-%dT%H:%M:%S')
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(description='run a scheduled task once')
+    parser.add_argument('-t', '--token', default=os.environ.get('ICEPROD_TOKEN', None), help='auth token')
+    parser.add_argument('-d', '--dataset', type=str, help='dataset num (optional)')
+    parser.add_argument('--site-temp', default='gsiftp://gridftp-scratch.icecube.wisc.edu/mnt/tank/simprod', help='site temp location')
+    parser.add_argument('--log-level', default='info', help='log level')
+    parser.add_argument('--debug', default=False, action='store_true', help='debug enabled')
+
+    args = parser.parse_args()
+    args = vars(args)
+
+    logformat='%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
+    logging.basicConfig(format=logformat, level=getattr(logging, args['log_level'].upper()))
+
+    from rest_tools.client import RestClient
+    rpc = RestClient('https://iceprod2-api.icecube.wisc.edu', args['token'])
+
+    from iceprod.server.config import IceProdConfig
+    cfg = IceProdConfig()
+    if 'queue' not in cfg:
+        cfg['queue'] = {}
+    if 'site_temp' not in cfg['queue']:
+        cfg['queue']['site_temp'] = args['site_temp']
+
+    from concurrent.futures import ThreadPoolExecutor
+    pool = ThreadPoolExecutor()
+
+    import asyncio
+    asyncio.run(run(rpc, cfg, pool, dataset=args['dataset'], debug=args['debug']))
+
+if __name__ == '__main__':
+    main()

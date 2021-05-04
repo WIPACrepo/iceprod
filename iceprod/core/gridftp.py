@@ -43,22 +43,28 @@ def listify(lines,details=False,dotfiles=False):
             if not x.strip():
                 continue
             pieces = x.split()
-            name = pieces[-1]
+            name = os.path.basename(pieces[-1])
             if name.startswith('.') and not dotfiles:
                 continue
             d = x[0] == 'd'
             perms = pieces[0][1:]
+            subfiles = 0
+            if pieces[1].isdigit():
+                subfiles = int(pieces[1])
+                pieces = pieces[1:]
+            else:
+                subfiles = int(pieces[3])
             year = datetime.now().year
-            month = months[pieces[5].lower()]
-            day = int(pieces[6])
-            if ':' in pieces[7]:
-                hour,minute = pieces[7].split(':')
+            month = months[pieces[4].lower()]
+            day = int(pieces[5])
+            if ':' in pieces[6]:
+                hour,minute = pieces[6].split(':')
                 dt = datetime(year,month,day,int(hour),int(minute))
             else:
-                year = int(pieces[7])
+                year = int(pieces[6])
                 dt = datetime(year,month,day)
-            out.append(File(d,perms,int(pieces[1]),pieces[2],pieces[3],
-                            int(pieces[4]),dt,name))
+            out.append(File(d,perms,subfiles,pieces[1],pieces[2],
+                            int(pieces[3]),dt,name))
     else:
         for x in lines.split('\n'):
             if not x.strip():
@@ -97,14 +103,14 @@ class GridFTP(object):
             return (pieces[0]+'://'+pieces2[0],'/'+pieces2[1])
         else:
             return (address,'/')
-    
+
     @classmethod
     def get(cls, address, filename=None, request_timeout=None):
         """
         Do a GridFTP get request.
 
         Either data is returned directly or filename must be defined.
-        
+
         Args:
             address (str): url to get from
             filename (str): filename to write data to
@@ -215,6 +221,7 @@ class GridFTP(object):
 
         ret = _cmd_output(cmd, timeout=timeout)
         if ret[0]:
+            logger.warning(f'{ret[1]}')
             raise Exception('Error getting listing')
         return listify(ret[1], details=details, dotfiles=dotfiles)
 
