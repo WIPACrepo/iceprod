@@ -75,5 +75,6 @@ def setup_rest(config, module=None):
     kwargs = {
         'static_path': static_path,
         'template_path': template_path,
+        'max_body_size': 10**9, # 1GB
     }
     return (routes, kwargs)
