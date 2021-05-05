@@ -122,7 +122,10 @@ def read_filename(filename):
                     except EOFError:
                         pass
         except Exception:
-            logging.info('error reading gzip file', exc_info=True)
+            logger.info('error reading gzip file', exc_info=True)
+    if len(data) > 10**8:
+        logger.warning(f'logfile {filename} has length {len(data)} and will be trimmed')
+        data = data[-1*10**8:]
     return data
 
 class condor_direct(grid.BaseGrid):
