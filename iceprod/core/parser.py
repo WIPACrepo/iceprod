@@ -1,7 +1,7 @@
 """
-A `recursive descent parser 
-<http://en.wikipedia.org/wiki/Recursive_descent_parser>`_ for the IceProd meta 
-language. Most commonly used in IceProd dataset configurations to refer to 
+A `recursive descent parser
+<http://en.wikipedia.org/wiki/Recursive_descent_parser>`_ for the IceProd meta
+language. Most commonly used in IceProd dataset configurations to refer to
 other parts of the same configuration.
 """
 
@@ -39,7 +39,7 @@ class safe_eval:
     @classmethod
     def eval(cls,expr):
         """
-        Safe evaluation of arithmatic operations using 
+        Safe evaluation of arithmatic operations using
         :mod:`Abstract Syntax Trees <ast>`.
         """
         return cls.__eval(cls.ast.parse(expr).body[0].value) # Module(body=[Expr(value=...)])
@@ -220,9 +220,9 @@ def parser(data):
 class ExpParser:
     """
     Expression parsing class for parameter values.
-    
+
     Grammar Definition::
-    
+
         char     := any unicode character other than $()[]
         word     := char | char + word
         starter  := $
@@ -234,9 +234,9 @@ class ExpParser:
         phrase   := symbol + scopeL + sentence + scopeR
         lookup   := word + bracketL + word + bracketR | phrase + bracketL + word + bracketR
         sentence := lookup | phrase | word | lookup + sentence | phrase + sentence | word + sentence
-    
+
     Keywords:
-    
+
     * steering : A parameter from :class:`iceprod.core.dataclasses.Steering`
     * system : A system value from :class:`iceprod.core.dataclasses.Steering`
     * args, options : An option value from :class:`iceprod.core.dataclasses.Job`
@@ -246,9 +246,9 @@ class ExpParser:
     * sum, min, max, len : Apply a reduction to a sequence
     * choice : A random choice from a list of possibilites
     * sprintf : The sprintf string syntax
-    
+
     Examples::
-    
+
         $steering(my_parameter)
         $system(gpu_opts)
         $args(option1)
@@ -275,11 +275,11 @@ class ExpParser:
                         }
         for reduction in 'sum', 'min', 'max', 'len':
             self.keywords[reduction] = functools.partial(self.reduce_func, getattr(builtins, reduction))
-    
+
     def parse(self,input,job=None,env=None,depth=20):
         """
         Parse the input, expanding where possible.
-        
+
         :param input: input string
         :param job: :class:`iceprod.core.dataclasses.Job`, optional
         :param env: env dictionary, optional
@@ -311,7 +311,7 @@ class ExpParser:
         else:
             self.env = {}
         self.depth = 0 # start at a depth of 0
-        
+
         while True:
             # parse input
             stack = []
@@ -418,11 +418,14 @@ class ExpParser:
                     ret = self.job['options'][keyword]
                 except Exception:
                     pass
+            elif self.job['steering'] and keyword in self.job['steering']['parameters']:
+                # search job steering last
+                ret = self.job['steering']['parameters'][keyword]
 
         if ret is None:
             raise GrammarException()
-        return ret
-    
+        return parse_ret_type(ret)
+
     def steering_func(self,param):
         """Find param in steering"""
         if self.job['steering'] and param in self.job['steering']['parameters']:
@@ -450,7 +453,7 @@ class ExpParser:
             return parse_ret_type(self.job['options'][param])
         else:
             raise GrammarException('options:'+param)
-    
+
     def difplus_func(self,param):
         """Find param in dif plus"""
         try:
@@ -461,7 +464,7 @@ class ExpParser:
                 return parse_ret_type(self.job['difplus']['plus'][param])
             except Exception:
                 raise GrammarException('difplus:'+param)
-    
+
     def choice_func(self,param):
         """Evaluate param as choice expression"""
         if not param:
@@ -473,7 +476,7 @@ class ExpParser:
                 return parse_ret_type(random.choice(param.split(',')))
         except Exception:
             raise GrammarException('not a valid choice')
-    
+
     def eval_func(self,param):
         """Evaluate param as arithmetic expression"""
         #bad = re.search(r'(import)|(open)|(for)|(while)|(def)|(class)|(lambda)', param )
@@ -485,13 +488,13 @@ class ExpParser:
                 return parse_ret_type(safe_eval.eval(param))
             except Exception as e:
                 raise GrammarException('Eval is not basic arithmetic')
-    
+
     def reduce_func(self, func, param):
         try:
             return parse_ret_type(func(getType(param)))
         except Exception as e:
             raise GrammarException('Not a reducible sequence')
-    
+
     def sprintf_func(self,param):
         """Evaluate param as sprintf.  param = arg_str, arg0, arg1, ... """
         # separate into format string and args
@@ -516,7 +519,7 @@ class ExpParser:
             else:
                 args.append(param[pos+1:pos2])
                 pos = pos2
-        
+
         try:
             # cast args to correct type
             def cast_string(fstring,arg):
@@ -530,10 +533,10 @@ class ExpParser:
                 elif fstring[-1].lower() in 'idufeg': return float(arg)
                 else:
                     raise GrammarException('Unable to cast %s using format %s'%(arg,fstring))
-            
+
             fstrings = re.findall(r'\%[#0\- +]{0,1}[0-9]*\.{0,1}[0-9]*[csridufegExXo]',fmt_str)
             args = list(map(cast_string,fstrings,args))[0:len(args)]
-            
+
             # do sprintf on fmt_str and args
             if fstrings:
                 return fmt_str % tuple(args)
