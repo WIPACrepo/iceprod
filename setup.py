@@ -5,6 +5,7 @@
 import glob
 import os
 import subprocess
+import sys
 
 from setuptools import setup  # type: ignore[import]
 
@@ -16,6 +17,7 @@ try:
     # make dataclasses.js from dataclasses.py
     import inspect
     import json
+    current_path = os.path.abspath(os.path.dirname(__file__))
     sys.path.append(current_path)
     from iceprod.core import dataclasses
     dcs = {}
