@@ -1,49 +1,23 @@
 #!/usr/bin/env python
+"""Setup."""
 
-# fmt:off
-# pylint: skip-file
 
 import glob
 import os
-import re
+import subprocess
 import sys
-from typing import List
 
-# Check Python Version -----------------------------------------------------------------
-if sys.version_info < (3, 6):
-    print('ERROR: IceProd requires at least Python 3.6+ to run.')
-    sys.exit(1)
+from setuptools import setup  # type: ignore[import]
+
+###############################################################################################
 
 
-try:
-    # Use setuptools if available, for install_requires (among other things).
-    import setuptools
-    from setuptools import setup
-except ImportError:
-    setuptools = None
-    from distutils.core import setup
-
-
-kwargs = {}
-
-current_path = os.path.dirname(os.path.realpath(__file__))
-
-with open(os.path.join(current_path,'iceprod','__init__.py')) as f:
-    for line in f.readlines():
-        if '__version__' in line:
-            kwargs['version'] = line.replace('"', "'").split("=")[-1].split("'")[1]
-            break
-    else:
-        raise Exception('cannot find __version__')
-
-with open(os.path.join(current_path,'README.rst')) as f:
-    kwargs['long_description'] = f.read()
-
-
+# fmt: off
 try:
     # make dataclasses.js from dataclasses.py
     import inspect
     import json
+    current_path = os.path.abspath(os.path.dirname(__file__))
     sys.path.append(current_path)
     from iceprod.core import dataclasses
     dcs = {}
@@ -57,70 +31,46 @@ try:
         f.write('var dataclasses='+json.dumps(data,separators=(',',':'))+';')
 except Exception:
     print('WARN: cannot make dataclasses.js')
+# fmt: on
 
 
-def _get_git_requirements() -> List[str]:
-    REQUIREMENTS_PATH = os.path.join(current_path, "requirements.txt")
-    REQUIREMENTS = open(REQUIREMENTS_PATH).read().splitlines()
-
-    def valid(req: str) -> bool:
-        pat = r"^git\+https://github\.com/[^/]+/[^/]+@(v)?\d+\.\d+\.\d+#egg=\w+$"
-        if not re.match(pat, req):
-            raise Exception(
-                f"from {REQUIREMENTS_PATH}: "
-                f"pip-install git-package url is not in standardized format {pat} ({req})"
-            )
-        return True
-
-    return [m.replace("git+", "") for m in REQUIREMENTS if "git+" in m and valid(m)]
+###############################################################################################
 
 
-if setuptools is not None:
-    # If setuptools is not available, you're on your own for dependencies.
-    install_requires = ['certifi','tornado>=5.1', 'setproctitle',
-                        'pyOpenSSL', 'pyasn1', 'jsonschema', 'pymysql',
-                        'psutil>=5.0.0', 'cryptography', 'requests',
-                        'requests_toolbelt', 'requests-futures', 'statsd',
-                        'cachetools>=2.0.0', 'sphinx>=1.4',
-                        'coverage>=4.4.2', 'flexmock', 'requests-mock','boto3',
-                        'pymongo','PyJWT','motor','ldap3',
-                        # 'rest_tools @ git+http://github.com/WIPACrepo/rest-tools',
-                       ]
-    kwargs['install_requires'] = install_requires
-    kwargs['dependency_links'] = _get_git_requirements()
-    kwargs['zip_safe'] = False
+subprocess.run(
+    "pip install git+https://github.com/WIPACrepo/wipac-dev-tools.git".split(),
+    check=True,
+)
+from wipac_dev_tools import SetupShop  # noqa: E402  # pylint: disable=C0413
+
+shop = SetupShop(
+    "iceprod",
+    os.path.abspath(os.path.dirname(__file__)),
+    ((3, 6), (3, 8)),
+    "A set of grid middleware and job tracking tools, developed for the IceCube Collaboration.",
+)
 
 setup(
-    name='iceprod',
-    scripts=glob.glob('bin/*'),
-    packages=['iceprod', 'iceprod.core', 'iceprod.modules',
-              'iceprod.server', 'iceprod.server.rest', 'iceprod.server.scheduled_tasks',
-              'iceprod.server.modules', 'iceprod.server.plugins'],
-    package_data={
-        # data files need to be listed both here (which determines what gets
-        # installed) and in MANIFEST.in (which determines what gets included
-        # in the sdist tarball)
-        'iceprod.server':['data/etc/*','data/www/*','data/www_templates/*'],
-        },
-    author="IceCube Collaboration",
-    author_email="simprod@icecube.wisc.edu",
+    scripts=glob.glob("bin/*"),
     url="https://github.com/WIPACrepo/iceprod",
-    license="https://github.com/WIPACrepo/iceprod/blob/master/LICENSE",
-    description="IceProd is a set of grid middleware and job tracking tools, developed for the IceCube Collaboration.",
-    classifiers=[
-        # How mature is this project? Common values are
-        #   3 - Alpha
-        #   4 - Beta
-        #   5 - Production/Stable
-        'Development Status :: 4 - Beta',
-
-        'Operating System :: POSIX :: Linux',
-        'Topic :: System :: Distributed Computing',
-
-        'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: Implementation :: CPython',
+    package_data={
+        "iceprod.server": ["data/etc/*", "data/www/*", "data/www_templates/*"]
+    },
+    **shop.get_kwargs(
+        subpackages=[
+            "core",
+            "modules",
+            "server",
+            "server.rest",
+            "server.scheduled_tasks",
+            "server.modules",
+            "server.plugins",
         ],
-    **kwargs
+        other_classifiers=[
+            "Operating System :: POSIX :: Linux",
+            "Topic :: System :: Distributed Computing",
+            "Programming Language :: Python :: Implementation :: CPython",
+        ],
+    ),
+    zip_safe=False
 )
