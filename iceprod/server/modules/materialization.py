@@ -349,7 +349,7 @@ def setup_rest(config, materialization_service=None, **kwargs):
 
 class BaseHandler(RESTHandler):
     """
-    Base handler for Materialization REST API. 
+    Base handler for Materialization REST API.
     """
     def initialize(self, database=None, materialization_service=None, **kwargs):
         super(BaseHandler, self).initialize(**kwargs)
