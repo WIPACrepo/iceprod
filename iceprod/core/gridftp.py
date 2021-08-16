@@ -82,7 +82,7 @@ class GridFTP(object):
                        filename='/path/to/file')
     """
 
-    _timeout = 1200 # 20 min default timeout
+    _timeout = 3600 # 1 hour default timeout
 
     @classmethod
     def supported_address(cls,address):
