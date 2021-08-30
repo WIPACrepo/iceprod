@@ -89,10 +89,10 @@ class MaterializationService:
                 now = nowstr()
 
                 # periodically cleanup
-                if (not self.last_cleanup_time) or self.last_run_time - self.last_cleanup_time > 86400:
-                    yesterday = datetime2str(datetime.utcfromtimestamp(self.last_run_time)-timedelta(hours=24))
-                    await self.db.materialization.delete_many({'status': {'$in': ['complete', 'error']}, 'modify_timestamp': {'$lt': yesterday}})
-                    await self.db.materialization.update_many({'status': 'processing', 'modify_timestamp': {'$lt': yesterday}}, {'$set': {'status': 'waiting', 'modify_timestamp': now}})
+                if (not self.last_cleanup_time) or self.last_run_time - self.last_cleanup_time > 3600*6:
+                    clean_time = datetime2str(datetime.utcfromtimestamp(self.last_run_time)-timedelta(hours=6))
+                    await self.db.materialization.delete_many({'status': {'$in': ['complete', 'error']}, 'modify_timestamp': {'$lt': clean_time}})
+                    await self.db.materialization.update_many({'status': 'processing', 'modify_timestamp': {'$lt': clean_time}}, {'$set': {'status': 'waiting', 'modify_timestamp': now}})
                     self.last_cleanup_time = time.time()
 
                 # get next materialization from DB
@@ -136,6 +136,8 @@ class MaterializationService:
 class Materialize:
     def __init__(self, rest_client):
         self.rest_client = rest_client
+        self.config_cache = {}
+        self.prio = None
 
     async def run_once(self, only_dataset=None, set_status=None, num=20000, dryrun=False):
         """
@@ -149,7 +151,8 @@ class Materialize:
         """
         if set_status and set_status not in task_statuses:
             raise Exception('set_status is not a valid task status')
-        prio = Priority(self.rest_client)
+        self.config_cache = {} # clear config cache
+        self.prio = Priority(self.rest_client) # clear priority cache
         datasets = await self.rest_client.request('GET', '/dataset_summaries/status')
         if 'truncated' in datasets and only_dataset:
             datasets['processing'].extend(datasets['truncated'])
@@ -164,60 +167,120 @@ class Materialize:
                     tasks = await self.rest_client.request('GET', '/datasets/{}/task_counts/status'.format(dataset_id))
                     if 'waiting' not in tasks or tasks['waiting'] < num or only_dataset:
                         # buffer for this dataset
-                        logger.warning('buffering dataset %s', dataset_id)
-                        jobs = await self.rest_client.request('GET', '/datasets/{}/jobs'.format(dataset_id))
+                        logger.warning('checking dataset %s', dataset_id)
+                        jobs = await self.rest_client.request('GET', '/datasets/{}/jobs'.format(dataset_id), {'keys': 'job_id|job_index'})
+
+                        # check that last job was buffered correctly
+                        job_index = max(jobs[i]['job_index'] for i in jobs)+1 if jobs else 0
+                        num_tasks = sum(tasks.values())
+                        while num_tasks % dataset['tasks_per_job'] != 0 and job_index > 0:
+                            # a job must have failed to buffer, so check in reverse order
+                            job_index -= 1
+                            job_tasks = await self.rest_client.request('GET', '/datasets/{}/tasks'.format(dataset_id),
+                                                                       {'job_index': job_index, 'keys': 'task_id|job_id|task_index'})
+                            if len(job_tasks) != dataset['tasks_per_job']:
+                                logger.info('fixing buffer of job %d for dataset %s', job_index, dataset_id)
+                                tasks_buffered = await self.buffer_job(dataset, job_index, tasks=list(job_tasks.values()),
+                                                                       set_status=set_status, dryrun=dryrun)
+                                num_tasks += tasks_buffered
+
+                        # now try buffering new tasks
+                        job_index = max(jobs[i]['job_index'] for i in jobs)+1 if jobs else 0
                         jobs_to_buffer = min(num, dataset['jobs_submitted'] - len(jobs))
                         if jobs_to_buffer > 0:
                             logger.info('buffering %d jobs for dataset %s', jobs_to_buffer, dataset_id)
-                            config = await self.rest_client.request('GET', '/config/{}'.format(dataset_id))
-                            if 'options' not in config:
-                                config['options'] = {}
-                            parser = ExpParser()
-                            task_names = [task['name'] if task['name'] else str(i) for i,task in enumerate(config['tasks'])]
-                            job_index = max(jobs[i]['job_index'] for i in jobs)+1 if jobs else 0
                             for i in range(jobs_to_buffer):
-                                # buffer job
-                                logger.info('buffering dataset %s job %d', dataset_id, job_index)
-                                args = {'dataset_id': dataset_id, 'job_index': job_index}
-                                if dryrun:
-                                    job_id = {'result': 'DRYRUN'}
-                                else:
-                                    job_id = await self.rest_client.request('POST', '/jobs', args)
-                                # buffer tasks
-                                task_ids = []
-                                for task_index,name in enumerate(task_names):
-                                    depends = await self.get_depends(config, job_index,
-                                                                     task_index, task_ids)
-                                    config['options']['job'] = job_index
-                                    config['options']['task'] = task_index
-                                    config['options']['dataset'] = dataset['dataset']
-                                    config['options']['jobs_submitted'] = dataset['jobs_submitted']
-                                    config['options']['tasks_submitted'] = dataset['tasks_submitted']
-                                    config['options']['debug'] = dataset['debug']
-                                    args = {
-                                        'dataset_id': dataset_id,
-                                        'job_id': job_id['result'],
-                                        'task_index': task_index,
-                                        'job_index': job_index,
-                                        'name': name,
-                                        'depends': depends,
-                                        'requirements': self.get_reqs(config, task_index, parser),
-                                    }
-                                    if set_status:
-                                        args['status'] = set_status
-                                    if dryrun:
-                                        logger.info(f'DRYRUN: POST /tasks {args}')
-                                    else:
-                                        ret = await self.rest_client.request('POST', '/tasks', args)
-                                        task_id = ret['result']
-                                        task_ids.append(task_id)
-                                        p = await prio.get_task_prio(dataset_id, task_id)
-                                        await self.rest_client.request('PATCH', f'/tasks/{task_id}', {'priority': p})
+                                await self.buffer_job(dataset, job_index, set_status=set_status, dryrun=dryrun)
                                 job_index += 1
                 except Exception:
                     logger.error('error buffering dataset %s', dataset_id, exc_info=True)
                     if only_dataset:
                         raise
+
+    async def buffer_job(self, dataset, job_index, tasks=None, set_status=None, dryrun=False):
+        """
+        Buffer a single job for a dataset
+
+        Args:
+            dataset (dict): dataset info
+            job_index (int): job index
+            tasks (list): existing tasks (if filling in remaining)
+            set_status (str): status of new tasks
+            dryrun (bool): set to True if this is a dry run
+
+        Returns:
+            int: number of tasks buffered
+        """
+        dataset_id = dataset['dataset_id']
+        logger.info('buffering dataset %s job %d', dataset_id, job_index)
+
+        config = await self.get_config(dataset_id)
+        parser = ExpParser()
+        task_names = [task['name'] if task['name'] else str(i) for i,task in enumerate(config['tasks'])]
+        if len(task_names) != dataset['tasks_per_job']:
+            raise Exception('config num tasks does not match dataset tasks_per_job')
+
+        args = {'dataset_id': dataset_id, 'job_index': job_index}
+        if dryrun:
+            job_id = {'result': 'DRYRUN'}
+            task_ids = []
+            task_iter = enumerate(task_names)
+        elif tasks:
+            job_id = tasks[0]['job_id']
+            task_ids = [task['task_id'] for task in tasks]
+            task_indexes = {task['task_index'] for task in tasks}
+            task_iter = [(i,name) for i,name in enumerate(task_names) if i not in task_indexes]
+            if not task_iter:
+                raise Exception('no task names to create')
+        else:
+            ret = await self.rest_client.request('POST', '/jobs', args)
+            job_id = ret['result']
+            task_ids = []
+            task_iter = enumerate(task_names)
+
+        # buffer tasks
+        for task_index,name in task_iter:
+            depends = await self.get_depends(config, job_index,
+                                             task_index, task_ids)
+            config['options']['job'] = job_index
+            config['options']['task'] = task_index
+            config['options']['dataset'] = dataset['dataset']
+            config['options']['jobs_submitted'] = dataset['jobs_submitted']
+            config['options']['tasks_submitted'] = dataset['tasks_submitted']
+            config['options']['debug'] = dataset['debug']
+            args = {
+                'dataset_id': dataset_id,
+                'job_id': job_id,
+                'task_index': task_index,
+                'job_index': job_index,
+                'name': name,
+                'depends': depends,
+                'requirements': self.get_reqs(config, task_index, parser),
+            }
+            if set_status:
+                args['status'] = set_status
+            if dryrun:
+                logger.info(f'DRYRUN: POST /tasks {args}')
+                task_ids.append(job_index*1000000+task_index)
+            else:
+                ret = await self.rest_client.request('POST', '/tasks', args)
+                task_id = ret['result']
+                task_ids.append(task_id)
+                p = await self.prio.get_task_prio(dataset_id, task_id)
+                await self.rest_client.request('PATCH', f'/tasks/{task_id}', {'priority': p})
+
+        return len(task_ids)
+
+    async def get_config(self, dataset_id):
+        """Get dataset config"""
+        if dataset_id in self.config_cache:
+            return self.config_cache[dataset_id]
+
+        config = await self.rest_client.request('GET', '/config/{}'.format(dataset_id))
+        if 'options' not in config:
+            config['options'] = {}
+        self.config_cache[dataset_id] = config
+        return config
 
     def get_reqs(self, config, task_index, parser):
         """
