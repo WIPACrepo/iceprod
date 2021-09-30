@@ -181,8 +181,10 @@ class Priority:
 
         num_all_tasks = await self._get_num_tasks()
         logger.debug(f'{dataset_id} num_all_tasks: {num_all_tasks}')
-        num_dataset_tasks = await self._get_num_tasks(dataset_id)
+        num_dataset_tasks = dataset['tasks_submitted']
         logger.debug(f'{dataset_id} num_dataset_tasks: {num_dataset_tasks}')
+        num_dataset_tasks_avail = await self._get_num_tasks(dataset_id)
+        logger.debug(f'{dataset_id} num_dataset_tasks_avail: {num_dataset_tasks_avail}')
 
         # general priority
         priority = 1.
@@ -200,8 +202,14 @@ class Priority:
             logger.info(f'{dataset_id} after group adjustment: {priority}')
 
         # bias against large datasets
-        priority -= (1. * num_dataset_tasks / num_all_tasks) / 5.
+        factor =  (10000. / num_dataset_tasks)**.15 if num_dataset_tasks > 0 else 1.
+        if factor > 1:
+            factor = 1.
+        priority *= factor
         logger.info(f'{dataset_id} after large dataset adjustment: {priority}')
+
+        priority -= (1. * num_dataset_tasks_avail / num_all_tasks) / 5.
+        logger.info(f'{dataset_id} after avail tasks adjustment: {priority}')
 
         if priority < 0.:
             priority = 0.
