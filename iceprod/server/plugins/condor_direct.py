@@ -832,6 +832,7 @@ class condor_direct(grid.BaseGrid):
             p(f'+IceProdTaskId = "{task["task_id"]}"')
             p(f'+IceProdTaskIndex = {task["task_index"]}')
             p(f'+IceProdTaskName = "{task["name"]}"')
+            p(f'+IceProdSiteId = "{self.cfg["site_id"]}"')
 
             # handle resources
             p('+JobIsRunning = (JobStatus =!= 1) && (JobStatus =!= 5)')
@@ -908,7 +909,8 @@ class condor_direct(grid.BaseGrid):
            Returns {grid_queue_id:{status,submit_dir}}
         """
         ret = {}
-        cmd = ['condor_q',getpass.getuser(),'-af:j,','jobstatus','MATCH_EXP_JOBGLIDEIN_ResourceName','cmd']
+        cmd = ['condor_q', '-constraint', f'Owner == "{getpass.getuser()}" && IceProdSiteId == "{self.cfg["site_id"]}"',
+               '-af:j,', 'jobstatus', 'MATCH_EXP_JOBGLIDEIN_ResourceName', 'cmd']
         out = await check_output_clean_env(*cmd)
         print('get_grid_status():',out)
         for line in out.split('\n'):
@@ -944,7 +946,9 @@ class condor_direct(grid.BaseGrid):
             dict: {grid_queue_id: {status, submit_dir, site} }
         """
         ret = {}
-        cmd = ['condor_history',getpass.getuser(),'-match','50000','-af:j,','jobstatus','exitcode','exitbysignal','MATCH_EXP_JOBGLIDEIN_ResourceName','cmd']
+        cmd = ['condor_history', '-constraint', f'Owner == "{getpass.getuser()}" && IceProdSiteId == "{self.cfg["site_id"]}"',
+               '-match', '50000', '-af:j,', 'jobstatus', 'exitcode', 'exitbysignal',
+               'MATCH_EXP_JOBGLIDEIN_ResourceName', 'cmd']
         out = await check_output_clean_env(*cmd)
         print('get_grid_completions():',out)
         for line in out.split('\n'):
