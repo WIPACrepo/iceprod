@@ -176,11 +176,15 @@ class Materialize:
                         while num_tasks % dataset['tasks_per_job'] != 0 and job_index > 0:
                             # a job must have failed to buffer, so check in reverse order
                             job_index -= 1
-                            job_tasks = await self.rest_client.request('GET', '/datasets/{}/tasks'.format(dataset_id),
+                            job_tasks = await self.rest_client.request('GET', f'/datasets/{dataset_id}/tasks',
                                                                        {'job_index': job_index, 'keys': 'task_id|job_id|task_index'})
                             if len(job_tasks) != dataset['tasks_per_job']:
                                 logger.info('fixing buffer of job %d for dataset %s', job_index, dataset_id)
-                                tasks_buffered = await self.buffer_job(dataset, job_index, tasks=list(job_tasks.values()),
+                                ret = await self.rest_client.request('GET', f'/datasets/{dataset_id}/jobs',
+                                                                     {'job_index': job_index, 'keys': 'job_id'})
+                                job_id = list(ret.keys())[0]
+                                tasks_buffered = await self.buffer_job(dataset, job_index, job_id=job_id,
+                                                                       tasks=list(job_tasks.values()),
                                                                        set_status=set_status, dryrun=dryrun)
                                 num_tasks += tasks_buffered
 
@@ -197,13 +201,14 @@ class Materialize:
                     if only_dataset:
                         raise
 
-    async def buffer_job(self, dataset, job_index, tasks=None, set_status=None, dryrun=False):
+    async def buffer_job(self, dataset, job_index, job_id=None, tasks=None, set_status=None, dryrun=False):
         """
         Buffer a single job for a dataset
 
         Args:
             dataset (dict): dataset info
             job_index (int): job index
+            job_id (str): job id (if filling in remaining)
             tasks (list): existing tasks (if filling in remaining)
             set_status (str): status of new tasks
             dryrun (bool): set to True if this is a dry run
@@ -225,8 +230,7 @@ class Materialize:
             job_id = {'result': 'DRYRUN'}
             task_ids = []
             task_iter = enumerate(task_names)
-        elif tasks:
-            job_id = tasks[0]['job_id']
+        elif job_id:
             task_ids = [task['task_id'] for task in tasks]
             task_indexes = {task['task_index'] for task in tasks}
             task_iter = [(i,name) for i,name in enumerate(task_names) if i not in task_indexes]
