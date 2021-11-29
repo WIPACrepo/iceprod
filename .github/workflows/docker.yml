@@ -24,9 +24,9 @@ jobs:
       uses: actions/cache@v2
       with:
         path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-pyglidein-server-${{ github.sha }}
+        key: ${{ runner.os }}-buildx-iceprod-${{ github.sha }}
         restore-keys: |
-          ${{ runner.os }}-buildx-pyglidein-server-
+          ${{ runner.os }}-buildx-iceprod-
 
     - name: Docker meta
       id: docker_meta
@@ -34,7 +34,7 @@ jobs:
       with:
         # list of Docker images to use as base name for tags
         images: |
-          wipac/pyglidein-server
+          wipac/iceprod
         tags: |
             type=ref,event=branch
             type=semver,pattern={{major}}
