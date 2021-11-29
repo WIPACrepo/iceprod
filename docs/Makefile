@@ -1,10 +1,6 @@
 SPHINXOPTS=-n -d build/doctrees .
 
-all: dbtables graphs sphinx
-
-.PHONY: dbtables
-dbtables:
-	PYTHONPATH=$$PWD/..:$$PYTHONPATH python make_dbtables.py server/details/dbtables.rst
+all: graphs sphinx
 
 .PHONY: graphs
 graphs:
