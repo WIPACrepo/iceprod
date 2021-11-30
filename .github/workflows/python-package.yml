@@ -54,4 +54,7 @@ jobs:
     - name: Run tests
       run: |
         ./coverage.sh --${{ matrix.test }}
+    - name: Coverage report
+      if: always() && steps.dependencies.outcome != 'failure'
+      run: |
         coverage report -m --fail-under=50
