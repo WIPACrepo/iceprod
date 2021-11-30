@@ -62,10 +62,12 @@ class Pilot:
         debug (bool): debug mode (default False)
         run_timeout (int): how often to check if a task is running
         backoff_delay (int): what starting delay to use for exponential backoff
+        download_delay (int): min delay between each task download attempt
         restrict_site (bool): restrict running tasks to explicitly requiring this site
     """
     def __init__(self, config, runner, pilot_id, rpc=None, debug=False,
-                 run_timeout=180, backoff_delay=1, restrict_site=False):
+                 run_timeout=180, backoff_delay=1, download_delay=60,
+                 restrict_site=False):
         self.config = config
         self.runner = runner
         self.pilot_id = pilot_id
@@ -74,6 +76,7 @@ class Pilot:
         self.debug = debug
         self.run_timeout = run_timeout
         self.backoff_delay = backoff_delay
+        self.download_delay = download_delay
         self.resource_interval = 1.0 # seconds between resouce measurements
         self.query_params = {}
         self.last_download = None
@@ -106,7 +109,7 @@ class Pilot:
                 self.query_params['requirements.site'] = self.resources.site
 
         self.start_time = time.time()
-        
+
     async def __aenter__(self):
         # update pilot status
         await self.rpc.update_pilot(self.pilot_id, tasks=[],
@@ -114,7 +117,7 @@ class Pilot:
                 site=self.resources.site,
                 start_date=datetime.utcnow().isoformat(),
                 resources_available=self.resources.get_available(),
-                resources_claimed=self.resources.get_claimed())  
+                resources_claimed=self.resources.get_claimed())
 
         loop = asyncio.get_event_loop()
         # set up resource monitor
@@ -268,9 +271,9 @@ class Pilot:
         while self.running or self.tasks:
             while self.running:
                 # retrieve new task(s)
-                if self.last_download and time.time()-self.last_download < 60:
+                if self.last_download and time.time()-self.last_download < self.download_delay:
                     logger.warning('last download attempt too recent, backing off')
-                    await asyncio.sleep(time.time()-self.last_download+1)
+                    await asyncio.sleep(time.time()-self.last_download+self.download_delay)
                     break
                 self.last_download = time.time()
                 #if self.resources.total['gpu'] and not self.resources.available['gpu']:
@@ -474,7 +477,7 @@ class Pilot:
             config (dict): The task config
         """
         task_id = config['options']['task_id']
-                    
+
         # add grid-specific config
         for k in self.config['options']:
             if k == 'resources':

@@ -63,6 +63,7 @@ class TestBase(AsyncTestCase):
         self.pilot_args = {
             'run_timeout': 0.001,
             'backoff_delay': 0.000001,
+            'download_delay': 0.000001,
         }
 
 class pilot_test(TestBase):
