@@ -5,7 +5,8 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>IceProd Server Details &mdash; IceProd master documentation</title>
@@ -31,6 +32,10 @@
   
   <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
   
+  
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
   
 
   
@@ -69,7 +74,7 @@
             
             
               <div class="version">
-                2.5.4
+                2.5.6
               </div>
             
           
@@ -235,7 +240,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="iceprod-server-details">
+  <section id="iceprod-server-details">
 <span id="technical-server"></span><span id="index-0"></span><h1>IceProd Server Details<a class="headerlink" href="#iceprod-server-details" title="Permalink to this headline">¶</a></h1>
 <p>The server handles many different tasks and has several independent modules to
 take care of them.  It uses asynchronous programming to avoid blocking on I/O.
@@ -243,19 +248,19 @@ The server daemon handles startup of each module.  It can also reload, restart,
 stop, or kill the modules.</p>
 <p>IceProd can be reloaded to update a configuration variable.  This will only
 reload the affected parts of IceProd, while letting the rest continue running.</p>
-<div class="section" id="configuration">
+<section id="configuration">
 <h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h2>
-<p>The configuration is in <a class="reference internal" href="../rest_api/index.html#config"><span class="std std-ref">Config</span></a>, which is stored as a
+<p>The configuration is in <a class="reference internal" href="../config.html#config"><span class="std std-ref">Detailed Configuration</span></a>, which is stored as a
 dictionary and dumped to a json file on every modification.</p>
-</div>
-<div class="section" id="queueing">
+</section>
+<section id="queueing">
 <h2>Queueing<a class="headerlink" href="#queueing" title="Permalink to this headline">¶</a></h2>
 <p>This is where IceProd actually submits tasks to a grid.  Various grid
 architectures are supported through plugins:</p>
 <ul class="simple">
-<li><a class="reference external" href="http://research.cs.wisc.edu/htcondor/">HTCondor</a> (primary)</li>
-<li><a class="reference external" href="http://en.wikipedia.org/wiki/Portable_Batch_System">PBS</a> / <a class="reference external" href="http://www.adaptivecomputing.com/products/open-source/torque/">Torque</a></li>
-<li><a class="reference external" href="http://www.eu-emi.eu/products/-/asset_publisher/1gkD/content/cream-2">Cream</a></li>
+<li><p><a class="reference external" href="http://research.cs.wisc.edu/htcondor/">HTCondor</a> (primary)</p></li>
+<li><p><a class="reference external" href="http://en.wikipedia.org/wiki/Portable_Batch_System">PBS</a> / <a class="reference external" href="http://www.adaptivecomputing.com/products/open-source/torque/">Torque</a></p></li>
+<li><p><a class="reference external" href="http://www.eu-emi.eu/products/-/asset_publisher/1gkD/content/cream-2">Cream</a></p></li>
 </ul>
 <p>The queueing module can submit to multiple grids at once since multiple
 plugins can be active at the same time.</p>
@@ -288,16 +293,16 @@ plugins can be active at the same time.</p>
 </li>
 </ul>
 </div>
-</div>
-<div class="section" id="database">
+</section>
+<section id="database">
 <h2>Database<a class="headerlink" href="#database" title="Permalink to this headline">¶</a></h2>
 <p>IceProd stores most of its information in a database.  By default, it uses
 SQLite and a few local database files.  For a master site that must handle
 the information of a large number of sites, MySQL can be used as a database
 (though this will take some external setup).</p>
-<p>The database structure is given in <a class="reference internal" href="dbtables.html#dbtables"><span class="std std-ref">Tables</span></a>.</p>
-</div>
-<div class="section" id="website">
+<p>The database structure is given in <span class="xref std std-ref">dbtables</span>.</p>
+</section>
+<section id="website">
 <h2>Website<a class="headerlink" href="#website" title="Permalink to this headline">¶</a></h2>
 <p>The website is the main way to communicate with IceProd, both from jobs and
 as a user.</p>
@@ -340,28 +345,28 @@ as a user.</p>
 </li>
 </ul>
 </div>
-</div>
-<div class="section" id="proxying">
+</section>
+<section id="proxying">
 <h2>Proxying<a class="headerlink" href="#proxying" title="Permalink to this headline">¶</a></h2>
 <p>Proxying is taken care of by Squid Cache, if configured.  IceProd can start
 its own squid or use an external caching server.</p>
-</div>
-<div class="section" id="other-utilities">
+</section>
+<section id="other-utilities">
 <h2>Other Utilities<a class="headerlink" href="#other-utilities" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="openssl">
+<section id="openssl">
 <h3>OpenSSL<a class="headerlink" href="#openssl" title="Permalink to this headline">¶</a></h3>
 <p>OpenSSL can be used to make a local CA certificate, make a regular certificate
 signed by a CA certificate, or verify a certificate.  This is mostly used by
 sites to create self-signed certificates.</p>
-</div>
-<div class="section" id="scheduler">
+</section>
+<section id="scheduler">
 <h3>Scheduler<a class="headerlink" href="#scheduler" title="Permalink to this headline">¶</a></h3>
 <p>The scheduler can be used like cron, to run assigned tasks at specific
 intervals.  It will mostly be used to update graphs and run other timed
 interactions.</p>
-</div>
-</div>
-</div>
+</section>
+</section>
+</section>
 
 
            </div>
@@ -415,10 +420,10 @@ interactions.</p>
             SOURCELINK_SUFFIX: '.txt'
         };
     </script>
+      <script type="text/javascript" src="../../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

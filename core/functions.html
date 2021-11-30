@@ -5,7 +5,8 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>Functions &mdash; IceProd master documentation</title>
@@ -31,6 +32,10 @@
   
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
   
+  
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   
 
   
@@ -69,7 +74,7 @@
             
             
               <div class="version">
-                2.5.4
+                2.5.6
               </div>
             
           
@@ -235,164 +240,10 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="functions">
+  <section id="functions">
 <span id="index-0"></span><span id="id1"></span><h1>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h1>
 <span class="target" id="module-iceprod.core.functions"></span><p>Common functions</p>
-<dl class="function">
-<dt id="iceprod.core.functions.uncompress">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">uncompress</code><span class="sig-paren">(</span><em>infile</em>, <em>out_dir=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#uncompress"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.uncompress" title="Permalink to this definition">¶</a></dt>
-<dd><p>Uncompress a file, if possible</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.compress">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">compress</code><span class="sig-paren">(</span><em>infile</em>, <em>compression='lzma'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#compress"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.compress" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compress a file or directory.
-The compression argument is used as the new file extension</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.iscompressed">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">iscompressed</code><span class="sig-paren">(</span><em>infile</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#iscompressed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.iscompressed" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check if a file is a compressed file, based on file name</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.istarred">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">istarred</code><span class="sig-paren">(</span><em>infile</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#istarred"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.istarred" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check if a file is a tarred file, based on file name</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.cksm">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">cksm</code><span class="sig-paren">(</span><em>filename</em>, <em>type</em>, <em>buffersize=16384</em>, <em>file=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#cksm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.cksm" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return checksum of file using algorithm specified</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.md5sum">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">md5sum</code><span class="sig-paren">(</span><em>filename</em>, <em>buffersize=16384</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#md5sum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.md5sum" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return md5 digest of file</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.sha1sum">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">sha1sum</code><span class="sig-paren">(</span><em>filename</em>, <em>buffersize=16384</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#sha1sum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.sha1sum" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return sha1 digest of file</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.sha256sum">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">sha256sum</code><span class="sig-paren">(</span><em>filename</em>, <em>buffersize=16384</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#sha256sum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.sha256sum" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return sha256 digest of file</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.sha512sum">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">sha512sum</code><span class="sig-paren">(</span><em>filename</em>, <em>buffersize=16384</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#sha512sum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.sha512sum" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return sha512 digest of file</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.load_cksm">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">load_cksm</code><span class="sig-paren">(</span><em>sumfile</em>, <em>base_filename</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#load_cksm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.load_cksm" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load the checksum from a file</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.check_cksm">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">check_cksm</code><span class="sig-paren">(</span><em>file</em>, <em>type</em>, <em>sum</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#check_cksm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.check_cksm" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check a checksum of a file</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.check_md5sum">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">check_md5sum</code><span class="sig-paren">(</span><em>file</em>, <em>sum</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#check_md5sum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.check_md5sum" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check an md5sum of a file</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.check_sha1sum">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">check_sha1sum</code><span class="sig-paren">(</span><em>file</em>, <em>sum</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#check_sha1sum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.check_sha1sum" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check an sha1sum of a file</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.check_sha256sum">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">check_sha256sum</code><span class="sig-paren">(</span><em>file</em>, <em>sum</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#check_sha256sum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.check_sha256sum" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check an sha256sum of a file</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.check_sha512sum">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">check_sha512sum</code><span class="sig-paren">(</span><em>file</em>, <em>sum</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#check_sha512sum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.check_sha512sum" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check an sha512sum of a file</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.removedirs">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">removedirs</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#removedirs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.removedirs" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.copy">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">copy</code><span class="sig-paren">(</span><em>src</em>, <em>dest</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.copy" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.getInterfaces">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">getInterfaces</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#getInterfaces"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.getInterfaces" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get a list of available interfaces.</p>
-<p>Requires <cite>psutil</cite>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">{type: address}}</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">dict of {nic_name</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.get_local_ip_address">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">get_local_ip_address</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#get_local_ip_address"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.get_local_ip_address" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the local (loopback) ip address</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.gethostname">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">gethostname</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#gethostname"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.gethostname" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get hostname of this computer.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.download">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">download</code><span class="sig-paren">(</span><em>url</em>, <em>local</em>, <em>options={}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#download"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.download" title="Permalink to this definition">¶</a></dt>
-<dd><p>Download a file, checksumming if possible</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.upload">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">upload</code><span class="sig-paren">(</span><em>local</em>, <em>url</em>, <em>options={}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#upload"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.upload" title="Permalink to this definition">¶</a></dt>
-<dd><p>Upload a file, checksumming if possible</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.delete">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">delete</code><span class="sig-paren">(</span><em>url</em>, <em>options={}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#delete"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.delete" title="Permalink to this definition">¶</a></dt>
-<dd><p>Delete a url or file</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.isurl">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">isurl</code><span class="sig-paren">(</span><em>url</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#isurl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.isurl" title="Permalink to this definition">¶</a></dt>
-<dd><p>Determine if this is a supported protocol</p>
-</dd></dl>
-
-</div>
+</section>
 
 
            </div>
@@ -446,10 +297,10 @@ The compression argument is used as the new file extension</p>
             SOURCELINK_SUFFIX: '.txt'
         };
     </script>
+      <script type="text/javascript" src="../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

@@ -5,7 +5,8 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>REST API - Jobs &mdash; IceProd master documentation</title>
@@ -31,6 +32,10 @@
   
   <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
   
+  
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
   
 
   
@@ -69,7 +74,7 @@
             
             
               <div class="version">
-                2.5.4
+                2.5.6
               </div>
             
           
@@ -237,243 +242,9 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module-iceprod.server.rest.jobs">
+  <section id="module-iceprod.server.rest.jobs">
 <span id="rest-api-jobs"></span><h1>REST API - Jobs<a class="headerlink" href="#module-iceprod.server.rest.jobs" title="Permalink to this headline">¶</a></h1>
-<dl class="function">
-<dt id="iceprod.server.rest.jobs.setup">
-<code class="descclassname">iceprod.server.rest.jobs.</code><code class="descname">setup</code><span class="sig-paren">(</span><em>config</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/jobs.html#setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.jobs.setup" title="Permalink to this definition">¶</a></dt>
-<dd><p>Setup method for Jobs REST API.</p>
-<p>Sets up any database connections or other prerequisites.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a>) – an instance of <a class="reference internal" href="../config.html#module-iceprod.server.config" title="iceprod.server.config"><code class="xref py py-class docutils literal"><span class="pre">iceprod.server.config</span></code></a>.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Routes for logs, which can be passed to <a class="reference external" href="https://tornado.readthedocs.io/en/stable/web.html#tornado.web.Application" title="(in Tornado v6.0.4)"><code class="xref py py-class docutils literal"><span class="pre">tornado.web.Application</span></code></a>.</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#list" title="(in Python v3.6)">list</a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="class">
-<dt id="iceprod.server.rest.jobs.BaseHandler">
-<em class="property">class </em><code class="descclassname">iceprod.server.rest.jobs.</code><code class="descname">BaseHandler</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/jobs.html#BaseHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.jobs.BaseHandler" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
-<dt id="iceprod.server.rest.jobs.BaseHandler.initialize">
-<code class="descname">initialize</code><span class="sig-paren">(</span><em>database=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/jobs.html#BaseHandler.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.jobs.BaseHandler.initialize" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="iceprod.server.rest.jobs.MultiJobsHandler">
-<em class="property">class </em><code class="descclassname">iceprod.server.rest.jobs.</code><code class="descname">MultiJobsHandler</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/jobs.html#MultiJobsHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.jobs.MultiJobsHandler" title="Permalink to this definition">¶</a></dt>
-<dd><p>Handle multi jobs requests.</p>
-<dl class="method">
-<dt id="iceprod.server.rest.jobs.MultiJobsHandler.post">
-<code class="descname">post</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/jobs.html#MultiJobsHandler.post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.jobs.MultiJobsHandler.post" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create a job entry.</p>
-<p>Body should contain the job data.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">{‘result’: &lt;job_id&gt;}</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="iceprod.server.rest.jobs.JobsHandler">
-<em class="property">class </em><code class="descclassname">iceprod.server.rest.jobs.</code><code class="descname">JobsHandler</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/jobs.html#JobsHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.jobs.JobsHandler" title="Permalink to this definition">¶</a></dt>
-<dd><p>Handle single job requests.</p>
-<dl class="method">
-<dt id="iceprod.server.rest.jobs.JobsHandler.get">
-<code class="descname">get</code><span class="sig-paren">(</span><em>job_id</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/jobs.html#JobsHandler.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.jobs.JobsHandler.get" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get a job entry.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>job_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – the job id</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">job entry</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.rest.jobs.JobsHandler.patch">
-<code class="descname">patch</code><span class="sig-paren">(</span><em>job_id</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/jobs.html#JobsHandler.patch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.jobs.JobsHandler.patch" title="Permalink to this definition">¶</a></dt>
-<dd><p>Update a job entry.</p>
-<p>Body should contain the job data to update.  Note that this will
-perform a merge (not replace).</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>job_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – the job id</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">updated job entry</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="iceprod.server.rest.jobs.DatasetMultiJobsHandler">
-<em class="property">class </em><code class="descclassname">iceprod.server.rest.jobs.</code><code class="descname">DatasetMultiJobsHandler</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/jobs.html#DatasetMultiJobsHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.jobs.DatasetMultiJobsHandler" title="Permalink to this definition">¶</a></dt>
-<dd><p>Handle multi jobs requests.</p>
-<dl class="method">
-<dt id="iceprod.server.rest.jobs.DatasetMultiJobsHandler.get">
-<code class="descname">get</code><span class="sig-paren">(</span><em>dataset_id</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/jobs.html#DatasetMultiJobsHandler.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.jobs.DatasetMultiJobsHandler.get" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get all jobs for a dataset.</p>
-<dl class="docutils">
-<dt>Params (optional):</dt>
-<dd>status: | separated list of task status to filter by
-keys: | separated list of keys to return for each task</dd>
-</dl>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dataset_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – dataset id</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">{‘job_id’:{job_data}}</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="iceprod.server.rest.jobs.DatasetJobsHandler">
-<em class="property">class </em><code class="descclassname">iceprod.server.rest.jobs.</code><code class="descname">DatasetJobsHandler</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/jobs.html#DatasetJobsHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.jobs.DatasetJobsHandler" title="Permalink to this definition">¶</a></dt>
-<dd><p>Handle single job requests.</p>
-<dl class="method">
-<dt id="iceprod.server.rest.jobs.DatasetJobsHandler.get">
-<code class="descname">get</code><span class="sig-paren">(</span><em>dataset_id</em>, <em>job_id</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/jobs.html#DatasetJobsHandler.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.jobs.DatasetJobsHandler.get" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get a job entry.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>dataset_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – dataset id</li>
-<li><strong>job_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – the job id</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">job entry</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="iceprod.server.rest.jobs.DatasetJobsStatusHandler">
-<em class="property">class </em><code class="descclassname">iceprod.server.rest.jobs.</code><code class="descname">DatasetJobsStatusHandler</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/jobs.html#DatasetJobsStatusHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.jobs.DatasetJobsStatusHandler" title="Permalink to this definition">¶</a></dt>
-<dd><p>Handle single job requests.</p>
-<dl class="method">
-<dt id="iceprod.server.rest.jobs.DatasetJobsStatusHandler.put">
-<code class="descname">put</code><span class="sig-paren">(</span><em>dataset_id</em>, <em>job_id</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/jobs.html#DatasetJobsStatusHandler.put"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.jobs.DatasetJobsStatusHandler.put" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set a job status.</p>
-<p>Body should have {‘status’: &lt;new_status&gt;}</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>dataset_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – dataset id</li>
-<li><strong>job_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – the job id</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">empty dict</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="iceprod.server.rest.jobs.DatasetJobSummariesStatusHandler">
-<em class="property">class </em><code class="descclassname">iceprod.server.rest.jobs.</code><code class="descname">DatasetJobSummariesStatusHandler</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/jobs.html#DatasetJobSummariesStatusHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.jobs.DatasetJobSummariesStatusHandler" title="Permalink to this definition">¶</a></dt>
-<dd><p>Handle job summary grouping by status.</p>
-<dl class="method">
-<dt id="iceprod.server.rest.jobs.DatasetJobSummariesStatusHandler.get">
-<code class="descname">get</code><span class="sig-paren">(</span><em>dataset_id</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/jobs.html#DatasetJobSummariesStatusHandler.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.jobs.DatasetJobSummariesStatusHandler.get" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the job summary for all jobs in a dataset, group by status.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dataset_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – dataset id</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">{&lt;status&gt;: [&lt;job_id&gt;,]}</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="iceprod.server.rest.jobs.DatasetJobCountsStatusHandler">
-<em class="property">class </em><code class="descclassname">iceprod.server.rest.jobs.</code><code class="descname">DatasetJobCountsStatusHandler</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/jobs.html#DatasetJobCountsStatusHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.jobs.DatasetJobCountsStatusHandler" title="Permalink to this definition">¶</a></dt>
-<dd><p>Handle job counts by status.</p>
-<dl class="method">
-<dt id="iceprod.server.rest.jobs.DatasetJobCountsStatusHandler.get">
-<code class="descname">get</code><span class="sig-paren">(</span><em>dataset_id</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/jobs.html#DatasetJobCountsStatusHandler.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.jobs.DatasetJobCountsStatusHandler.get" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the job counts for all jobs in a dataset, group by status.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dataset_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – dataset id</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">{&lt;status&gt;: [&lt;job_id&gt;,]}</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
-</div>
+</section>
 
 
            </div>
@@ -527,10 +298,10 @@ keys: | separated list of keys to return for each task</dd>
             SOURCELINK_SUFFIX: '.txt'
         };
     </script>
+      <script type="text/javascript" src="../../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

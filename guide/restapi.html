@@ -5,7 +5,8 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>REST API Interface &mdash; IceProd master documentation</title>
@@ -31,6 +32,10 @@
   
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
   
+  
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   
 
   
@@ -69,7 +74,7 @@
             
             
               <div class="version">
-                2.5.4
+                2.5.6
               </div>
             
           
@@ -235,29 +240,29 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="rest-api-interface">
+  <section id="rest-api-interface">
 <h1>REST API Interface<a class="headerlink" href="#rest-api-interface" title="Permalink to this headline">¶</a></h1>
 <p>Advanced users may want to query IceProd from automated scripts or
 other programs.  This is possible through a REST API.</p>
 <p>See <a class="reference internal" href="../server/rest_api/index.html#iceprod-rest-api"><span class="std std-ref">IceProd REST API</span></a> for available urls.</p>
-<div class="section" id="authentication">
+<section id="authentication">
 <h2>Authentication<a class="headerlink" href="#authentication" title="Permalink to this headline">¶</a></h2>
 <p>To view datasets, call actions on datasets, or submit new datasets,
 authentication with a token is required.</p>
 <p>An authentication token can be obtained within the account settings
 in the website.  This can be added to requests as the <cite>Authorization</cite> header.
 As an example, here is a query to get the list of all datasets:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>curl -XGET -H <span class="s1">&#39;Authorization: bearer XXXXXXXX-your-token-here-XXXXX&#39;</span> https://iceprod2-api.icecube.wisc.edu/datasets
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl -XGET -H <span class="s1">&#39;Authorization: bearer XXXXXXXX-your-token-here-XXXXX&#39;</span> https://iceprod2-api.icecube.wisc.edu/datasets
 </pre></div>
 </div>
 <div class="admonition danger">
-<p class="first admonition-title">Danger</p>
-<p class="last">Anyone with the authentication token is basically you.  It is valid
+<p class="admonition-title">Danger</p>
+<p>Anyone with the authentication token is basically you.  It is valid
 for any action that does not require <a class="reference internal" href="login.html#two-factor-authentication"><span class="std std-ref">Two Factor Authentication</span></a>.
 Be careful with the token!</p>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
@@ -311,10 +316,10 @@ Be careful with the token!</p>
             SOURCELINK_SUFFIX: '.txt'
         };
     </script>
+      <script type="text/javascript" src="../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

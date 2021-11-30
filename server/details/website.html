@@ -5,7 +5,8 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>Website &mdash; IceProd master documentation</title>
@@ -31,6 +32,10 @@
   
   <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
   
+  
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
   
 
   
@@ -69,7 +74,7 @@
             
             
               <div class="version">
-                2.5.4
+                2.5.6
               </div>
             
           
@@ -237,28 +242,26 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="website">
+  <section id="website">
 <h1>Website<a class="headerlink" href="#website" title="Permalink to this headline">¶</a></h1>
 <p>The website is the main way to communicate with IceProd.  It handles several
 different jobs:</p>
 <ul class="simple">
-<li><dl class="first docutils">
-<dt>Human</dt>
-<dd><ul class="first last">
-<li>dataset submission</li>
-<li>dataset editing, other in progress actions</li>
-<li>viewing progress</li>
+<li><dl class="simple">
+<dt>Human</dt><dd><ul>
+<li><p>dataset submission</p></li>
+<li><p>dataset editing, other in progress actions</p></li>
+<li><p>viewing progress</p></li>
 </ul>
 </dd>
 </dl>
 </li>
-<li><dl class="first docutils">
-<dt>Computer</dt>
-<dd><ul class="first last">
-<li>running task communications</li>
-<li>site-to-site communications</li>
-<li>file downloads</li>
-<li>file proxying</li>
+<li><dl class="simple">
+<dt>Computer</dt><dd><ul>
+<li><p>running task communications</p></li>
+<li><p>site-to-site communications</p></li>
+<li><p>file downloads</p></li>
+<li><p>file proxying</p></li>
 </ul>
 </dd>
 </dl>
@@ -266,56 +269,56 @@ different jobs:</p>
 </ul>
 <p>In order to handle the many hundreds or thousands of requests it could get,
 the website was built on <a class="reference internal" href="async.html#async"><span class="std std-ref">Asynchronous Programming</span></a>.</p>
-<div class="section" id="task-communication">
+<section id="task-communication">
 <h2>Task Communication<a class="headerlink" href="#task-communication" title="Permalink to this headline">¶</a></h2>
 <p>Tasks communicate with the server using a json-rpc interface built into the
 website.  For most communications, this involves talking with the database
 using the internal RPC.</p>
-</div>
-<div class="section" id="site-to-site-communication">
+</section>
+<section id="site-to-site-communication">
 <h2>Site-to-Site Communication<a class="headerlink" href="#site-to-site-communication" title="Permalink to this headline">¶</a></h2>
 <p>Communication between sites also use the json-rpc interface in the website.</p>
-</div>
-<div class="section" id="human-interaction">
+</section>
+<section id="human-interaction">
 <h2>Human Interaction<a class="headerlink" href="#human-interaction" title="Permalink to this headline">¶</a></h2>
 <p>The website can modify things in the database using ajax and the json-rpc
 interface in the website.</p>
-</div>
-<div class="section" id="nginx">
+</section>
+<section id="nginx">
 <h2>Nginx<a class="headerlink" href="#nginx" title="Permalink to this headline">¶</a></h2>
 <p>The website uses nginx as a front end proxy.  Nginx handles all SSL
 certificate checking, static files, and file uploading before proxying the
 request to Tornado.</p>
 <p>Note that Apache can also be used separately, while Nginx config is built-in.</p>
-</div>
-<div class="section" id="security">
+</section>
+<section id="security">
 <h2>Security<a class="headerlink" href="#security" title="Permalink to this headline">¶</a></h2>
 <p>Details about user accounts are in <span class="xref std std-ref">user_accounts</span>.</p>
-<div class="section" id="csrf">
+<section id="csrf">
 <h3>CSRF<a class="headerlink" href="#csrf" title="Permalink to this headline">¶</a></h3>
 <p>To protect against Cross-Site Request Forgery (and other session-stealing
 attacks), the following schemes are used:</p>
-<div class="section" id="headers">
+<section id="headers">
 <h4>Headers<a class="headerlink" href="#headers" title="Permalink to this headline">¶</a></h4>
 <p>If available, the <cite>Origin</cite> or <cite>Referer</cite> headers are checked.
 If they are not available, JSON-RPC requests are passed while
 other requests are blocked.</p>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
+<p class="admonition-title">Note</p>
 <p>Why are JSON-RPC requests passed?</p>
 <p>This is because JSON-RPC serves multiple purposes.  Only one of them
 is for website requests.  One other is as an API for scripts or other
 external entities.  But the main purpose is for IceProd task and site
 communication.  In order to not hinder these uses, the headers are left
 unchecked.</p>
-<p class="last">Note that JSON-RPC does not use the user login cookie, so it cannnot be
+<p>Note that JSON-RPC does not use the user login cookie, so it cannnot be
 tricked into running cross-site requests that way.</p>
 </div>
-</div>
-<div class="section" id="login">
+</section>
+<section id="login">
 <h4>Login<a class="headerlink" href="#login" title="Permalink to this headline">¶</a></h4>
 <p>There are two different types of login, which are treated differently.</p>
-<div class="section" id="web-login">
+<section id="web-login">
 <h5>Web Login<a class="headerlink" href="#web-login" title="Permalink to this headline">¶</a></h5>
 <p>The initial web login will save a secure cookie to identify the user, but
 this will not in itself grant any access to JSON-RPC or secure areas. The
@@ -325,22 +328,22 @@ lifetime passkey is generated (assume 15 minutes) and inserted in a hidden
 field in the html.  This passkey is then added to JSON-RPC requests.</p>
 <p>Secure areas like account details will require a second login before granting
 access.</p>
-</div>
-<div class="section" id="json-rpc-login">
+</section>
+<section id="json-rpc-login">
 <h5>JSON-RPC Login<a class="headerlink" href="#json-rpc-login" title="Permalink to this headline">¶</a></h5>
 <p>This version directly returns the passkey necessary to execute authenticated
 JSON-RPC requests.  It has a fairly limited lifetime and is designed to be
 used immediately within the same script.</p>
 <div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">Anyone with the passkey can impersonate you for the lifetime of the key.
+<p class="admonition-title">Warning</p>
+<p>Anyone with the passkey can impersonate you for the lifetime of the key.
 Try not to save it to file, and dispose of it when finished.</p>
 </div>
-</div>
-</div>
-</div>
-</div>
-</div>
+</section>
+</section>
+</section>
+</section>
+</section>
 
 
            </div>
@@ -394,10 +397,10 @@ Try not to save it to file, and dispose of it when finished.</p>
             SOURCELINK_SUFFIX: '.txt'
         };
     </script>
+      <script type="text/javascript" src="../../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

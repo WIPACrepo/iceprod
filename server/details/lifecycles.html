@@ -5,7 +5,8 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>Lifecycles &mdash; IceProd master documentation</title>
@@ -31,6 +32,10 @@
   
   <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
   
+  
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
   
 
   
@@ -69,7 +74,7 @@
             
             
               <div class="version">
-                2.5.4
+                2.5.6
               </div>
             
           
@@ -237,43 +242,44 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="lifecycles">
+  <section id="lifecycles">
 <span id="index-0"></span><span id="id1"></span><h1>Lifecycles<a class="headerlink" href="#lifecycles" title="Permalink to this headline">¶</a></h1>
 <p>There are several lifecycles in the server, and here we shall
 focus on datasets, jobs, and tasks.</p>
 <p><strong>Color Key</strong></p>
 <ul class="simple">
-<li>blue - standard flow</li>
-<li>cyan - standard flow that can be overridden</li>
-<li>green - debug flag override</li>
-<li>red - manual intervention</li>
+<li><p>blue - standard flow</p></li>
+<li><p>cyan - standard flow that can be overridden</p></li>
+<li><p>green - debug flag override</p></li>
+<li><p>red - manual intervention</p></li>
 </ul>
-<div class="section" id="datasets">
+<section id="datasets">
 <h2>Datasets<a class="headerlink" href="#datasets" title="Permalink to this headline">¶</a></h2>
 <img alt="../../_images/lifecycle_dataset.png" src="../../_images/lifecycle_dataset.png" />
-</div>
-<div class="section" id="jobs">
+</section>
+<section id="jobs">
 <h2>Jobs<a class="headerlink" href="#jobs" title="Permalink to this headline">¶</a></h2>
 <img alt="../../_images/lifecycle_job.png" src="../../_images/lifecycle_job.png" />
-</div>
-<div class="section" id="tasks">
+</section>
+<section id="tasks">
 <h2>Tasks<a class="headerlink" href="#tasks" title="Permalink to this headline">¶</a></h2>
 <img alt="../../_images/lifecycle_task.png" src="../../_images/lifecycle_task.png" />
 <ul class="simple">
-<li>idle: tasks in global queue</li>
-<li>waiting: tasks in local queue</li>
-<li>queued: tasks queued to a batch system</li>
-<li>processing: tasks are running</li>
-<li>suspended: if <code class="docutils literal"><span class="pre">debug</span> <span class="pre">=</span> <span class="pre">True</span></code> <cite>suspend</cite> instead of <cite>reset</cite> or <cite>fail</cite></li>
-<li>reset: shallow reset<ul>
-<li>by default goes back to <cite>waiting</cite></li>
-<li>if reset &gt;= 3, back to <cite>idle</cite></li>
+<li><p>idle: tasks in global queue</p></li>
+<li><p>waiting: tasks in local queue</p></li>
+<li><p>queued: tasks queued to a batch system</p></li>
+<li><p>processing: tasks are running</p></li>
+<li><p>suspended: if <code class="docutils literal notranslate"><span class="pre">debug</span> <span class="pre">=</span> <span class="pre">True</span></code> <cite>suspend</cite> instead of <cite>reset</cite> or <cite>fail</cite></p></li>
+<li><p>reset: shallow reset</p>
+<ul>
+<li><p>by default goes back to <cite>waiting</cite></p></li>
+<li><p>if reset &gt;= 3, back to <cite>idle</cite></p></li>
 </ul>
 </li>
-<li>resume: hard reset</li>
+<li><p>resume: hard reset</p></li>
 </ul>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
@@ -327,10 +333,10 @@ focus on datasets, jobs, and tasks.</p>
             SOURCELINK_SUFFIX: '.txt'
         };
     </script>
+      <script type="text/javascript" src="../../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

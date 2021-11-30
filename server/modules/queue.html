@@ -5,7 +5,8 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>Queueing Module &mdash; IceProd master documentation</title>
@@ -31,6 +32,10 @@
   
   <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
   
+  
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
   
 
   
@@ -66,7 +71,7 @@
             
             
               <div class="version">
-                2.5.4
+                2.5.6
               </div>
             
           
@@ -230,41 +235,11 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module-iceprod.server.modules.queue">
+  <section id="module-iceprod.server.modules.queue">
 <span id="id1"></span><span id="queueing-module"></span><span id="index-0"></span><h1>Queueing Module<a class="headerlink" href="#module-iceprod.server.modules.queue" title="Permalink to this headline">¶</a></h1>
 <p>The queue module is responsible for interacting with the local batch or
 queueing system, putting tasks on the queue and removing them as necessary.</p>
-<dl class="exception">
-<dt id="iceprod.server.modules.queue.StopException">
-<em class="property">exception </em><code class="descclassname">iceprod.server.modules.queue.</code><code class="descname">StopException</code><a class="reference internal" href="../../_modules/iceprod/server/modules/queue.html#StopException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.queue.StopException" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="class">
-<dt id="iceprod.server.modules.queue.queue">
-<em class="property">class </em><code class="descclassname">iceprod.server.modules.queue.</code><code class="descname">queue</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/queue.html#queue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.queue.queue" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run the queue module, which queues jobs onto the local grid system(s).</p>
-<dl class="method">
-<dt id="iceprod.server.modules.queue.queue.start">
-<code class="descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/queue.html#queue.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.queue.queue.start" title="Permalink to this definition">¶</a></dt>
-<dd><p>Start the queue</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.modules.queue.queue.queue_loop">
-<code class="descname">queue_loop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/queue.html#queue.queue_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.queue.queue.queue_loop" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run the queueing loop</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.modules.queue.queue.check_proxy">
-<code class="descname">check_proxy</code><span class="sig-paren">(</span><em>duration=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/queue.html#queue.check_proxy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.queue.queue.check_proxy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check the x509 proxy.</p>
-<p>Blocking function.</p>
-</dd></dl>
-
-</dd></dl>
-
-</div>
+</section>
 
 
            </div>
@@ -309,10 +284,10 @@ queueing system, putting tasks on the queue and removing them as necessary.</p>
             SOURCELINK_SUFFIX: '.txt'
         };
     </script>
+      <script type="text/javascript" src="../../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

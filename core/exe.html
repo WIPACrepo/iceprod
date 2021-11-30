@@ -5,7 +5,8 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>Execution Functions &mdash; IceProd master documentation</title>
@@ -31,6 +32,10 @@
   
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
   
+  
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   
 
   
@@ -69,7 +74,7 @@
             
             
               <div class="version">
-                2.5.4
+                2.5.6
               </div>
             
           
@@ -235,13 +240,13 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module-iceprod.core.exe">
+  <section id="module-iceprod.core.exe">
 <span id="execution-functions"></span><h1>Execution Functions<a class="headerlink" href="#module-iceprod.core.exe" title="Permalink to this headline">¶</a></h1>
 <p>The core execution functions for running on a node.
-These are all called from <a class="reference internal" href="i3exec.html#module-iceprod.core.i3exec" title="iceprod.core.i3exec"><code class="xref any py py-mod docutils literal"><span class="pre">iceprod.core.i3exec</span></code></a>.</p>
+These are all called from <a class="reference internal" href="i3exec.html#module-iceprod.core.i3exec" title="iceprod.core.i3exec"><code class="xref any py py-mod docutils literal notranslate"><span class="pre">iceprod.core.i3exec</span></code></a>.</p>
 <p>The fundamental design of the core is to run a task composed of trays and
 modules.  The general heirarchy looks like:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">task</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">task</span>
 <span class="o">|</span>
 <span class="o">|-</span> <span class="n">tray1</span>
    <span class="o">|</span>
@@ -259,95 +264,66 @@ modules.  The general heirarchy looks like:</p>
 <p>Parameters can be defined at every level, and each level is treated as a
 scope (such that inner scopes inherit from outer scopes).  This is
 accomplished via an internal evironment for each scope.</p>
-<div class="section" id="environment-functions">
+<section id="environment-functions">
 <h2>Environment Functions<a class="headerlink" href="#environment-functions" title="Permalink to this headline">¶</a></h2>
 <p>The internal IceProd environment, designed to be nested and clean up after itself.</p>
-<dl class="class">
-<dt id="iceprod.core.exe.Config">
-<em class="property">class </em><code class="descclassname">iceprod.core.exe.</code><code class="descname">Config</code><span class="sig-paren">(</span><em>config=None</em>, <em>parser=None</em>, <em>rpc=None</em>, <em>logger=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#Config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.Config" title="Permalink to this definition">¶</a></dt>
+<dl class="py class">
+<dt class="sig sig-object py" id="iceprod.core.exe.Config">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">iceprod.core.exe.</span></span><span class="sig-name descname"><span class="pre">Config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parser</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rpc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#Config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iceprod.core.exe.Config" title="Permalink to this definition">¶</a></dt>
 <dd><p>Contain the configuration and related methods</p>
-<dl class="method">
-<dt id="iceprod.core.exe.Config.parseValue">
-<code class="descname">parseValue</code><span class="sig-paren">(</span><em>value</em>, <em>env={}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#Config.parseValue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.Config.parseValue" title="Permalink to this definition">¶</a></dt>
-<dd><p>Parse a value from the available env and global config.</p>
-<p>Uses the <a class="reference internal" href="parser.html#module-iceprod.core.parser" title="iceprod.core.parser"><code class="xref py py-class docutils literal"><span class="pre">Meta</span> <span class="pre">Parser</span></code></a> on any string value.
-Pass-through for any other object.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>value</strong> – The value to parse</li>
-<li><strong>env</strong> – The environment to use, optional</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The parsed value</p>
-</td>
-</tr>
-</tbody>
-</table>
 </dd></dl>
 
-<dl class="method">
-<dt id="iceprod.core.exe.Config.parseObject">
-<code class="descname">parseObject</code><span class="sig-paren">(</span><em>obj</em>, <em>env</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#Config.parseObject"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.Config.parseObject" title="Permalink to this definition">¶</a></dt>
-<dd><p>Recursively parse a dict or list</p>
-</dd></dl>
-
-</dd></dl>
-
-</div>
-<div class="section" id="run-functions">
+</section>
+<section id="run-functions">
 <h2>Run Functions<a class="headerlink" href="#run-functions" title="Permalink to this headline">¶</a></h2>
 <p>The main execution flow goes through here.</p>
-<dl class="function">
-<dt id="iceprod.core.exe.runtask">
-<code class="descclassname">iceprod.core.exe.</code><code class="descname">runtask</code><span class="sig-paren">(</span><em>cfg</em>, <em>globalenv</em>, <em>task</em>, <em>logger=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#runtask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.runtask" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="iceprod.core.exe.runtask">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">iceprod.core.exe.</span></span><span class="sig-name descname"><span class="pre">runtask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">globalenv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">task</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#runtask"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iceprod.core.exe.runtask" title="Permalink to this definition">¶</a></dt>
 <dd><p>Run the specified task</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="iceprod.core.exe.runtray">
-<code class="descclassname">iceprod.core.exe.</code><code class="descname">runtray</code><span class="sig-paren">(</span><em>cfg</em>, <em>globalenv</em>, <em>tray</em>, <em>stats={}</em>, <em>logger=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#runtray"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.runtray" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="iceprod.core.exe.runtray">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">iceprod.core.exe.</span></span><span class="sig-name descname"><span class="pre">runtray</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">globalenv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stats</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#runtray"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iceprod.core.exe.runtray" title="Permalink to this definition">¶</a></dt>
 <dd><p>Run the specified tray</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="iceprod.core.exe.runmodule">
-<code class="descclassname">iceprod.core.exe.</code><code class="descname">runmodule</code><span class="sig-paren">(</span><em>cfg</em>, <em>globalenv</em>, <em>module</em>, <em>stats={}</em>, <em>logger=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#runmodule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.runmodule" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="iceprod.core.exe.runmodule">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">iceprod.core.exe.</span></span><span class="sig-name descname"><span class="pre">runmodule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">globalenv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stats</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#runmodule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iceprod.core.exe.runmodule" title="Permalink to this definition">¶</a></dt>
 <dd><p>Run the specified module</p>
 </dd></dl>
 
-</div>
-<div class="section" id="object-setup">
+</section>
+<section id="object-setup">
 <h2>Object Setup<a class="headerlink" href="#object-setup" title="Permalink to this headline">¶</a></h2>
 <p>Download/upload and setup the main IceProd objects (Resources, Data, Classes).</p>
-<dl class="function">
-<dt id="iceprod.core.exe.downloadResource">
-<code class="descclassname">iceprod.core.exe.</code><code class="descname">downloadResource</code><span class="sig-paren">(</span><em>env</em>, <em>resource</em>, <em>remote_base=None</em>, <em>local_base=None</em>, <em>checksum=None</em>, <em>logger=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#downloadResource"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.downloadResource" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="iceprod.core.exe.downloadResource">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">iceprod.core.exe.</span></span><span class="sig-name descname"><span class="pre">downloadResource</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">env</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resource</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remote_base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">local_base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checksum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#downloadResource"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iceprod.core.exe.downloadResource" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="function">
-<dt id="iceprod.core.exe.downloadData">
-<code class="descclassname">iceprod.core.exe.</code><code class="descname">downloadData</code><span class="sig-paren">(</span><em>env</em>, <em>data</em>, <em>logger=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#downloadData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.downloadData" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="iceprod.core.exe.downloadData">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">iceprod.core.exe.</span></span><span class="sig-name descname"><span class="pre">downloadData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">env</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#downloadData"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iceprod.core.exe.downloadData" title="Permalink to this definition">¶</a></dt>
 <dd><p>Download data and put location in the env</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="iceprod.core.exe.uploadData">
-<code class="descclassname">iceprod.core.exe.</code><code class="descname">uploadData</code><span class="sig-paren">(</span><em>env</em>, <em>data</em>, <em>logger=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#uploadData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.uploadData" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="iceprod.core.exe.uploadData">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">iceprod.core.exe.</span></span><span class="sig-name descname"><span class="pre">uploadData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">env</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#uploadData"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iceprod.core.exe.uploadData" title="Permalink to this definition">¶</a></dt>
 <dd><p>Upload data</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="iceprod.core.exe.setupClass">
-<code class="descclassname">iceprod.core.exe.</code><code class="descname">setupClass</code><span class="sig-paren">(</span><em>env</em>, <em>class_obj</em>, <em>logger=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#setupClass"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.setupClass" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="iceprod.core.exe.setupClass">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">iceprod.core.exe.</span></span><span class="sig-name descname"><span class="pre">setupClass</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">env</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">class_obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#setupClass"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iceprod.core.exe.setupClass" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set up a class for use in modules, and put it in the env</p>
 </dd></dl>
 
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
@@ -401,10 +377,10 @@ Pass-through for any other object.</p>
             SOURCELINK_SUFFIX: '.txt'
         };
     </script>
+      <script type="text/javascript" src="../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

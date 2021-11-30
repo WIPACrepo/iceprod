@@ -5,7 +5,8 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>Detailed Configuration &mdash; IceProd master documentation</title>
@@ -31,6 +32,10 @@
   
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
   
+  
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   
 
   
@@ -69,7 +74,7 @@
             
             
               <div class="version">
-                2.5.4
+                2.5.6
               </div>
             
           
@@ -235,74 +240,10 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module-iceprod.server.config">
+  <section id="module-iceprod.server.config">
 <span id="detailed-configuration"></span><span id="config"></span><span id="index-0"></span><h1>Detailed Configuration<a class="headerlink" href="#module-iceprod.server.config" title="Permalink to this headline">¶</a></h1>
 <p>Detailed configuration for IceProd</p>
-<dl class="function">
-<dt id="iceprod.server.config.locateconfig">
-<code class="descclassname">iceprod.server.config.</code><code class="descname">locateconfig</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/config.html#locateconfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.config.locateconfig" title="Permalink to this definition">¶</a></dt>
-<dd><p>Locate a config file</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="iceprod.server.config.IceProdConfig">
-<em class="property">class </em><code class="descclassname">iceprod.server.config.</code><code class="descname">IceProdConfig</code><span class="sig-paren">(</span><em>filename=None</em>, <em>defaults=True</em>, <em>validate=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/config.html#IceProdConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.config.IceProdConfig" title="Permalink to this definition">¶</a></dt>
-<dd><p>IceProd configuration.</p>
-<p>The main iceprod configuration. Designed to be modified in-program,
-not worrying about hand-editing. Currently uses a json file as backing.</p>
-<p>Use just like a dictionary. Note that load() and save() are called
-automatically, but are available for manual calling.</p>
-<p>Note that this class is not thread-safe.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>filename</strong> – filename for config file (optional)</li>
-<li><strong>defaults</strong> – use default values (optional: default True)</li>
-<li><strong>validate</strong> – turn validation on/off (optional: default True)</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-<dl class="method">
-<dt id="iceprod.server.config.IceProdConfig.defaults">
-<code class="descname">defaults</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/config.html#IceProdConfig.defaults"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.config.IceProdConfig.defaults" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set default values if unset.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.config.IceProdConfig.do_validate">
-<code class="descname">do_validate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/config.html#IceProdConfig.do_validate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.config.IceProdConfig.do_validate" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.config.IceProdConfig.load">
-<code class="descname">load</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/config.html#IceProdConfig.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.config.IceProdConfig.load" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load config from file, overwriting current contents.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.config.IceProdConfig.load_string">
-<code class="descname">load_string</code><span class="sig-paren">(</span><em>text</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/config.html#IceProdConfig.load_string"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.config.IceProdConfig.load_string" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load a config from a string, saving to file.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.config.IceProdConfig.save_to_string">
-<code class="descname">save_to_string</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/config.html#IceProdConfig.save_to_string"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.config.IceProdConfig.save_to_string" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.config.IceProdConfig.save">
-<code class="descname">save</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/config.html#IceProdConfig.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.config.IceProdConfig.save" title="Permalink to this definition">¶</a></dt>
-<dd><p>Save config from file.</p>
-</dd></dl>
-
-</dd></dl>
-
-</div>
+</section>
 
 
            </div>
@@ -356,10 +297,10 @@ automatically, but are available for manual calling.</p>
             SOURCELINK_SUFFIX: '.txt'
         };
     </script>
+      <script type="text/javascript" src="../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

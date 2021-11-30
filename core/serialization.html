@@ -5,7 +5,8 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>Serialization &mdash; IceProd master documentation</title>
@@ -31,6 +32,10 @@
   
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
   
+  
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   
 
   
@@ -69,7 +74,7 @@
             
             
               <div class="version">
-                2.5.4
+                2.5.6
               </div>
             
           
@@ -235,11 +240,11 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module-iceprod.core.serialization">
+  <section id="module-iceprod.core.serialization">
 <span id="serialization"></span><h1>Serialization<a class="headerlink" href="#module-iceprod.core.serialization" title="Permalink to this headline">¶</a></h1>
 <p>Classes supporting dataset serialization.</p>
 <p>The interface is as follows:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Serialization</span><span class="p">:</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Serialization</span><span class="p">:</span>
     <span class="k">def</span> <span class="nf">dump</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">return</span> <span class="kc">None</span>
     <span class="k">def</span> <span class="nf">dumps</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -253,58 +258,10 @@
 <p>The kwargs for each function are optional keyword arguments to pass
 to the underlying serialization library. Each function is a static method
 and can be called like:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Serialization</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">config</span><span class="p">,</span><span class="n">filename</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Serialization</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">config</span><span class="p">,</span><span class="n">filename</span><span class="p">)</span>
 </pre></div>
 </div>
-<dl class="exception">
-<dt id="iceprod.core.serialization.SerializationError">
-<em class="property">exception </em><code class="descclassname">iceprod.core.serialization.</code><code class="descname">SerializationError</code><span class="sig-paren">(</span><em>value=''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/serialization.html#SerializationError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.serialization.SerializationError" title="Permalink to this definition">¶</a></dt>
-<dd><p>An exception that occurs during serialization.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.serialization.dict_to_dataclasses">
-<code class="descclassname">iceprod.core.serialization.</code><code class="descname">dict_to_dataclasses</code><span class="sig-paren">(</span><em>input_dict</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/serialization.html#dict_to_dataclasses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.serialization.dict_to_dataclasses" title="Permalink to this definition">¶</a></dt>
-<dd><p>Convert a dictionary to dataclasses objects.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>input_dict</strong> – input dictionary</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><a class="reference internal" href="dataclasses.html#iceprod.core.dataclasses.Job" title="iceprod.core.dataclasses.Job"><code class="xref py py-class docutils literal"><span class="pre">iceprod.core.dataclasses.Job</span></code></a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="class">
-<dt id="iceprod.core.serialization.serialize_json">
-<em class="property">class </em><code class="descclassname">iceprod.core.serialization.</code><code class="descname">serialize_json</code><a class="reference internal" href="../_modules/iceprod/core/serialization.html#serialize_json"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.serialization.serialize_json" title="Permalink to this definition">¶</a></dt>
-<dd><p>Serialize a dataset config to json.</p>
-<dl class="staticmethod">
-<dt id="iceprod.core.serialization.serialize_json.dump">
-<em class="property">static </em><code class="descname">dump</code><span class="sig-paren">(</span><em>obj</em>, <em>filename</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/serialization.html#serialize_json.dump"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.serialization.serialize_json.dump" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="staticmethod">
-<dt id="iceprod.core.serialization.serialize_json.dumps">
-<em class="property">static </em><code class="descname">dumps</code><span class="sig-paren">(</span><em>obj</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/serialization.html#serialize_json.dumps"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.serialization.serialize_json.dumps" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="staticmethod">
-<dt id="iceprod.core.serialization.serialize_json.load">
-<em class="property">static </em><code class="descname">load</code><span class="sig-paren">(</span><em>filename</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/serialization.html#serialize_json.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.serialization.serialize_json.load" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="staticmethod">
-<dt id="iceprod.core.serialization.serialize_json.loads">
-<em class="property">static </em><code class="descname">loads</code><span class="sig-paren">(</span><em>obj</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/serialization.html#serialize_json.loads"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.serialization.serialize_json.loads" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-</div>
+</section>
 
 
            </div>
@@ -358,10 +315,10 @@ and can be called like:</p>
             SOURCELINK_SUFFIX: '.txt'
         };
     </script>
+      <script type="text/javascript" src="../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

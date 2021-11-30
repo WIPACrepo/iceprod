@@ -5,7 +5,8 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>Overview &mdash; IceProd master documentation</title>
@@ -31,6 +32,10 @@
   
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
   
+  
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   
 
   
@@ -68,7 +73,7 @@
             
             
               <div class="version">
-                2.5.4
+                2.5.6
               </div>
             
           
@@ -232,19 +237,19 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="overview">
+  <section id="overview">
 <h1>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h1>
 <p>IceProd is broken up into two main parts, the core and server.</p>
-<div class="section" id="core">
+<section id="core">
 <h2>Core<a class="headerlink" href="#core" title="Permalink to this headline">¶</a></h2>
 <p>The core of IceProd is what actually runs on compute nodes.  It is capable of
 running in two different modes:</p>
-<div class="section" id="single-task-mode">
+<section id="single-task-mode">
 <h3>Single Task Mode<a class="headerlink" href="#single-task-mode" title="Permalink to this headline">¶</a></h3>
 <p>In this mode, IceProd is given a config file at startup.  It will only run
 that task, then exit.  This is the legacy mode.</p>
-</div>
-<div class="section" id="many-task-mode">
+</section>
+<section id="many-task-mode">
 <h3>Many Task Mode<a class="headerlink" href="#many-task-mode" title="Permalink to this headline">¶</a></h3>
 <p>In this mode, IceProd downloads task config files from the server.  It will
 download a task, process it, then download another until the server tells it
@@ -253,20 +258,20 @@ dependencies; the dependency can be downloaded once and used multiple times.</p>
 <p>This mode can also be called “Pilot Mode” since it calls back to the server
 with the resources available, only matching those jobs that can likely run
 there.</p>
-</div>
-</div>
-<div class="section" id="server">
+</section>
+</section>
+<section id="server">
 <h2>Server<a class="headerlink" href="#server" title="Permalink to this headline">¶</a></h2>
 <p>The server of IceProd has many responsibilities:</p>
 <ul class="simple">
-<li>Queue tasks onto grids</li>
-<li>Store all info in local DB</li>
-<li>Host website for users</li>
-<li>Communicate securely with running tasks</li>
-<li>Communicate securely with other IceProd sites</li>
+<li><p>Queue tasks onto grids</p></li>
+<li><p>Store all info in local DB</p></li>
+<li><p>Host website for users</p></li>
+<li><p>Communicate securely with running tasks</p></li>
+<li><p>Communicate securely with other IceProd sites</p></li>
 </ul>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
@@ -320,10 +325,10 @@ there.</p>
             SOURCELINK_SUFFIX: '.txt'
         };
     </script>
+      <script type="text/javascript" src="_static/documentation_options.js"></script>
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

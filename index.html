@@ -5,7 +5,8 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>IceProd &mdash; IceProd master documentation</title>
@@ -31,6 +32,10 @@
   
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
   
+  
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   
 
   
@@ -67,7 +72,7 @@
             
             
               <div class="version">
-                2.5.4
+                2.5.6
               </div>
             
           
@@ -231,34 +236,32 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="iceprod">
+  <section id="iceprod">
 <h1>IceProd<a class="headerlink" href="#iceprod" title="Permalink to this headline">¶</a></h1>
 <p>IceProd is a Python framework for distributed management of batch jobs.
 It runs as a layer on top of other batch middleware, such as <a class="reference external" href="http://research.cs.wisc.edu/htcondor/">HTCondor</a>,
 and can pool together resources from different batch systems. The primary
 purpose is to coordinate and administer many large sets of jobs at once,
 keeping a history of the entire job lifecycle.</p>
-<div class="section" id="installation">
+<section id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
 <p>Most users will not need to install IceProd, as they will use an already
 running instance.  For advanced users and administrators, you can install
-with <code class="docutils literal"><span class="pre">pip</span></code>:</p>
-<pre class="literal-block">
-pip install https://github.com/WIPACrepo/iceprod/archive/v2.5.4.tar.gz
-</pre>
+with <code class="docutils literal notranslate"><span class="pre">pip</span></code>:</p>
+<pre class="literal-block">pip install https://github.com/WIPACrepo/iceprod/archive/v2.5.6.tar.gz</pre>
 <p><strong>Optional dependencies</strong>: Nginx, Globus toolkit, MySQL</p>
 <div class="icecube admonition note">
-<p class="first admonition-title">Note</p>
-<blockquote class="last">
+<p class="admonition-title">Note</p>
+<blockquote>
 <div><p>For IceCube users with CVMFS access, IceProd is already installed. To load
 the environment execute:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>/cvmfs/icecube.wisc.edu/iceprod/latest/env-shell.sh
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>/cvmfs/icecube.wisc.edu/iceprod/latest/env-shell.sh
 </pre></div>
 </div>
 </div></blockquote>
 </div>
-</div>
-<div class="section" id="documentation">
+</section>
+<section id="documentation">
 <h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
@@ -280,8 +283,8 @@ the environment execute:</p>
 </li>
 </ul>
 </div>
-</div>
-<div class="section" id="developer-documentation">
+</section>
+<section id="developer-documentation">
 <h2>Developer Documentation<a class="headerlink" href="#developer-documentation" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
@@ -332,8 +335,8 @@ the environment execute:</p>
 </li>
 </ul>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
@@ -385,10 +388,10 @@ the environment execute:</p>
             SOURCELINK_SUFFIX: '.txt'
         };
     </script>
+      <script type="text/javascript" src="_static/documentation_options.js"></script>
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

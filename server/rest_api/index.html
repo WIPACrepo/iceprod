@@ -5,7 +5,8 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>IceProd REST API &mdash; IceProd master documentation</title>
@@ -31,6 +32,10 @@
   
   <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
   
+  
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
   
 
   
@@ -69,7 +74,7 @@
             
             
               <div class="version">
-                2.5.4
+                2.5.6
               </div>
             
           
@@ -235,567 +240,567 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="iceprod-rest-api">
+  <section id="iceprod-rest-api">
 <h1>IceProd REST API<a class="headerlink" href="#iceprod-rest-api" title="Permalink to this headline">¶</a></h1>
 <div class="toctree-wrapper compound">
 </div>
-<div class="section" id="datasets">
+<section id="datasets">
 <h2><a class="reference internal" href="datasets.html"><span class="doc">Datasets</span></a><a class="headerlink" href="#datasets" title="Permalink to this headline">¶</a></h2>
-<table border="1" class="docutils">
+<table class="docutils align-default">
 <colgroup>
-<col width="5%" />
-<col width="39%" />
-<col width="56%" />
+<col style="width: 5%" />
+<col style="width: 39%" />
+<col style="width: 56%" />
 </colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">Method</th>
-<th class="head">Path</th>
-<th class="head">Description</th>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Path</p></th>
+<th class="head"><p>Description</p></th>
 </tr>
 </thead>
-<tbody valign="top">
-<tr class="row-even"><td>GET</td>
-<td>/datasets</td>
-<td>get a dict of datasets</td>
+<tbody>
+<tr class="row-even"><td><p>GET</p></td>
+<td><p>/datasets</p></td>
+<td><p>get a dict of datasets</p></td>
 </tr>
-<tr class="row-odd"><td>POST</td>
-<td>/datasets</td>
-<td>create new dataset</td>
+<tr class="row-odd"><td><p>POST</p></td>
+<td><p>/datasets</p></td>
+<td><p>create new dataset</p></td>
 </tr>
-<tr class="row-even"><td>GET</td>
-<td>/datasets/&lt;dataset_id&gt;</td>
-<td>get a dataset</td>
+<tr class="row-even"><td><p>GET</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;</p></td>
+<td><p>get a dataset</p></td>
 </tr>
-<tr class="row-odd"><td>PUT</td>
-<td>/datasets/&lt;dataset_id&gt;/status</td>
-<td>update dataset status</td>
+<tr class="row-odd"><td><p>PUT</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/status</p></td>
+<td><p>update dataset status</p></td>
 </tr>
-<tr class="row-even"><td>PUT</td>
-<td>/datasets/&lt;dataset_id&gt;/description</td>
-<td>update dataset description</td>
+<tr class="row-even"><td><p>PUT</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/description</p></td>
+<td><p>update dataset description</p></td>
 </tr>
-<tr class="row-odd"><td>PUT</td>
-<td>/datasets/&lt;dataset_id&gt;/jobs_submitted</td>
-<td>update dataset jobs_submitted</td>
+<tr class="row-odd"><td><p>PUT</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/jobs_submitted</p></td>
+<td><p>update dataset jobs_submitted</p></td>
 </tr>
-<tr class="row-even"><td>GET</td>
-<td>/dataset_summaries/status</td>
-<td>get dataset ids grouped by status</td>
+<tr class="row-even"><td><p>GET</p></td>
+<td><p>/dataset_summaries/status</p></td>
+<td><p>get dataset ids grouped by status</p></td>
 </tr>
 </tbody>
 </table>
-</div>
-<div class="section" id="config">
+</section>
+<section id="config">
 <h2><a class="reference internal" href="config.html"><span class="doc">Config</span></a><a class="headerlink" href="#config" title="Permalink to this headline">¶</a></h2>
-<table border="1" class="docutils">
+<table class="docutils align-default">
 <colgroup>
-<col width="5%" />
-<col width="39%" />
-<col width="56%" />
+<col style="width: 5%" />
+<col style="width: 39%" />
+<col style="width: 56%" />
 </colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">Method</th>
-<th class="head">Path</th>
-<th class="head">Description</th>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Path</p></th>
+<th class="head"><p>Description</p></th>
 </tr>
 </thead>
-<tbody valign="top">
-<tr class="row-even"><td>GET</td>
-<td>/config/&lt;dataset_id&gt;</td>
-<td>get a config</td>
+<tbody>
+<tr class="row-even"><td><p>GET</p></td>
+<td><p>/config/&lt;dataset_id&gt;</p></td>
+<td><p>get a config</p></td>
 </tr>
-<tr class="row-odd"><td>PUT</td>
-<td>/config/&lt;dataset_id&gt;</td>
-<td>create/update a config</td>
+<tr class="row-odd"><td><p>PUT</p></td>
+<td><p>/config/&lt;dataset_id&gt;</p></td>
+<td><p>create/update a config</p></td>
 </tr>
 </tbody>
 </table>
-</div>
-<div class="section" id="jobs">
+</section>
+<section id="jobs">
 <h2><a class="reference internal" href="jobs.html"><span class="doc">Jobs</span></a><a class="headerlink" href="#jobs" title="Permalink to this headline">¶</a></h2>
-<table border="1" class="docutils">
+<table class="docutils align-default">
 <colgroup>
-<col width="5%" />
-<col width="39%" />
-<col width="56%" />
+<col style="width: 5%" />
+<col style="width: 39%" />
+<col style="width: 56%" />
 </colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">Method</th>
-<th class="head">Path</th>
-<th class="head">Description</th>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Path</p></th>
+<th class="head"><p>Description</p></th>
 </tr>
 </thead>
-<tbody valign="top">
-<tr class="row-even"><td>GET</td>
-<td>/datasets/&lt;dataset_id&gt;/jobs</td>
-<td>get a list of jobs, filtered by dataset_id</td>
+<tbody>
+<tr class="row-even"><td><p>GET</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/jobs</p></td>
+<td><p>get a list of jobs, filtered by dataset_id</p></td>
 </tr>
-<tr class="row-odd"><td>GET</td>
-<td>/datasets/&lt;dataset_id&gt;/jobs/&lt;job_id&gt;</td>
-<td>get a job</td>
+<tr class="row-odd"><td><p>GET</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/jobs/&lt;job_id&gt;</p></td>
+<td><p>get a job</p></td>
 </tr>
-<tr class="row-even"><td>PUT</td>
-<td>/datasets/&lt;dataset_id&gt;/jobs/&lt;job_id&gt;/status</td>
-<td>set a job status</td>
+<tr class="row-even"><td><p>PUT</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/jobs/&lt;job_id&gt;/status</p></td>
+<td><p>set a job status</p></td>
 </tr>
-<tr class="row-odd"><td>GET</td>
-<td>/datasets/&lt;dataset_id&gt;/job_summaries/status</td>
-<td>get a summary of jobs grouped by status</td>
+<tr class="row-odd"><td><p>GET</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/job_summaries/status</p></td>
+<td><p>get a summary of jobs grouped by status</p></td>
 </tr>
-<tr class="row-even"><td>GET</td>
-<td>/datasets/&lt;dataset_id&gt;/job_counts/status</td>
-<td>get a count of jobs grouped by status</td>
+<tr class="row-even"><td><p>GET</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/job_counts/status</p></td>
+<td><p>get a count of jobs grouped by status</p></td>
 </tr>
 </tbody>
 </table>
-<div class="section" id="jobs-internal-use-only">
+<section id="jobs-internal-use-only">
 <h3>Jobs (internal use only)<a class="headerlink" href="#jobs-internal-use-only" title="Permalink to this headline">¶</a></h3>
-<table border="1" class="docutils">
+<table class="docutils align-default">
 <colgroup>
-<col width="5%" />
-<col width="39%" />
-<col width="56%" />
+<col style="width: 5%" />
+<col style="width: 39%" />
+<col style="width: 56%" />
 </colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">Method</th>
-<th class="head">Path</th>
-<th class="head">Description</th>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Path</p></th>
+<th class="head"><p>Description</p></th>
 </tr>
 </thead>
-<tbody valign="top">
-<tr class="row-even"><td>POST</td>
-<td>/jobs</td>
-<td>create a job</td>
+<tbody>
+<tr class="row-even"><td><p>POST</p></td>
+<td><p>/jobs</p></td>
+<td><p>create a job</p></td>
 </tr>
-<tr class="row-odd"><td>GET</td>
-<td>/jobs/&lt;job_id&gt;</td>
-<td>get a job</td>
+<tr class="row-odd"><td><p>GET</p></td>
+<td><p>/jobs/&lt;job_id&gt;</p></td>
+<td><p>get a job</p></td>
 </tr>
-<tr class="row-even"><td>PATCH</td>
-<td>/jobs/&lt;job_id&gt;</td>
-<td>update a job</td>
+<tr class="row-even"><td><p>PATCH</p></td>
+<td><p>/jobs/&lt;job_id&gt;</p></td>
+<td><p>update a job</p></td>
 </tr>
 </tbody>
 </table>
-</div>
-</div>
-<div class="section" id="tasks">
+</section>
+</section>
+<section id="tasks">
 <h2><a class="reference internal" href="tasks.html"><span class="doc">Tasks</span></a><a class="headerlink" href="#tasks" title="Permalink to this headline">¶</a></h2>
-<table border="1" class="docutils">
+<table class="docutils align-default">
 <colgroup>
-<col width="5%" />
-<col width="45%" />
-<col width="50%" />
+<col style="width: 5%" />
+<col style="width: 45%" />
+<col style="width: 50%" />
 </colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">Method</th>
-<th class="head">Path</th>
-<th class="head">Description</th>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Path</p></th>
+<th class="head"><p>Description</p></th>
 </tr>
 </thead>
-<tbody valign="top">
-<tr class="row-even"><td>GET</td>
-<td>/datasets/&lt;dataset_id&gt;/tasks</td>
-<td>get a list of tasks, filtered by dataset_id, job_id, grid_id</td>
+<tbody>
+<tr class="row-even"><td><p>GET</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/tasks</p></td>
+<td><p>get a list of tasks, filtered by dataset_id, job_id, grid_id</p></td>
 </tr>
-<tr class="row-odd"><td>GET</td>
-<td>/datasets/&lt;dataset_id&gt;/tasks/&lt;task_id&gt;</td>
-<td>get a task</td>
+<tr class="row-odd"><td><p>GET</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/tasks/&lt;task_id&gt;</p></td>
+<td><p>get a task</p></td>
 </tr>
-<tr class="row-even"><td>PUT</td>
-<td>/datasets/&lt;dataset_id&gt;/tasks/&lt;task_id&gt;/status</td>
-<td>set a task status</td>
+<tr class="row-even"><td><p>PUT</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/tasks/&lt;task_id&gt;/status</p></td>
+<td><p>set a task status</p></td>
 </tr>
-<tr class="row-odd"><td>GET</td>
-<td>/datasets/&lt;dataset_id&gt;/task_summaries/status</td>
-<td>get a summary of tasks grouped by status</td>
+<tr class="row-odd"><td><p>GET</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/task_summaries/status</p></td>
+<td><p>get a summary of tasks grouped by status</p></td>
 </tr>
-<tr class="row-even"><td>GET</td>
-<td>/datasets/&lt;dataset_id&gt;/task_counts/status</td>
-<td>get a count of tasks grouped by status</td>
+<tr class="row-even"><td><p>GET</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/task_counts/status</p></td>
+<td><p>get a count of tasks grouped by status</p></td>
 </tr>
-<tr class="row-odd"><td>GET</td>
-<td>/datasets/&lt;dataset_id&gt;/task_counts/name_status</td>
-<td>get a count of tasks grouped by name and status</td>
+<tr class="row-odd"><td><p>GET</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/task_counts/name_status</p></td>
+<td><p>get a count of tasks grouped by name and status</p></td>
 </tr>
-<tr class="row-even"><td>POST</td>
-<td>/datasets/&lt;dataset_id&gt;/task_actions/bulk_status/&lt;status&gt;</td>
-<td>set a task status in bulk</td>
+<tr class="row-even"><td><p>POST</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/task_actions/bulk_status/&lt;status&gt;</p></td>
+<td><p>set a task status in bulk</p></td>
 </tr>
-<tr class="row-odd"><td>PATCH</td>
-<td>/datasets/&lt;dataset_id&gt;/task_actions/bulk_requirements/&lt;name&gt;</td>
-<td>set a task requirement in bulk, by task name</td>
+<tr class="row-odd"><td><p>PATCH</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/task_actions/bulk_requirements/&lt;name&gt;</p></td>
+<td><p>set a task requirement in bulk, by task name</p></td>
 </tr>
-<tr class="row-even"><td>GET</td>
-<td>/datasets/&lt;dataset_id&gt;/task_stats</td>
-<td>get simple stats for a dataset</td>
+<tr class="row-even"><td><p>GET</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/task_stats</p></td>
+<td><p>get simple stats for a dataset</p></td>
 </tr>
-<tr class="row-odd"><td>GET</td>
-<td>/datasets/&lt;dataset_id&gt;/files</td>
-<td>get all the files in a dataset</td>
+<tr class="row-odd"><td><p>GET</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/files</p></td>
+<td><p>get all the files in a dataset</p></td>
 </tr>
-<tr class="row-even"><td>POST</td>
-<td>/datasets/&lt;dataset_id&gt;/files</td>
-<td>add a file to a dataset, specifying url, job, task name</td>
+<tr class="row-even"><td><p>POST</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/files</p></td>
+<td><p>add a file to a dataset, specifying url, job, task name</p></td>
 </tr>
-<tr class="row-odd"><td>GET</td>
-<td>/datasets/&lt;dataset_id&gt;/files/&lt;task_id&gt;</td>
-<td>get files for a task</td>
+<tr class="row-odd"><td><p>GET</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/files/&lt;task_id&gt;</p></td>
+<td><p>get files for a task</p></td>
 </tr>
-<tr class="row-even"><td>POST</td>
-<td>/datasets/&lt;dataset_id&gt;/files/&lt;task_id&gt;</td>
-<td>add a file to a task</td>
+<tr class="row-even"><td><p>POST</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/files/&lt;task_id&gt;</p></td>
+<td><p>add a file to a task</p></td>
 </tr>
-<tr class="row-odd"><td>DELETE</td>
-<td>/datasets/&lt;dataset_id&gt;/files/&lt;task_id&gt;</td>
-<td>delete all files from a task</td>
+<tr class="row-odd"><td><p>DELETE</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/files/&lt;task_id&gt;</p></td>
+<td><p>delete all files from a task</p></td>
 </tr>
 </tbody>
 </table>
-<div class="section" id="tasks-internal-use-only">
+<section id="tasks-internal-use-only">
 <h3>Tasks (internal use only)<a class="headerlink" href="#tasks-internal-use-only" title="Permalink to this headline">¶</a></h3>
-<table border="1" class="docutils">
+<table class="docutils align-default">
 <colgroup>
-<col width="5%" />
-<col width="39%" />
-<col width="56%" />
+<col style="width: 5%" />
+<col style="width: 39%" />
+<col style="width: 56%" />
 </colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">Method</th>
-<th class="head">Path</th>
-<th class="head">Description</th>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Path</p></th>
+<th class="head"><p>Description</p></th>
 </tr>
 </thead>
-<tbody valign="top">
-<tr class="row-even"><td>POST</td>
-<td>/tasks</td>
-<td>create a task</td>
+<tbody>
+<tr class="row-even"><td><p>POST</p></td>
+<td><p>/tasks</p></td>
+<td><p>create a task</p></td>
 </tr>
-<tr class="row-odd"><td>GET</td>
-<td>/tasks/&lt;task_id&gt;</td>
-<td>get a task</td>
+<tr class="row-odd"><td><p>GET</p></td>
+<td><p>/tasks/&lt;task_id&gt;</p></td>
+<td><p>get a task</p></td>
 </tr>
-<tr class="row-even"><td>PATCH</td>
-<td>/tasks/&lt;task_id&gt;</td>
-<td>update a task</td>
+<tr class="row-even"><td><p>PATCH</p></td>
+<td><p>/tasks/&lt;task_id&gt;</p></td>
+<td><p>update a task</p></td>
 </tr>
-<tr class="row-odd"><td>POST</td>
-<td>/tasks/&lt;task_id&gt;/task_actions/reset</td>
-<td>reset a task</td>
+<tr class="row-odd"><td><p>POST</p></td>
+<td><p>/tasks/&lt;task_id&gt;/task_actions/reset</p></td>
+<td><p>reset a task</p></td>
 </tr>
-<tr class="row-even"><td>POST</td>
-<td>/tasks/&lt;task_id&gt;/task_actions/complete</td>
-<td>complete a task</td>
+<tr class="row-even"><td><p>POST</p></td>
+<td><p>/tasks/&lt;task_id&gt;/task_actions/complete</p></td>
+<td><p>complete a task</p></td>
 </tr>
-<tr class="row-odd"><td>POST</td>
-<td>/task_actions/queue</td>
-<td>queue some tasks</td>
+<tr class="row-odd"><td><p>POST</p></td>
+<td><p>/task_actions/queue</p></td>
+<td><p>queue some tasks</p></td>
 </tr>
-<tr class="row-even"><td>POST</td>
-<td>/task_actions/process</td>
-<td>process some tasks</td>
+<tr class="row-even"><td><p>POST</p></td>
+<td><p>/task_actions/process</p></td>
+<td><p>process some tasks</p></td>
 </tr>
 </tbody>
 </table>
-</div>
-</div>
-<div class="section" id="task-stats">
+</section>
+</section>
+<section id="task-stats">
 <h2><a class="reference internal" href="task_stats.html"><span class="doc">Task Stats</span></a><a class="headerlink" href="#task-stats" title="Permalink to this headline">¶</a></h2>
-<table border="1" class="docutils">
+<table class="docutils align-default">
 <colgroup>
-<col width="4%" />
-<col width="49%" />
-<col width="47%" />
+<col style="width: 4%" />
+<col style="width: 49%" />
+<col style="width: 47%" />
 </colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">Method</th>
-<th class="head">Path</th>
-<th class="head">Description</th>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Path</p></th>
+<th class="head"><p>Description</p></th>
 </tr>
 </thead>
-<tbody valign="top">
-<tr class="row-even"><td>GET</td>
-<td>/datasets/&lt;dataset_id&gt;/tasks/&lt;task_id&gt;/task_stats</td>
-<td>get a list of task stats</td>
+<tbody>
+<tr class="row-even"><td><p>GET</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/tasks/&lt;task_id&gt;/task_stats</p></td>
+<td><p>get a list of task stats</p></td>
 </tr>
-<tr class="row-odd"><td>GET</td>
-<td>/datasets/&lt;dataset_id&gt;/tasks/&lt;task_id&gt;/task_stats/&lt;task_stat_id&gt;</td>
-<td>get a task stat</td>
+<tr class="row-odd"><td><p>GET</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/tasks/&lt;task_id&gt;/task_stats/&lt;task_stat_id&gt;</p></td>
+<td><p>get a task stat</p></td>
 </tr>
 </tbody>
 </table>
-<div class="section" id="task-stats-internal-use-only">
+<section id="task-stats-internal-use-only">
 <h3>Task Stats (internal use only)<a class="headerlink" href="#task-stats-internal-use-only" title="Permalink to this headline">¶</a></h3>
-<table border="1" class="docutils">
+<table class="docutils align-default">
 <colgroup>
-<col width="5%" />
-<col width="39%" />
-<col width="56%" />
+<col style="width: 5%" />
+<col style="width: 39%" />
+<col style="width: 56%" />
 </colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">Method</th>
-<th class="head">Path</th>
-<th class="head">Description</th>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Path</p></th>
+<th class="head"><p>Description</p></th>
 </tr>
 </thead>
-<tbody valign="top">
-<tr class="row-even"><td>POST</td>
-<td>/tasks/&lt;task_id&gt;/task_stats</td>
-<td>create a task stat</td>
+<tbody>
+<tr class="row-even"><td><p>POST</p></td>
+<td><p>/tasks/&lt;task_id&gt;/task_stats</p></td>
+<td><p>create a task stat</p></td>
 </tr>
 </tbody>
 </table>
-</div>
-</div>
-<div class="section" id="logs">
+</section>
+</section>
+<section id="logs">
 <h2><a class="reference internal" href="logs.html"><span class="doc">Logs</span></a><a class="headerlink" href="#logs" title="Permalink to this headline">¶</a></h2>
-<table border="1" class="docutils">
+<table class="docutils align-default">
 <colgroup>
-<col width="5%" />
-<col width="39%" />
-<col width="56%" />
+<col style="width: 5%" />
+<col style="width: 39%" />
+<col style="width: 56%" />
 </colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">Method</th>
-<th class="head">Path</th>
-<th class="head">Description</th>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Path</p></th>
+<th class="head"><p>Description</p></th>
 </tr>
 </thead>
-<tbody valign="top">
-<tr class="row-even"><td>POST</td>
-<td>/datasets/&lt;dataset_id&gt;/logs</td>
-<td>create a log</td>
+<tbody>
+<tr class="row-even"><td><p>POST</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/logs</p></td>
+<td><p>create a log</p></td>
 </tr>
-<tr class="row-odd"><td>GET</td>
-<td>/datasets/&lt;dataset_id&gt;/logs/&lt;log_id&gt;</td>
-<td>get a log</td>
+<tr class="row-odd"><td><p>GET</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/logs/&lt;log_id&gt;</p></td>
+<td><p>get a log</p></td>
 </tr>
-<tr class="row-even"><td>GET</td>
-<td>/datasets/&lt;dataset_id&gt;/tasks/&lt;task_id&gt;/logs</td>
-<td>get logs for a dataset and task</td>
+<tr class="row-even"><td><p>GET</p></td>
+<td><p>/datasets/&lt;dataset_id&gt;/tasks/&lt;task_id&gt;/logs</p></td>
+<td><p>get logs for a dataset and task</p></td>
 </tr>
 </tbody>
 </table>
-<div class="section" id="logs-internal-use-only">
+<section id="logs-internal-use-only">
 <h3>Logs (internal use only)<a class="headerlink" href="#logs-internal-use-only" title="Permalink to this headline">¶</a></h3>
-<table border="1" class="docutils">
+<table class="docutils align-default">
 <colgroup>
-<col width="5%" />
-<col width="39%" />
-<col width="56%" />
+<col style="width: 5%" />
+<col style="width: 39%" />
+<col style="width: 56%" />
 </colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">Method</th>
-<th class="head">Path</th>
-<th class="head">Description</th>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Path</p></th>
+<th class="head"><p>Description</p></th>
 </tr>
 </thead>
-<tbody valign="top">
-<tr class="row-even"><td>POST</td>
-<td>/logs</td>
-<td>create a log</td>
+<tbody>
+<tr class="row-even"><td><p>POST</p></td>
+<td><p>/logs</p></td>
+<td><p>create a log</p></td>
 </tr>
-<tr class="row-odd"><td>GET</td>
-<td>/logs/&lt;log_id&gt;</td>
-<td>get a log</td>
+<tr class="row-odd"><td><p>GET</p></td>
+<td><p>/logs/&lt;log_id&gt;</p></td>
+<td><p>get a log</p></td>
 </tr>
 </tbody>
 </table>
-</div>
-</div>
-<div class="section" id="grids">
+</section>
+</section>
+<section id="grids">
 <h2><a class="reference internal" href="grids.html"><span class="doc">Grids</span></a><a class="headerlink" href="#grids" title="Permalink to this headline">¶</a></h2>
-<table border="1" class="docutils">
+<table class="docutils align-default">
 <colgroup>
-<col width="5%" />
-<col width="39%" />
-<col width="56%" />
+<col style="width: 5%" />
+<col style="width: 39%" />
+<col style="width: 56%" />
 </colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">Method</th>
-<th class="head">Path</th>
-<th class="head">Description</th>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Path</p></th>
+<th class="head"><p>Description</p></th>
 </tr>
 </thead>
-<tbody valign="top">
-<tr class="row-even"><td>GET</td>
-<td>/grids</td>
-<td>get a list of grids</td>
+<tbody>
+<tr class="row-even"><td><p>GET</p></td>
+<td><p>/grids</p></td>
+<td><p>get a list of grids</p></td>
 </tr>
-<tr class="row-odd"><td>POST</td>
-<td>/grids</td>
-<td>create a new grid</td>
+<tr class="row-odd"><td><p>POST</p></td>
+<td><p>/grids</p></td>
+<td><p>create a new grid</p></td>
 </tr>
-<tr class="row-even"><td>GET</td>
-<td>/grids/&lt;grid_id&gt;</td>
-<td>get a grid</td>
+<tr class="row-even"><td><p>GET</p></td>
+<td><p>/grids/&lt;grid_id&gt;</p></td>
+<td><p>get a grid</p></td>
 </tr>
 </tbody>
 </table>
-</div>
-<div class="section" id="pilots">
+</section>
+<section id="pilots">
 <h2><a class="reference internal" href="pilots.html"><span class="doc">Pilots</span></a><a class="headerlink" href="#pilots" title="Permalink to this headline">¶</a></h2>
-<table border="1" class="docutils">
+<table class="docutils align-default">
 <colgroup>
-<col width="5%" />
-<col width="39%" />
-<col width="56%" />
+<col style="width: 5%" />
+<col style="width: 39%" />
+<col style="width: 56%" />
 </colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">Method</th>
-<th class="head">Path</th>
-<th class="head">Description</th>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Path</p></th>
+<th class="head"><p>Description</p></th>
 </tr>
 </thead>
-<tbody valign="top">
-<tr class="row-even"><td>GET</td>
-<td>/pilots</td>
-<td>get a list of pilots, filtered by grid_id</td>
+<tbody>
+<tr class="row-even"><td><p>GET</p></td>
+<td><p>/pilots</p></td>
+<td><p>get a list of pilots, filtered by grid_id</p></td>
 </tr>
-<tr class="row-odd"><td>POST</td>
-<td>/pilots</td>
-<td>create a pilot</td>
+<tr class="row-odd"><td><p>POST</p></td>
+<td><p>/pilots</p></td>
+<td><p>create a pilot</p></td>
 </tr>
-<tr class="row-even"><td>GET</td>
-<td>/pilots/&lt;pilot_id&gt;</td>
-<td>get a pilot</td>
+<tr class="row-even"><td><p>GET</p></td>
+<td><p>/pilots/&lt;pilot_id&gt;</p></td>
+<td><p>get a pilot</p></td>
 </tr>
-<tr class="row-odd"><td>PATCH</td>
-<td>/pilots/&lt;pilot_id&gt;</td>
-<td>update a pilot</td>
+<tr class="row-odd"><td><p>PATCH</p></td>
+<td><p>/pilots/&lt;pilot_id&gt;</p></td>
+<td><p>update a pilot</p></td>
 </tr>
-<tr class="row-even"><td>DELETE</td>
-<td>/pilots/&lt;pilot_id&gt;</td>
-<td>delete a pilot</td>
+<tr class="row-even"><td><p>DELETE</p></td>
+<td><p>/pilots/&lt;pilot_id&gt;</p></td>
+<td><p>delete a pilot</p></td>
 </tr>
 </tbody>
 </table>
-</div>
-<div class="section" id="auth">
+</section>
+<section id="auth">
 <h2><a class="reference internal" href="auth.html"><span class="doc">Auth</span></a><a class="headerlink" href="#auth" title="Permalink to this headline">¶</a></h2>
-<table border="1" class="docutils">
+<table class="docutils align-default">
 <colgroup>
-<col width="5%" />
-<col width="39%" />
-<col width="56%" />
+<col style="width: 5%" />
+<col style="width: 39%" />
+<col style="width: 56%" />
 </colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">Method</th>
-<th class="head">Path</th>
-<th class="head">Description</th>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Path</p></th>
+<th class="head"><p>Description</p></th>
 </tr>
 </thead>
-<tbody valign="top">
-<tr class="row-even"><td>GET</td>
-<td>/roles</td>
-<td>get a list of roles</td>
+<tbody>
+<tr class="row-even"><td><p>GET</p></td>
+<td><p>/roles</p></td>
+<td><p>get a list of roles</p></td>
 </tr>
-<tr class="row-odd"><td>PUT</td>
-<td>/roles/&lt;role_name&gt;</td>
-<td>create a role</td>
+<tr class="row-odd"><td><p>PUT</p></td>
+<td><p>/roles/&lt;role_name&gt;</p></td>
+<td><p>create a role</p></td>
 </tr>
-<tr class="row-even"><td>GET</td>
-<td>/roles/&lt;role_name&gt;</td>
-<td>get a role</td>
+<tr class="row-even"><td><p>GET</p></td>
+<td><p>/roles/&lt;role_name&gt;</p></td>
+<td><p>get a role</p></td>
 </tr>
-<tr class="row-odd"><td>DELETE</td>
-<td>/roles/&lt;role_name&gt;</td>
-<td>delete a role</td>
+<tr class="row-odd"><td><p>DELETE</p></td>
+<td><p>/roles/&lt;role_name&gt;</p></td>
+<td><p>delete a role</p></td>
 </tr>
-<tr class="row-even"><td>GET</td>
-<td>/groups</td>
-<td>get a list of groups</td>
+<tr class="row-even"><td><p>GET</p></td>
+<td><p>/groups</p></td>
+<td><p>get a list of groups</p></td>
 </tr>
-<tr class="row-odd"><td>POST</td>
-<td>/groups</td>
-<td>add a group</td>
+<tr class="row-odd"><td><p>POST</p></td>
+<td><p>/groups</p></td>
+<td><p>add a group</p></td>
 </tr>
-<tr class="row-even"><td>GET</td>
-<td>/groups/&lt;group_id&gt;</td>
-<td>get a group</td>
+<tr class="row-even"><td><p>GET</p></td>
+<td><p>/groups/&lt;group_id&gt;</p></td>
+<td><p>get a group</p></td>
 </tr>
-<tr class="row-odd"><td>DELETE</td>
-<td>/groups/&lt;group_id&gt;</td>
-<td>delete a group</td>
+<tr class="row-odd"><td><p>DELETE</p></td>
+<td><p>/groups/&lt;group_id&gt;</p></td>
+<td><p>delete a group</p></td>
 </tr>
-<tr class="row-even"><td>GET</td>
-<td>/users</td>
-<td>get a list of users</td>
+<tr class="row-even"><td><p>GET</p></td>
+<td><p>/users</p></td>
+<td><p>get a list of users</p></td>
 </tr>
-<tr class="row-odd"><td>POST</td>
-<td>/users</td>
-<td>add a user</td>
+<tr class="row-odd"><td><p>POST</p></td>
+<td><p>/users</p></td>
+<td><p>add a user</p></td>
 </tr>
-<tr class="row-even"><td>GET</td>
-<td>/users/&lt;user_id&gt;</td>
-<td>get a user</td>
+<tr class="row-even"><td><p>GET</p></td>
+<td><p>/users/&lt;user_id&gt;</p></td>
+<td><p>get a user</p></td>
 </tr>
-<tr class="row-odd"><td>DELETE</td>
-<td>/users/&lt;user_id&gt;</td>
-<td>delete a user</td>
+<tr class="row-odd"><td><p>DELETE</p></td>
+<td><p>/users/&lt;user_id&gt;</p></td>
+<td><p>delete a user</p></td>
 </tr>
-<tr class="row-even"><td>GET</td>
-<td>/users/&lt;user_id&gt;/groups</td>
-<td>get the groups for a user</td>
+<tr class="row-even"><td><p>GET</p></td>
+<td><p>/users/&lt;user_id&gt;/groups</p></td>
+<td><p>get the groups for a user</p></td>
 </tr>
-<tr class="row-odd"><td>POST</td>
-<td>/users/&lt;user_id&gt;/groups</td>
-<td>add a group to a user</td>
+<tr class="row-odd"><td><p>POST</p></td>
+<td><p>/users/&lt;user_id&gt;/groups</p></td>
+<td><p>add a group to a user</p></td>
 </tr>
-<tr class="row-even"><td>PUT</td>
-<td>/users/&lt;user_id&gt;/groups</td>
-<td>set the groups for a user</td>
+<tr class="row-even"><td><p>PUT</p></td>
+<td><p>/users/&lt;user_id&gt;/groups</p></td>
+<td><p>set the groups for a user</p></td>
 </tr>
-<tr class="row-odd"><td>PUT</td>
-<td>/users/&lt;user_id&gt;/roles</td>
-<td>set the roles for a user</td>
+<tr class="row-odd"><td><p>PUT</p></td>
+<td><p>/users/&lt;user_id&gt;/roles</p></td>
+<td><p>set the roles for a user</p></td>
 </tr>
-<tr class="row-even"><td>POST</td>
-<td>/ldap</td>
-<td>create a token from an LDAP username/password lookup</td>
+<tr class="row-even"><td><p>POST</p></td>
+<td><p>/ldap</p></td>
+<td><p>create a token from an LDAP username/password lookup</p></td>
 </tr>
-<tr class="row-odd"><td>POST</td>
-<td>/create_token</td>
-<td>create a token from another token</td>
+<tr class="row-odd"><td><p>POST</p></td>
+<td><p>/create_token</p></td>
+<td><p>create a token from another token</p></td>
 </tr>
 </tbody>
 </table>
-<div class="section" id="internal-auth">
+<section id="internal-auth">
 <h3>Internal auth<a class="headerlink" href="#internal-auth" title="Permalink to this headline">¶</a></h3>
-<table border="1" class="docutils">
+<table class="docutils align-default">
 <colgroup>
-<col width="5%" />
-<col width="39%" />
-<col width="56%" />
+<col style="width: 5%" />
+<col style="width: 39%" />
+<col style="width: 56%" />
 </colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">Method</th>
-<th class="head">Path</th>
-<th class="head">Description</th>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Path</p></th>
+<th class="head"><p>Description</p></th>
 </tr>
 </thead>
-<tbody valign="top">
-<tr class="row-even"><td>PUT</td>
-<td>/auths/&lt;dataset_id&gt;</td>
-<td>set authorization rules for dataset</td>
+<tbody>
+<tr class="row-even"><td><p>PUT</p></td>
+<td><p>/auths/&lt;dataset_id&gt;</p></td>
+<td><p>set authorization rules for dataset</p></td>
 </tr>
-<tr class="row-odd"><td>GET</td>
-<td>/auths/&lt;dataset_id&gt;</td>
-<td>get authorization rules for dataset</td>
+<tr class="row-odd"><td><p>GET</p></td>
+<td><p>/auths/&lt;dataset_id&gt;</p></td>
+<td><p>get authorization rules for dataset</p></td>
 </tr>
-<tr class="row-even"><td>GET</td>
-<td>/auths/&lt;dataset_id&gt;/actions/read</td>
-<td>does the current token have read access to this dataset?</td>
+<tr class="row-even"><td><p>GET</p></td>
+<td><p>/auths/&lt;dataset_id&gt;/actions/read</p></td>
+<td><p>does the current token have read access to this dataset?</p></td>
 </tr>
-<tr class="row-odd"><td>GET</td>
-<td>/auths/&lt;dataset_id&gt;/actions/write</td>
-<td>does the current token have write access to this dataset?</td>
+<tr class="row-odd"><td><p>GET</p></td>
+<td><p>/auths/&lt;dataset_id&gt;/actions/write</p></td>
+<td><p>does the current token have write access to this dataset?</p></td>
 </tr>
 </tbody>
 </table>
-</div>
-</div>
-</div>
+</section>
+</section>
+</section>
 
 
            </div>
@@ -849,10 +854,10 @@
             SOURCELINK_SUFFIX: '.txt'
         };
     </script>
+      <script type="text/javascript" src="../../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

@@ -5,7 +5,8 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>REST API - Config &mdash; IceProd master documentation</title>
@@ -31,6 +32,10 @@
   
   <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
   
+  
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
   
 
   
@@ -69,7 +74,7 @@
             
             
               <div class="version">
-                2.5.4
+                2.5.6
               </div>
             
           
@@ -237,76 +242,9 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module-iceprod.server.rest.config">
+  <section id="module-iceprod.server.rest.config">
 <span id="rest-api-config"></span><h1>REST API - Config<a class="headerlink" href="#module-iceprod.server.rest.config" title="Permalink to this headline">¶</a></h1>
-<dl class="function">
-<dt id="iceprod.server.rest.config.setup">
-<code class="descclassname">iceprod.server.rest.config.</code><code class="descname">setup</code><span class="sig-paren">(</span><em>config</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/config.html#setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.config.setup" title="Permalink to this definition">¶</a></dt>
-<dd><p>Setup method for Config REST API.</p>
-<p>Sets up any database connections or other prerequisites.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a>) – an instance of <a class="reference internal" href="../config.html#module-iceprod.server.config" title="iceprod.server.config"><code class="xref py py-class docutils literal"><span class="pre">iceprod.server.config</span></code></a>.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Routes for config, which can be passed to <a class="reference external" href="https://tornado.readthedocs.io/en/stable/web.html#tornado.web.Application" title="(in Tornado v6.0.4)"><code class="xref py py-class docutils literal"><span class="pre">tornado.web.Application</span></code></a>.</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#list" title="(in Python v3.6)">list</a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="class">
-<dt id="iceprod.server.rest.config.ConfigHandler">
-<em class="property">class </em><code class="descclassname">iceprod.server.rest.config.</code><code class="descname">ConfigHandler</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/config.html#ConfigHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.config.ConfigHandler" title="Permalink to this definition">¶</a></dt>
-<dd><p>Handle config requests.</p>
-<dl class="method">
-<dt id="iceprod.server.rest.config.ConfigHandler.initialize">
-<code class="descname">initialize</code><span class="sig-paren">(</span><em>database=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/config.html#ConfigHandler.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.config.ConfigHandler.initialize" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.rest.config.ConfigHandler.get">
-<code class="descname">get</code><span class="sig-paren">(</span><em>dataset_id</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/config.html#ConfigHandler.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.config.ConfigHandler.get" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get a config.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dataset_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – the dataset id of the config</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">config</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.rest.config.ConfigHandler.put">
-<code class="descname">put</code><span class="sig-paren">(</span><em>dataset_id</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/config.html#ConfigHandler.put"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.config.ConfigHandler.put" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set a config.</p>
-<p>Body should contain the config.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dataset_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – the dataset id of the config</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">empty dict</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
-</div>
+</section>
 
 
            </div>
@@ -360,10 +298,10 @@
             SOURCELINK_SUFFIX: '.txt'
         };
     </script>
+      <script type="text/javascript" src="../../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

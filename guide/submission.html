@@ -5,7 +5,8 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>Dataset Submission &mdash; IceProd master documentation</title>
@@ -31,6 +32,10 @@
   
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
   
+  
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   
 
   
@@ -69,7 +74,7 @@
             
             
               <div class="version">
-                2.5.4
+                2.5.6
               </div>
             
           
@@ -235,41 +240,40 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="dataset-submission">
+  <section id="dataset-submission">
 <h1>Dataset Submission<a class="headerlink" href="#dataset-submission" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="submission-types">
+<section id="submission-types">
 <h2>Submission Types<a class="headerlink" href="#submission-types" title="Permalink to this headline">¶</a></h2>
 <p>The only submission type right now is the raw json configuration. Copying/pasting
 the configuration is very easy here.</p>
 <div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">Be careful of json syntax errors!</p>
+<p class="admonition-title">Warning</p>
+<p>Be careful of json syntax errors!</p>
 </div>
-</div>
-<div class="section" id="macros">
+</section>
+<section id="macros">
 <h2>Macros<a class="headerlink" href="#macros" title="Permalink to this headline">¶</a></h2>
 <p>IceProd has several built-in macros relating to what task is actually running.</p>
-<dl class="docutils">
-<dt><cite>$(dataset_id)</cite></dt>
-<dd>The dataset_id string.</dd>
-<dt><cite>$(dataset)</cite></dt>
-<dd><p class="first">The dataset_id in numerical form.</p>
-<div class="icecube last admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Numbering starts at 20000 for IceProd 2 datasets.</p>
+<dl>
+<dt><cite>$(dataset_id)</cite></dt><dd><p>The dataset_id string.</p>
+</dd>
+<dt><cite>$(dataset)</cite></dt><dd><p>The dataset_id in numerical form.</p>
+<div class="icecube admonition note">
+<p class="admonition-title">Note</p>
+<p>Numbering starts at 20000 for IceProd 2 datasets.</p>
 </div>
 </dd>
-<dt><cite>$(jobs_submitted)</cite></dt>
-<dd>The number of jobs in the dataset.</dd>
-<dt><cite>$(job)</cite></dt>
-<dd>The job index within the dataset. Within the range <cite>[0, jobs_submitted)</cite>.</dd>
-<dt><cite>$(task_id)</cite></dt>
-<dd>The task_id string. Guaranteed to be unique to the running task.</dd>
-<dt><cite>$(task)</cite></dt>
-<dd>The task name.</dd>
+<dt><cite>$(jobs_submitted)</cite></dt><dd><p>The number of jobs in the dataset.</p>
+</dd>
+<dt><cite>$(job)</cite></dt><dd><p>The job index within the dataset. Within the range <cite>[0, jobs_submitted)</cite>.</p>
+</dd>
+<dt><cite>$(task_id)</cite></dt><dd><p>The task_id string. Guaranteed to be unique to the running task.</p>
+</dd>
+<dt><cite>$(task)</cite></dt><dd><p>The task name.</p>
+</dd>
 </dl>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
@@ -323,10 +327,10 @@ the configuration is very easy here.</p>
             SOURCELINK_SUFFIX: '.txt'
         };
     </script>
+      <script type="text/javascript" src="../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

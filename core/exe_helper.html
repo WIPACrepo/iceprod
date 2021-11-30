@@ -5,7 +5,8 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>Execution Helpers &mdash; IceProd master documentation</title>
@@ -31,6 +32,10 @@
   
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
   
+  
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   
 
   
@@ -69,7 +74,7 @@
             
             
               <div class="version">
-                2.5.4
+                2.5.6
               </div>
             
           
@@ -235,35 +240,14 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module-iceprod.core.exe_helper">
+  <section id="module-iceprod.core.exe_helper">
 <span id="execution-helpers"></span><h1>Execution Helpers<a class="headerlink" href="#module-iceprod.core.exe_helper" title="Permalink to this headline">¶</a></h1>
 <p>Help run class-based modules, including iceprod modules.</p>
 <p>This is run in a subprocess to help set up the environment,
 as well as contain any crashes.</p>
 <p>Note that this file should be backward-compatible with python 2.7+,
 as it will be run under the user’s environment.</p>
-<dl class="function">
-<dt id="iceprod.core.exe_helper.get_args">
-<code class="descclassname">iceprod.core.exe_helper.</code><code class="descname">get_args</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_helper.html#get_args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_helper.get_args" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read json of [args, kwargs] from the std args file</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.exe_helper.unicode_to_ascii">
-<code class="descclassname">iceprod.core.exe_helper.</code><code class="descname">unicode_to_ascii</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_helper.html#unicode_to_ascii"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_helper.unicode_to_ascii" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.exe_helper.run">
-<code class="descclassname">iceprod.core.exe_helper.</code><code class="descname">run</code><span class="sig-paren">(</span><em>classname</em>, <em>filename=None</em>, <em>args=False</em>, <em>debug=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_helper.html#run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_helper.run" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.exe_helper.main">
-<code class="descclassname">iceprod.core.exe_helper.</code><code class="descname">main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_helper.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_helper.main" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</div>
+</section>
 
 
            </div>
@@ -317,10 +301,10 @@ as it will be run under the user’s environment.</p>
             SOURCELINK_SUFFIX: '.txt'
         };
     </script>
+      <script type="text/javascript" src="../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

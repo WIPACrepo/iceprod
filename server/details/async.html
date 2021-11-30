@@ -5,7 +5,8 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>Asynchronous Programming &mdash; IceProd master documentation</title>
@@ -31,6 +32,10 @@
   
   <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
   
+  
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
   
 
   
@@ -69,7 +74,7 @@
             
             
               <div class="version">
-                2.5.4
+                2.5.6
               </div>
             
           
@@ -237,26 +242,26 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="asynchronous-programming">
+  <section id="asynchronous-programming">
 <span id="async"></span><h1>Asynchronous Programming<a class="headerlink" href="#asynchronous-programming" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="some-background">
+<section id="some-background">
 <h2>Some Background<a class="headerlink" href="#some-background" title="Permalink to this headline">¶</a></h2>
 <p>There has been a large movement in the python community for asynchronous
 programming. Examples include Twisted, Tornado, ZeroMQ, pyftpdlib,
 libevent, libev, pyev, libuv, wattle, etc. More officially, it has been
-accepted into the python standard library as <code class="docutils literal"><span class="pre">asyncio</span></code> as of python 3.4.</p>
-<div class="section" id="brief-summary">
+accepted into the python standard library as <code class="docutils literal notranslate"><span class="pre">asyncio</span></code> as of python 3.4.</p>
+<section id="brief-summary">
 <h3>Brief Summary<a class="headerlink" href="#brief-summary" title="Permalink to this headline">¶</a></h3>
 <p>Asynchronous programming refers to two related concepts:</p>
 <ul>
-<li><p class="first">I/O bound scalability, opening multiple socket connections with a
+<li><p>I/O bound scalability, opening multiple socket connections with a
 single thread.</p>
 <p>This is relevant to the <a class="reference external" href="http://en.wikipedia.org/wiki/C10k_problem">C10k problem</a>,
 as a single thread can handle many connections if it does not
 wait for remote I/O operations to finish before moving to the next
 connection.</p>
 </li>
-<li><p class="first">Explicit cooperative multi-threading, where yield points are visible
+<li><p>Explicit cooperative multi-threading, where yield points are visible
 and known.</p>
 <p>One relevant quote from Nick Coghlan:</p>
 <blockquote>
@@ -284,31 +289,31 @@ large number of shorter functions at the same time.</p>
 <p>In practice, the main benefit comes when interacting with a filesystem or
 database. Both of these actions would normally spend a large number of clock
 cycles waiting for a return value, but can now do useful work in the meantime.</p>
-</div>
-<div class="section" id="notes">
+</section>
+<section id="notes">
 <h3>Notes<a class="headerlink" href="#notes" title="Permalink to this headline">¶</a></h3>
 <p>For some deeper reading, see <a class="reference external" href="http://python-notes.curiousefficiency.org/en/latest/pep_ideas/async_programming.html">Nick Coghlan’s thoughts</a>.</p>
 <p>Official PEP: <a class="reference external" href="http://python.org/dev/peps/pep-3156">3156</a>.</p>
 <p>Documentation: <a class="reference external" href="http://docs.python.org/dev/library/asyncio.html">asyncio</a>.</p>
-</div>
-</div>
-<div class="section" id="practical-usage">
+</section>
+</section>
+<section id="practical-usage">
 <h2>Practical Usage<a class="headerlink" href="#practical-usage" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="callbacks">
+<section id="callbacks">
 <h3>Callbacks<a class="headerlink" href="#callbacks" title="Permalink to this headline">¶</a></h3>
 <p>The traditional method of going asynchronous is by <a class="reference external" href="http://en.wikipedia.org/wiki/Asynchronous_I/O#Callback_functions">callback functions</a>.
 Instead of waiting for a long function to return, it is instead given a
 callback and returns immediately. Eventually the original action will be
 finished and call the callback.</p>
-<div class="section" id="tornado">
+<section id="tornado">
 <h4>Tornado<a class="headerlink" href="#tornado" title="Permalink to this headline">¶</a></h4>
 <p>IceProd’s main access to asynchronous I/O is through <a class="reference external" href="http://www.tornadoweb.org">Tornado</a>.
 This is the basic framework for the website, and provides utility functions
 for asynchronous sockets that are used in several other places.  Tornado
 also allows us to make http downloads asynchronously.</p>
 <p>A basic Hello World example is:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
-<span class="kn">from</span> <span class="nn">tornado.ioloop</span> <span class="k">import</span> <span class="n">IOLoop</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span> <span class="nn">tornado.ioloop</span> <span class="kn">import</span> <span class="n">IOLoop</span>
 
 <span class="k">def</span> <span class="nf">hello_world</span><span class="p">(</span><span class="n">loop</span><span class="p">):</span>
     <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Hello World&#39;</span><span class="p">)</span>
@@ -324,19 +329,19 @@ also allows us to make http downloads asynchronously.</p>
 <span class="n">loop</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="gridftp">
+</section>
+<section id="gridftp">
 <h4>GridFTP<a class="headerlink" href="#gridftp" title="Permalink to this headline">¶</a></h4>
 <p>Using the C API for the <a class="reference external" href="http://www.globus.org/toolkit">Globus Toolkit</a>
 allows us to use GridFTP asynchronously as well.  This has been integrated
 into Tornado’s callback mechanism in Python with mostly complete pybindings
 for ease of use.</p>
-</div>
-</div>
-<div class="section" id="callback-details">
+</section>
+</section>
+<section id="callback-details">
 <h3>Callback Details<a class="headerlink" href="#callback-details" title="Permalink to this headline">¶</a></h3>
 <p>Functions that accept callbacks generally take the form of:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span><span class="n">arg2</span><span class="p">,</span><span class="n">callback</span><span class="p">):</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span><span class="n">arg2</span><span class="p">,</span><span class="n">callback</span><span class="p">):</span>
     <span class="c1"># do some work</span>
     <span class="n">callback</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 </pre></div>
@@ -346,14 +351,14 @@ is given.</p>
 <p>For I/O applications, it is often necessary to pass connection details to the
 callback function.  There are two approaches:</p>
 <ol class="arabic">
-<li><p class="first">Quick and Dirty:</p>
+<li><p>Quick and Dirty:</p>
 <blockquote>
-<div><div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span><span class="n">callback</span><span class="p">,</span><span class="n">callback_args</span><span class="p">):</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span><span class="n">callback</span><span class="p">,</span><span class="n">callback_args</span><span class="p">):</span>
     <span class="c1"># do work</span>
     <span class="n">callback</span><span class="p">(</span><span class="n">result</span><span class="p">,</span><span class="n">callback_args</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">cb</span><span class="p">(</span><span class="n">result</span><span class="p">,</span><span class="n">args</span><span class="p">):</span>
     <span class="c1"># handle result</span>
-<span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">cb</span><span class="p">,{</span><span class="s1">&#39;handle&#39;</span><span class="p">:</span><span class="bp">None</span><span class="p">})</span>
+<span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">cb</span><span class="p">,{</span><span class="s1">&#39;handle&#39;</span><span class="p">:</span><span class="kc">None</span><span class="p">})</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -366,14 +371,14 @@ callback function.  There are two approaches:</p>
 </div>
 </div>
 <ol class="arabic" start="2">
-<li><p class="first">Functional Programming:</p>
+<li><p>Functional Programming:</p>
 <blockquote>
-<div><div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span><span class="n">callback</span><span class="p">):</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span><span class="n">callback</span><span class="p">):</span>
     <span class="c1"># do work</span>
     <span class="n">callback</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">cb</span><span class="p">(</span><span class="n">result</span><span class="p">,</span><span class="n">args</span><span class="o">=</span><span class="p">{}):</span>
     <span class="c1"># handle result</span>
-<span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">partial</span><span class="p">(</span><span class="n">cb</span><span class="p">,</span><span class="n">args</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;handle&#39;</span><span class="p">:</span><span class="bp">None</span><span class="p">}))</span>
+<span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">partial</span><span class="p">(</span><span class="n">cb</span><span class="p">,</span><span class="n">args</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;handle&#39;</span><span class="p">:</span><span class="kc">None</span><span class="p">}))</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -382,18 +387,18 @@ callback function.  There are two approaches:</p>
 <div class="line-block">
 <div class="line"><br /></div>
 <div class="line-block">
-<div class="line">In functional programming, function signatures can be changed by filling in only some of the arguments and treating that as a new function.  Python allows this with the <code class="docutils literal"><span class="pre">functools.partial()</span></code> built-in.</div>
+<div class="line">In functional programming, function signatures can be changed by filling in only some of the arguments and treating that as a new function.  Python allows this with the <code class="docutils literal notranslate"><span class="pre">functools.partial()</span></code> built-in.</div>
 </div>
 </div>
 <p>Much of the code in the IceProd server uses the functional programming
 style, though there is some of the first style in the GridFTP python bindings.</p>
-</div>
-</div>
-<div class="section" id="futures">
+</section>
+</section>
+<section id="futures">
 <h2>Futures<a class="headerlink" href="#futures" title="Permalink to this headline">¶</a></h2>
-<p>Starting in python 3.2, and available as a backport with the <code class="docutils literal"><span class="pre">futures</span></code>
+<p>Starting in python 3.2, and available as a backport with the <code class="docutils literal notranslate"><span class="pre">futures</span></code>
 package, asynchronous actions have more official support:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Run slow operations in parallel using threads.</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run slow operations in parallel using threads.</span>
 <span class="c1"># Instead of taking 5 seconds, this should only take 1 second.</span>
 
 <span class="kn">import</span> <span class="nn">time</span>
@@ -415,11 +420,11 @@ package, asynchronous actions have more official support:</p>
 </pre></div>
 </div>
 <p>IceProd already has Tornado to do the heavy lifting that the
-<code class="docutils literal"><span class="pre">ThreadPoolExecutor</span></code> would do.  And in fact, it gets even easier.</p>
+<code class="docutils literal notranslate"><span class="pre">ThreadPoolExecutor</span></code> would do.  And in fact, it gets even easier.</p>
 <p>In the Tornado request handler, where the get or post method is usually
-defined, <code class="docutils literal"><span class="pre">tornado.gen.coroutine</span></code> and <code class="docutils literal"><span class="pre">tornado.concurrent.run_on_executor</span></code>
+defined, <code class="docutils literal notranslate"><span class="pre">tornado.gen.coroutine</span></code> and <code class="docutils literal notranslate"><span class="pre">tornado.concurrent.run_on_executor</span></code>
 can be used to provide a yield-like syntax for callback functions:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Using Tornado, run slow operations in parallel using threads.</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Using Tornado, run slow operations in parallel using threads.</span>
 <span class="c1"># Instead of taking 5 seconds, this should only take 1 second.</span>
 <span class="kn">import</span> <span class="nn">time</span>
 <span class="kn">import</span> <span class="nn">concurrent.futures</span>
@@ -428,7 +433,7 @@ can be used to provide a yield-like syntax for callback functions:</p>
 <span class="kn">import</span> <span class="nn">tornado.concurrent</span>
 
 <span class="k">class</span> <span class="nc">slow_op</span><span class="p">:</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">executor</span> <span class="o">=</span> <span class="n">concurrent</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span> <span class="o">=</span> <span class="n">tornado</span><span class="o">.</span><span class="n">ioloop</span><span class="o">.</span><span class="n">IOLoop</span><span class="o">.</span><span class="n">instance</span><span class="p">()</span>
 
@@ -462,21 +467,21 @@ can be used to provide a yield-like syntax for callback functions:</p>
 </pre></div>
 </div>
 <p>Test this with:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span><span class="nb">time</span> <span class="o">(</span>curl http://localhost:8888 <span class="p">&amp;</span> curl http://localhost:8888 <span class="p">&amp;</span> curl http://localhost:8888 <span class="p">&amp;</span> curl http://localhost:8888 <span class="p">&amp;</span> curl http://localhost:8888 <span class="p">&amp;</span> <span class="nb">wait</span><span class="o">)</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">time</span> <span class="o">(</span>curl http://localhost:8888 <span class="p">&amp;</span> curl http://localhost:8888 <span class="p">&amp;</span> curl http://localhost:8888 <span class="p">&amp;</span> curl http://localhost:8888 <span class="p">&amp;</span> curl http://localhost:8888 <span class="p">&amp;</span> <span class="nb">wait</span><span class="o">)</span>
 </pre></div>
 </div>
 <p>Or, if you already have an asynchronous function with a callback, you can use
-<code class="docutils literal"><span class="pre">tornado.concurrent.return_future</span></code> to make it return a Future. Note that
+<code class="docutils literal notranslate"><span class="pre">tornado.concurrent.return_future</span></code> to make it return a Future. Note that
 the function should be truly asynchronous, with no blocking before the
 function returns. Good examples of this are network calls where you expect
 the result to be returned in the callback whenever it happens.</p>
-</div>
-<div class="section" id="id3">
+</section>
+<section id="id3">
 <h2>AsyncIO<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
 <p>Starting in python 3.4 an asynchronous I/O library has been included in
-python. This takes the place of <code class="docutils literal"><span class="pre">tornado</span></code> in some of the previous examples.
+python. This takes the place of <code class="docutils literal notranslate"><span class="pre">tornado</span></code> in some of the previous examples.
 A basic Hello World example is:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">asyncio</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">asyncio</span>
 
 <span class="k">def</span> <span class="nf">hello_world</span><span class="p">(</span><span class="n">loop</span><span class="p">):</span>
     <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Hello World&#39;</span><span class="p">)</span>
@@ -492,8 +497,8 @@ A basic Hello World example is:</p>
 <span class="n">loop</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </pre></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
@@ -547,10 +552,10 @@ A basic Hello World example is:</p>
             SOURCELINK_SUFFIX: '.txt'
         };
     </script>
+      <script type="text/javascript" src="../../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

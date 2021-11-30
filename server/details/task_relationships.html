@@ -5,7 +5,8 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>Task Relationships &mdash; IceProd master documentation</title>
@@ -31,6 +32,10 @@
   
   <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
   
+  
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
   
 
   
@@ -69,7 +74,7 @@
             
             
               <div class="version">
-                2.5.4
+                2.5.6
               </div>
             
           
@@ -237,41 +242,41 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="task-relationships">
+  <section id="task-relationships">
 <span id="index-0"></span><span id="id1"></span><h1>Task Relationships<a class="headerlink" href="#task-relationships" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="submission">
+<section id="submission">
 <h2>Submission<a class="headerlink" href="#submission" title="Permalink to this headline">¶</a></h2>
 <p>On submission in the config file, task dependencies are of the
-form <code class="docutils literal"><span class="pre">[dataset_id].(name|index)</span></code> and come in a json list
+form <code class="docutils literal notranslate"><span class="pre">[dataset_id].(name|index)</span></code> and come in a json list
 so you can depend on more than one thing. When the dataset_id is
 excluded, the dependency is local to the current dataset.</p>
 <p>This means these are all valid:</p>
 <ul class="simple">
-<li>1</li>
-<li>generate</li>
-<li>d1.1</li>
-<li>d1.generate</li>
-<li>1,2,3</li>
-<li>generate,propagate</li>
-<li>d1.level2,d2.level2</li>
+<li><p>1</p></li>
+<li><p>generate</p></li>
+<li><p>d1.1</p></li>
+<li><p>d1.generate</p></li>
+<li><p>1,2,3</p></li>
+<li><p>generate,propagate</p></li>
+<li><p>d1.level2,d2.level2</p></li>
 </ul>
 <p>The default pattern is to have sequential tasks in a dataset
 depend on the previous task.</p>
-</div>
-<div class="section" id="within-task-rel">
+</section>
+<section id="within-task-rel">
 <h2>Within task_rel<a class="headerlink" href="#within-task-rel" title="Permalink to this headline">¶</a></h2>
 <p>Internally within the <cite>task_rel</cite> table, dependencies are of the
-form <code class="docutils literal"><span class="pre">task_rel_id[,task_rel_id...]</span></code>, a comma-separated-list of
+form <code class="docutils literal notranslate"><span class="pre">task_rel_id[,task_rel_id...]</span></code>, a comma-separated-list of
 task_rel_ids.</p>
-</div>
-<div class="section" id="within-task">
+</section>
+<section id="within-task">
 <h2>Within task<a class="headerlink" href="#within-task" title="Permalink to this headline">¶</a></h2>
 <p>In the task table itself, dependencies are of the form
-<code class="docutils literal"><span class="pre">task_id[,task_id...]</span></code>, a comma-separated-list of task_ids. This
+<code class="docutils literal notranslate"><span class="pre">task_id[,task_id...]</span></code>, a comma-separated-list of task_ids. This
 gives quick lookup of whether the dependencies have been completed
 already.</p>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
@@ -325,10 +330,10 @@ already.</p>
             SOURCELINK_SUFFIX: '.txt'
         };
     </script>
+      <script type="text/javascript" src="../../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

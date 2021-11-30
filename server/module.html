@@ -5,7 +5,8 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>Module &mdash; IceProd master documentation</title>
@@ -31,6 +32,10 @@
   
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
   
+  
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   
 
   
@@ -69,7 +74,7 @@
             
             
               <div class="version">
-                2.5.4
+                2.5.6
               </div>
             
           
@@ -235,83 +240,10 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module">
+  <section id="module">
 <span id="index-0"></span><span id="id1"></span><h1>Module<a class="headerlink" href="#module" title="Permalink to this headline">¶</a></h1>
 <span class="target" id="module-iceprod.server.module"></span><p>Interface for configuring modules</p>
-<dl class="class">
-<dt id="iceprod.server.module.FakeStatsClient">
-<em class="property">class </em><code class="descclassname">iceprod.server.module.</code><code class="descname">FakeStatsClient</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/module.html#FakeStatsClient"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.module.FakeStatsClient" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="class">
-<dt id="iceprod.server.module.StatsClientIgnoreErrors">
-<em class="property">class </em><code class="descclassname">iceprod.server.module.</code><code class="descname">StatsClientIgnoreErrors</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/module.html#StatsClientIgnoreErrors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.module.StatsClientIgnoreErrors" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="class">
-<dt id="iceprod.server.module.ElasticClient">
-<em class="property">class </em><code class="descclassname">iceprod.server.module.</code><code class="descname">ElasticClient</code><span class="sig-paren">(</span><em>hostname</em>, <em>basename='iceprod'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/module.html#ElasticClient"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.module.ElasticClient" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
-<dt id="iceprod.server.module.ElasticClient.head">
-<code class="descname">head</code><span class="sig-paren">(</span><em>name</em>, <em>index_name</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/module.html#ElasticClient.head"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.module.ElasticClient.head" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.module.ElasticClient.get">
-<code class="descname">get</code><span class="sig-paren">(</span><em>name</em>, <em>index_name</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/module.html#ElasticClient.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.module.ElasticClient.get" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.module.ElasticClient.post">
-<code class="descname">post</code><span class="sig-paren">(</span><em>name</em>, <em>index_name</em>, <em>data</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/module.html#ElasticClient.post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.module.ElasticClient.post" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.module.ElasticClient.put">
-<code class="descname">put</code><span class="sig-paren">(</span><em>name</em>, <em>index_name</em>, <em>data</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/module.html#ElasticClient.put"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.module.ElasticClient.put" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="iceprod.server.module.module">
-<em class="property">class </em><code class="descclassname">iceprod.server.module.</code><code class="descname">module</code><span class="sig-paren">(</span><em>cfg</em>, <em>io_loop</em>, <em>executor</em>, <em>modules</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/module.html#module"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.module.module" title="Permalink to this definition">¶</a></dt>
-<dd><p>This is an abstract class representing a server module.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>cfg</strong> – An <code class="xref py py-class docutils literal"><span class="pre">IceProdConfig</span></code>.</li>
-<li><strong>io_loop</strong> – An <a class="reference external" href="https://tornado.readthedocs.io/en/stable/ioloop.html#tornado.ioloop.IOLoop" title="(in Tornado v6.0.4)"><code class="xref py py-class docutils literal"><span class="pre">tornado.ioloop.IOLoop</span></code></a>.</li>
-<li><strong>executor</strong> – A <a class="reference external" href="https://docs.python.org/3.6/library/concurrent.futures.html#concurrent.futures.ThreadPoolExecutor" title="(in Python v3.6)"><code class="xref py py-class docutils literal"><span class="pre">concurrent.futures.ThreadPoolExecutor</span></code></a>.</li>
-<li><strong>modules</strong> – A dict of other module’s public services.</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-<dl class="method">
-<dt id="iceprod.server.module.module.start">
-<code class="descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/module.html#module.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.module.module.start" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set up a module.</p>
-<p>Note that this is not on the io_loop and should not interact
-with other modules.  Add a callback to the io_loop to do so.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.module.module.stop">
-<code class="descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/module.html#module.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.module.module.stop" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.module.module.kill">
-<code class="descname">kill</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/module.html#module.kill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.module.module.kill" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-</div>
+</section>
 
 
            </div>
@@ -365,10 +297,10 @@ with other modules.  Add a callback to the io_loop to do so.</p>
             SOURCELINK_SUFFIX: '.txt'
         };
     </script>
+      <script type="text/javascript" src="../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

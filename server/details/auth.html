@@ -5,7 +5,8 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>REST Authorization &mdash; IceProd master documentation</title>
@@ -31,6 +32,10 @@
   
   <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
   
+  
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
   
 
   
@@ -69,7 +74,7 @@
             
             
               <div class="version">
-                2.5.4
+                2.5.6
               </div>
             
           
@@ -237,46 +242,46 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="rest-authorization">
+  <section id="rest-authorization">
 <h1>REST Authorization<a class="headerlink" href="#rest-authorization" title="Permalink to this headline">¶</a></h1>
 <p>After a token has been authenticated, it needs to be authorized.  This happens
 at the method level.  There are two main categories of authorization:</p>
-<dl class="docutils">
-<dt>Role Based Access Control</dt>
-<dd>These methods depend on the token having a certain role.  This is most
+<dl class="simple">
+<dt>Role Based Access Control</dt><dd><p>These methods depend on the token having a certain role.  This is most
 often used for admin-only methods, or for internal IceProd usage
-that is not meant for user access.</dd>
-<dt>Attribute Based Access Control</dt>
-<dd>These methods match a dataset’s attributes against the token’s
+that is not meant for user access.</p>
+</dd>
+<dt>Attribute Based Access Control</dt><dd><p>These methods match a dataset’s attributes against the token’s
 attributes - specifically the groups of both.  If a token belongs
 to the same group (or a higher level group containing this sub-group)
 as the dataset, it has permission.
 Note that datasets have separate read and write access, so a dataset
-can be marked as public readable and group-only writable.</dd>
+can be marked as public readable and group-only writable.</p>
+</dd>
 </dl>
 <p>Both of these access controls can be combined on a single method, allowing
 a certain role complete access, as well as tokens that match an attribute.</p>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Public access isn’t mentioned directly.  Instead, it is the lack of either
+<p class="admonition-title">Note</p>
+<p>Public access isn’t mentioned directly.  Instead, it is the lack of either
 access control protection that marks a method as public.</p>
 </div>
-<div class="section" id="authorization-implementation">
+<section id="authorization-implementation">
 <h2>Authorization Implementation<a class="headerlink" href="#authorization-implementation" title="Permalink to this headline">¶</a></h2>
 <p>A decorator for RPC methods is used.  For example, a public access:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># public method</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># public method</span>
 <span class="k">async</span> <span class="k">def</span> <span class="nf">rpc_public_foo</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="k">pass</span>
 </pre></div>
 </div>
 <p>If you only need a logged in user, access is set up as:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;user&#39;</span><span class="p">])</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;user&#39;</span><span class="p">])</span>
 <span class="k">async</span> <span class="k">def</span> <span class="nf">rpc_logged_in</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="k">pass</span>
 </pre></div>
 </div>
 <p>Other role based access is similarly easy:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">]):</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;admin&#39;</span><span class="p">]):</span>
 <span class="k">async</span> <span class="k">def</span> <span class="nf">rpc_admin_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="k">pass</span>
 </pre></div>
@@ -284,19 +289,19 @@ access control protection that marks a method as public.</p>
 <p>Internal IceProd access can be enabled with a role.  Note that
 the <cite>client</cite> role is for IceProd clients that run scheduled tasks,
 while <cite>pilot</cite> is for pilot workers.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;client&#39;</span><span class="p">,</span><span class="s1">&#39;pilot&#39;</span><span class="p">])</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@authorization</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;client&#39;</span><span class="p">,</span><span class="s1">&#39;pilot&#39;</span><span class="p">])</span>
 <span class="k">async</span> <span class="k">def</span> <span class="nf">rpc_site_foo</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="k">pass</span>
 </pre></div>
 </div>
 <p>For dataset attributes, access is like:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="nd">@authorization</span><span class="p">(</span><span class="n">attrs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;dataset_id:read&#39;</span><span class="p">])</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@authorization</span><span class="p">(</span><span class="n">attrs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;dataset_id:read&#39;</span><span class="p">])</span>
 <span class="k">async</span> <span class="k">def</span> <span class="nf">rpc_get_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_id</span><span class="p">,</span> <span class="n">task_id</span><span class="p">):</span>
     <span class="k">pass</span>
 </pre></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
@@ -350,10 +355,10 @@ while <cite>pilot</cite> is for pilot workers.</p>
             SOURCELINK_SUFFIX: '.txt'
         };
     </script>
+      <script type="text/javascript" src="../../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

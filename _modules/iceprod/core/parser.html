@@ -32,13 +32,17 @@
   <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
   
   
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
 
   
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
     <link rel="top" title="IceProd master documentation" href="../../../index.html"/>
-        <link rel="up" title="iceprod.core" href="../core.html"/> 
+        <link rel="up" title="Module code" href="../../index.html"/> 
 
   
   <script src="../../../_static/js/modernizr.min.js"></script>
@@ -67,7 +71,7 @@
             
             
               <div class="version">
-                2.5.4
+                2.5.6
               </div>
             
           
@@ -214,8 +218,6 @@
         
           <li><a href="../../index.html">Module code</a> &raquo;</li>
         
-          <li><a href="../core.html">iceprod.core</a> &raquo;</li>
-        
       <li>iceprod.core.parser</li>
     
     
@@ -233,13 +235,13 @@
             
   <h1>Source code for iceprod.core.parser</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">A `recursive descent parser </span>
-<span class="sd">&lt;http://en.wikipedia.org/wiki/Recursive_descent_parser&gt;`_ for the IceProd meta </span>
-<span class="sd">language. Most commonly used in IceProd dataset configurations to refer to </span>
+<span class="sd">A `recursive descent parser</span>
+<span class="sd">&lt;http://en.wikipedia.org/wiki/Recursive_descent_parser&gt;`_ for the IceProd meta</span>
+<span class="sd">language. Most commonly used in IceProd dataset configurations to refer to</span>
 <span class="sd">other parts of the same configuration.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span>
 
 <span class="kn">import</span> <span class="nn">re</span>
 <span class="kn">import</span> <span class="nn">string</span>
@@ -251,7 +253,7 @@
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;parser&#39;</span><span class="p">)</span>
 
-<span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">dataclasses</span>
+<span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="kn">import</span> <span class="n">dataclasses</span>
 
 <span class="k">class</span> <span class="nc">safe_eval</span><span class="p">:</span>
     <span class="kn">import</span> <span class="nn">ast</span>
@@ -273,7 +275,7 @@
 <div class="viewcode-block" id="safe_eval.eval"><a class="viewcode-back" href="../../../core/parser.html#iceprod.core.parser.safe_eval.eval">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">eval</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span><span class="n">expr</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Safe evaluation of arithmatic operations using </span>
+<span class="sd">        Safe evaluation of arithmatic operations using</span>
 <span class="sd">        :mod:`Abstract Syntax Trees &lt;ast&gt;`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">__eval</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">ast</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="c1"># Module(body=[Expr(value=...)])</span></div>
@@ -454,20 +456,23 @@
 <div class="viewcode-block" id="ExpParser"><a class="viewcode-back" href="../../../core/parser.html#iceprod.core.parser.ExpParser">[docs]</a><span class="k">class</span> <span class="nc">ExpParser</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Expression parsing class for parameter values.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Grammar Definition::</span>
-<span class="sd">    </span>
-<span class="sd">        char     := 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!&quot;#%&amp;&#39;*+,-./:;&lt;=&gt;?@\^_`|~{}</span>
+
+<span class="sd">        char     := any unicode character other than $()[]</span>
 <span class="sd">        word     := char | char + word</span>
 <span class="sd">        starter  := $</span>
 <span class="sd">        scopeL   := (</span>
 <span class="sd">        scopeR   := )</span>
+<span class="sd">        bracketL := [</span>
+<span class="sd">        bracketR := ]</span>
 <span class="sd">        symbol   := starter | starter + word</span>
 <span class="sd">        phrase   := symbol + scopeL + sentence + scopeR</span>
-<span class="sd">        sentence := phrase | word | phrase + sentence | word + sentence</span>
-<span class="sd">    </span>
+<span class="sd">        lookup   := word + bracketL + word + bracketR | phrase + bracketL + word + bracketR</span>
+<span class="sd">        sentence := lookup | phrase | word | lookup + sentence | phrase + sentence | word + sentence</span>
+
 <span class="sd">    Keywords:</span>
-<span class="sd">    </span>
+
 <span class="sd">    * steering : A parameter from :class:`iceprod.core.dataclasses.Steering`</span>
 <span class="sd">    * system : A system value from :class:`iceprod.core.dataclasses.Steering`</span>
 <span class="sd">    * args, options : An option value from :class:`iceprod.core.dataclasses.Job`</span>
@@ -477,9 +482,9 @@
 <span class="sd">    * sum, min, max, len : Apply a reduction to a sequence</span>
 <span class="sd">    * choice : A random choice from a list of possibilites</span>
 <span class="sd">    * sprintf : The sprintf string syntax</span>
-<span class="sd">    </span>
+
 <span class="sd">    Examples::</span>
-<span class="sd">    </span>
+
 <span class="sd">        $steering(my_parameter)</span>
 <span class="sd">        $system(gpu_opts)</span>
 <span class="sd">        $args(option1)</span>
@@ -489,7 +494,7 @@
 <span class="sd">        $choice(1,2,3,4)</span>
 <span class="sd">        $sprintf(&quot;%04d&quot;,4)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">job</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">env</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">depth</span> <span class="o">=</span> <span class="mi">0</span>
@@ -506,11 +511,11 @@
                         <span class="p">}</span>
         <span class="k">for</span> <span class="n">reduction</span> <span class="ow">in</span> <span class="s1">&#39;sum&#39;</span><span class="p">,</span> <span class="s1">&#39;min&#39;</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">,</span> <span class="s1">&#39;len&#39;</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">keywords</span><span class="p">[</span><span class="n">reduction</span><span class="p">]</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reduce_func</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">builtins</span><span class="p">,</span> <span class="n">reduction</span><span class="p">))</span>
-    
+
 <div class="viewcode-block" id="ExpParser.parse"><a class="viewcode-back" href="../../../core/parser.html#iceprod.core.parser.ExpParser.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="nb">input</span><span class="p">,</span><span class="n">job</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">env</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">depth</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parse the input, expanding where possible.</span>
-<span class="sd">        </span>
+
 <span class="sd">        :param input: input string</span>
 <span class="sd">        :param job: :class:`iceprod.core.dataclasses.Job`, optional</span>
 <span class="sd">        :param env: env dictionary, optional</span>
@@ -542,7 +547,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">env</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">depth</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1"># start at a depth of 0</span>
-        
+
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
             <span class="c1"># parse input</span>
             <span class="n">stack</span> <span class="o">=</span> <span class="p">[]</span>
@@ -649,11 +654,14 @@
                     <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s1">&#39;options&#39;</span><span class="p">][</span><span class="n">keyword</span><span class="p">]</span>
                 <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
                     <span class="k">pass</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s1">&#39;steering&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">keyword</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s1">&#39;steering&#39;</span><span class="p">][</span><span class="s1">&#39;parameters&#39;</span><span class="p">]:</span>
+                <span class="c1"># search job steering last</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s1">&#39;steering&#39;</span><span class="p">][</span><span class="s1">&#39;parameters&#39;</span><span class="p">][</span><span class="n">keyword</span><span class="p">]</span>
 
         <span class="k">if</span> <span class="n">ret</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">ret</span>
-    
+        <span class="k">return</span> <span class="n">parse_ret_type</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+
     <span class="k">def</span> <span class="nf">steering_func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">param</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Find param in steering&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s1">&#39;steering&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s1">&#39;steering&#39;</span><span class="p">][</span><span class="s1">&#39;parameters&#39;</span><span class="p">]:</span>
@@ -681,7 +689,7 @@
             <span class="k">return</span> <span class="n">parse_ret_type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s1">&#39;options&#39;</span><span class="p">][</span><span class="n">param</span><span class="p">])</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s1">&#39;options:&#39;</span><span class="o">+</span><span class="n">param</span><span class="p">)</span>
-    
+
     <span class="k">def</span> <span class="nf">difplus_func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">param</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Find param in dif plus&quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
@@ -692,7 +700,7 @@
                 <span class="k">return</span> <span class="n">parse_ret_type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s1">&#39;difplus&#39;</span><span class="p">][</span><span class="s1">&#39;plus&#39;</span><span class="p">][</span><span class="n">param</span><span class="p">])</span>
             <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s1">&#39;difplus:&#39;</span><span class="o">+</span><span class="n">param</span><span class="p">)</span>
-    
+
     <span class="k">def</span> <span class="nf">choice_func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">param</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Evaluate param as choice expression&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">param</span><span class="p">:</span>
@@ -704,7 +712,7 @@
                 <span class="k">return</span> <span class="n">parse_ret_type</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)))</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s1">&#39;not a valid choice&#39;</span><span class="p">)</span>
-    
+
     <span class="k">def</span> <span class="nf">eval_func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">param</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Evaluate param as arithmetic expression&quot;&quot;&quot;</span>
         <span class="c1">#bad = re.search(r&#39;(import)|(open)|(for)|(while)|(def)|(class)|(lambda)&#39;, param )</span>
@@ -716,13 +724,13 @@
                 <span class="k">return</span> <span class="n">parse_ret_type</span><span class="p">(</span><span class="n">safe_eval</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">param</span><span class="p">))</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s1">&#39;Eval is not basic arithmetic&#39;</span><span class="p">)</span>
-    
+
     <span class="k">def</span> <span class="nf">reduce_func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">param</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">parse_ret_type</span><span class="p">(</span><span class="n">func</span><span class="p">(</span><span class="n">getType</span><span class="p">(</span><span class="n">param</span><span class="p">)))</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s1">&#39;Not a reducible sequence&#39;</span><span class="p">)</span>
-    
+
     <span class="k">def</span> <span class="nf">sprintf_func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">param</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Evaluate param as sprintf.  param = arg_str, arg0, arg1, ... &quot;&quot;&quot;</span>
         <span class="c1"># separate into format string and args</span>
@@ -747,7 +755,7 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">param</span><span class="p">[</span><span class="n">pos</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span><span class="n">pos2</span><span class="p">])</span>
                 <span class="n">pos</span> <span class="o">=</span> <span class="n">pos2</span>
-        
+
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># cast args to correct type</span>
             <span class="k">def</span> <span class="nf">cast_string</span><span class="p">(</span><span class="n">fstring</span><span class="p">,</span><span class="n">arg</span><span class="p">):</span>
@@ -761,10 +769,10 @@
                 <span class="k">elif</span> <span class="n">fstring</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="s1">&#39;idufeg&#39;</span><span class="p">:</span> <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s1">&#39;Unable to cast </span><span class="si">%s</span><span class="s1"> using format </span><span class="si">%s</span><span class="s1">&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span><span class="n">fstring</span><span class="p">))</span>
-            
+
             <span class="n">fstrings</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\%[#0\- +]{0,1}[0-9]*\.{0,1}[0-9]*[csridufegExXo]&#39;</span><span class="p">,</span><span class="n">fmt_str</span><span class="p">)</span>
             <span class="n">args</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">cast_string</span><span class="p">,</span><span class="n">fstrings</span><span class="p">,</span><span class="n">args</span><span class="p">))[</span><span class="mi">0</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)]</span>
-            
+
             <span class="c1"># do sprintf on fmt_str and args</span>
             <span class="k">if</span> <span class="n">fstrings</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">fmt_str</span> <span class="o">%</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
@@ -816,10 +824,10 @@
             SOURCELINK_SUFFIX: '.txt'
         };
     </script>
+      <script type="text/javascript" src="../../../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

@@ -5,7 +5,8 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>GridFTP &mdash; IceProd master documentation</title>
@@ -31,6 +32,10 @@
   
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
   
+  
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   
 
   
@@ -69,7 +74,7 @@
             
             
               <div class="version">
-                2.5.4
+                2.5.6
               </div>
             
           
@@ -235,409 +240,10 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="gridftp">
+  <section id="gridftp">
 <h1>GridFTP<a class="headerlink" href="#gridftp" title="Permalink to this headline">¶</a></h1>
 <p>gridftp interface</p>
-<dl class="function">
-<dt>
-<code class="descclassname">iceprod.core.gridftp.</code><code class="descname">listify</code><span class="sig-paren">(</span><em>lines</em>, <em>details=False</em>, <em>dotfiles=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#listify"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Turn ls output into a list of NamedTuples</p>
-</dd></dl>
-
-<dl class="class">
-<dt>
-<em class="property">class </em><code class="descclassname">iceprod.core.gridftp.</code><code class="descname">GridFTP</code><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>GridFTP interface to command line client.</p>
-<p class="rubric">Example</p>
-<dl class="docutils">
-<dt>GridFTP.get(‘gsiftp://data.icecube.wisc.edu/file’,</dt>
-<dd>filename=’/path/to/file’)</dd>
-</dl>
-<dl class="classmethod">
-<dt>
-<em class="property">classmethod </em><code class="descname">supported_address</code><span class="sig-paren">(</span><em>address</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.supported_address"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Return False for address types that are not supported</p>
-</dd></dl>
-
-<dl class="classmethod">
-<dt>
-<em class="property">classmethod </em><code class="descname">address_split</code><span class="sig-paren">(</span><em>address</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.address_split"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Split an address into server/path parts</p>
-</dd></dl>
-
-<dl class="classmethod">
-<dt>
-<em class="property">classmethod </em><code class="descname">get</code><span class="sig-paren">(</span><em>address</em>, <em>filename=None</em>, <em>request_timeout=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.get"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Do a GridFTP get request.</p>
-<p>Either data is returned directly or filename must be defined.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>address</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – url to get from</li>
-<li><strong>filename</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – filename to write data to</li>
-<li><strong>request_timeout</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) – timeout in secodns</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">data, if filename is not defined</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)">str</a></p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">Exception for failure</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="classmethod">
-<dt>
-<em class="property">classmethod </em><code class="descname">put</code><span class="sig-paren">(</span><em>address</em>, <em>data=None</em>, <em>filename=None</em>, <em>request_timeout=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.put"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Do a GridFTP put request.</p>
-<p>Either data or filename must be defined.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>address</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – url to put to</li>
-<li><strong>data</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – the data to put</li>
-<li><strong>filename</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – filename for data to put</li>
-<li><strong>request_timeout</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) – timeout in seconds</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">Exception for failure</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="classmethod">
-<dt>
-<em class="property">classmethod </em><code class="descname">list</code><span class="sig-paren">(</span><em>address</em>, <em>request_timeout=None</em>, <em>details=False</em>, <em>dotfiles=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.list"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Do a GridFTP list request.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>address</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – url to list</li>
-<li><strong>request_timeout</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) – timeout in seconds</li>
-<li><strong>details</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) – result is a list of NamedTuples</li>
-<li><strong>dotfiles</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) – result includes ‘.’, ‘..’, and other ‘.’ files</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a list of files</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#list" title="(in Python v3.6)">list</a></p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">Exception on error</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="classmethod">
-<dt>
-<em class="property">classmethod </em><code class="descname">mkdir</code><span class="sig-paren">(</span><em>address</em>, <em>request_timeout=None</em>, <em>parents=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.mkdir"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Make a directory on the ftp server.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>address</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – url to directory</li>
-<li><strong>request_timeout</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) – timeout in seconds</li>
-<li><strong>parents</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) – make parent directories as needed</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">Exception on error</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="classmethod">
-<dt>
-<em class="property">classmethod </em><code class="descname">rmdir</code><span class="sig-paren">(</span><em>address</em>, <em>request_timeout=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.rmdir"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Remove a directory on the ftp server.</p>
-<p>This fails if the directory is not empty.  Use <code class="xref py py-func docutils literal"><span class="pre">rmtree()</span></code> for
-recursive removal.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>address</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – url to directory</li>
-<li><strong>request_timeout</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) – timeout in seconds</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">Exception on error</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="classmethod">
-<dt>
-<em class="property">classmethod </em><code class="descname">delete</code><span class="sig-paren">(</span><em>address</em>, <em>request_timeout=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.delete"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Delete a file on the ftp server.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>address</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – url to file</li>
-<li><strong>request_timeout</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) – timeout in seconds</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">Exception on error</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="classmethod">
-<dt>
-<em class="property">classmethod </em><code class="descname">rmtree</code><span class="sig-paren">(</span><em>address</em>, <em>request_timeout=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.rmtree"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Delete a file or directory on the ftp server.</p>
-<p>This is recursive, like <cite>rm -rf</cite>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>address</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – url to file or directory</li>
-<li><strong>request_timeout</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) – timeout in seconds</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">Exception on error</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="classmethod">
-<dt>
-<em class="property">classmethod </em><code class="descname">move</code><span class="sig-paren">(</span><em>src</em>, <em>dest</em>, <em>request_timeout=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.move"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Move a file on the ftp server.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>src</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – url to source file</li>
-<li><strong>dest</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – url to destination file</li>
-<li><strong>request_timeout</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) – timeout in seconds</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">Exception on error</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="classmethod">
-<dt>
-<em class="property">classmethod </em><code class="descname">exists</code><span class="sig-paren">(</span><em>address</em>, <em>request_timeout=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.exists"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Check if a file exists on the ftp server.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>address</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – url to file</li>
-<li><strong>request_timeout</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) – timeout in seconds</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">Exception on error</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="classmethod">
-<dt>
-<em class="property">classmethod </em><code class="descname">chmod</code><span class="sig-paren">(</span><em>address</em>, <em>mode</em>, <em>request_timeout=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.chmod"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Chmod a file on the ftp server.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>address</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – url to file</li>
-<li><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – mode of file</li>
-<li><strong>request_timeout</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) – timeout in seconds</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">Exception on error</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="classmethod">
-<dt>
-<em class="property">classmethod </em><code class="descname">size</code><span class="sig-paren">(</span><em>address</em>, <em>request_timeout=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.size"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Get the size of a file on the ftp server.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>address</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – url to file</li>
-<li><strong>request_timeout</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) – timeout in seconds</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">size of file in bytes</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)">int</a></p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">Exception on error</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="classmethod">
-<dt>
-<em class="property">classmethod </em><code class="descname">md5sum</code><span class="sig-paren">(</span><em>address</em>, <em>request_timeout=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.md5sum"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Get the md5sum of a file on an ftp server.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>address</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – url to file</li>
-<li><strong>request_timeout</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) – timeout in seconds</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the md5sum</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)">str</a></p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">Exception on error</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="classmethod">
-<dt>
-<em class="property">classmethod </em><code class="descname">sha1sum</code><span class="sig-paren">(</span><em>address</em>, <em>request_timeout=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.sha1sum"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Get the sha1sum of a file on an ftp server.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>address</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – url to file</li>
-<li><strong>request_timeout</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) – timeout in seconds</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the sha1sum</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)">str</a></p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">Exception on error</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="classmethod">
-<dt>
-<em class="property">classmethod </em><code class="descname">sha256sum</code><span class="sig-paren">(</span><em>address</em>, <em>request_timeout=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.sha256sum"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Get the sha256sum of a file on an ftp server.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>address</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – url to file</li>
-<li><strong>request_timeout</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) – timeout in seconds</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the sha256sum</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)">str</a></p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">Exception on error</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="classmethod">
-<dt>
-<em class="property">classmethod </em><code class="descname">sha512sum</code><span class="sig-paren">(</span><em>address</em>, <em>request_timeout=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.sha512sum"><span class="viewcode-link">[source]</span></a></dt>
-<dd><p>Get the sha512sum of a file on an ftp server.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>address</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – url to file</li>
-<li><strong>request_timeout</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) – timeout in seconds</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the sha512sum</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)">str</a></p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">Exception on error</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
-</div>
+</section>
 
 
            </div>
@@ -691,10 +297,10 @@ recursive removal.</p>
             SOURCELINK_SUFFIX: '.txt'
         };
     </script>
+      <script type="text/javascript" src="../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

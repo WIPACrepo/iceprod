@@ -5,7 +5,8 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>Meta-Language Parser &mdash; IceProd master documentation</title>
@@ -31,6 +32,10 @@
   
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
   
+  
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   
 
   
@@ -69,7 +74,7 @@
             
             
               <div class="version">
-                2.5.4
+                2.5.6
               </div>
             
           
@@ -235,40 +240,43 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module-iceprod.core.parser">
+  <section id="module-iceprod.core.parser">
 <span id="meta-language-parser"></span><h1>Meta-Language Parser<a class="headerlink" href="#module-iceprod.core.parser" title="Permalink to this headline">¶</a></h1>
 <p>A <a class="reference external" href="http://en.wikipedia.org/wiki/Recursive_descent_parser">recursive descent parser</a> for the IceProd meta
 language. Most commonly used in IceProd dataset configurations to refer to
 other parts of the same configuration.</p>
-<dl class="class">
-<dt id="iceprod.core.parser.ExpParser">
-<em class="property">class </em><code class="descclassname">iceprod.core.parser.</code><code class="descname">ExpParser</code><a class="reference internal" href="../_modules/iceprod/core/parser.html#ExpParser"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.parser.ExpParser" title="Permalink to this definition">¶</a></dt>
+<dl class="py class">
+<dt class="sig sig-object py" id="iceprod.core.parser.ExpParser">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">iceprod.core.parser.</span></span><span class="sig-name descname"><span class="pre">ExpParser</span></span><a class="reference internal" href="../_modules/iceprod/core/parser.html#ExpParser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iceprod.core.parser.ExpParser" title="Permalink to this definition">¶</a></dt>
 <dd><p>Expression parsing class for parameter values.</p>
 <p>Grammar Definition:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>char     := 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!&quot;#%&amp;&#39;*+,-./:;&lt;=&gt;?@\^_`|~{}
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>char     := any unicode character other than $()[]
 word     := char | char + word
 starter  := $
 scopeL   := (
 scopeR   := )
+bracketL := [
+bracketR := ]
 symbol   := starter | starter + word
 phrase   := symbol + scopeL + sentence + scopeR
-sentence := phrase | word | phrase + sentence | word + sentence
+lookup   := word + bracketL + word + bracketR | phrase + bracketL + word + bracketR
+sentence := lookup | phrase | word | lookup + sentence | phrase + sentence | word + sentence
 </pre></div>
 </div>
 <p>Keywords:</p>
 <ul class="simple">
-<li>steering : A parameter from <a class="reference internal" href="dataclasses.html#iceprod.core.dataclasses.Steering" title="iceprod.core.dataclasses.Steering"><code class="xref py py-class docutils literal"><span class="pre">iceprod.core.dataclasses.Steering</span></code></a></li>
-<li>system : A system value from <a class="reference internal" href="dataclasses.html#iceprod.core.dataclasses.Steering" title="iceprod.core.dataclasses.Steering"><code class="xref py py-class docutils literal"><span class="pre">iceprod.core.dataclasses.Steering</span></code></a></li>
-<li>args, options : An option value from <a class="reference internal" href="dataclasses.html#iceprod.core.dataclasses.Job" title="iceprod.core.dataclasses.Job"><code class="xref py py-class docutils literal"><span class="pre">iceprod.core.dataclasses.Job</span></code></a></li>
-<li>metadata : A value from <a class="reference internal" href="dataclasses.html#iceprod.core.dataclasses.Dif" title="iceprod.core.dataclasses.Dif"><code class="xref py py-class docutils literal"><span class="pre">iceprod.core.dataclasses.Dif</span></code></a> or
-<a class="reference internal" href="dataclasses.html#iceprod.core.dataclasses.Plus" title="iceprod.core.dataclasses.Plus"><code class="xref py py-class docutils literal"><span class="pre">iceprod.core.dataclasses.Plus</span></code></a></li>
-<li>eval : An arithmatic expression</li>
-<li>sum, min, max, len : Apply a reduction to a sequence</li>
-<li>choice : A random choice from a list of possibilites</li>
-<li>sprintf : The sprintf string syntax</li>
+<li><p>steering : A parameter from <a class="reference internal" href="dataclasses.html#iceprod.core.dataclasses.Steering" title="iceprod.core.dataclasses.Steering"><code class="xref py py-class docutils literal notranslate"><span class="pre">iceprod.core.dataclasses.Steering</span></code></a></p></li>
+<li><p>system : A system value from <a class="reference internal" href="dataclasses.html#iceprod.core.dataclasses.Steering" title="iceprod.core.dataclasses.Steering"><code class="xref py py-class docutils literal notranslate"><span class="pre">iceprod.core.dataclasses.Steering</span></code></a></p></li>
+<li><p>args, options : An option value from <a class="reference internal" href="dataclasses.html#iceprod.core.dataclasses.Job" title="iceprod.core.dataclasses.Job"><code class="xref py py-class docutils literal notranslate"><span class="pre">iceprod.core.dataclasses.Job</span></code></a></p></li>
+<li><p>metadata : A value from <a class="reference internal" href="dataclasses.html#iceprod.core.dataclasses.Dif" title="iceprod.core.dataclasses.Dif"><code class="xref py py-class docutils literal notranslate"><span class="pre">iceprod.core.dataclasses.Dif</span></code></a> or
+<a class="reference internal" href="dataclasses.html#iceprod.core.dataclasses.Plus" title="iceprod.core.dataclasses.Plus"><code class="xref py py-class docutils literal notranslate"><span class="pre">iceprod.core.dataclasses.Plus</span></code></a></p></li>
+<li><p>eval : An arithmatic expression</p></li>
+<li><p>sum, min, max, len : Apply a reduction to a sequence</p></li>
+<li><p>choice : A random choice from a list of possibilites</p></li>
+<li><p>sprintf : The sprintf string syntax</p></li>
 </ul>
 <p>Examples:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>$steering(my_parameter)
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$steering(my_parameter)
 $system(gpu_opts)
 $args(option1)
 $options(option1)
@@ -278,39 +286,35 @@ $choice(1,2,3,4)
 $sprintf(&quot;%04d&quot;,4)
 </pre></div>
 </div>
-<dl class="method">
-<dt id="iceprod.core.parser.ExpParser.parse">
-<code class="descname">parse</code><span class="sig-paren">(</span><em>input</em>, <em>job=None</em>, <em>env=None</em>, <em>depth=20</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/parser.html#ExpParser.parse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.parser.ExpParser.parse" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="iceprod.core.parser.ExpParser.parse">
+<span class="sig-name descname"><span class="pre">parse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">env</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">depth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/parser.html#ExpParser.parse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iceprod.core.parser.ExpParser.parse" title="Permalink to this definition">¶</a></dt>
 <dd><p>Parse the input, expanding where possible.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>input</strong> – input string</li>
-<li><strong>job</strong> – <a class="reference internal" href="dataclasses.html#iceprod.core.dataclasses.Job" title="iceprod.core.dataclasses.Job"><code class="xref py py-class docutils literal"><span class="pre">iceprod.core.dataclasses.Job</span></code></a>, optional</li>
-<li><strong>env</strong> – env dictionary, optional</li>
-<li><strong>depth</strong> – how deep to recursively parse</li>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input</strong> – input string</p></li>
+<li><p><strong>job</strong> – <a class="reference internal" href="dataclasses.html#iceprod.core.dataclasses.Job" title="iceprod.core.dataclasses.Job"><code class="xref py py-class docutils literal notranslate"><span class="pre">iceprod.core.dataclasses.Job</span></code></a>, optional</p></li>
+<li><p><strong>env</strong> – env dictionary, optional</p></li>
+<li><p><strong>depth</strong> – how deep to recursively parse</p></li>
 </ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">expanded string</p>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>expanded string</p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
 
-<dl class="classmethod">
-<dt id="iceprod.core.parser.safe_eval.eval">
-<em class="property">classmethod </em><code class="descclassname">safe_eval.</code><code class="descname">eval</code><span class="sig-paren">(</span><em>expr</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/parser.html#safe_eval.eval"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.parser.safe_eval.eval" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="iceprod.core.parser.safe_eval.eval">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">safe_eval.</span></span><span class="sig-name descname"><span class="pre">eval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/parser.html#safe_eval.eval"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iceprod.core.parser.safe_eval.eval" title="Permalink to this definition">¶</a></dt>
 <dd><p>Safe evaluation of arithmatic operations using
-<a class="reference external" href="https://docs.python.org/3.6/library/ast.html#module-ast" title="(in Python v3.6)"><code class="xref py py-mod docutils literal"><span class="pre">Abstract</span> <span class="pre">Syntax</span> <span class="pre">Trees</span></code></a>.</p>
+<a class="reference external" href="https://docs.python.org/3.6/library/ast.html#module-ast" title="(in Python v3.6)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">Abstract</span> <span class="pre">Syntax</span> <span class="pre">Trees</span></code></a>.</p>
 </dd></dl>
 
-</div>
+</section>
 
 
            </div>
@@ -364,10 +368,10 @@ $sprintf(&quot;%04d&quot;,4)
             SOURCELINK_SUFFIX: '.txt'
         };
     </script>
+      <script type="text/javascript" src="../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

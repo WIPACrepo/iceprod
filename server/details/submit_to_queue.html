@@ -5,7 +5,8 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>From Submission to Queue &mdash; IceProd master documentation</title>
@@ -31,6 +32,10 @@
   
   <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
   
+  
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
   
 
   
@@ -69,7 +74,7 @@
             
             
               <div class="version">
-                2.5.4
+                2.5.6
               </div>
             
           
@@ -237,64 +242,67 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="from-submission-to-queue">
+  <section id="from-submission-to-queue">
 <span id="submit-to-queue"></span><span id="index-0"></span><h1>From Submission to Queue<a class="headerlink" href="#from-submission-to-queue" title="Permalink to this headline">¶</a></h1>
 <p>The following is an explanation of how tasks go from a user
 submission to queued on a grid.</p>
-<div class="section" id="dataset-submission">
+<section id="dataset-submission">
 <h2>Dataset Submission<a class="headerlink" href="#dataset-submission" title="Permalink to this headline">¶</a></h2>
 <p>The submit process takes a dataset config as input, usually
 through the website. It then creates the following entries:</p>
 <ul class="simple">
-<li>dataset</li>
-<li>config</li>
-<li>task_rel - one for each task</li>
+<li><p>dataset</p></li>
+<li><p>config</p></li>
+<li><p>task_rel - one for each task</p></li>
 </ul>
 <p>Note that if the IceProd instance you submit through does not
 know about a dataset dependency, submission will fail. Try submitting
 through the master instance in that case.</p>
-</div>
-<div class="section" id="buffering">
+</section>
+<section id="buffering">
 <h2>Buffering<a class="headerlink" href="#buffering" title="Permalink to this headline">¶</a></h2>
 <p>Jobs and tasks get buffered, or allocated, when there is empty
 space on a queue that they can run at. Whole jobs are buffered at
 once, so more than the requested number of tasks may be buffered.</p>
 <p>The following entries are made:</p>
 <ul class="simple">
-<li>search</li>
-<li>task</li>
-<li>job</li>
+<li><p>search</p></li>
+<li><p>task</p></li>
+<li><p>job</p></li>
 </ul>
-<div class="section" id="algorithm">
+<section id="algorithm">
 <h3>Algorithm<a class="headerlink" href="#algorithm" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>Get the possible datasets we can buffer from<ul>
-<li>Get number of jobs submitted for each dataset</li>
-<li>Subtract off already buffered jobs</li>
+<li><p>Get the possible datasets we can buffer from</p>
+<ul>
+<li><p>Get number of jobs submitted for each dataset</p></li>
+<li><p>Subtract off already buffered jobs</p></li>
 </ul>
 </li>
-<li>Get task_rel for each dataset</li>
-<li>For each dataset, and potential job to buffer:<ul>
-<li>Generate task dependencies for each task<ul>
-<li>Get a task_rel for the current task</li>
-<li>If missing a task_rel, load it</li>
-<li>Figure out which task is referenced for each task_rel dependency</li>
+<li><p>Get task_rel for each dataset</p></li>
+<li><p>For each dataset, and potential job to buffer:</p>
+<ul>
+<li><p>Generate task dependencies for each task</p>
+<ul>
+<li><p>Get a task_rel for the current task</p></li>
+<li><p>If missing a task_rel, load it</p></li>
+<li><p>Figure out which task is referenced for each task_rel dependency</p></li>
 </ul>
 </li>
-<li>If a dependency is not met, do not buffer</li>
-<li>Else, buffer the job and associated tasks</li>
+<li><p>If a dependency is not met, do not buffer</p></li>
+<li><p>Else, buffer the job and associated tasks</p></li>
 </ul>
 </li>
 </ul>
-</div>
-</div>
-<div class="section" id="queueing">
+</section>
+</section>
+<section id="queueing">
 <h2>Queueing<a class="headerlink" href="#queueing" title="Permalink to this headline">¶</a></h2>
 <p>Once a task is in <cite>waiting</cite> or <cite>idle</cite>, it can be queued
 (pending dependencies and requirements).  See <a class="reference internal" href="lifecycles.html#lifecycles"><span class="std std-ref">Lifecycles</span></a> for the
 actual happenings from this point on.</p>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
@@ -348,10 +356,10 @@ actual happenings from this point on.</p>
             SOURCELINK_SUFFIX: '.txt'
         };
     </script>
+      <script type="text/javascript" src="../../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

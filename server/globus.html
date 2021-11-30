@@ -5,7 +5,8 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>Globus &mdash; IceProd master documentation</title>
@@ -31,6 +32,10 @@
   
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
   
+  
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   
 
   
@@ -69,7 +74,7 @@
             
             
               <div class="version">
-                2.5.4
+                2.5.6
               </div>
             
           
@@ -235,64 +240,10 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module-iceprod.server.globus">
+  <section id="module-iceprod.server.globus">
 <span id="globus"></span><h1>Globus<a class="headerlink" href="#module-iceprod.server.globus" title="Permalink to this headline">¶</a></h1>
 <p>Tools to help manage Globus proxies</p>
-<dl class="class">
-<dt id="iceprod.server.globus.SiteGlobusProxy">
-<em class="property">class </em><code class="descclassname">iceprod.server.globus.</code><code class="descname">SiteGlobusProxy</code><span class="sig-paren">(</span><em>cfgfile=None</em>, <em>duration=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/globus.html#SiteGlobusProxy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.globus.SiteGlobusProxy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Manage site-wide globus proxy</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>cfgfile</strong> – cfgfile location (optional)</li>
-<li><strong>duration</strong> – proxy duration (optional, default 72 hours)</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-<dl class="method">
-<dt id="iceprod.server.globus.SiteGlobusProxy.set_passphrase">
-<code class="descname">set_passphrase</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/globus.html#SiteGlobusProxy.set_passphrase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.globus.SiteGlobusProxy.set_passphrase" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set the passphrase</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.globus.SiteGlobusProxy.set_duration">
-<code class="descname">set_duration</code><span class="sig-paren">(</span><em>d</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/globus.html#SiteGlobusProxy.set_duration"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.globus.SiteGlobusProxy.set_duration" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set the duration</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.globus.SiteGlobusProxy.set_voms_vo">
-<code class="descname">set_voms_vo</code><span class="sig-paren">(</span><em>vo</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/globus.html#SiteGlobusProxy.set_voms_vo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.globus.SiteGlobusProxy.set_voms_vo" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set the voms VO</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.globus.SiteGlobusProxy.set_voms_role">
-<code class="descname">set_voms_role</code><span class="sig-paren">(</span><em>r</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/globus.html#SiteGlobusProxy.set_voms_role"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.globus.SiteGlobusProxy.set_voms_role" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set the voms role</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.globus.SiteGlobusProxy.update_proxy">
-<code class="descname">update_proxy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/globus.html#SiteGlobusProxy.update_proxy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.globus.SiteGlobusProxy.update_proxy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Update the proxy</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.globus.SiteGlobusProxy.get_proxy">
-<code class="descname">get_proxy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/globus.html#SiteGlobusProxy.get_proxy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.globus.SiteGlobusProxy.get_proxy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the proxy location</p>
-</dd></dl>
-
-</dd></dl>
-
-</div>
+</section>
 
 
            </div>
@@ -346,10 +297,10 @@
             SOURCELINK_SUFFIX: '.txt'
         };
     </script>
+      <script type="text/javascript" src="../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

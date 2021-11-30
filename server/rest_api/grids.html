@@ -5,7 +5,8 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>REST API - Grids &mdash; IceProd master documentation</title>
@@ -31,6 +32,10 @@
   
   <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
   
+  
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
   
 
   
@@ -69,7 +74,7 @@
             
             
               <div class="version">
-                2.5.4
+                2.5.6
               </div>
             
           
@@ -237,121 +242,9 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module-iceprod.server.rest.grids">
+  <section id="module-iceprod.server.rest.grids">
 <span id="rest-api-grids"></span><h1>REST API - Grids<a class="headerlink" href="#module-iceprod.server.rest.grids" title="Permalink to this headline">¶</a></h1>
-<dl class="function">
-<dt id="iceprod.server.rest.grids.setup">
-<code class="descclassname">iceprod.server.rest.grids.</code><code class="descname">setup</code><span class="sig-paren">(</span><em>config</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/grids.html#setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.grids.setup" title="Permalink to this definition">¶</a></dt>
-<dd><p>Setup method for Grids REST API.</p>
-<p>Sets up any database connections or other prerequisites.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>config</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a>) – an instance of <a class="reference internal" href="../config.html#module-iceprod.server.config" title="iceprod.server.config"><code class="xref py py-class docutils literal"><span class="pre">iceprod.server.config</span></code></a>.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Routes for logs, which can be passed to <a class="reference external" href="https://tornado.readthedocs.io/en/stable/web.html#tornado.web.Application" title="(in Tornado v6.0.4)"><code class="xref py py-class docutils literal"><span class="pre">tornado.web.Application</span></code></a>.</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#list" title="(in Python v3.6)">list</a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="class">
-<dt id="iceprod.server.rest.grids.BaseHandler">
-<em class="property">class </em><code class="descclassname">iceprod.server.rest.grids.</code><code class="descname">BaseHandler</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/grids.html#BaseHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.grids.BaseHandler" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
-<dt id="iceprod.server.rest.grids.BaseHandler.initialize">
-<code class="descname">initialize</code><span class="sig-paren">(</span><em>database=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/grids.html#BaseHandler.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.grids.BaseHandler.initialize" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="iceprod.server.rest.grids.MultiGridsHandler">
-<em class="property">class </em><code class="descclassname">iceprod.server.rest.grids.</code><code class="descname">MultiGridsHandler</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/grids.html#MultiGridsHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.grids.MultiGridsHandler" title="Permalink to this definition">¶</a></dt>
-<dd><p>Handle multi grids requests.</p>
-<dl class="method">
-<dt id="iceprod.server.rest.grids.MultiGridsHandler.get">
-<code class="descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/grids.html#MultiGridsHandler.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.grids.MultiGridsHandler.get" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get grid entries.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">{‘uuid’: {grid_data}}</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.rest.grids.MultiGridsHandler.post">
-<code class="descname">post</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/grids.html#MultiGridsHandler.post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.grids.MultiGridsHandler.post" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create a grid entry.</p>
-<p>Body should contain the grid data.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">{‘result’: &lt;grid_id&gt;}</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="iceprod.server.rest.grids.GridsHandler">
-<em class="property">class </em><code class="descclassname">iceprod.server.rest.grids.</code><code class="descname">GridsHandler</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/grids.html#GridsHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.grids.GridsHandler" title="Permalink to this definition">¶</a></dt>
-<dd><p>Handle single grid requests.</p>
-<dl class="method">
-<dt id="iceprod.server.rest.grids.GridsHandler.get">
-<code class="descname">get</code><span class="sig-paren">(</span><em>grid_id</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/grids.html#GridsHandler.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.grids.GridsHandler.get" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get a grid entry.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>grid_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – the grid id</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">grid entry</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.rest.grids.GridsHandler.patch">
-<code class="descname">patch</code><span class="sig-paren">(</span><em>grid_id</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/rest/grids.html#GridsHandler.patch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.rest.grids.GridsHandler.patch" title="Permalink to this definition">¶</a></dt>
-<dd><p>Update a grid entry.</p>
-<p>Body should contain the grid data to update.  Note that this will
-perform a merge (not replace).</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>grid_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – the grid id</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">updated grid entry</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
-</div>
+</section>
 
 
            </div>
@@ -405,10 +298,10 @@ perform a merge (not replace).</p>
             SOURCELINK_SUFFIX: '.txt'
         };
     </script>
+      <script type="text/javascript" src="../../_static/documentation_options.js"></script>
       <script type="text/javascript" src="../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
