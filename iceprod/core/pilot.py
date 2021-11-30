@@ -61,13 +61,15 @@ class Pilot:
         rpc (:py:class:`iceprod.core.exe_json.ServerComms`): RPC to server
         debug (bool): debug mode (default False)
         run_timeout (int): how often to check if a task is running
-        backoff_delay (int): what starting delay to use for exponential backoff
+        backoff_delay (int): what constant delay to use for backoff
+        backoff_factor (int): what starting delay to use for exponential backoff
         download_delay (int): min delay between each task download attempt
+        resource_interval (float): seconds between resouce measurements
         restrict_site (bool): restrict running tasks to explicitly requiring this site
     """
     def __init__(self, config, runner, pilot_id, rpc=None, debug=False,
-                 run_timeout=180, backoff_delay=1, download_delay=60,
-                 restrict_site=False):
+                 run_timeout=180, backoff_delay=60, backoff_factor=1,
+                 download_delay=60, resource_interval=1.0, restrict_site=False):
         self.config = config
         self.runner = runner
         self.pilot_id = pilot_id
@@ -76,8 +78,9 @@ class Pilot:
         self.debug = debug
         self.run_timeout = run_timeout
         self.backoff_delay = backoff_delay
+        self.backoff_factor = backoff_factor
         self.download_delay = download_delay
-        self.resource_interval = 1.0 # seconds between resouce measurements
+        self.resource_interval = resource_interval
         self.query_params = {}
         self.last_download = None
 
@@ -264,10 +267,10 @@ class Pilot:
         tasks_running = 0
         async def backoff():
             """Backoff for rate limiting"""
-            delay = 60+self.backoff_delay*(1+random.random())
+            delay = self.backoff_delay+self.backoff_factor*(1+random.random())
             logger.info('backoff %d', delay)
             await asyncio.sleep(delay)
-            self.backoff_delay *= 2
+            self.backoff_factor *= 2
         while self.running or self.tasks:
             while self.running:
                 # retrieve new task(s)

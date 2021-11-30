@@ -62,8 +62,9 @@ class TestBase(AsyncTestCase):
 
         self.pilot_args = {
             'run_timeout': 0.001,
-            'backoff_delay': 0.000001,
-            'download_delay': 0.000001,
+            'backoff_delay': 0.0001,
+            'backoff_factor': 0.000001,
+            'download_delay': 0.0001,
         }
 
 class pilot_test(TestBase):
@@ -254,7 +255,9 @@ class pilot_multi_test(TestBase):
             logging.debug('runner - after')
             runner.called = True
         runner.called = False
-        async with pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=2.1, debug=True) as p:
+        args = self.pilot_args.copy()
+        args['run_timeout'] = 2.1
+        async with pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, debug=True, **args) as p:
             await p.run()
         self.assertTrue(runner.called)
         self.assertTrue(any(['a'] == args[1]['tasks'] for args in update_args))
@@ -291,7 +294,9 @@ class pilot_multi_test(TestBase):
             logging.debug('runner - after')
             runner.called = True
         runner.called = False
-        async with pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=1.2) as p:
+        args = self.pilot_args.copy()
+        args['run_timeout'] = 1.2
+        async with pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, **args) as p:
             await p.run()
         self.assertTrue(task_kill.called)
 
