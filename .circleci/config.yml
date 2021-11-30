@@ -29,7 +29,6 @@ jobs:
                 key: venv-{{ .Branch }}-{{ checksum "requirements.txt" }}
                 paths:
                     - "env"
-
     docs_build:
         docker:
             - image: circleci/python:3.7
