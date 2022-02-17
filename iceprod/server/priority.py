@@ -191,7 +191,9 @@ class Priority:
         if max_dataset_prio > 0:
             priority *= dataset_prio / max_dataset_prio
             logger.info(f'{dataset_id} after dataset adjustment: {priority}')
-        if max_dataset_prio_group > 0:
+        if group == 'users':
+            logger.info('group is "users", so skipping dataset group adjustment')
+        elif max_dataset_prio_group > 0:
             priority *= dataset_prio / max_dataset_prio_group
             logger.info(f'{dataset_id} after dataset group adjustment: {priority}')
         if max_user_prio > 0:
