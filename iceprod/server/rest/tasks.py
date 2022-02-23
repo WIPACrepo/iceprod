@@ -671,6 +671,7 @@ class TasksActionsErrorHandler(BaseHandler):
         })
         if self.request.body:
             data = json.loads(self.request.body)
+            task = await self.db.tasks.find_one(filter_query)
             if 'time_used' in data:
                 update_query['$inc']['walltime_err_n'] = 1
                 update_query['$inc']['walltime_err'] = data['time_used']/3600.
@@ -681,9 +682,15 @@ class TasksActionsErrorHandler(BaseHandler):
                 if 'resources' in data and k in data['resources']:
                     try:
                         new_val = float(data['resources'][k])
-                        if k == 'cpu' and (new_val <= 1.1 or new_val > 20): # special handling for cpu
-                            continue
-                        new_val *= 1.5 # increase new request by 1.5
+                        old_val = task['resources'][k] if k in task['resources'] else Resources.defaults[k]
+                        if k == 'cpu': # special handling for cpu
+                            if new_val <= 1.1 or new_val > 20:
+                                continue
+                            if new_val < old_val*1.1:
+                                continue
+                            new_val = old_val+1 # increase linearly
+                        else:
+                            new_val *= 1.5 # increase new request by 1.5
                         if isinstance(Resources.defaults[k], (int, list)):
                             new_val = math.ceil(new_val)
                     except Exception:
