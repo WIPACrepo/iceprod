@@ -587,9 +587,9 @@ def get_gpus():
                     logging.info('got gpus from machine ad: %r',ret)
                 except Exception:
                     pass
-            for line in ads:
-                if 'cuda' in line.lower() or 'ocl' in line.lower():
-                    logging.warning('.machine.ad: %s', line)
+            for k in ads:
+                if 'cuda' in k.lower() or 'ocl' in k.lower():
+                    logging.warning('.machine.ad: %s=%s', k, ads[k])
     if (not ret) and 'CUDA_VISIBLE_DEVICES' in os.environ:
         try:
             ret = [x.strip() for x in os.environ['CUDA_VISIBLE_DEVICES'].split(',') if x.strip()]
