@@ -88,7 +88,7 @@ async def run(rest_client, dataset_id=None, debug=False):
 
         # update priorities
         futures = set()
-        for task in tasks:
+        for task in tasks2:
             if len(futures) >= 20:
                 done, pending = await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED)
                 futures = pending
