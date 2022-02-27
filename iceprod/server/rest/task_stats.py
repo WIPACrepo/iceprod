@@ -115,7 +115,7 @@ class DatasetsBulkTaskStatsHandler(BaseHandler):
         query = {'dataset_id':dataset_id}
         after = self.get_argument('after', None)
         if after:
-            query['create_date'] = {"$gte":newer_than}
+            query['create_date'] = {"$gte": after}
 
         projection = {'_id': False}
         keys = self.get_argument('keys','')
