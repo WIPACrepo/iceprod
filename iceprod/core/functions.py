@@ -266,7 +266,7 @@ def gethostname():
     """Get hostname of this computer."""
     ret = socket.getfqdn()
     try:
-        resp = requests.get('http://simprod.icecube.wisc.edu/downloads/getip.php')
+        resp = requests.get('http://simprod.icecube.wisc.edu/downloads/getip.php', timeout=1)
         resp.raise_for_status()
         logging.info('getip: %r', resp.text)
         ret2 = resp.text.split(' ')[-1]
