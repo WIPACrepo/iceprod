@@ -113,6 +113,7 @@ async def run(rest_client, dataset_id=None, debug=False):
 
 def main():
     import argparse
+    import os
     parser = argparse.ArgumentParser(description='run a scheduled task once')
     parser.add_argument('-t', '--token', default=os.environ.get('ICEPROD_TOKEN', None), help='auth token')
     parser.add_argument('-d', '--dataset', type=str, default=None, help='dataset id (optional)')
@@ -126,10 +127,10 @@ def main():
     logging.basicConfig(format=logformat, level=getattr(logging, args['log_level'].upper()))
 
     from rest_tools.client import RestClient
-    rpc = RestClient('https://materialization.iceprod.icecube.aq', args['token'])
+    rpc = RestClient('https://iceprod2-api.icecube.wisc.edu', args['token'])
 
     import asyncio
-    asyncio.run(run(rpc, dataset_id=args['dataset'],  run_once=True, debug=args['debug']))
+    asyncio.run(run(rpc, dataset_id=args['dataset'], debug=args['debug']))
 
 if __name__ == '__main__':
     main()
