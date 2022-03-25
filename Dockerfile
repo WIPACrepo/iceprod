@@ -29,6 +29,8 @@ RUN git clone https://github.com/WIPACrepo/UberFTP.git
 
 WORKDIR /root/UberFTP
 
+RUN touch NEWS README AUTHORS ChangeLog && aclocal && automake --add-missing
+
 RUN ./configure --with-globus_config=/usr/include/globus
 
 RUN make install
