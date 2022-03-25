@@ -93,7 +93,7 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(description='run a scheduled task once')
     parser.add_argument('-t', '--token', default=os.environ.get('ICEPROD_TOKEN', None), help='auth token')
-    parser.add_argument('-d', '--dataset', type=str, default=None, help='dataset num (optional)')
+    parser.add_argument('-d', '--dataset', type=str, default=None, help='dataset id (optional)')
     parser.add_argument('-n', '--num', type=int, default=100, help='number of jobs per dataset to buffer')
     parser.add_argument('--log-level', default='info', help='log level')
     parser.add_argument('--debug', default=False, action='store_true', help='debug enabled')

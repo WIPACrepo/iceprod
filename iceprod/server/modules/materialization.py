@@ -164,8 +164,9 @@ class Materialize:
                     continue
                 try:
                     dataset = await self.rest_client.request('GET', '/datasets/{}'.format(dataset_id))
+                    job_counts = await self.rest_client.request('GET', '/datasets/{}/job_counts/status'.format(dataset_id))
                     tasks = await self.rest_client.request('GET', '/datasets/{}/task_counts/status'.format(dataset_id))
-                    if 'waiting' not in tasks or tasks['waiting'] < num or only_dataset:
+                    if 'waiting' not in tasks or 'processing' not in job_counts or job_counts['processing'] < num or only_dataset:
                         # buffer for this dataset
                         logger.warning('checking dataset %s', dataset_id)
                         jobs = await self.rest_client.request('GET', '/datasets/{}/jobs'.format(dataset_id), {'keys': 'job_id|job_index'})
