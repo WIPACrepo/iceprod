@@ -103,3 +103,39 @@ async def run(rest_client, statsd, debug=False):
     stop_time = time.time()
     delay = max(60*5 - (stop_time-start_time), 60)
     IOLoop.current().call_later(delay, run, rest_client, statsd)
+
+def main():
+    import argparse
+    import asyncio
+    import os
+    parser = argparse.ArgumentParser(description='run a scheduled task once')
+    parser.add_argument('-t', '--token', default=os.environ.get('ICEPROD_TOKEN', None), help='auth token')
+    parser.add_argument('--statsd-address', default=os.environ.get('STATSD_ADDRESS', None), help='statsd address')
+    parser.add_argument('--statsd-prefix', default=os.environ.get('STATSD_PREFIX', 'site'), help='statsd site prefix')
+    parser.add_argument('--log-level', default='info', help='log level')
+    parser.add_argument('--debug', default=False, action='store_true', help='debug enabled')
+
+    args = parser.parse_args()
+    args = vars(args)
+
+    logformat='%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
+    logging.basicConfig(format=logformat, level=getattr(logging, args['log_level'].upper()))
+
+    from rest_tools.client import RestClient
+    rpc = RestClient('https://iceprod2-api.icecube.wisc.edu', args['token'])
+
+    from iceprod.server.module import FakeStatsClient, StatsClientIgnoreErrors
+    if not args['statsd_address']:
+        statsd = FakeStatsClient()
+    else:
+        addr = args['statsd_address']
+        port = 8125
+        if ':' in addr:
+            addr,port = addr.split(':')
+            port = int(port)
+        statsd = StatsClientIgnoreErrors(addr, port=port, prefix=args['statsd_prefix']+'.schedule')
+
+    asyncio.run(run(rpc, statsd, debug=args['debug']))
+
+if __name__ == '__main__':
+    main()

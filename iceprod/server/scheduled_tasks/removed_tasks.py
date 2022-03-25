@@ -57,7 +57,7 @@ async def run(rest_client, debug=False):
         pilots = await rest_client.request('GET', '/pilots?keys=pilot_id|tasks')
         for p in pilots.values():
             if 'tasks' in p and p['tasks']:
-                awaitables.add(test_pilot(p))
+                awaitables.add(asyncio.create_task(test_pilot(p)))
                 if len(awaitables) >= 40:
                     done,pending = await asyncio.wait(awaitables, return_when=asyncio.FIRST_COMPLETED)
                     awaitables = pending
@@ -75,3 +75,26 @@ async def run(rest_client, debug=False):
     stop_time = time.time()
     delay = max(60*5 - (stop_time-start_time), 60)
     IOLoop.current().call_later(delay, run, rest_client)
+
+
+def main():
+    import argparse
+    import os
+    parser = argparse.ArgumentParser(description='run a scheduled task once')
+    parser.add_argument('-t', '--token', default=os.environ.get('ICEPROD_TOKEN', None), help='auth token')
+    parser.add_argument('--log-level', default='info', help='log level')
+    parser.add_argument('--debug', default=False, action='store_true', help='debug enabled')
+
+    args = parser.parse_args()
+    args = vars(args)
+
+    logformat='%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
+    logging.basicConfig(format=logformat, level=getattr(logging, args['log_level'].upper()))
+
+    from rest_tools.client import RestClient
+    rpc = RestClient('https://iceprod2-api.icecube.wisc.edu', args['token'])
+
+    asyncio.run(run(rpc, debug=args['debug']))
+
+if __name__ == '__main__':
+    main()

@@ -33,7 +33,7 @@ def queue_tasks(module):
     # initial delay
     IOLoop.current().call_later(random.randint(5,60), run, module.rest_client)
 
-async def run(rest_client, debug=False):
+async def run(rest_client, ntasks=NTASKS, ntasks_per_cycle=NTASKS_PER_CYCLE, debug=False):
     """
     Actual runtime / loop.
 
@@ -50,7 +50,7 @@ async def run(rest_client, debug=False):
             num_tasks_waiting = tasks['waiting']
         if 'queued' in tasks:
             num_tasks_queued = tasks['queued']
-        tasks_to_queue = min(num_tasks_waiting, NTASKS - num_tasks_queued, NTASKS_PER_CYCLE)
+        tasks_to_queue = min(num_tasks_waiting, ntasks - num_tasks_queued, ntasks_per_cycle)
         logger.warning(f'num tasks waiting: {num_tasks_waiting}')
         logger.warning(f'num tasks queued: {num_tasks_queued}')
         logger.warning(f'tasks to queue: {tasks_to_queue}')
@@ -111,3 +111,30 @@ async def run(rest_client, debug=False):
     stop_time = time.time()
     delay = max(60*5 - (stop_time-start_time), 60)
     IOLoop.current().call_later(delay, run, rest_client)
+
+
+def main():
+    import argparse
+    import os
+    parser = argparse.ArgumentParser(description='run a scheduled task once')
+    parser.add_argument('-t', '--token', default=os.environ.get('ICEPROD_TOKEN', None), help='auth token')
+    parser.add_argument('--ntasks', type=int, default=os.environ.get('NTASKS', NTASKS),
+                        help='number of tasks to keep queued')
+    parser.add_argument('--ntasks_per_cycle', type=int, default=os.environ.get('NTASKS_PER_CYCLE', NTASKS_PER_CYCLE),
+                        help='number of tasks to queue per cycle')
+    parser.add_argument('--log-level', default='info', help='log level')
+    parser.add_argument('--debug', default=False, action='store_true', help='debug enabled')
+
+    args = parser.parse_args()
+    args = vars(args)
+
+    logformat='%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
+    logging.basicConfig(format=logformat, level=getattr(logging, args['log_level'].upper()))
+
+    from rest_tools.client import RestClient
+    rpc = RestClient('https://iceprod2-api.icecube.wisc.edu', args['token'])
+
+    asyncio.run(run(rpc, ntasks=args['ntasks'], ntasks_per_cycle=args['ntasks_per_cycle'], debug=args['debug']))
+
+if __name__ == '__main__':
+    main()
