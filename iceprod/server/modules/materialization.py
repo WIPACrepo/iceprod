@@ -232,8 +232,8 @@ class Materialize:
             task_ids = []
             task_iter = enumerate(task_names)
         elif job_id:
-            task_ids = [task['task_id'] for task in tasks]
-            task_indexes = {task['task_index'] for task in tasks}
+            task_ids = [task['task_id'] for task in tasks] if tasks else []
+            task_indexes = {task['task_index'] for task in tasks} if tasks else {}
             task_iter = [(i,name) for i,name in enumerate(task_names) if i not in task_indexes]
             if not task_iter:
                 raise Exception('no task names to create')
@@ -598,6 +598,8 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--rest_token', default=None)
     parser.add_argument('--set_status', default=None,help='initial task status')
     parser.add_argument('-n','--num', default=100,type=int,help='number of jobs to materialize')
+    parser.add_argument('--job_index', type=int, help='specific job index to buffer')
+    parser.add_argument('--job_id', default=None, help='specific job id to buffer tasks into')
     parser.add_argument('--debug',action='store_true')
     parser.add_argument('--dryrun',action='store_true',help='do not modify database, just log changes')
     args = parser.parse_args()
@@ -607,4 +609,12 @@ if __name__ == '__main__':
 
     rest_client = RestClient(args.rest_url, args.rest_token)
     materialize = Materialize(rest_client)
-    asyncio.run(materialize.run_once(only_dataset=args.dataset_id, set_status=args.set_status, num=args.num, dryrun=args.dryrun))
+    if args.job_index:
+        logging.warning('manually buffering a job for dataset %s job %d', args.dataset_id, args.job_index)
+        async def run():
+            dataset = await rest_client.request('GET', '/datasets/{}'.format(args.dataset_id))
+            materialize.prio = Priority(rest_client)
+            await materialize.buffer_job(dataset, args.job_index, job_id=args.job_id)
+        asyncio.run(run())
+    else:
+        asyncio.run(materialize.run_once(only_dataset=args.dataset_id, set_status=args.set_status, num=args.num, dryrun=args.dryrun))
