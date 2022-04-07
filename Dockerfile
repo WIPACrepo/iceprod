@@ -47,7 +47,7 @@ COPY --from=build /usr/local/bin/uberftp /usr/local/bin/
 
 COPY --from=build /etc/grid-security/certificates/ /etc/grid-security/certificates/
 
-RUN useradd -m -U iceprod
+RUN groupadd -g 1000 iceprod && useradd -m -g 1000 -u 1000 iceprod
 
 WORKDIR /home/iceprod
 
@@ -57,10 +57,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 USER iceprod
 
-COPY bin bin
-COPY iceprod iceprod
-COPY resources resources
-COPY env.sh ./
+COPY --chown=1000:1000 bin bin
+COPY --chown=1000:1000 iceprod iceprod
+COPY --chown=1000:1000 resources resources
+COPY --chown=1000:1000 env.sh ./
 
 RUN mkdir etc
 
