@@ -155,7 +155,12 @@ class data_transfer_test(AsyncTestCase):
         with open('bar', 'w') as f:
             f.write('test')
 
+        async def passthrough(*args, **kwargs):
+            pass
+        upload.side_effect = passthrough
+
         await iceprod.core.data_transfer.process(config)
+        download.assert_not_called()
         upload.assert_called()
 
     @patch('iceprod.core.exe.functions.download')
@@ -197,6 +202,10 @@ class data_transfer_test(AsyncTestCase):
             with open(local, 'w') as f:
                 f.write('test')
         download.side_effect = d
+
+        async def passthrough(*args, **kwargs):
+            pass
+        upload.side_effect = passthrough
 
         await iceprod.core.data_transfer.process(config)
         download.assert_called()
@@ -241,8 +250,13 @@ class data_transfer_test(AsyncTestCase):
             with open(f'bar.{i}', 'w') as f:
                 f.write('test')
 
+        async def passthrough(*args, **kwargs):
+            pass
+        upload.side_effect = passthrough
+
         await iceprod.core.data_transfer.process(config)
         self.assertEqual(upload.call_count, 3)
+        download.assert_not_called()
 
 
 def load_tests(loader, tests, pattern):
