@@ -122,6 +122,8 @@ for err in test_result.errors:
     err_str = str(err[0])+err[1]
     if any(e in err_str for e in ('ModuleImportFailure','SyntaxError','ImportError','AttributeError')):
         print(err[1])
+    else:
+        print(err[1])
 print('-'*70)
 print('Ran %d tests in %0.3fs'%(test_suites.countTestCases(),time.time()-start_time))
 if not test_result.wasSuccessful():

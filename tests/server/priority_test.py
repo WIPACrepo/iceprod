@@ -90,7 +90,7 @@ class priority_test(AsyncTestCase):
         self.assertLess(prio2, prio1)
 
         prio3 = await p.get_dataset_prio('d2')
-        self.assertEqual(prio3, prio1)
+        self.assertLess(prio3, prio1)
 
     @unittest_reporter
     async def test_20_get_task_prio(self):

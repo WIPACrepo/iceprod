@@ -132,15 +132,15 @@ class job_temp_cleaning_test(AsyncTestCase):
         gridftp.list.side_effect = [[FakeFile('0')], [FakeFile('foobar')]]
         jobs['bar'] = {'job_index':1,'status':'suspended','status_changed':
                        (datetime.utcnow()-timedelta(days=100)).isoformat()}
-        await job_temp_cleaning.run(rc, self.cfg, self.executor, debug=True)
-        self.assertTrue(client.called)
-        self.assertFalse(gridftp.rmtree.called)
+        with self.assertRaises(Exception):
+            await job_temp_cleaning.run(rc, self.cfg, self.executor, debug=True)
 
         gridftp.list.side_effect = [[FakeFile('0')], [FakeFile('1')]]
         jobs['bar'] = {'job_index':1,'status':'suspended','status_changed':
                        (datetime.utcnow()-timedelta(days=100)).isoformat()}
         gridftp.rmtree.side_effect = Exception()
-        await job_temp_cleaning.run(rc, self.cfg, self.executor, debug=True)
+        with self.assertRaises(Exception):
+            await job_temp_cleaning.run(rc, self.cfg, self.executor, debug=True)
         self.assertTrue(client.called)
         self.assertTrue(gridftp.rmtree.called)
         self.assertEqual(gridftp.rmtree.call_args[0][0], 'foo/0/1')

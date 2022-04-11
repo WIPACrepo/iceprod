@@ -55,6 +55,8 @@ class dataset_completion_test(AsyncTestCase):
             logger.info('REST: %s, %s', method, url)
             if url.startswith('/dataset_summaries'):
                 return dataset_summaries
+            elif url == '/config/foo':
+                return {}
             elif url == '/datasets/foo':
                 return {'jobs_submitted':2, 'tasks_submitted':2}
             elif url.startswith('/datasets/foo/job_counts'):

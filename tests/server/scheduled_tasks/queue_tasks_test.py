@@ -50,13 +50,13 @@ class queue_tasks_test(AsyncTestCase):
     async def test_200_run(self):
         rc = MagicMock(spec=RestClient)
         async def client(method, url, args=None):
-            if url.startswith('/dataset_summaries'):
-                return {'processing':['foo']}
-            elif url == '/datasets/foo':
+            if url == '/datasets/foo':
                 return {'priority':2}
-            elif url.startswith('/datasets/foo/task_counts/status'):
+            elif url == '/task_counts/status':
                 return {'waiting':100,'queued':2}
-            elif url == '/task_actions/queue' and method == 'POST':
+            elif url == '/tasks':
+                return {'tasks': [{'task_id': 'task1'}]}
+            elif url == '/task_actions/bulk_status/queued' and method == 'POST':
                 client.called = True
                 return {}
             else:
@@ -67,9 +67,9 @@ class queue_tasks_test(AsyncTestCase):
         self.assertTrue(client.called)
         
         async def client(method, url, args=None):
-            if url.startswith('/dataset_summaries'):
+            if url == '/task_counts/status':
                 return {}
-            elif url == '/task_actions/queue' and method == 'POST':
+            elif url == '/task_actions/bulk_status/queued' and method == 'POST':
                 client.called = True
                 return {}
             else:
@@ -80,13 +80,11 @@ class queue_tasks_test(AsyncTestCase):
         self.assertFalse(client.called)
         
         async def client(method, url, args=None):
-            if url.startswith('/dataset_summaries'):
-                return {'processing':['foo']}
-            elif url == '/datasets/foo':
+            if url == '/datasets/foo':
                 return {'priority':2}
-            elif url.startswith('/datasets/foo/task_counts/status'):
+            elif url.startswith('/task_counts/status'):
                 return {}
-            elif url == '/task_actions/queue' and method == 'POST':
+            elif url == '/task_actions/bulk_status/queued' and method == 'POST':
                 client.called = True
                 return {}
             else:
@@ -97,13 +95,13 @@ class queue_tasks_test(AsyncTestCase):
         self.assertFalse(client.called)
 
         async def client(method, url, args=None):
-            if url.startswith('/dataset_summaries'):
-                return {'processing':['foo']}
-            elif url == '/datasets/foo':
+            if url == '/datasets/foo':
                 return {'priority':2}
-            elif url.startswith('/datasets/foo/task_counts/status'):
+            elif url.startswith('/task_counts/status'):
                 return {'waiting':100,'queued':100000}
-            elif url == '/task_actions/queue' and method == 'POST':
+            elif url == '/tasks':
+                return {'tasks': []}
+            elif url == '/task_actions/bulk_status/queued' and method == 'POST':
                 client.called = True
                 return {}
             else:
@@ -117,9 +115,9 @@ class queue_tasks_test(AsyncTestCase):
     async def test_300_run(self):
         rc = MagicMock(spec=RestClient)
         async def client(method, url, args=None):
-            if url.startswith('/dataset_summaries'):
+            if url.startswith('/task_counts/status'):
                 client.called = True
-                return {'processing':['foo']}
+                return {'waiting':100,'queued':100000}
             else:
                 raise Exception()
         client.called = False

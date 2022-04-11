@@ -28,35 +28,43 @@ import unittest
 import iceprod.core.gridftp
 
 skip_tests = False
+if (subprocess.call(['which','grid-proxy-init']) or
+    subprocess.call(['grid-proxy-info','-e','-valid','1:0'])):
+    skip_tests = True
+    
+skip_uberftp_tests = skip_tests
 if (subprocess.call(['which','uberftp']) or
     subprocess.call(['which','globus-url-copy'])):
-    skip_tests = True
+    skip_uberftp_tests = True
+
 
 class gridftp_test(unittest.TestCase):
     def setUp(self):
         super(gridftp_test,self).setUp()
-        
+
         self._timeout = 1
         self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
         self.server_test_dir = os.path.join('gsiftp://gridftp.icecube.wisc.edu/data/sim/sim-new/tmp/test',
                                             str(random.randint(0,2**32)))
-        try:
-            iceprod.core.gridftp.GridFTP.mkdir(self.server_test_dir,
-                                               parents=True,
-                                               request_timeout=self._timeout)
-        except:
-            pass
-        if not os.path.exists(self.test_dir):
-            os.mkdir(self.test_dir)
 
-        def cleanup():
+        if not skip_tests:
             try:
-                iceprod.core.gridftp.GridFTP.rmtree(self.server_test_dir,
-                                                    request_timeout=self._timeout)
+                iceprod.core.gridftp.GridFTP.mkdir(self.server_test_dir,
+                                                   parents=True,
+                                                   request_timeout=self._timeout)
             except:
                 pass
-            shutil.rmtree(self.test_dir)
-        self.addCleanup(cleanup)
+            if not os.path.exists(self.test_dir):
+                os.mkdir(self.test_dir)
+
+            def cleanup():
+                try:
+                    iceprod.core.gridftp.GridFTP.rmtree(self.server_test_dir,
+                                                        request_timeout=self._timeout)
+                except:
+                    pass
+                shutil.rmtree(self.test_dir)
+            self.addCleanup(cleanup)
 
     @unittest_reporter(skip=skip_tests)
     def test_01_supported_address(self):
@@ -284,7 +292,7 @@ class gridftp_test(unittest.TestCase):
         iceprod.core.gridftp.GridFTP.delete(address,
                                             request_timeout=self._timeout)
 
-    @unittest_reporter(skip=skip_tests,name='rmtree(file)')
+    @unittest_reporter(skip=skip_uberftp_tests,name='rmtree(file)')
     def test_140_rmtree(self):
         """Test rmtree of a file - synchronous"""
         address = os.path.join(self.server_test_dir,'file_test')
@@ -297,7 +305,7 @@ class gridftp_test(unittest.TestCase):
         iceprod.core.gridftp.GridFTP.rmtree(address,
                                             request_timeout=self._timeout)
 
-    @unittest_reporter(skip=skip_tests,name='rmtree(empty dir)')
+    @unittest_reporter(skip=skip_uberftp_tests,name='rmtree(empty dir)')
     def test_141_rmtree(self):
         """Test rmtree of an empty dir - synchronous"""
         address = os.path.join(self.server_test_dir,'test')
@@ -309,7 +317,7 @@ class gridftp_test(unittest.TestCase):
         iceprod.core.gridftp.GridFTP.rmtree(address,
                                             request_timeout=self._timeout)
 
-    @unittest_reporter(skip=skip_tests,name='rmtree(dir + file)')
+    @unittest_reporter(skip=skip_uberftp_tests,name='rmtree(dir + file)')
     def test_142_rmtree(self):
         """Test rmtree of a directory with a file - synchronous"""
         address = os.path.join(self.server_test_dir,'test')
@@ -328,7 +336,7 @@ class gridftp_test(unittest.TestCase):
         iceprod.core.gridftp.GridFTP.rmtree(address,
                                             request_timeout=self._timeout)
 
-    @unittest_reporter(skip=skip_tests,name='rmtree(dir + dir + file)')
+    @unittest_reporter(skip=skip_uberftp_tests,name='rmtree(dir + dir + file)')
     def test_143_rmtree(self):
         """Test rmtree of dir with subdir and subfile - synchronous"""
         address = os.path.join(self.server_test_dir,'test')
@@ -400,7 +408,7 @@ class gridftp_test(unittest.TestCase):
         if ret is not True:
             raise Exception('exists failed on new address')
 
-    @unittest_reporter(skip=skip_tests)
+    @unittest_reporter(skip=skip_uberftp_tests)
     def test_180_checksum(self):
         """Test checksums - synchronous"""
         address = os.path.join(self.server_test_dir,'test')
@@ -436,7 +444,7 @@ class gridftp_test(unittest.TestCase):
         if ret != correct:
             raise Exception('sha512sum failed: ret=%r and correct=%r'%(ret,correct))
 
-    @unittest_reporter(skip=skip_tests)
+    @unittest_reporter(skip=skip_uberftp_tests)
     def test_190_size(self):
         """Test size - synchronous"""
         address = os.path.join(self.server_test_dir,'test')

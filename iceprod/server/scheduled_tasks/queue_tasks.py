@@ -66,7 +66,7 @@ async def run(rest_client, ntasks=NTASKS, ntasks_per_cycle=NTASKS_PER_CYCLE, deb
             queue_tasks = []
             deps_futures = set()
             async def check_deps(task):
-                for dep in task['depends']:
+                for dep in task.get('depends', []):
                     ret = await rest_client.request('GET', f'/tasks/{dep}')
                     if ret['status'] != 'complete':
                         logger.info('dependency not met for task %s', task['task_id'])
@@ -74,7 +74,7 @@ async def run(rest_client, ntasks=NTASKS, ntasks_per_cycle=NTASKS_PER_CYCLE, deb
                         return None
                 return task
             for task in ret['tasks']:
-                if not task['depends']:
+                if not task.get('depends', None):
                     logger.info('queueing task %s', task['task_id'])
                     queue_tasks.append(task['task_id'])
                 else:

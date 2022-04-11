@@ -63,12 +63,12 @@ class website(module.module):
         # set up local variables
         self.http_server = None
 
-    def stop(self):
+    async def stop(self):
         """Stop website"""
         # stop tornado
         try:
             if self.http_server:
-                self.http_server.stop()
+                await self.http_server.stop()
         except Exception:
             logger.error('cannot stop tornado', exc_info=True)
         super(website,self).stop()
@@ -351,7 +351,7 @@ class Config(PublicHandler):
             'passkey':passkey,
             'dataset_id':dataset_id,
             'config':config,
-            'description':dataset['description'],
+            'description':dataset.get('description',''),
         }
         self.render('submit.html',**render_args)
 
@@ -444,8 +444,9 @@ class TaskBrowse(PublicHandler):
         if status:
             tasks = await self.rest_client.request('GET','/datasets/{}/tasks?status={}'.format(dataset_id,status))
             for t in tasks:
-                job = await self.rest_client.request('GET', '/datasets/{}/jobs/{}'.format(dataset_id, tasks[t]['job_id']))
-                tasks[t]['job_index'] = job['job_index']
+                if 'job_index' not in tasks[t]:
+                    job = await self.rest_client.request('GET', '/datasets/{}/jobs/{}'.format(dataset_id, tasks[t]['job_id']))
+                    tasks[t]['job_index'] = job['job_index']
             ret = await self.rest_client.request('POST','/create_token')
             passkey = ret['result']
             self.render('task_browse.html',tasks=tasks, passkey=passkey)

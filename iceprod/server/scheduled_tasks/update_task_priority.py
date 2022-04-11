@@ -54,7 +54,7 @@ async def run(rest_client, dataset_id=None, debug=False):
 
         async def check_deps(task):
             dep_futures = []
-            for dep in task['depends']:
+            for dep in task.get('depends', []):
                 t = asyncio.create_task(rest_client.request('GET', f'/tasks/{dep}'))
                 dep_futures.append(t)
             for ret in await asyncio.gather(*dep_futures):

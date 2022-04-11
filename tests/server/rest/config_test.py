@@ -25,7 +25,8 @@ import tornado.ioloop
 from tornado.httpclient import AsyncHTTPClient, HTTPError
 from tornado.testing import AsyncTestCase
 
-from rest_tools.server import Auth, RestServer
+from rest_tools.utils import Auth
+from rest_tools.server import RestServer
 
 from iceprod.server.modules.rest_api import setup_rest
 import iceprod.server.rest.config

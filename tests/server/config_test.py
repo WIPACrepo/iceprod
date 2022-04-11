@@ -26,9 +26,10 @@ class config_test(unittest.TestCase):
         def cleanup():
             shutil.rmtree(self.test_dir)
         self.addCleanup(cleanup)
+        os.mkdir(os.path.join(self.test_dir, 'etc'))
 
-        os.chdir(self.test_dir)
         original_dir = os.getcwd()
+        os.chdir(self.test_dir)
         def reset_dir():
             os.chdir(original_dir)
         self.addCleanup(reset_dir)

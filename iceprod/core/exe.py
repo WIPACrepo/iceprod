@@ -356,7 +356,7 @@ async def downloadResource(env, resource, remote_base=None,
                 'now': datetime.utcnow().isoformat(),
                 'duration': time.time()-start_time,
             }
-            if not failed:
+            if (not failed) and os.path.exists(local):
                 stats['size'] = os.path.getsize(local)
                 stats['rate_MBps'] = stats['size']/1000/1000/stats['duration']
 

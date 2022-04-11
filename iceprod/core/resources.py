@@ -441,6 +441,7 @@ class Resources:
                 lookups[r] = True
             else:
                 lookups[r] = False
+        logging.debug('lookups: %r', lookups)
 
         # get current values
         processes = [process]+task['children']

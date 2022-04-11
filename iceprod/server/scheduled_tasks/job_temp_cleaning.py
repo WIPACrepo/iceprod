@@ -95,7 +95,7 @@ async def run(rest_client, cfg, executor, dataset=None, debug=False):
                 if not j.isnumeric():
                     if debug:
                         logger.info('j is not numeric: %r', j)
-                        raise
+                        raise Exception('not numeric')
                     continue
                 if int(j) in job_indexes:
                     try:

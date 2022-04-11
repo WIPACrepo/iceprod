@@ -520,6 +520,6 @@ class buffer_jobs_tasks_test(AsyncTestCase):
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
-    alltests = glob_tests(loader.getTestCaseNames(buffer_jobs_tasks_test))
-    suite.addTests(loader.loadTestsFromNames(alltests,buffer_jobs_tasks_test))
+    #alltests = glob_tests(loader.getTestCaseNames(buffer_jobs_tasks_test))
+    #suite.addTests(loader.loadTestsFromNames(alltests,buffer_jobs_tasks_test))
     return suite

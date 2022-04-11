@@ -25,7 +25,8 @@ import tornado.ioloop
 from tornado.httpclient import AsyncHTTPClient, HTTPError
 from tornado.testing import AsyncTestCase
 
-from rest_tools.server import Auth, RestServer
+from rest_tools.utils import Auth
+from rest_tools.server import RestServer
 
 from iceprod.server.modules.rest_api import setup_rest
 
@@ -611,6 +612,7 @@ class rest_tasks_test(RestTestCase):
             'name': 'bar',
             'depends': [],
             'requirements': {'memory':5.6, 'gpu':1},
+            'resources': {}
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),

@@ -25,7 +25,8 @@ import tornado.ioloop
 from tornado.httpclient import AsyncHTTPClient, HTTPError
 from tornado.testing import AsyncTestCase
 
-from rest_tools.server import Auth, RestServer
+from rest_tools.utils import Auth
+from rest_tools.server import RestServer
 
 from iceprod.server.modules.rest_api import setup_rest
 
@@ -155,6 +156,7 @@ class rest_jobs_test(RestTestCase):
         data = {
             'dataset_id': 'foo',
             'job_index': 0,
+            'status': 'processing'
         }
         r = yield client.fetch('http://localhost:%d/jobs'%self.port,
                 method='POST', body=json.dumps(data),
@@ -163,7 +165,7 @@ class rest_jobs_test(RestTestCase):
         ret = json.loads(r.body)
         job_id = ret['result']
 
-        data2 = {'status':'failed'}
+        data2 = {'status':'errors'}
         r = yield client.fetch('http://localhost:%d/datasets/%s/jobs/%s/status'%(self.port,data['dataset_id'],job_id),
                 method='PUT', body=json.dumps(data2),
                 headers={'Authorization': 'bearer '+self.token})
@@ -174,7 +176,7 @@ class rest_jobs_test(RestTestCase):
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertIn('status', ret)
-        self.assertEqual(ret['status'], 'failed')
+        self.assertEqual(ret['status'], 'errors')
 
     @unittest_reporter(name='REST GET    /datasets/<dataset_id>/job_summaries/status')
     def test_300_jobs(self):

@@ -176,7 +176,7 @@ class resources_test(unittest.TestCase):
         r.lookup_intervals['memory'] = 0.1
 
         task_id = 'foo'
-        reqs = {'cpu':1, 'gpu':1, 'memory':2.1, 'disk':3.4, 'time': 9}
+        reqs = {'cpu':1, 'gpu':0, 'memory':2.1, 'disk':3.4, 'time': 9}
         c = r.claim(task_id, reqs)
         proc = psutil.Process()
         tmpdir = self.test_dir
@@ -569,10 +569,25 @@ class resources_test(unittest.TestCase):
         ret = iceprod.core.resources.sanitized_requirements(r)
         self.assertEqual(r['cpu'], ret['cpu'])
         self.assertEqual(r['gpu'], ret['gpu'])
-        self.assertEqual(iceprod.core.resources.Resources.defaults['memory'], ret['memory'])
+        self.assertFalse('memory' in ret)
 
         r = {'os':['RHEL_7_x86_64'], 'site':'foo'}
         ret = iceprod.core.resources.sanitized_requirements(r)
+        self.assertEqual(r['os'], ret['os'])
+        self.assertEqual(r['site'], ret['site'])
+        self.assertFalse('gpu' in ret)
+        self.assertFalse('memory' in ret)
+
+    @unittest_reporter(name='sanitized_requirements() - defaults')
+    def test_401_sanitized_requirements(self):
+        r = {'cpu':2,'gpu':1}
+        ret = iceprod.core.resources.sanitized_requirements(r, use_defaults=True)
+        self.assertEqual(r['cpu'], ret['cpu'])
+        self.assertEqual(r['gpu'], ret['gpu'])
+        self.assertEqual(iceprod.core.resources.Resources.defaults['memory'], ret['memory'])
+
+        r = {'os':['RHEL_7_x86_64'], 'site':'foo'}
+        ret = iceprod.core.resources.sanitized_requirements(r, use_defaults=True)
         self.assertEqual(r['os'], ret['os'])
         self.assertEqual(r['site'], ret['site'])
         self.assertFalse('gpu' in ret)

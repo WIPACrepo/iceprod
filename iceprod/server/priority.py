@@ -115,7 +115,7 @@ class Priority:
         if not self.user_cache:
             await self._populate_user_cache()
         try:
-            return max(u['priority'] for u in self.user_cache.values() if 'priority' in u and group in u['groups'])
+            return max(u['priority'] for u in self.user_cache.values() if 'priority' in u and group in u.get('groups', []))
         except ValueError:
             return 1.
 
