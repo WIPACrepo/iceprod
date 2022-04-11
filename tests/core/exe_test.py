@@ -153,12 +153,12 @@ static PyMethodDef HelloMethods[] =
         logger.info('pwd: %s',os.path.expandvars('$PWD'))
         with to_log(stream=sys.stderr,level='warn'),to_log(stream=sys.stdout):
             try:
-                ret = c.compile([so_file+'.c'],output_dir='.',include_dirs=[pythondir])
+                ret = c.compile([so_file+'.c'],output_dir='.',include_dirs=[os.path.dirname(pythondir),pythondir])
                 logger.info('ret1: %r',ret)
                 ret = c.link_shared_object([so_file+'.o'],so_file+'.so')
                 logger.info('ret2: %r',ret)
             except:
-                ret = c.compile([so_file+'.c'],output_dir='.',include_dirs=[pythondir],
+                ret = c.compile([so_file+'.c'],output_dir='.',include_dirs=[os.path.dirname(pythondir),pythondir],
                           extra_preargs=['-fPIC'])
                 logger.info('ret3: %r',ret)
                 ret = c.link_shared_object([so_file+'.o'],so_file+'.so')
