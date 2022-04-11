@@ -101,7 +101,7 @@ class DownloadTestCase(AsyncTestCase):
             pythonheader = os.path.join(os.path.basename(pythondir), 'Python.h')
         elif os.path.exists(os.path.join(os.path.dirname(pythondir), 'Python.h')):
             pythonheader = 'Python.h'
-        else
+        else:
             raise Exception('cannot find Python.h')
 
         with open(so_file+'.c','w') as f:
