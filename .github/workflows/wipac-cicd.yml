@@ -73,7 +73,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         if: failure()
         with:
-          name tests.log
+          name: tests.log
           path: tests.log
       - name: Coverage report
         if: always() && steps.dependencies.outcome != 'failure'
