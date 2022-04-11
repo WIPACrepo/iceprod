@@ -62,6 +62,8 @@ jobs:
       - uses: actions/setup-python@v3
         with:
           python-version: ${{ fromJSON(needs.py-versions.outputs.matrix).py3_versions[0] }}
+      - name: Set up GCC
+        uses: egor-tensin/setup-gcc@v1
       - name: Setup Dependencies
         id: dependencies
         run: |
