@@ -88,7 +88,8 @@ class MultiGridsHandler(BaseHandler):
                 raise tornado.web.HTTPError(400, reason=r)
 
         # set some fields
-        data['grid_id'] = uuid.uuid1().hex
+        grid_id = uuid.uuid1().hex
+        data['grid_id'] = grid_id
         data['start_date'] = nowstr()
         data['last_update'] = data['start_date']
         data['username'] = self.auth_data['username']
@@ -97,7 +98,7 @@ class MultiGridsHandler(BaseHandler):
 
         ret = await self.db.grids.insert_one(data)
         self.set_status(201)
-        self.write({'result': data['grid_id']})
+        self.write({'result': grid_id})
         self.finish()
 
 class GridsHandler(BaseHandler):

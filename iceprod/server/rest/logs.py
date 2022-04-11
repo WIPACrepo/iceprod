@@ -210,14 +210,15 @@ class MultiLogsHandler(BaseHandler):
             raise tornado.web.HTTPError(400, reason='data field not in body')
         if 'name' not in data:
             data['name'] = 'log'
-        data['log_id'] = uuid.uuid1().hex
+        log_id = uuid.uuid1().hex
+        data['log_id'] = log_id
         data['timestamp'] = nowstr()
         if self.s3 and len(data['data']) > 1000000:
-            await self.s3.put(data['log_id'], data['data'])
+            await self.s3.put(log_id, data['data'])
             del data['data']
         ret = await self.db.logs.insert_one(data)
         self.set_status(201)
-        self.write({'result': data['log_id']})
+        self.write({'result': log_id})
         self.finish()
 
 class LogsHandler(BaseHandler):
@@ -296,15 +297,16 @@ class DatasetMultiLogsHandler(BaseHandler):
         data = json.loads(self.request.body)
         if 'data' not in data:
             raise tornado.web.HTTPError(400, reason='data field not in body')
-        data['log_id'] = uuid.uuid1().hex
+        log_id = uuid.uuid1().hex
+        data['log_id'] = log_id
         data['dataset_id'] = dataset_id
         data['timestamp'] = nowstr()
         if self.s3 and len(data['data']) > 1000000:
-            await self.s3.put(data['log_id'], data['data'])
+            await self.s3.put(log_id, data['data'])
             del data['data']
         ret = await self.db.logs.insert_one(data)
         self.set_status(201)
-        self.write({'result': data['log_id']})
+        self.write({'result': log_id})
         self.finish()
 
 class DatasetLogsHandler(BaseHandler):

@@ -156,7 +156,8 @@ class MultiDatasetHandler(BaseHandler):
         dataset_num = ret['num']
 
         # set some fields
-        data['dataset_id'] = uuid.uuid1().hex
+        dataset_id = uuid.uuid1().hex
+        data['dataset_id'] = dataset_id
         data['dataset'] = dataset_num
         if 'status' not in data:
             data['status'] = 'processing'
@@ -184,8 +185,8 @@ class MultiDatasetHandler(BaseHandler):
 
         # return success
         self.set_status(201)
-        self.set_header('Location', '/datasets/'+data['dataset_id'])
-        self.write({'result': '/datasets/'+data['dataset_id']})
+        self.set_header('Location', f'/datasets/{dataset_id}')
+        self.write({'result': f'/datasets/{dataset_id}'})
         self.finish()
 
 class DatasetHandler(BaseHandler):

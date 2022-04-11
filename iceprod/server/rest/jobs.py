@@ -83,16 +83,25 @@ class MultiJobsHandler(BaseHandler):
                 r = 'key {} should be of type {}'.format(k, req_fields[k])
                 raise tornado.web.HTTPError(400, reason=r)
 
+        # validate job_id if given
+        if 'job_id' in data:
+            try:
+                job_id = uuid.UUID(hex=data['job_id']).hex
+            except Exception:
+                raise tornado.web.HTTPError(400, reason='job_id should be a valid uuid')
+        else:
+            job_id = uuid.uuid1().hex
+
         # set some fields
         data.update({
-            'job_id': uuid.uuid1().hex,
+            'job_id': job_id,
             'status': 'processing',
             'status_changed': nowstr(),
         })
 
         ret = await self.db.jobs.insert_one(data)
         self.set_status(201)
-        self.write({'result': data['job_id']})
+        self.write({'result': job_id})
         self.finish()
 
 class JobsHandler(BaseHandler):

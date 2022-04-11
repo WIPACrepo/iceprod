@@ -270,7 +270,8 @@ class MultiUserHandler(AuthHandler):
         if ret:
             raise tornado.web.HTTPError(400, reason='duplicate username')
 
-        data['user_id'] = uuid.uuid1().hex
+        user_id = uuid.uuid1().hex
+        data['user_id'] = user_id
         if 'groups' not in data:
             data['groups'] = []
         if 'roles' not in data:
@@ -279,8 +280,8 @@ class MultiUserHandler(AuthHandler):
             data['priority'] = 0.5
         ret = await self.db.users.insert_one(data)
         self.set_status(201)
-        self.set_header('Location', '/users/'+data['user_id'])
-        self.write({'result': '/users/'+data['user_id']})
+        self.set_header('Location', f'/users/{user_id}')
+        self.write({'result': f'/users/{user_id}'})
         self.finish()
 
 class UserHandler(AuthHandler):
@@ -469,20 +470,20 @@ class LDAPHandler(AuthHandler):
                 await self.db.users.insert_one(ret)
 
             # create token
-            data = {
+            token_data = {
                 'username': username,
                 'role': 'user' if 'user' in ret['roles'] else 'anonymous',
                 'groups': ret['groups'],
             }
-            tok = self.auth.create_token(username, type='user', payload=data)
+            tok = self.auth.create_token(username, type='user', payload=token_data)
             if isinstance(tok, bytes):
                 tok = tok.decode('utf-8')
             self.write({
                 'token': tok,
                 'username': username,
                 'roles': ret['roles'],
-                'current_role': data['role'],
-                'groups': data['groups'],
+                'current_role': token_data['role'],
+                'groups': token_data['groups'],
             })
             self.finish()
 
