@@ -70,6 +70,11 @@ jobs:
       - name: Run Tests
         run: |
           ./coverage.sh
+      - uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name tests.log
+          path: tests.log
       - name: Coverage report
         if: always() && steps.dependencies.outcome != 'failure'
         run: |
