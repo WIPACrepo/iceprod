@@ -93,13 +93,19 @@ class DownloadTestCase(AsyncTestCase):
             with open(so_file+'.so','rb') as f:
                 return f.read()
 
+        # find Python.h
         from distutils import sysconfig
         pythondir = sysconfig.get_python_inc()
         logger.info('pythondir: %s', pythondir)
-        pythonver = os.path.basename(pythondir)
+        if os.path.exists(os.path.join(pythondir, 'Python.h')):
+            pythonheader = os.path.join(os.path.basename(pythondir), 'Python.h')
+        elif os.path.exists(os.path.join(os.path.dirname(pythondir), 'Python.h')):
+            pythonheader = 'Python.h'
+        else
+            raise Exception('cannot find Python.h')
 
         with open(so_file+'.c','w') as f:
-            f.write('#include <'+pythonver+"""/Python.h>
+            f.write('#include <'+pythonheader+""">
 
 static PyObject* say_hello(PyObject* self, PyObject* args)
 {

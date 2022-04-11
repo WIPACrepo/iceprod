@@ -31,9 +31,9 @@ class siteglobusproxy_test(unittest.TestCase):
         self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
         if not os.path.exists(self.test_dir):
             os.mkdir(self.test_dir)
-        # clear any proxies
-        FNULL = open(os.devnull, 'w')
-        subprocess.call(['grid-proxy-destroy'],stdout=FNULL,stderr=FNULL)
+        if not skip_tests:
+            # clear any proxies
+            subprocess.call(['grid-proxy-destroy'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
         super(siteglobusproxy_test,self).setUp()
 
     def tearDown(self):
