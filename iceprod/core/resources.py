@@ -412,6 +412,7 @@ class Resources:
 
         now = time.time()
         if task_id not in self.history:
+            logger.info('create task')
             self.history[task_id] = {
                 'children': [],
                 'children_last_lookup': now-100000,
@@ -427,12 +428,13 @@ class Resources:
                 'time': 0,
             }
         task = self.history[task_id]
+        logger.info('task: %r', task)
 
         # recheck process children
         if force or now - task['children_last_lookup'] > self.lookup_intervals['children']:
             task['children_last_lookup'] = now
             task['children'][:] = process.children(recursive=True)
-            logging.debug('children_lookup')
+            logging.info('children_lookup')
 
         lookups = {}
         for r in ('cpu','memory','disk','gpu'):
@@ -441,7 +443,7 @@ class Resources:
                 lookups[r] = True
             else:
                 lookups[r] = False
-        logging.debug('lookups: %r', lookups)
+        logging.info('lookups: %r', lookups)
 
         # get current values
         processes = [process]+task['children']
@@ -471,7 +473,7 @@ class Resources:
             'gpu':  gpu/100.0 if lookups['gpu'] else None,
             'time': (now-task['create_time'])/3600,
         }
-        logging.debug('used_resources: %r', used_resources)
+        logging.info('used_resources: %r', used_resources)
 
         # now average for those that need it
         ret = {}
@@ -484,7 +486,7 @@ class Resources:
                 if used_resources[r] is not None:
                     task[r] = used_resources[r]
                 ret[r] = task[r]
-        logging.debug('ret: %r', ret)
+        logging.info('ret: %r', ret)
         return ret
 
     def get_peak(self, task_id):
