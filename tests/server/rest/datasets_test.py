@@ -9,6 +9,7 @@ import os
 import sys
 import time
 import random
+import re
 import shutil
 import tempfile
 import unittest
@@ -26,7 +27,8 @@ import tornado.gen
 from tornado.httpclient import AsyncHTTPClient, HTTPError, HTTPRequest, HTTPResponse
 from tornado.testing import AsyncTestCase
 
-from rest_tools.server import Auth, RestServer
+from rest_tools.utils import Auth
+from rest_tools.server import RestServer
 
 from iceprod.server.modules.rest_api import setup_rest
 import iceprod.server.rest.datasets
@@ -57,20 +59,12 @@ class rest_datasets_test(RestTestCase):
         ret = json.loads(r.body)
         self.assertEqual(ret, {})
 
-    @patch('tornado.httpclient.AsyncHTTPClient.fetch', autospec=True)
     @unittest_reporter(name='REST POST   /datasets')
-    def test_110_datasets(self, fetch):
-        # need to mock the REST auth interface
-        def mocked(self, url, *args, **kwargs):
-            if 'auth' in url:
-                return tornado.gen.maybe_future(HTTPResponse(HTTPRequest(url), 200))
-            else:
-                return orig_fetch(self, url, *args, **kwargs)
-        fetch.side_effect = mocked
-
+    def test_110_datasets(self):
         client = AsyncHTTPClient()
         data = {
             'description': 'blah',
+            'tasks_per_job': 4,
             'jobs_submitted': 1,
             'tasks_submitted': 4,
             'group': 'foo',
@@ -82,7 +76,7 @@ class rest_datasets_test(RestTestCase):
         ret = json.loads(r.body)
         uri = ret['result']
         dataset_id = uri.split('/')[-1]
-        
+
         r = yield client.fetch('http://localhost:%d/datasets'%self.port,
                 headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
@@ -91,13 +85,13 @@ class rest_datasets_test(RestTestCase):
         for k in data:
             self.assertIn(k, ret[dataset_id])
             self.assertEqual(data[k], ret[dataset_id][k])
-        
+
         r = yield client.fetch('http://localhost:%d/datasets?status=suspended'%self.port,
                 headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertNotIn(dataset_id, ret)
-        
+
         r = yield client.fetch('http://localhost:%d/datasets?keys=dataset_id|dataset'%self.port,
                 headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(r.code, 200)
@@ -121,20 +115,12 @@ class rest_datasets_test(RestTestCase):
                     headers={'Authorization': 'bearer '+self.token})
         self.assertEqual(e.exception.code, 404)
 
-    @patch('tornado.httpclient.AsyncHTTPClient.fetch', autospec=True)
     @unittest_reporter(name='REST PUT    /datasets/<dataset_id>/description')
-    def test_200_datasets(self, fetch):
-        # need to mock the REST auth interface
-        def mocked(self, url, *args, **kwargs):
-            if 'auth' in url:
-                return tornado.gen.maybe_future(HTTPResponse(HTTPRequest(url), 200))
-            else:
-                return orig_fetch(self, url, *args, **kwargs)
-        fetch.side_effect = mocked
-
+    def test_200_datasets(self):
         client = AsyncHTTPClient()
         data = {
             'description': 'blah',
+            'tasks_per_job': 4,
             'jobs_submitted': 1,
             'tasks_submitted': 4,
             'group': 'foo',
@@ -161,20 +147,12 @@ class rest_datasets_test(RestTestCase):
         ret = json.loads(r.body)
         self.assertEqual(ret['description'], data['description'])
 
-    @patch('tornado.httpclient.AsyncHTTPClient.fetch', autospec=True)
     @unittest_reporter(name='REST PUT    /datasets/<dataset_id>/status')
-    def test_210_datasets(self, fetch):
-        # need to mock the REST auth interface
-        def mocked(self, url, *args, **kwargs):
-            if 'auth' in url:
-                return tornado.gen.maybe_future(HTTPResponse(HTTPRequest(url), 200))
-            else:
-                return orig_fetch(self, url, *args, **kwargs)
-        fetch.side_effect = mocked
-
+    def test_210_datasets(self):
         client = AsyncHTTPClient()
         data = {
             'description': 'blah',
+            'tasks_per_job': 4,
             'jobs_submitted': 1,
             'tasks_submitted': 4,
             'group': 'foo',
@@ -201,20 +179,12 @@ class rest_datasets_test(RestTestCase):
         ret = json.loads(r.body)
         self.assertEqual(ret['status'], data['status'])
 
-    @patch('tornado.httpclient.AsyncHTTPClient.fetch', autospec=True)
     @unittest_reporter(name='REST PUT    /datasets/<dataset_id>/status')
-    def test_220_datasets(self, fetch):
-        # need to mock the REST auth interface
-        def mocked(self, url, *args, **kwargs):
-            if 'auth' in url:
-                return tornado.gen.maybe_future(HTTPResponse(HTTPRequest(url), 200))
-            else:
-                return orig_fetch(self, url, *args, **kwargs)
-        fetch.side_effect = mocked
-
+    def test_220_datasets(self):
         client = AsyncHTTPClient()
         data = {
             'description': 'blah',
+            'tasks_per_job': 4,
             'jobs_submitted': 1,
             'tasks_submitted': 4,
             'group': 'foo',
@@ -266,6 +236,7 @@ class rest_datasets_test(RestTestCase):
 
         data = {
             'description': 'blah',
+            'tasks_per_job': 4,
             'jobs_submitted': 1,
             'tasks_submitted': 4,
             'group': 'foo',
@@ -285,20 +256,12 @@ class rest_datasets_test(RestTestCase):
                     method='PUT', body=json.dumps(data),
                     headers={'Authorization': 'bearer '+self.token})
 
-    @patch('tornado.httpclient.AsyncHTTPClient.fetch', autospec=True)
     @unittest_reporter(name='REST GET    /dataset_summaries/status')
-    def test_300_datasets(self, fetch):
-        # need to mock the REST auth interface
-        def mocked(self, url, *args, **kwargs):
-            if 'auth' in url:
-                return tornado.gen.maybe_future(HTTPResponse(HTTPRequest(url), 200))
-            else:
-                return orig_fetch(self, url, *args, **kwargs)
-        fetch.side_effect = mocked
-
+    def test_300_datasets(self):
         client = AsyncHTTPClient()
         data = {
             'description': 'blah',
+            'tasks_per_job': 4,
             'jobs_submitted': 1,
             'tasks_submitted': 4,
             'group': 'foo',

@@ -74,8 +74,9 @@ class MultiTaskStatsHandler(BaseHandler):
             raise tornado.web.HTTPError(400, reason='Missing dataset_id in body')
 
         # set some fields
+        task_stat_id = uuid.uuid1().hex
         data = {
-            'task_stat_id': uuid.uuid1().hex,
+            'task_stat_id': task_stat_id,
             'task_id': task_id,
             'dataset_id': stat_data['dataset_id'],
             'create_date': nowstr(),
@@ -84,7 +85,7 @@ class MultiTaskStatsHandler(BaseHandler):
 
         ret = await self.db.task_stats.insert_one(data)
         self.set_status(201)
-        self.write({'result': data['task_stat_id']})
+        self.write({'result': task_stat_id})
         self.finish()
 
 class DatasetsBulkTaskStatsHandler(BaseHandler):

@@ -7,7 +7,8 @@ import tornado.httpclient
 from tornado.platform.asyncio import to_asyncio_future
 
 from rest_tools.client import RestClient
-from rest_tools.server import Auth, RestHandlerSetup, authenticated, catch_error
+from rest_tools.utils import Auth
+from rest_tools.server import RestHandlerSetup, authenticated, catch_error
 from rest_tools.server import RestHandler as BaseRestHandler
 
 import iceprod

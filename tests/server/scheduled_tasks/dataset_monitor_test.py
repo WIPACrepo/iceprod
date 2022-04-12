@@ -55,6 +55,7 @@ class dataset_monitor_test(AsyncTestCase):
         pilots = {}
         jobs = {}
         tasks = defaultdict(dict)
+        stats = {}
         async def client(method, url, args=None):
             logger.info('REST: %s, %s', method, url)
             if url.startswith('/dataset_summaries/status'):
@@ -64,8 +65,10 @@ class dataset_monitor_test(AsyncTestCase):
             elif url.startswith('/datasets/foo/task_counts/name_status'):
                 client.called = True
                 return tasks
+            elif url.startswith('/datasets/foo/task_stats'):
+                return stats
             if url.startswith('/datasets/foo'):
-                return {'dataset':123,'status':'processing'}
+                return {'dataset':123,'status':'processing','jobs_submitted':1,'tasks_submitted':1}
             else:
                 raise Exception()
         client.called = False

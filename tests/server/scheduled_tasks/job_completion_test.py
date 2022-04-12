@@ -52,8 +52,8 @@ class job_completion_test(AsyncTestCase):
         dataset_summaries = {}
         job_summaries = {}
         tasks = {
-            't1':{'task_id':'t1','status':'processing'},
-            't2':{'task_id':'t2','status':'waiting'},
+            't1':{'task_id':'t1','task_index':1,'status':'processing'},
+            't2':{'task_id':'t2','task_index':2,'status':'waiting'},
         }
         async def client(method, url, args=None):
             logger.info('REST: %s, %s', method, url)
@@ -101,7 +101,7 @@ class job_completion_test(AsyncTestCase):
         client.called = False
         client.status = None
         await job_completion.run(rc, debug=True)
-        self.assertFalse(client.called)
+        self.assertTrue(client.called)
 
         logger.info('test suspended')
         tasks['t1']['status'] = 'complete'

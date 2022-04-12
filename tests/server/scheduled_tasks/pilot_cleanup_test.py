@@ -67,11 +67,6 @@ class pilot_cleanup_test(AsyncTestCase):
         await pilot_cleanup.run(rc, debug=True)
         self.assertFalse(client.called)
 
-        pilots['a'] = {'pilot_id':'a', 'grid_queue_id':'', 'last_update':nowstr()}
-        await pilot_cleanup.run(rc, debug=True)
-        self.assertTrue(client.called)
-
-        client.called = False
         pilots['a'] = {'pilot_id':'a', 'grid_queue_id':'blah', 'last_update':datetime2str(datetime.utcnow()-timedelta(days=30))}
         await pilot_cleanup.run(rc, debug=True)
         self.assertTrue(client.called)

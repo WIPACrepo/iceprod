@@ -163,8 +163,9 @@ class MultiTasksHandler(BaseHandler):
                 raise tornado.web.HTTPError(400, reason=r)
 
         # set some fields
+        task_id = uuid.uuid1().hex
         data.update({
-            'task_id': uuid.uuid1().hex,
+            'task_id': task_id,
             'status_changed': nowstr(),
             'failures': 0,
             'evictions': 0,
@@ -180,7 +181,7 @@ class MultiTasksHandler(BaseHandler):
 
         ret = await self.db.tasks.insert_one(data)
         self.set_status(201)
-        self.write({'result': data['task_id']})
+        self.write({'result': task_id})
         self.finish()
 
 class TasksHandler(BaseHandler):

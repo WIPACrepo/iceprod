@@ -28,7 +28,8 @@ from tornado.testing import AsyncTestCase
 import boto3
 from moto import mock_s3
 
-from rest_tools.server import Auth, RestServer
+from rest_tools.utils import Auth
+from rest_tools.server import RestServer
 
 from iceprod.server.modules.rest_api import setup_rest
 import iceprod.server.rest.logs

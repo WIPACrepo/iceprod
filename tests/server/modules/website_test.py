@@ -71,7 +71,6 @@ class website_test(AsyncTestCase):
             shutil.rmtree(self.test_dir)
         self.addCleanup(clean_dir)
 
-        os.environ['I3PROD'] = self.test_dir
         try:
             # set hostname
             self.hostname = b'localhost'
@@ -189,7 +188,7 @@ class website_test(AsyncTestCase):
     async def test_010_start_stop_kill(self):
         self.website.start()
 
-        self.website.stop()
+        await self.website.stop()
 
         self.website.start()
         self.website.kill()
@@ -200,7 +199,7 @@ class website_test(AsyncTestCase):
             await self.get_auth_cookie()
             self.assertIsNotNone(self.auth_cookie)
 
-    @patch('iceprod.server.modules.website.rest_client.Client')
+    @patch('iceprod.server.modules.website.RestClient')
     @unittest_reporter(name=' /')
     async def test_110_Default(self, req):
         with self.start():
@@ -224,11 +223,9 @@ class website_test(AsyncTestCase):
             r = await self.request(address)
             self.assertEqual(r.code, 200)
             body = r.body.decode('utf-8')
-            if any(k not in body for k in datasets_status):
-                raise Exception('main: fetched file data incorrect')
-            self.assertTrue(rest.called)
+            self.assertFalse(rest.called)
 
-    @patch('iceprod.server.modules.website.rest_client.Client')
+    @patch('iceprod.server.modules.website.RestClient')
     @unittest_reporter(name=' /submit')
     async def test_200_Submit(self, req):
         with self.start():
@@ -250,7 +247,7 @@ class website_test(AsyncTestCase):
             self.assertEqual(r.code, 200)
             self.assertTrue(rest.called)
 
-    @patch('iceprod.server.modules.website.rest_client.Client')
+    @patch('iceprod.server.modules.website.RestClient')
     @unittest_reporter(name=' /config')
     async def test_210_Config(self, req):
         with self.start():
@@ -304,7 +301,7 @@ class website_test(AsyncTestCase):
             r = await self.request(address, raise_error=False)
             self.assertEqual(r.code, 400)
 
-    @patch('iceprod.server.modules.website.rest_client.Client')
+    @patch('iceprod.server.modules.website.RestClient')
     @unittest_reporter(name=' /dataset')
     async def test_300_Dataset(self, req):
         with self.start():
@@ -329,7 +326,7 @@ class website_test(AsyncTestCase):
             self.assertEqual(r.code, 200)
             self.assertTrue(rest.called)
 
-    @patch('iceprod.server.modules.website.rest_client.Client')
+    @patch('iceprod.server.modules.website.RestClient')
     @unittest_reporter(name=' /dataset/<dataset_id>')
     async def test_301_Dataset(self, req):
         with self.start():
@@ -367,7 +364,10 @@ class website_test(AsyncTestCase):
                            }
                 elif url.startswith('/create_token'):
                     return {'result': 'token'}
+                elif url == f'/config/{dataset_id}':
+                    return {'tasks':[]}
                 else:
+                    logger.info(f'{method} {url}')
                     raise Exception()
             rest.called = False
             req.return_value.request = rest
@@ -382,7 +382,7 @@ class website_test(AsyncTestCase):
             r = await self.request(address, raise_error=False)
             self.assertEqual(r.code, 404)
 
-    @patch('iceprod.server.modules.website.rest_client.Client')
+    @patch('iceprod.server.modules.website.RestClient')
     @patch('iceprod.server.GlobalID.globalID_gen')
     @unittest_reporter(name=' /dataset/<dataset_num>')
     async def test_302_Dataset(self, globalid, req):
@@ -403,6 +403,9 @@ class website_test(AsyncTestCase):
                     rest.called = True
                     return {'dataset_id':dataset_id, 'status':'processing',
                             'dataset': dataset_num, 'description':'desc'}
+                elif url == '/datasets':
+                    return {dataset_id: {'dataset_id':dataset_id, 'status':'processing',
+                            'dataset': dataset_num, 'description':'desc'}}
                 elif url.startswith('/datasets/{}/job_counts/status'.format(dataset_id)):
                     return {'processing':['foo','bar']}
                 elif url.startswith('/datasets/{}/task_counts/status'.format(dataset_id)):
@@ -425,6 +428,8 @@ class website_test(AsyncTestCase):
                            }
                 elif url.startswith('/create_token'):
                     return {'result': 'token'}
+                elif url == f'/config/{dataset_id}':
+                    return {'tasks':[]}
                 else:
                     raise Exception()
             rest.called = False
@@ -440,7 +445,7 @@ class website_test(AsyncTestCase):
             r = await self.request(address, raise_error=False)
             self.assertEqual(r.code, 404)
 
-    @patch('iceprod.server.modules.website.rest_client.Client')
+    @patch('iceprod.server.modules.website.RestClient')
     @unittest_reporter(name=' /dataset/<dataset_id>/task')
     async def test_400_Task(self, req):
         with self.start():
@@ -473,6 +478,7 @@ class website_test(AsyncTestCase):
                 if url.startswith('/datasets/{}/tasks'.format(dataset_id)):
                     rest.called = True
                     return {task_id:{'task_id':task_id,'dataset_id':dataset_id,
+                                     'task_index': 0, 'job_index': 0,
                                      'job_id':'j', 'status':'processing',
                                      'name':'generator', 'failures':0}}
                 elif url.startswith('/datasets/{}/job'.format(dataset_id)):
@@ -488,8 +494,8 @@ class website_test(AsyncTestCase):
             self.assertEqual(r.code, 200)
             self.assertTrue(rest.called)
             soup = BeautifulSoup(r.body, "html.parser")
-            for e in soup.findAll("td"):
-                if e.text == 'bar':
+            for e in soup.findAll("a"):
+                if e.get('href').endswith('/bar'):
                     break
             else:
                 raise Exception('did not find task_id bar')
@@ -512,10 +518,10 @@ class website_test(AsyncTestCase):
             self.assertEqual(r.code, 200)
             self.assertTrue(rest.called)
             soup = BeautifulSoup(r.body, "html.parser")
-            for e in soup.findAll("td"):
-                self.assertNotEqual(e.text, 'bar')
+            for e in soup.findAll("a"):
+                self.assertFalse(e.get('href').endswith('/bar'))
 
-    @patch('iceprod.server.modules.website.rest_client.Client')
+    @patch('iceprod.server.modules.website.RestClient')
     @unittest_reporter(name=' /dataset/<dataset_id>/task/<task_id>')
     async def test_401_Task(self, req):
         with self.start():
@@ -529,14 +535,20 @@ class website_test(AsyncTestCase):
 
             async def rest(method, url, args=None):
                 logger.info('REST %s %s', method, url)
-                if url == '/datasets/{}/tasks/{}'.format(dataset_id,task_id):
+                if url == '/datasets/{}'.format(dataset_id):
+                    return {'dataset_id':dataset_id, 'status':'processing',
+                            'dataset': 1000, 'description':'desc'}
+                elif url == '/datasets/{}/tasks/{}'.format(dataset_id,task_id):
                     rest.called = True
                     return {'task_id':task_id,'dataset_id':dataset_id,
+                            'task_index': 0, 'job_index': 0,
                             'job_id':'j', 'status':'processing',
                             'name':'generator', 'failures':0}
                 elif url.startswith('/datasets/{}/tasks/{}/log'.format(dataset_id,task_id)):
                     return {'logs':[{'log_id':'baz','name':'stdout','data':'foo\nbar',
                                      'dataset_id':dataset_id,'task_id':task_id}]}
+                elif url.startswith('/datasets/{}/tasks/{}/task_stats'.format(dataset_id,task_id)):
+                    return {}
                 elif url.startswith('/create_token'):
                     return {'result': 'token'}
                 else:
@@ -548,7 +560,7 @@ class website_test(AsyncTestCase):
             self.assertEqual(r.code, 200)
             self.assertTrue(rest.called)
 
-    @patch('iceprod.server.modules.website.rest_client.Client')
+    @patch('iceprod.server.modules.website.RestClient')
     @unittest_reporter(name=' /dataset/<dataset_id>/job')
     async def test_500_Job(self, req):
         with self.start():
@@ -584,8 +596,8 @@ class website_test(AsyncTestCase):
             r = await self.request(address)
             self.assertEqual(r.code, 200)
             soup = BeautifulSoup(r.body, "html.parser")
-            for e in soup.findAll("td"):
-                if e.text == 'bar':
+            for e in soup.findAll("a"):
+                if e.get('href').endswith('/bar'):
                     break
             else:
                 raise Exception('did not find task_id bar')
@@ -595,10 +607,10 @@ class website_test(AsyncTestCase):
             r = await self.request(address)
             self.assertEqual(r.code, 200)
             soup = BeautifulSoup(r.body, "html.parser")
-            for e in soup.findAll("td"):
-                self.assertNotEqual(e.text, 'bar')
+            for e in soup.findAll("a"):
+                self.assertFalse(e.get('href').endswith('/bar'))
 
-    @patch('iceprod.server.modules.website.rest_client.Client')
+    @patch('iceprod.server.modules.website.RestClient')
     @unittest_reporter(name=' /dataset/<dataset_id>/job/<job_id>')
     async def test_501_Job(self, req):
         with self.start():
@@ -612,7 +624,10 @@ class website_test(AsyncTestCase):
 
             async def rest(method, url, args=None):
                 logger.info('REST %s %s', method, url)
-                if url.startswith('/datasets/{}/jobs/{}'.format(dataset_id,job_id)):
+                if url == '/datasets/{}'.format(dataset_id):
+                    return {'dataset_id':dataset_id, 'status':'processing',
+                            'dataset': 1000, 'description':'desc'}
+                elif url.startswith('/datasets/{}/jobs/{}'.format(dataset_id,job_id)):
                     rest.called = True
                     return {'job_id':job_id,'dataset_id':dataset_id,
                             'status':'processing', 'status_changed':'2018',
@@ -634,7 +649,7 @@ class website_test(AsyncTestCase):
             self.assertEqual(r.code, 200)
             self.assertTrue(rest.called)
 
-    @patch('iceprod.server.modules.website.rest_client.Client')
+    @patch('iceprod.server.modules.website.RestClient')
     @unittest_reporter(name=' /dataset/<dataset_id/log/<log_id>')
     async def test_600_Log(self, req):
         with self.start():

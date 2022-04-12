@@ -108,7 +108,8 @@ class MultiPilotsHandler(BaseHandler):
                 raise tornado.web.HTTPError(400, reason=r)
 
         # set some fields
-        data['pilot_id'] = uuid.uuid1().hex
+        pilot_id = uuid.uuid1().hex
+        data['pilot_id'] = pilot_id
         data['submit_date'] = nowstr()
         data['start_date'] = ''
         data['last_update'] = data['submit_date']
@@ -129,7 +130,7 @@ class MultiPilotsHandler(BaseHandler):
 
         ret = await self.db.pilots.insert_one(data)
         self.set_status(201)
-        self.write({'result': data['pilot_id']})
+        self.write({'result': pilot_id})
         self.finish()
 
 class PilotsHandler(BaseHandler):

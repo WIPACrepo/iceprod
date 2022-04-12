@@ -412,6 +412,7 @@ class Resources:
 
         now = time.time()
         if task_id not in self.history:
+            logging.debug('create task')
             self.history[task_id] = {
                 'children': [],
                 'children_last_lookup': now-100000,
@@ -427,6 +428,7 @@ class Resources:
                 'time': 0,
             }
         task = self.history[task_id]
+        logging.debug('task: %r', task)
 
         # recheck process children
         if force or now - task['children_last_lookup'] > self.lookup_intervals['children']:
@@ -441,6 +443,7 @@ class Resources:
                 lookups[r] = True
             else:
                 lookups[r] = False
+        logging.debug('lookups: %r', lookups)
 
         # get current values
         processes = [process]+task['children']

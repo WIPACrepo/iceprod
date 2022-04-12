@@ -170,37 +170,42 @@ class resources_test(unittest.TestCase):
 
     @unittest_reporter(name='Resources.get_usage()', skip=not psutil)
     def test_040_Resources_get_usage(self):
+        rootLogger = logging.getLogger()
+        rootLogger.setLevel(logging.DEBUG)
         raw = {'cpu':8, 'gpu':['0','1'], 'memory':3.5, 'disk':20,
                'time':12}
         r = iceprod.core.resources.Resources(raw=raw, debug=True)
-        r.lookup_intervals['memory'] = 0.1
+        r.lookup_intervals['memory'] = 0.5
 
         task_id = 'foo'
-        reqs = {'cpu':1, 'gpu':1, 'memory':2.1, 'disk':3.4, 'time': 9}
+        reqs = {'cpu':1, 'gpu':0, 'memory':2.1, 'disk':3.4, 'time': 9}
         c = r.claim(task_id, reqs)
         proc = psutil.Process()
         tmpdir = self.test_dir
         r.register_process(task_id, proc, tmpdir)
 
         usage = r.get_usage(task_id)
+        logger.info('usage: %r', usage)
 
         # make more memory and disk
-        open(os.path.join(tmpdir,'blah'),'w').write(''.join(map(str,range(10000))))
+        data = ''.join(map(str,range(1000000)))
+        open(os.path.join(tmpdir,'blah'),'w').write(data)
 
         # second lookup should be cached, except time
         usage2 = r.get_usage(task_id)
+        logger.info('usage: %r', usage)
         for k in ('cpu','memory','disk'):
             self.assertEqual(usage[k], usage2[k])
         self.assertGreater(usage2['time'], usage['time'])
 
-        time.sleep(0.2)
-        
+        time.sleep(0.5)
+
         # third lookup should update memory, not disk
         usage2 = r.get_usage(task_id)
         self.assertGreater(usage2['memory'], usage['memory'])
         self.assertEqual(usage2['disk'], usage['disk'])
         self.assertGreater(usage2['time'], usage['time'])
-        
+
         # force disk lookup
         usage2 = r.get_usage(task_id, force=True)
         self.assertGreater(usage2['memory'], usage['memory'])
@@ -569,10 +574,25 @@ class resources_test(unittest.TestCase):
         ret = iceprod.core.resources.sanitized_requirements(r)
         self.assertEqual(r['cpu'], ret['cpu'])
         self.assertEqual(r['gpu'], ret['gpu'])
-        self.assertEqual(iceprod.core.resources.Resources.defaults['memory'], ret['memory'])
+        self.assertFalse('memory' in ret)
 
         r = {'os':['RHEL_7_x86_64'], 'site':'foo'}
         ret = iceprod.core.resources.sanitized_requirements(r)
+        self.assertEqual(r['os'], ret['os'])
+        self.assertEqual(r['site'], ret['site'])
+        self.assertFalse('gpu' in ret)
+        self.assertFalse('memory' in ret)
+
+    @unittest_reporter(name='sanitized_requirements() - defaults')
+    def test_401_sanitized_requirements(self):
+        r = {'cpu':2,'gpu':1}
+        ret = iceprod.core.resources.sanitized_requirements(r, use_defaults=True)
+        self.assertEqual(r['cpu'], ret['cpu'])
+        self.assertEqual(r['gpu'], ret['gpu'])
+        self.assertEqual(iceprod.core.resources.Resources.defaults['memory'], ret['memory'])
+
+        r = {'os':['RHEL_7_x86_64'], 'site':'foo'}
+        ret = iceprod.core.resources.sanitized_requirements(r, use_defaults=True)
         self.assertEqual(r['os'], ret['os'])
         self.assertEqual(r['site'], ret['site'])
         self.assertFalse('gpu' in ret)

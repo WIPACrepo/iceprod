@@ -93,13 +93,19 @@ class DownloadTestCase(AsyncTestCase):
             with open(so_file+'.so','rb') as f:
                 return f.read()
 
+        # find Python.h
         from distutils import sysconfig
         pythondir = sysconfig.get_python_inc()
         logger.info('pythondir: %s', pythondir)
-        pythonver = os.path.basename(pythondir)
+        if os.path.exists(os.path.join(pythondir, 'Python.h')):
+            pythonheader = os.path.join(os.path.basename(pythondir), 'Python.h')
+        elif os.path.exists(os.path.join(os.path.dirname(pythondir), 'Python.h')):
+            pythonheader = 'Python.h'
+        else:
+            raise Exception('cannot find Python.h')
 
         with open(so_file+'.c','w') as f:
-            f.write('#include <'+pythonver+"""/Python.h>
+            f.write('#include <'+pythonheader+""">
 
 static PyObject* say_hello(PyObject* self, PyObject* args)
 {
@@ -147,12 +153,12 @@ static PyMethodDef HelloMethods[] =
         logger.info('pwd: %s',os.path.expandvars('$PWD'))
         with to_log(stream=sys.stderr,level='warn'),to_log(stream=sys.stdout):
             try:
-                ret = c.compile([so_file+'.c'],output_dir='.',include_dirs=[pythondir])
+                ret = c.compile([so_file+'.c'],output_dir='.',include_dirs=[os.path.dirname(pythondir),pythondir])
                 logger.info('ret1: %r',ret)
                 ret = c.link_shared_object([so_file+'.o'],so_file+'.so')
                 logger.info('ret2: %r',ret)
             except:
-                ret = c.compile([so_file+'.c'],output_dir='.',include_dirs=[pythondir],
+                ret = c.compile([so_file+'.c'],output_dir='.',include_dirs=[os.path.dirname(pythondir),pythondir],
                           extra_preargs=['-fPIC'])
                 logger.info('ret3: %r',ret)
                 ret = c.link_shared_object([so_file+'.o'],so_file+'.so')

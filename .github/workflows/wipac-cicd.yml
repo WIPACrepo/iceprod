@@ -1,0 +1,139 @@
+name: wipac ci/cd
+
+on: [push]
+
+jobs:
+
+  flake8:
+    if: needs.check.outputs.run_py == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+      - uses: WIPACrepo/wipac-dev-flake8-action@v1
+
+  py-setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+      - uses: WIPACrepo/wipac-dev-py-setup-action@v1.3
+
+  py-versions:
+    needs: [py-setup]
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.versions.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v3
+      - id: versions
+        uses: WIPACrepo/wipac-dev-py-versions-action@v1
+
+  pip-install:
+    needs: [py-versions]
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 4
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.py3_versions }}
+      - run: |
+          pip install --upgrade pip wheel setuptools
+          pip install .
+
+  py-tests:
+    needs: [py-versions]
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:4.0
+        ports:
+        - 27017:27017
+    env:
+      TEST_DATABASE_URL: "localhost:27017"
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: ${{ fromJSON(needs.py-versions.outputs.matrix).py3_versions[0] }}
+      - name: Set up GCC
+        uses: egor-tensin/setup-gcc@v1
+      - name: Setup Dependencies
+        id: dependencies
+        run: |
+          pip install --upgrade pip wheel setuptools
+          pip install .[tests]
+      - name: Run Tests
+        run: |
+          ./coverage.sh
+      - uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: tests.log
+          path: tests.log
+      - name: Coverage report
+        if: always() && steps.dependencies.outcome != 'failure'
+        run: |
+          coverage report -m --fail-under=50
+
+  release:
+    if: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' }}
+    needs: [pip-install, py-tests]
+    runs-on: ubuntu-latest
+    concurrency: release
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Python Semantic Release
+      uses: relekang/python-semantic-release@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        repository_username: __token__
+        repository_password: ${{ secrets.PYPI_TOKEN }}
+
+  docker:
+    name: "Docker Image"
+    needs: [pip-install, py-tests]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Project
+      uses: actions/checkout@v3
+    - name: Docker meta
+      id: docker_meta
+      uses: docker/metadata-action@v3
+      with:
+        images: |
+          wipac/iceprod
+          ghcr.io/WIPACRepo/iceprod
+        tags: |
+            type=ref,event=branch
+            type=semver,pattern={{major}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}.{{minor}}.{{patch}}
+    - name: Login to DockerHub
+      uses: docker/login-action@v1
+      if: ${{ github.event_name != 'pull_request' }}
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v1
+      if: ${{ github.event_name != 'pull_request' }}
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Push Docker Image
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ steps.docker_meta.outputs.tags }}
+        labels: ${{ steps.docker_meta.outputs.labels }}
