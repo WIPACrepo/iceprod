@@ -175,7 +175,7 @@ class resources_test(unittest.TestCase):
         raw = {'cpu':8, 'gpu':['0','1'], 'memory':3.5, 'disk':20,
                'time':12}
         r = iceprod.core.resources.Resources(raw=raw, debug=True)
-        r.lookup_intervals['memory'] = 0.1
+        r.lookup_intervals['memory'] = 0.5
 
         task_id = 'foo'
         reqs = {'cpu':1, 'gpu':0, 'memory':2.1, 'disk':3.4, 'time': 9}
@@ -198,14 +198,14 @@ class resources_test(unittest.TestCase):
             self.assertEqual(usage[k], usage2[k])
         self.assertGreater(usage2['time'], usage['time'])
 
-        time.sleep(0.2)
-        
+        time.sleep(0.5)
+
         # third lookup should update memory, not disk
         usage2 = r.get_usage(task_id)
         self.assertGreater(usage2['memory'], usage['memory'])
         self.assertEqual(usage2['disk'], usage['disk'])
         self.assertGreater(usage2['time'], usage['time'])
-        
+
         # force disk lookup
         usage2 = r.get_usage(task_id, force=True)
         self.assertGreater(usage2['memory'], usage['memory'])
