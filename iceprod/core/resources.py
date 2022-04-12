@@ -428,7 +428,7 @@ class Resources:
                 'time': 0,
             }
         task = self.history[task_id]
-        logger.info('task: %r', task)
+        logging.info('task: %r', task)
 
         # recheck process children
         if force or now - task['children_last_lookup'] > self.lookup_intervals['children']:
