@@ -170,6 +170,8 @@ class resources_test(unittest.TestCase):
 
     @unittest_reporter(name='Resources.get_usage()', skip=not psutil)
     def test_040_Resources_get_usage(self):
+        rootLogger = logging.getLogger()
+        rootLogger.setLevel(logging.DEBUG)
         raw = {'cpu':8, 'gpu':['0','1'], 'memory':3.5, 'disk':20,
                'time':12}
         r = iceprod.core.resources.Resources(raw=raw, debug=True)
