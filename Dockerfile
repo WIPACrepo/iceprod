@@ -50,19 +50,22 @@ COPY --from=build /etc/grid-security/certificates/ /etc/grid-security/certificat
 RUN groupadd -g 1000 iceprod && useradd -m -g 1000 -u 1000 iceprod
 
 WORKDIR /home/iceprod
-
-COPY requirements.txt ./
-
-RUN pip install --no-cache-dir -r requirements.txt
-
 USER iceprod
 
 COPY --chown=1000:1000 bin bin
 COPY --chown=1000:1000 iceprod iceprod
 COPY --chown=1000:1000 resources resources
-COPY --chown=1000:1000 env.sh ./
+COPY --chown=1000:1000 env.sh setup.cfg setup.py make_dataclasses.py ./
 
 RUN mkdir etc
+
+USER root
+
+RUN pip install --no-cache-dir -e .
+
+USER iceprod
+
+RUN python make_dataclasses.py
 
 ENTRYPOINT ["/home/iceprod/env.sh"]
 
