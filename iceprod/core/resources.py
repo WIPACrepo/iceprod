@@ -412,7 +412,7 @@ class Resources:
 
         now = time.time()
         if task_id not in self.history:
-            logger.info('create task')
+            logging.info('create task')
             self.history[task_id] = {
                 'children': [],
                 'children_last_lookup': now-100000,

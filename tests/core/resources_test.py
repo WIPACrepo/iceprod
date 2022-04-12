@@ -170,6 +170,8 @@ class resources_test(unittest.TestCase):
 
     @unittest_reporter(name='Resources.get_usage()', skip=not psutil)
     def test_040_Resources_get_usage(self):
+        rootLogger = logging.getLogger()
+        rootLogger.setLevel(logging.DEBUG)
         raw = {'cpu':8, 'gpu':['0','1'], 'memory':3.5, 'disk':20,
                'time':12}
         r = iceprod.core.resources.Resources(raw=raw, debug=True)
@@ -183,9 +185,11 @@ class resources_test(unittest.TestCase):
         r.register_process(task_id, proc, tmpdir)
 
         usage = r.get_usage(task_id)
+        logger.info('usage: %r', usage)
 
         # make more memory and disk
-        open(os.path.join(tmpdir,'blah'),'w').write(''.join(map(str,range(10000))))
+        data = ''.join(map(str,range(1000000)))
+        open(os.path.join(tmpdir,'blah'),'w').write(data)
 
         # second lookup should be cached, except time
         usage2 = r.get_usage(task_id)
