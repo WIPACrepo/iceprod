@@ -4,9 +4,9 @@
 #
 #    pip-compile
 #
-boto3==1.21.38
+boto3==1.21.39
     # via iceprod (setup.py)
-botocore==1.24.38
+botocore==1.24.39
     # via
     #   boto3
     #   s3transfer
