@@ -183,12 +183,14 @@ class resources_test(unittest.TestCase):
         r.register_process(task_id, proc, tmpdir)
 
         usage = r.get_usage(task_id)
+        logger.info('usage: %r', usage)
 
         # make more memory and disk
         open(os.path.join(tmpdir,'blah'),'w').write(''.join(map(str,range(10000))))
 
         # second lookup should be cached, except time
         usage2 = r.get_usage(task_id)
+        logger.info('usage: %r', usage)
         for k in ('cpu','memory','disk'):
             self.assertEqual(usage[k], usage2[k])
         self.assertGreater(usage2['time'], usage['time'])
