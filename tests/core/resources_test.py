@@ -188,7 +188,6 @@ class resources_test(unittest.TestCase):
         open(os.path.join(tmpdir,'blah'),'w').write(''.join(map(str,range(10000))))
 
         # second lookup should be cached, except time
-        time.sleep(.001)
         usage2 = r.get_usage(task_id)
         for k in ('cpu','memory','disk'):
             self.assertEqual(usage[k], usage2[k])
