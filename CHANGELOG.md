@@ -2,6 +2,9 @@
 
 <!--next-version-placeholder-->
 
+## v2.5.13 (2022-04-13)
+
+
 ## v2.5.12 (2022-04-12)
 ### Fix
 * Manual version pre-increment 2.5.6 ([`d04d749`](https://github.com/WIPACrepo/iceprod/commit/d04d749cea75a6cf6ad8e0152879d521c668968a))
