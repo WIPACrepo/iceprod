@@ -40,7 +40,7 @@ pyasn1==0.4.8
     # via ldap3
 pycparser==2.21
     # via cffi
-pyjwt==2.3.0
+pyjwt==2.4.0
     # via wipac-rest-tools
 pymongo==3.12.3
     # via
