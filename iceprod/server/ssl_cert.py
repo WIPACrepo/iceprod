@@ -36,7 +36,7 @@ def create_ca(cert_filename,key_filename,days=365,hostname=None):
 
         # create a key pair
         k = crypto.PKey()
-        k.generate_key(crypto.TYPE_RSA, 2048)
+        k.generate_key(crypto.TYPE_RSA, 4096)
 
         # create a self-signed cert
         cert = crypto.X509()
@@ -81,7 +81,7 @@ def create_ca(cert_filename,key_filename,days=365,hostname=None):
                                  subject=cert),
             crypto.X509Extension(b"subjectAltName", False, b'DNS:'+hostname)
             ])
-        cert.sign(k, 'sha1')
+        cert.sign(k, 'sha512')
 
         open(cert_filename, "wb").write(
             crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
@@ -143,7 +143,7 @@ def create_cert(cert_filename,key_filename,days=365,hostname=None,
                     #                     subject=cert),
                     ])
             cert.add_extensions(exts)
-            cert.sign(k, 'sha1')
+            cert.sign(k, 'sha512')
 
         else:
             cert.get_subject().C = "US"
@@ -155,7 +155,7 @@ def create_cert(cert_filename,key_filename,days=365,hostname=None,
 
             # finish cert req
             cert.set_pubkey(k)
-            cert.sign(k, 'sha1')
+            cert.sign(k, 'sha512')
 
             # load CA
             cacert = os.path.abspath(os.path.expandvars(cacert))
@@ -184,7 +184,7 @@ def create_cert(cert_filename,key_filename,days=365,hostname=None,
                     #                     subject=cert),
                     ])
             cert2.add_extensions(exts)
-            cert2.sign(ca_key, 'sha1')
+            cert2.sign(ca_key, 'sha512')
 
             # overwrite cert req with real cert
             cert = cert2
