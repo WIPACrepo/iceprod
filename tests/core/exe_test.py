@@ -1544,6 +1544,174 @@ cat foobar|grep 123
                 raise Exception('running the module succeeded when not supposed to')
 
     @patch('iceprod.core.exe.functions.download')
+    @unittest_reporter(name='runmodule - args string')
+    async def test_214_runmodule_args(self, download):
+        # create the module object
+        module = iceprod.core.dataclasses.Module()
+        module['name'] = 'module'
+        module['src'] = 'file:/test.py'
+        module['args'] = '-a b --c d e'
+
+        # check that validate, resource_url, debug are in options
+        options = {}
+        if 'validate' not in options:
+            options['validate'] = True
+        if 'resource_url' not in options:
+            options['resource_url'] = 'http://foo/'
+        if 'debug' not in options:
+            options['debug'] = False
+
+        # make sure some basic options are set
+        if 'data_url' not in options:
+            options['data_url'] = 'gsiftp://gridftp/'
+        if 'svn_repository' not in options:
+            options['svn_repository'] = 'http://svn/'
+        if 'job_temp' not in options:
+            options['job_temp'] = os.path.join(self.test_dir,'job_temp')
+        if 'local_temp' not in options:
+            options['local_temp'] = os.path.join(self.test_dir,'local_temp')
+
+        async def create(*args, **kwargs):
+            path = os.path.join(options['local_temp'], os.path.basename(module['src']))
+            self.mk_files(path, """
+import argparse
+p = argparse.ArgumentParser()
+p.add_argument('-a')
+p.add_argument('--c')
+p.add_argument('e', nargs='+')
+args = p.parse_args()
+assert args.a == 'b'
+assert args.c == 'd'
+assert args.e == ['e']
+""", ext=True)
+            return path
+        download.side_effect = create
+
+        # set env
+        env = {'options': options}
+
+        # run the module
+        with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
+            try:
+                async for mod in iceprod.core.exe.runmodule(self.config, env, module):
+                    await mod.wait()
+            except:
+                logger.error('running the module failed')
+                raise
+
+    @patch('iceprod.core.exe.functions.download')
+    @unittest_reporter(name='runmodule - args json')
+    async def test_215_runmodule_args(self, download):
+        # create the module object
+        module = iceprod.core.dataclasses.Module()
+        module['name'] = 'module'
+        module['src'] = 'file:/test.py'
+        module['args'] = '{"kwargs": {"a": "b", "cc": "d"}, "args": ["e"]}'
+
+        # check that validate, resource_url, debug are in options
+        options = {}
+        if 'validate' not in options:
+            options['validate'] = True
+        if 'resource_url' not in options:
+            options['resource_url'] = 'http://foo/'
+        if 'debug' not in options:
+            options['debug'] = False
+
+        # make sure some basic options are set
+        if 'data_url' not in options:
+            options['data_url'] = 'gsiftp://gridftp/'
+        if 'svn_repository' not in options:
+            options['svn_repository'] = 'http://svn/'
+        if 'job_temp' not in options:
+            options['job_temp'] = os.path.join(self.test_dir,'job_temp')
+        if 'local_temp' not in options:
+            options['local_temp'] = os.path.join(self.test_dir,'local_temp')
+
+        async def create(*args, **kwargs):
+            path = os.path.join(options['local_temp'], os.path.basename(module['src']))
+            self.mk_files(path, """
+import argparse
+p = argparse.ArgumentParser()
+p.add_argument('-a')
+p.add_argument('--cc')
+p.add_argument('e', nargs='+')
+args = p.parse_args()
+assert args.a == 'b'
+assert args.cc == 'd'
+assert args.e == ['e']
+""", ext=True)
+            return path
+        download.side_effect = create
+
+        # set env
+        env = {'options': options}
+
+        # run the module
+        with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
+            try:
+                async for mod in iceprod.core.exe.runmodule(self.config, env, module):
+                    await mod.wait()
+            except:
+                logger.error('running the module failed')
+                raise
+
+    @patch('iceprod.core.exe.functions.download')
+    @unittest_reporter(name='runmodule - args dict')
+    async def test_216_runmodule_args(self, download):
+        # create the module object
+        module = iceprod.core.dataclasses.Module()
+        module['name'] = 'module'
+        module['src'] = 'file:/test.py'
+        module['args'] = {"kwargs": {"a": "b", "cc": "d"}, "args": ["e"]}
+
+        # check that validate, resource_url, debug are in options
+        options = {}
+        if 'validate' not in options:
+            options['validate'] = True
+        if 'resource_url' not in options:
+            options['resource_url'] = 'http://foo/'
+        if 'debug' not in options:
+            options['debug'] = False
+
+        # make sure some basic options are set
+        if 'data_url' not in options:
+            options['data_url'] = 'gsiftp://gridftp/'
+        if 'svn_repository' not in options:
+            options['svn_repository'] = 'http://svn/'
+        if 'job_temp' not in options:
+            options['job_temp'] = os.path.join(self.test_dir,'job_temp')
+        if 'local_temp' not in options:
+            options['local_temp'] = os.path.join(self.test_dir,'local_temp')
+
+        async def create(*args, **kwargs):
+            path = os.path.join(options['local_temp'], os.path.basename(module['src']))
+            self.mk_files(path, """
+import argparse
+p = argparse.ArgumentParser()
+p.add_argument('-a')
+p.add_argument('--cc')
+p.add_argument('e', nargs='+')
+args = p.parse_args()
+assert args.a == 'b'
+assert args.cc == 'd'
+assert args.e == ['e']
+""", ext=True)
+            return path
+        download.side_effect = create
+
+        # set env
+        env = {'options': options}
+
+        # run the module
+        with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
+            try:
+                async for mod in iceprod.core.exe.runmodule(self.config, env, module):
+                    await mod.wait()
+            except:
+                logger.error('running the module failed')
+                raise
+
+    @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='runmodule - python script (clear env)')
     async def test_220_runmodule_script(self, download):
         # create the module object

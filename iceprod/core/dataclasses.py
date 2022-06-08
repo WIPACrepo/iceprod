@@ -447,7 +447,6 @@ class Module(_TaskCommon):
             return (super(Module,self).valid() and
                     isinstance(self['running_class'],String) and
                     isinstance(self['src'],String) and
-                    isinstance(self['args'],String) and
                     isinstance(self['env_shell'],String) and
                     isinstance(self['env_clear'],bool) and
                     isinstance(self['configs'],dict)

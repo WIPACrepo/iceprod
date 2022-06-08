@@ -876,10 +876,11 @@ class ForkModule:
         args = self.module['args']
         if args:
             self.logger.warning('args=%s',args)
-            if (args and isinstance(args,dataclasses.String) and
-                args[0] in ('{','[')):
+            if args and isinstance(args,dataclasses.String) and args[0] in ('{','['):
                 args = json_decode(args)
-            if isinstance(args,dataclasses.String):
+            if args and isinstance(args, dict) and set(args) == {'args','kwargs'}:
+                args = self.cfg.parseObject(args, self.env)
+            elif isinstance(args,dataclasses.String):
                 args = {"args":[self.cfg.parseValue(x,self.env) for x in args.split()],"kwargs":{}}
             elif isinstance(args,list):
                 args = {"args":[self.cfg.parseValue(x,self.env) for x in args],"kwargs":{}}
