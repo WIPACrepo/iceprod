@@ -4,29 +4,30 @@
 #
 #    pip-compile
 #
-boto3==1.24.5
+boto3==1.24.52
     # via iceprod (setup.py)
-botocore==1.27.5
+botocore==1.27.52
     # via
     #   boto3
     #   s3transfer
 cachetools==5.2.0
     # via iceprod (setup.py)
-certifi==2022.5.18.1
+certifi==2022.6.15
     # via
     #   iceprod (setup.py)
     #   requests
-cffi==1.15.0
+cffi==1.15.1
     # via cryptography
-charset-normalizer==2.0.12
+charset-normalizer==2.1.0
     # via requests
-cryptography==37.0.2
+cryptography==37.0.4
     # via
     #   iceprod (setup.py)
+    #   pyjwt
     #   pyopenssl
 idna==3.3
     # via requests
-jmespath==1.0.0
+jmespath==1.0.1
     # via
     #   boto3
     #   botocore
@@ -40,9 +41,9 @@ pyasn1==0.4.8
     # via ldap3
 pycparser==2.21
     # via cffi
-pyjwt==2.4.0
+pyjwt[crypto]==2.4.0
     # via wipac-rest-tools
-pymongo==4.1.1
+pymongo==4.2.0
     # via
     #   iceprod (setup.py)
     #   motor
@@ -54,7 +55,7 @@ python-dateutil==2.8.2
     #   iceprod (setup.py)
 pyyaml==6.0
     # via iceprod (setup.py)
-requests==2.27.1
+requests==2.28.1
     # via
     #   iceprod (setup.py)
     #   requests-futures
@@ -69,27 +70,27 @@ requests-toolbelt==0.9.1
     # via iceprod (setup.py)
 s3transfer==0.6.0
     # via boto3
-setproctitle==1.2.3
+setproctitle==1.3.2
     # via iceprod (setup.py)
 six==1.16.0
     # via python-dateutil
 statsd==3.3.0
     # via iceprod (setup.py)
-tornado==6.1
+tornado==6.2
     # via
     #   iceprod (setup.py)
     #   wipac-rest-tools
-typing-extensions==4.2.0
+typing-extensions==4.3.0
     # via wipac-dev-tools
 unidecode==1.3.4
     # via iceprod (setup.py)
-urllib3==1.26.9
+urllib3==1.26.11
     # via
     #   botocore
     #   requests
-wipac-dev-tools==1.2.2
+wipac-dev-tools==1.3.1
     # via
     #   iceprod (setup.py)
     #   wipac-rest-tools
-wipac-rest-tools==1.3.3
+wipac-rest-tools==1.3.6
     # via iceprod (setup.py)
