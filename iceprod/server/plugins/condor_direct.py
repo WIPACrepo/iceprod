@@ -916,7 +916,11 @@ class condor_direct(grid.BaseGrid):
         for line in out.split('\n'):
             if not line.strip():
                 continue
-            gid,status,site,cmd = [x.strip() for x in line.split(',') if x.strip()]
+            try:
+                gid,status,site,cmd = [x.strip() for x in line.split(',') if x.strip()]
+            except ValueError:
+                logger.warning('bad line: %r', line)
+                continue
             if 'loader.sh' not in cmd:
                 continue
             if status in ('0', '1'):
@@ -954,7 +958,11 @@ class condor_direct(grid.BaseGrid):
         for line in out.split('\n'):
             if not line.strip():
                 continue
-            gid,status,exitstatus,exitsignal,site,cmd = [x.strip() for x in line.split(',') if x.strip()]
+            try:
+                gid,status,exitstatus,exitsignal,site,cmd = [x.strip() for x in line.split(',') if x.strip()]
+            except ValueError:
+                logger.warning('bad line: %r', line)
+                continue
             if 'loader.sh' not in cmd:
                 continue
             if status == '4' and exitstatus == '0' and exitsignal == 'false':
