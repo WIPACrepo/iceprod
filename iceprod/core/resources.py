@@ -541,9 +541,11 @@ class Resources:
             val = ','.join(replace(x) for x in set(resources['gpu']))
             env['CUDA_VISIBLE_DEVICES'] = val
             env['GPU_DEVICE_ORDINAL'] = val
+            env['ROCR_VISIBLE_DEVICES'] = val
         else:
             env['CUDA_VISIBLE_DEVICES'] = '9999'
             env['GPU_DEVICE_ORDINAL'] = '9999'
+            env['ROCR_VISIBLE_DEVICES'] = '9999'
 
 def get_cpus():
     """Detect the number of available (allocated) cpus."""
@@ -603,6 +605,12 @@ def get_gpus():
         try:
             ret = [x.strip() for x in os.environ['GPU_DEVICE_ORDINAL'].split(',') if x.strip()]
             logging.info('got gpus from GPU_DEVICE_ORDINAL: %r',ret)
+        except Exception:
+            pass
+    if (not ret) and 'ROCR_VISIBLE_DEVICES' in os.environ:
+        try:
+            ret = [x.strip() for x in os.environ['ROCR_VISIBLE_DEVICES'].split(',') if x.strip()]
+            logging.info('got gpus from ROCR_VISIBLE_DEVICES: %r',ret)
         except Exception:
             pass
     if (not ret) and '_CONDOR_AssignedGPUs' in os.environ:
