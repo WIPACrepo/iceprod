@@ -14,7 +14,7 @@ cachetools==5.2.0
     # via
     #   iceprod (setup.py)
     #   wipac-rest-tools
-certifi==2022.9.24
+certifi==2022.12.7
     # via
     #   iceprod (setup.py)
     #   requests
