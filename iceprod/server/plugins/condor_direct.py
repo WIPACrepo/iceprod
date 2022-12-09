@@ -644,6 +644,9 @@ class condor_direct(grid.BaseGrid):
                 task_cfg['data'].extend(files)
                 task_cfg['task_files'] = False
 
+            # task config customizations
+            await self.customize_task_config(task_cfg)
+
             # create pilot
             if 'time' in resources:
                 resources_available = {'time': resources['time']}
@@ -747,6 +750,9 @@ class condor_direct(grid.BaseGrid):
     async def upload_output(self, task):
         pass
 
+    async def customize_task_config(self, task_cfg):
+        pass
+
     async def generate_submit_file(self, task, cfg=None, passkey=None,
                              filelist=None):
         """Generate queueing system submit file for task in dir."""
@@ -756,6 +762,8 @@ class condor_direct(grid.BaseGrid):
         # get requirements and batchopts
         requirements = []
         batch_opts = {}
+        input_files = list(filelist)
+        output_files = []
         for b in self.queue_cfg['batchopts']:
             if b.lower() == 'requirements':
                 requirements.append(self.queue_cfg['batchopts'][b])
@@ -800,6 +808,12 @@ class condor_direct(grid.BaseGrid):
                                 if bb.lower() == 'requirements':
                                     logger.info(f'{task["task_id"]} task batchsys requirement: {value}')
                                     requirements.append(value)
+                                elif bb.lower() == 'transfer_input_files':
+                                    input_files.extend(value.split(','))
+                                elif bb.lower() == 'transfer_output_files':
+                                    output_files.extend(v.strip() for v in value.split(','))
+                                elif bb.lower() == 'transfer_output_remaps':
+                                    output_files.extend(v.split('=',1)[-1].strip() for v in value.split(','))
                                 else:
                                     logger.info(f'{task["task_id"]} task batchsys other: {bb}={value}')
                                     batch_opts[bb] = value
@@ -816,13 +830,14 @@ class condor_direct(grid.BaseGrid):
             p('notification = never')
             p('+IsIceProdJob = True') # mark as IceProd for monitoring
             p('want_graceful_removal = True')
-            if filelist:
-                p('transfer_input_files = {}'.format(','.join(filelist)))
+            if input_files:
+                p('transfer_input_files = {}'.format(','.join(input_files)))
             p('skip_filechecks = True')
             p('should_transfer_files = always')
             p('when_to_transfer_output = ON_EXIT_OR_EVICT')
             p('+SpoolOnEvict = False')
-            p('transfer_output_files = iceprod_log.gz, iceprod_out.gz, iceprod_err.gz')
+            output_files.extend(['iceprod_log.gz', 'iceprod_out.gz', 'iceprod_err.gz'])
+            p('transfer_output_files = {}'.format(','.join(output_files)))
 
             # put some info about the task in the classads
             p(f'+IceProdDatasetId = "{task["dataset_id"]}"')
