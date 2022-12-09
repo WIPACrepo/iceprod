@@ -64,6 +64,7 @@ async def run(rest_client, ntasks=NTASKS, ntasks_per_cycle=NTASKS_PER_CYCLE, deb
             }
             ret = await rest_client.request('GET', '/tasks', args)
             queue_tasks = []
+            tasks_queue_pending = 0
             deps_futures = set()
             async def check_deps(task):
                 for dep in task.get('depends', []):
@@ -74,6 +75,7 @@ async def run(rest_client, ntasks=NTASKS, ntasks_per_cycle=NTASKS_PER_CYCLE, deb
                         return None
                 return task
             for task in ret['tasks']:
+                tasks_queue_pending += 1
                 if not task.get('depends', None):
                     logger.info('queueing task %s', task['task_id'])
                     queue_tasks.append(task['task_id'])
@@ -84,18 +86,31 @@ async def run(rest_client, ntasks=NTASKS, ntasks_per_cycle=NTASKS_PER_CYCLE, deb
                         done, pending = await asyncio.wait(deps_futures, return_when=asyncio.FIRST_COMPLETED)
                         for fut in done:
                             task = await fut
-                            if task and len(queue_tasks) < tasks_to_queue:
+                            if task:
                                 logger.info('queueing task %s', task['task_id'])
                                 queue_tasks.append(task['task_id'])
+                            else:
+                                tasks_queue_pending -= 1
                         deps_futures = pending
-                if len(queue_tasks) >= tasks_to_queue:
+                while tasks_queue_pending >= tasks_to_queue and deps_futures:
+                    done, pending = await asyncio.wait(deps_futures, return_when=asyncio.FIRST_COMPLETED)
+                    for fut in done:
+                        task = await fut
+                        if task:
+                            logger.info('queueing task %s', task['task_id'])
+                            queue_tasks.append(task['task_id'])
+                        else:
+                            tasks_queue_pending -= 1
+                    deps_futures = pending
+                if tasks_queue_pending >= tasks_to_queue:
                     break
 
-            for fut in asyncio.as_completed(deps_futures):
-                task = await fut
-                if task and len(queue_tasks) < tasks_to_queue:
-                    logger.info('queueing task %s', task['task_id'])
-                    queue_tasks.append(task['task_id'])
+            if deps_futures:
+                for fut in asyncio.as_completed(deps_futures):
+                    task = await fut
+                    if task:
+                        logger.info('queueing task %s', task['task_id'])
+                        queue_tasks.append(task['task_id'])
 
             logger.warning('queueing %d tasks', len(queue_tasks))
             if queue_tasks:
