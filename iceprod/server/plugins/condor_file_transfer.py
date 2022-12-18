@@ -47,6 +47,7 @@ class condor_file_transfer(condor_direct):
             batchsys = {}
         batchsys_condor = batchsys.get('condor', {})
         batchsys_condor['transfer_input_files'] = ','.join(in_files)
+        batchsys_condor['transfer_output_files'] = ','.join(v.split('=',1)[-1].strip() for v in out_files)
         batchsys_condor['transfer_output_remaps'] = ','.join(out_files)
         batchsys['condor'] = batchsys_condor
         task_cfg['batchsys'] = batchsys

@@ -764,6 +764,7 @@ class condor_direct(grid.BaseGrid):
         batch_opts = {}
         input_files = list(filelist)
         output_files = []
+        output_remaps = []
         for b in self.queue_cfg['batchopts']:
             if b.lower() == 'requirements':
                 requirements.append(self.queue_cfg['batchopts'][b])
@@ -811,9 +812,9 @@ class condor_direct(grid.BaseGrid):
                                 elif bb.lower() == 'transfer_input_files':
                                     input_files.extend(value.split(','))
                                 elif bb.lower() == 'transfer_output_files':
-                                    output_files.extend(v.strip() for v in value.split(','))
+                                    output_files.extend(value.split(','))
                                 elif bb.lower() == 'transfer_output_remaps':
-                                    output_files.extend(v.split('=',1)[-1].strip() for v in value.split(','))
+                                    output_remaps.extend(value.split(','))
                                 else:
                                     logger.info(f'{task["task_id"]} task batchsys other: {bb}={value}')
                                     batch_opts[bb] = value
@@ -838,6 +839,8 @@ class condor_direct(grid.BaseGrid):
             p('+SpoolOnEvict = False')
             output_files.extend(['iceprod_log.gz', 'iceprod_out.gz', 'iceprod_err.gz'])
             p('transfer_output_files = {}'.format(','.join(output_files)))
+            if output_remaps:
+                p('transfer_output_remaps = {}'.format(','.join(output_remaps)))
 
             # put some info about the task in the classads
             p(f'+IceProdDatasetId = "{task["dataset_id"]}"')
