@@ -28,8 +28,8 @@ class condor_file_transfer(condor_direct):
                     if d['movement'] in ('input', 'both'):
                         in_files.append(data['remote'])
                     if d['movement'] in ('output', 'both'):
-                        local = data['local'] if data['local'] else os.path.basename(data['remote'])
-                        remote = data['remote']
+                        local = d['local'] if d['local'] else os.path.basename(d['remote'])
+                        remote = d['remote']
                         out_files.append(f'{local} = {remote}')
                 else:
                     new_data.append(d)
