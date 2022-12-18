@@ -842,7 +842,7 @@ class condor_direct(grid.BaseGrid):
             output_files.extend(['iceprod_log.gz', 'iceprod_out.gz', 'iceprod_err.gz'])
             p('transfer_output_files = {}'.format(','.join(output_files)))
             if output_remaps:
-                p('transfer_output_remaps = {}'.format(','.join(output_remaps)))
+                p('transfer_output_remaps = "{}"'.format(';'.join(x.replace('=','\=').replace(';','\;') for x in replaceoutput_remaps)))
 
             # put some info about the task in the classads
             p(f'+IceProdDatasetId = "{task["dataset_id"]}"')
