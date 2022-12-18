@@ -733,10 +733,10 @@ class condor_direct(grid.BaseGrid):
                                       dataset_id=task['dataset_id'],
                                       submit_dir=task['submit_dir'],
                                       reason=reason)
-                if task['pilot']['pilot_id']:
+                if task['pilot'] and task['pilot']['pilot_id']:
                     logger.info("deleting just submitted pilot: %s", task["pilot"]["pilot_id"])
                     await self.rest_client.request('DELETE', f'/pilots/{task["pilot"]["pilot_id"]}')
-                if 'grid_queue_id' in task['pilot'] and task['pilot']['grid_queue_id']:
+                if task['pilot'] and 'grid_queue_id' in task['pilot'] and task['pilot']['grid_queue_id']:
                     logger.info("deleting just submitted job: %s", task['pilot']['grid_queue_id'])
                     await self.remove([task['pilot']['grid_queue_id']])
             else:

@@ -41,7 +41,10 @@ class condor_file_transfer(condor_direct):
             for module in tray['modules']:
                 process_data(module)
 
-        batchsys = task_cfg.get('batchsys', {})
+        # batchsys config can be None in config!
+        batchsys = task_cfg.get('batchsys', None)
+        if not batchsys:
+            batchsys = {}
         batchsys_condor = batchsys.get('condor', {})
         batchsys_condor['transfer_input_files'] = in_files
         batchsys_condor['transfer_output_remaps'] = out_files
