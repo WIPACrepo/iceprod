@@ -21,6 +21,9 @@ class condor_file_transfer(condor_direct):
         in_files = []
         out_files = []
 
+        def escape_remap(x):
+            return x.replace('=','\=').replace(';','\;')
+
         def process_data(cfg):
             new_data = []
             for d in cfg.get('data', []):
@@ -30,7 +33,7 @@ class condor_file_transfer(condor_direct):
                     if d['movement'] in ('output', 'both'):
                         local = d['local'] if d['local'] else os.path.basename(d['remote'])
                         remote = d['remote']
-                        out_files.append(f'{local} = {remote}')
+                        out_files.append(f'{escape_remap(local)} = {escape_remap(remote)}')
                 else:
                     new_data.append(d)
             cfg['data'] = new_data
