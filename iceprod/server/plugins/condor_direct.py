@@ -610,7 +610,7 @@ class condor_direct(grid.BaseGrid):
                 config = await self.rest_client.request('GET', f'/config/{task["dataset_id"]}')
                 dataset_cache[task['dataset_id']] = (dataset, config)
             parser = Config(config)
-            config = parser.parseObject(config)
+            config = parser.parseObject(config, {})
 
             task_cfg = None
             for t in config['tasks']:
