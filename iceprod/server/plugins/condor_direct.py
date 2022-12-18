@@ -20,6 +20,7 @@ import iceprod
 from iceprod.core import dataclasses
 from iceprod.core import constants
 from iceprod.core import functions
+from iceprod.core.exe import Config
 from iceprod.core.resources import sanitized_requirements, rounded_requirements
 from iceprod.core.exe_json import ServerComms
 from iceprod.server import grid
@@ -608,7 +609,8 @@ class condor_direct(grid.BaseGrid):
                 dataset = await self.rest_client.request('GET', f'/datasets/{task["dataset_id"]}')
                 config = await self.rest_client.request('GET', f'/config/{task["dataset_id"]}')
                 dataset_cache[task['dataset_id']] = (dataset, config)
-            config = copy.deepcopy(config)
+            parser = Config(config)
+            config = parser.parseObject(config)
 
             task_cfg = None
             for t in config['tasks']:
