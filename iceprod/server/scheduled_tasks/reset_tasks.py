@@ -5,6 +5,7 @@ Initial delay: rand(5 minutes)
 Periodic delay: 20 minutes
 """
 
+import asyncio
 import logging
 import random
 import time
@@ -23,6 +24,33 @@ def reset_tasks(module):
     # initial delay
     IOLoop.current().call_later(random.randint(60,60*5), run, module.rest_client)
 
+
+async def reset_dataset(dataset_id, rest_client=None, debug=False):
+    try:
+        dataset = await rest_client.request('GET', '/datasets/{}'.format(dataset_id))
+        tasks = await rest_client.request('GET', '/datasets/{}/task_summaries/status'.format(dataset_id))
+        if 'reset' in tasks:
+            logger.info('dataset %s reset tasks: %s', dataset_id, tasks['reset'])
+            for task_id in tasks['reset']:
+                try:
+                    task = await rest_client.request('GET', '/tasks/{}'.format(task_id))
+                    status = 'waiting'
+                    if dataset['debug']:
+                        status = 'suspended'
+                    elif 'failures' in task and task['failures'] > 10:
+                        status = 'failed'
+                    args = {'status': status}
+                    await rest_client.request('PUT', '/datasets/{}/tasks/{}/status'.format(dataset_id,task_id), args)
+                except Exception:
+                    logger.error('error resetting task %s', task_id, exc_info=True)
+                    if debug:
+                        raise
+    except Exception:
+        logger.error('error resetting tasks in dataset %s', dataset_id, exc_info=True)
+        if debug:
+            raise
+
+
 async def run(rest_client, debug=False):
     """
     Actual runtime / loop.
@@ -40,30 +68,17 @@ async def run(rest_client, debug=False):
             dataset_ids.extend(datasets['processing'])
         if 'truncated' in datasets:
             dataset_ids.extend(datasets['truncated'])
+        awaitables = set()
         for dataset_id in dataset_ids:
-            try:
-                dataset = await rest_client.request('GET', '/datasets/{}'.format(dataset_id))
-                tasks = await rest_client.request('GET', '/datasets/{}/task_summaries/status'.format(dataset_id))
-                if 'reset' in tasks:
-                    logger.info('dataset %s reset tasks: %s', dataset_id, tasks['reset'])
-                    for task_id in tasks['reset']:
-                        try:
-                            task = await rest_client.request('GET', '/tasks/{}'.format(task_id))
-                            status = 'waiting'
-                            if dataset['debug']:
-                                status = 'suspended'
-                            elif 'failures' in task and task['failures'] > 10:
-                                status = 'failed'
-                            args = {'status': status}
-                            await rest_client.request('PUT', '/datasets/{}/tasks/{}/status'.format(dataset_id,task_id), args)
-                        except Exception:
-                            logger.error('error resetting task %s', task_id, exc_info=True)
-                            if debug:
-                                raise
-            except Exception:
-                logger.error('error resetting tasks in dataset %s', dataset_id, exc_info=True)
-                if debug:
-                    raise
+            fut = asyncio.create_task(reset_dataset(dataset_id, rest_client=rest_client, debug=debug))
+            awaitables.add(fut)
+            if len(awaitables) >= 20:
+                done, pending = await asyncio.wait(awaitables, return_when=asyncio.FIRST_COMPLETED)
+                for fut in done:
+                    await fut
+                awaitables = pending
+        for fut in asyncio.as_completed(awaitables):
+            await fut
     except Exception:
         logger.error('error resetting non-active tasks', exc_info=True)
         if debug:
@@ -81,6 +96,7 @@ def main():
     import os
     parser = argparse.ArgumentParser(description='run a scheduled task once')
     parser.add_argument('-t', '--token', default=os.environ.get('ICEPROD_TOKEN', None), help='auth token')
+    parser.add_argument('--dataset-id', default=None, help='dataset id to reset')
     parser.add_argument('--log-level', default='info', help='log level')
     parser.add_argument('--debug', default=False, action='store_true', help='debug enabled')
 
@@ -93,7 +109,11 @@ def main():
     from rest_tools.client import RestClient
     rpc = RestClient('https://iceprod2-api.icecube.wisc.edu', args['token'])
 
-    asyncio.run(run(rpc, debug=args['debug']))
+    if args['dataset_id']:
+        asyncio.run(reset_dataset(args['dataset_id'], rpc, debug=args['debug']))
+    else:
+        asyncio.run(run(rpc, debug=args['debug']))
+
 
 if __name__ == '__main__':
     main()
