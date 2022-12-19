@@ -49,6 +49,12 @@ class condor_file_transfer(condor_direct):
         if not batchsys:
             batchsys = {}
         batchsys_condor = batchsys.get('condor', {})
+        reqs = batchsys_condor.get('requirements','')
+        if reqs:
+            reqs += ' && regexp("osdf",HasFileTransferPluginMethods)'
+        else:
+            reqs = 'regexp("osdf",HasFileTransferPluginMethods)'
+        batchsys_condor['requirements'] = reqs
         batchsys_condor['transfer_input_files'] = ','.join(in_files)
         batchsys_condor['transfer_output_files'] = ','.join(v.split('=',1)[0].strip() for v in out_files)
         batchsys_condor['transfer_output_remaps'] = ','.join(out_files)
