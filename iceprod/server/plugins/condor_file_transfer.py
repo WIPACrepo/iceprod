@@ -29,7 +29,7 @@ class condor_file_transfer(condor_direct):
             for d in cfg.get('data', []):
                 if d['remote'].startswith('osdf://'):
                     if d['movement'] in ('input', 'both'):
-                        in_files.append(data['remote'])
+                        in_files.append(d['remote'])
                     if d['movement'] in ('output', 'both'):
                         local = d['local'] if d['local'] else os.path.basename(d['remote'])
                         remote = d['remote']
