@@ -20,6 +20,7 @@ import iceprod
 from iceprod.core import dataclasses
 from iceprod.core import constants
 from iceprod.core import functions
+from iceprod.core.exe import Config
 from iceprod.core.resources import sanitized_requirements, rounded_requirements
 from iceprod.core.exe_json import ServerComms
 from iceprod.server import grid
@@ -608,7 +609,8 @@ class condor_direct(grid.BaseGrid):
                 dataset = await self.rest_client.request('GET', f'/datasets/{task["dataset_id"]}')
                 config = await self.rest_client.request('GET', f'/config/{task["dataset_id"]}')
                 dataset_cache[task['dataset_id']] = (dataset, config)
-            config = copy.deepcopy(config)
+            parser = Config(config)
+            config = parser.parseObject(config, {})
 
             task_cfg = None
             for t in config['tasks']:
@@ -779,8 +781,10 @@ class condor_direct(grid.BaseGrid):
                         for bb in cfg['steering']['batchsys'][b]:
                             value = cfg['steering']['batchsys'][b][bb]
                             if bb.lower() == 'requirements':
+                                logger.info(f'steering batchsys requirement: {value}')
                                 requirements.append(value)
                             else:
+                                logger.info(f'steering batchsys other: {bb} = {value}')
                                 batch_opts[bb] = value
             if 'task' in cfg['options']:
                 t = cfg['options']['task']
@@ -840,7 +844,7 @@ class condor_direct(grid.BaseGrid):
             output_files.extend(['iceprod_log.gz', 'iceprod_out.gz', 'iceprod_err.gz'])
             p('transfer_output_files = {}'.format(','.join(output_files)))
             if output_remaps:
-                p('transfer_output_remaps = {}'.format(','.join(output_remaps)))
+                p('transfer_output_remaps = "{}"'.format(';'.join(output_remaps)))
 
             # put some info about the task in the classads
             p(f'+IceProdDatasetId = "{task["dataset_id"]}"')

@@ -62,7 +62,7 @@ class GrammarException(Exception):
 
 def getType(output):
     try:
-        if isinstance(output,dataclasses.String):
+        if isinstance(output,dataclasses.String) and not (output.startswith('"') and output.endswith('"')):
             try:
                 output = json.loads(output.replace("'",'"'))
             except Exception:
@@ -380,8 +380,10 @@ class ExpParser:
                 logger.debug('SyntaxError', exc_info=True)
                 output = getType(input)
             else:
+                logger.debug('joining stack: %r', ''.join(s[1] for s in stack))
                 output = getType(''.join(s[1] for s in stack))
                 if isinstance(output,dataclasses.String) and output != input:
+                    logger.debug('reprocessing output: %r', output)
                     input = output
                     continue
             break

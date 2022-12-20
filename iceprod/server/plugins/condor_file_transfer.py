@@ -21,16 +21,19 @@ class condor_file_transfer(condor_direct):
         in_files = []
         out_files = []
 
+        def escape_remap(x):
+            return x.replace('=','\=').replace(';','\;')
+
         def process_data(cfg):
             new_data = []
             for d in cfg.get('data', []):
                 if d['remote'].startswith('osdf://'):
                     if d['movement'] in ('input', 'both'):
-                        in_files.append(data['remote'])
+                        in_files.append(d['remote'])
                     if d['movement'] in ('output', 'both'):
-                        local = data['local'] if data['local'] else os.path.basename(data['remote'])
-                        remote = data['remote']
-                        out_files.append(f'{local} = {remote}')
+                        local = d['local'] if d['local'] else os.path.basename(d['remote'])
+                        remote = d['remote']
+                        out_files.append(f'{escape_remap(local)} = {escape_remap(remote)}')
                 else:
                     new_data.append(d)
             cfg['data'] = new_data
@@ -46,8 +49,14 @@ class condor_file_transfer(condor_direct):
         if not batchsys:
             batchsys = {}
         batchsys_condor = batchsys.get('condor', {})
+        reqs = batchsys_condor.get('requirements','')
+        if reqs:
+            reqs += ' && regexp("osdf",HasFileTransferPluginMethods)'
+        else:
+            reqs = 'regexp("osdf",HasFileTransferPluginMethods)'
+        batchsys_condor['requirements'] = reqs
         batchsys_condor['transfer_input_files'] = ','.join(in_files)
-        batchsys_condor['transfer_output_files'] = ','.join(v.split('=',1)[-1].strip() for v in out_files)
+        batchsys_condor['transfer_output_files'] = ','.join(v.split('=',1)[0].strip() for v in out_files)
         batchsys_condor['transfer_output_remaps'] = ','.join(out_files)
         batchsys['condor'] = batchsys_condor
         task_cfg['batchsys'] = batchsys

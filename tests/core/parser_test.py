@@ -45,6 +45,9 @@ class parser_test(unittest.TestCase):
         ret = parser.getType('foo')
         self.assertEqual(ret, 'foo')
 
+        ret = parser.getType('"foo"')
+        self.assertEqual(ret, '"foo"')
+
         ret = parser.getType('{"bar":"baz"}')
         self.assertEqual(ret, {"bar":"baz"})
 
@@ -301,6 +304,7 @@ class parser_test(unittest.TestCase):
             'test': 1,
             'test2': 't2',
             'test3': False,
+            'test4': '"quotes"',
             'list': [1,2,3,4.0],
             'dict': {'foo':'$steering(test)','bar':{'baz':'$steering(list)'}},
             "SNOWSTORM::config": {
@@ -371,6 +375,10 @@ class parser_test(unittest.TestCase):
         expected = job['steering']['parameters']['test3']
         self.assertEqual(ret,expected)
 
+        ret = p.parse('$steering(test4)',job=job)
+        expected = job['steering']['parameters']['test4']
+        self.assertEqual(ret,expected)
+
         ret = p.parse('$steering(list)',job=job)
         expected = job['steering']['parameters']['list']
         self.assertEqual(ret,expected)
@@ -396,8 +404,8 @@ class parser_test(unittest.TestCase):
             expected = getattr(builtins, reduction)(job['steering']['parameters']['list'])
             self.assertEqual(ret,expected)
 
-        ret = p.parse('$steering(test4)',job=job)
-        expected = '$steering(test4)'
+        ret = p.parse('$steering(nothere)',job=job)
+        expected = '$steering(nothere)'
         self.assertEqual(ret,expected)
 
     @unittest_reporter(name='parse() system')
