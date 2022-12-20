@@ -781,8 +781,10 @@ class condor_direct(grid.BaseGrid):
                         for bb in cfg['steering']['batchsys'][b]:
                             value = cfg['steering']['batchsys'][b][bb]
                             if bb.lower() == 'requirements':
+                                logger.info(f'steering batchsys requirement: {value}')
                                 requirements.append(value)
                             else:
+                                logger.info(f'steering batchsys other: {bb} = {value}')
                                 batch_opts[bb] = value
             if 'task' in cfg['options']:
                 t = cfg['options']['task']
