@@ -6,7 +6,8 @@ import logging
 import fnmatch
 import unittest
 import inspect
-from collections import defaultdict, Iterable
+from collections import defaultdict
+from collections.abc import Iterable
 from functools import wraps, partial
 
 from tornado.concurrent import Future
