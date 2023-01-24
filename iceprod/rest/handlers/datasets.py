@@ -109,7 +109,7 @@ class MultiDatasetHandler(APIBase):
                 raise tornado.web.HTTPError(400, reason=r)
 
         opt_fields = {
-            'priority': int,
+            'priority': float,
             'debug': bool,
             'jobs_immutable': bool,
             'status': str,

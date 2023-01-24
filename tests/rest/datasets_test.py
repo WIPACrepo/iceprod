@@ -161,6 +161,27 @@ async def test_rest_datasets_update_status(server):
     assert data['status'] == ret['status']
 
 
+async def test_rest_datasets_update_priority(server):
+    client = server(roles=['user'], groups=['users'])
+
+    data = {
+        'description': 'blah',
+        'tasks_per_job': 4,
+        'jobs_submitted': 1,
+        'tasks_submitted': 4,
+        'priority': .5,
+        'group': 'users',
+    }
+    ret = await client.request('POST', '/datasets', data)
+    dataset_id = ret['result'].split('/')[-1]
+
+    data = {'priority': .8}
+    await client.request('PUT', f'/datasets/{dataset_id}/priority', data)
+
+    ret = await client.request('GET', f'/datasets/{dataset_id}')
+    assert data['priority'] == ret['priority']
+
+
 async def test_rest_datasets_update_jobs_submitted(server):
     client = server(roles=['user'], groups=['users'])
 
