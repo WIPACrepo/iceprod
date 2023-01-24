@@ -3,54 +3,42 @@ import json
 import uuid
 
 import tornado.web
-import pymongo
-import motor
 
-from iceprod.server.rest import RESTHandler, RESTHandlerSetup, authorization
+from ..base_handler import APIBase
+from ..auth import authorization
 from iceprod.server.util import nowstr
 
 logger = logging.getLogger('rest.grids')
 
-def setup(config, *args, **kwargs):
+
+def setup(handler_cfg):
     """
     Setup method for Grids REST API.
 
-    Sets up any database connections or other prerequisites.
-
     Args:
-        config (dict): an instance of :py:class:`iceprod.server.config`.
+        handler_cfg (dict): args to pass to the route
 
     Returns:
-        list: Routes for logs, which can be passed to :py:class:`tornado.web.Application`.
+        dict: routes, indexes
     """
-    cfg_rest = config.get('rest',{}).get('grids',{})
-    db_cfg = cfg_rest.get('database',{})
+    return {
+        'routes': [
+            (r'/grids', MultiGridsHandler, handler_cfg),
+            (r'/grids/(?P<grid_id>\w+)', GridsHandler, handler_cfg),
+        ],
+        'indexes': {
+            'grids': {
+                'grid_id_index': {'keys': 'grid_id', 'unique': True},
+            }
+        }
+    }
 
-    # add indexes
-    db = pymongo.MongoClient(**db_cfg).grids
-    if 'grid_id_index' not in db.grids.index_information():
-        db.grids.create_index('grid_id', name='grid_id_index', unique=True)
 
-    handler_cfg = RESTHandlerSetup(config, *args, **kwargs)
-    handler_cfg.update({
-        'database': motor.motor_tornado.MotorClient(**db_cfg).grids,
-    })
-
-    return [
-        (r'/grids', MultiGridsHandler, handler_cfg),
-        (r'/grids/(?P<grid_id>\w+)', GridsHandler, handler_cfg),
-    ]
-
-class BaseHandler(RESTHandler):
-    def initialize(self, database=None, **kwargs):
-        super(BaseHandler, self).initialize(**kwargs)
-        self.db = database
-
-class MultiGridsHandler(BaseHandler):
+class MultiGridsHandler(APIBase):
     """
     Handle multi grids requests.
     """
-    @authorization(roles=['admin','client'])
+    @authorization(roles=['admin', 'system'])
     async def get(self):
         """
         Get grid entries.
@@ -62,7 +50,7 @@ class MultiGridsHandler(BaseHandler):
         self.write({row['grid_id']:row for row in ret})
         self.finish()
 
-    @authorization(roles=['admin','client'])
+    @authorization(roles=['admin', 'system'])
     async def post(self):
         """
         Create a grid entry.
@@ -101,11 +89,11 @@ class MultiGridsHandler(BaseHandler):
         self.write({'result': grid_id})
         self.finish()
 
-class GridsHandler(BaseHandler):
+class GridsHandler(APIBase):
     """
     Handle single grid requests.
     """
-    @authorization(roles=['admin','client'])
+    @authorization(roles=['admin', 'system'])
     async def get(self, grid_id):
         """
         Get a grid entry.
@@ -124,7 +112,7 @@ class GridsHandler(BaseHandler):
             self.write(ret)
             self.finish()
 
-    @authorization(roles=['admin','client'])
+    @authorization(roles=['admin', 'system'])
     async def patch(self, grid_id):
         """
         Update a grid entry.

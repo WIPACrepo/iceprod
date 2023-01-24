@@ -3,54 +3,42 @@ import json
 import uuid
 
 import tornado.web
-import pymongo
-import motor
 
-from iceprod.server.rest import RESTHandler, RESTHandlerSetup, authorization
+from ..base_handler import APIBase
+from ..auth import authorization
 from iceprod.server.util import nowstr
 
 logger = logging.getLogger('rest.pilots')
 
-def setup(config, *args, **kwargs):
+
+def setup(handler_cfg):
     """
     Setup method for Pilots REST API.
 
-    Sets up any database connections or other prerequisites.
-
     Args:
-        config (dict): an instance of :py:class:`iceprod.server.config`.
+        handler_cfg (dict): args to pass to the route
 
     Returns:
-        list: Routes for logs, which can be passed to :py:class:`tornado.web.Application`.
+        dict: routes, indexes
     """
-    cfg_rest = config.get('rest',{}).get('pilots',{})
-    db_cfg = cfg_rest.get('database',{})
+    return {
+        'routes': [
+            (r'/pilots', MultiPilotsHandler, handler_cfg),
+            (r'/pilots/(?P<pilot_id>\w+)', PilotsHandler, handler_cfg),
+        ],
+        'indexes': {
+            'jobs': {
+                'pilot_id_index': {'keys': 'pilot_id', 'unique': True},
+            }
+        }
+    }
 
-    # add indexes
-    db = pymongo.MongoClient(**db_cfg).pilots
-    if 'pilot_id_index' not in db.pilots.index_information():
-        db.pilots.create_index('pilot_id', name='pilot_id_index', unique=True)
 
-    handler_cfg = RESTHandlerSetup(config, *args, **kwargs)
-    handler_cfg.update({
-        'database': motor.motor_tornado.MotorClient(**db_cfg).pilots,
-    })
-
-    return [
-        (r'/pilots', MultiPilotsHandler, handler_cfg),
-        (r'/pilots/(?P<pilot_id>\w+)', PilotsHandler, handler_cfg),
-    ]
-
-class BaseHandler(RESTHandler):
-    def initialize(self, database=None, **kwargs):
-        super(BaseHandler, self).initialize(**kwargs)
-        self.db = database
-
-class MultiPilotsHandler(BaseHandler):
+class MultiPilotsHandler(APIBase):
     """
     Handle multi pilots requests.
     """
-    @authorization(roles=['admin','client','system'])
+    @authorization(roles=['admin', 'system'])
     async def get(self):
         """
         Get pilot entries.
@@ -82,7 +70,7 @@ class MultiPilotsHandler(BaseHandler):
             ret[row['pilot_id']] = row
         self.write(ret)
 
-    @authorization(roles=['admin','client'])
+    @authorization(roles=['admin', 'system'])
     async def post(self):
         """
         Create a pilot entry.
@@ -133,11 +121,12 @@ class MultiPilotsHandler(BaseHandler):
         self.write({'result': pilot_id})
         self.finish()
 
-class PilotsHandler(BaseHandler):
+
+class PilotsHandler(APIBase):
     """
     Handle single pilot requests.
     """
-    @authorization(roles=['admin','client','pilot'])
+    @authorization(roles=['admin', 'system'])
     async def get(self, pilot_id):
         """
         Get a pilot entry.
@@ -156,7 +145,7 @@ class PilotsHandler(BaseHandler):
             self.write(ret)
             self.finish()
 
-    @authorization(roles=['admin','client','pilot'])
+    @authorization(roles=['admin', 'system'])
     async def patch(self, pilot_id):
         """
         Update a pilot entry.
@@ -187,7 +176,7 @@ class PilotsHandler(BaseHandler):
             self.write(ret)
             self.finish()
 
-    @authorization(roles=['admin','client','pilot'])
+    @authorization(roles=['admin', 'system'])
     async def delete(self, pilot_id):
         """
         Delete a pilot entry.

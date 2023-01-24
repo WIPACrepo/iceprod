@@ -4,62 +4,49 @@ import uuid
 from collections import defaultdict
 
 import tornado.web
-import pymongo
-import motor
 
-from iceprod.server.rest import RESTHandler, RESTHandlerSetup, authorization
+from ..base_handler import APIBase
+from ..auth import authorization, attr_auth
 from iceprod.server.util import nowstr, job_statuses, job_status_sort
 
 logger = logging.getLogger('rest.jobs')
 
-def setup(config, *args, **kwargs):
+
+def setup(handler_cfg):
     """
     Setup method for Jobs REST API.
 
-    Sets up any database connections or other prerequisites.
-
     Args:
-        config (dict): an instance of :py:class:`iceprod.server.config`.
+        handler_cfg (dict): args to pass to the route
 
     Returns:
-        list: Routes for logs, which can be passed to :py:class:`tornado.web.Application`.
+        dict: routes, indexes
     """
-    cfg_rest = config.get('rest',{}).get('jobs',{})
-    db_cfg = cfg_rest.get('database',{})
+    return {
+        'routes': [
+            (r'/jobs', MultiJobsHandler, handler_cfg),
+            (r'/jobs/(?P<job_id>\w+)', JobsHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/jobs', DatasetMultiJobsHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/jobs/(?P<job_id>\w+)', DatasetJobsHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/jobs/(?P<job_id>\w+)/status', DatasetJobsStatusHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/job_actions/bulk_status/(?P<status>\w+)', DatasetJobBulkStatusHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/job_summaries/status', DatasetJobSummariesStatusHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/job_counts/status', DatasetJobCountsStatusHandler, handler_cfg),
+        ],
+        'indexes': {
+            'jobs': {
+                'job_id_index': {'keys': 'job_id', 'unique': True},
+                'dataset_id_index': {'keys': 'dataset_id', 'unique': False},
+            }
+        }
+    }
 
-    # add indexes
-    db = pymongo.MongoClient(**db_cfg).jobs
-    if 'job_id_index' not in db.jobs.index_information():
-        db.jobs.create_index('job_id', name='job_id_index', unique=True)
-    if 'dataset_id_index' not in db.jobs.index_information():
-        db.jobs.create_index('dataset_id', name='dataset_id_index', unique=False)
 
-    handler_cfg = RESTHandlerSetup(config, *args, **kwargs)
-    handler_cfg.update({
-        'database': motor.motor_tornado.MotorClient(**db_cfg).jobs,
-    })
-
-    return [
-        (r'/jobs', MultiJobsHandler, handler_cfg),
-        (r'/jobs/(?P<job_id>\w+)', JobsHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/jobs', DatasetMultiJobsHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/jobs/(?P<job_id>\w+)', DatasetJobsHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/jobs/(?P<job_id>\w+)/status', DatasetJobsStatusHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/job_actions/bulk_status/(?P<status>\w+)', DatasetJobBulkStatusHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/job_summaries/status', DatasetJobSummariesStatusHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/job_counts/status', DatasetJobCountsStatusHandler, handler_cfg),
-    ]
-
-class BaseHandler(RESTHandler):
-    def initialize(self, database=None, **kwargs):
-        super(BaseHandler, self).initialize(**kwargs)
-        self.db = database
-
-class MultiJobsHandler(BaseHandler):
+class MultiJobsHandler(APIBase):
     """
     Handle multi jobs requests.
     """
-    @authorization(roles=['admin','system','client'])
+    @authorization(roles=['admin', 'system'])
     async def post(self):
         """
         Create a job entry.
@@ -104,11 +91,11 @@ class MultiJobsHandler(BaseHandler):
         self.write({'result': job_id})
         self.finish()
 
-class JobsHandler(BaseHandler):
+class JobsHandler(APIBase):
     """
     Handle single job requests.
     """
-    @authorization(roles=['admin','client','system','pilot'])
+    @authorization(roles=['admin', 'system'])
     async def get(self, job_id):
         """
         Get a job entry.
@@ -127,7 +114,7 @@ class JobsHandler(BaseHandler):
             self.write(ret)
             self.finish()
 
-    @authorization(roles=['admin','client','system'])
+    @authorization(roles=['admin', 'system'])
     async def patch(self, job_id):
         """
         Update a job entry.
@@ -155,11 +142,12 @@ class JobsHandler(BaseHandler):
             self.write(ret)
             self.finish()
 
-class DatasetMultiJobsHandler(BaseHandler):
+class DatasetMultiJobsHandler(APIBase):
     """
     Handle multi jobs requests.
     """
-    @authorization(roles=['admin','client','system'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='read')
     async def get(self, dataset_id):
         """
         Get all jobs for a dataset.
@@ -200,11 +188,12 @@ class DatasetMultiJobsHandler(BaseHandler):
         self.write(ret)
         self.finish()
 
-class DatasetJobsHandler(BaseHandler):
+class DatasetJobsHandler(APIBase):
     """
     Handle single job requests.
     """
-    @authorization(roles=['admin','client','system'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='read')
     async def get(self, dataset_id, job_id):
         """
         Get a job entry.
@@ -224,11 +213,12 @@ class DatasetJobsHandler(BaseHandler):
             self.write(ret)
             self.finish()
 
-class DatasetJobsStatusHandler(BaseHandler):
+class DatasetJobsStatusHandler(APIBase):
     """
     Handle single job requests.
     """
-    @authorization(roles=['admin','client','system'], attrs=['dataset_id:write'])
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='write')
     async def put(self, dataset_id, job_id):
         """
         Set a job status.
@@ -260,11 +250,12 @@ class DatasetJobsStatusHandler(BaseHandler):
             self.write({})
             self.finish
 
-class DatasetJobBulkStatusHandler(BaseHandler):
+class DatasetJobBulkStatusHandler(APIBase):
     """
     Update the status of multiple jobs at once.
     """
-    @authorization(roles=['admin','client','system'], attrs=['dataset_id:write'])
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='write')
     async def post(self, dataset_id, status):
         """
         Set multiple jobs' status.
@@ -302,11 +293,12 @@ class DatasetJobBulkStatusHandler(BaseHandler):
             self.write({})
             self.finish()
 
-class DatasetJobSummariesStatusHandler(BaseHandler):
+class DatasetJobSummariesStatusHandler(APIBase):
     """
     Handle job summary grouping by status.
     """
-    @authorization(roles=['admin','client','system'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='read')
     async def get(self, dataset_id):
         """
         Get the job summary for all jobs in a dataset, group by status.
@@ -328,11 +320,12 @@ class DatasetJobSummariesStatusHandler(BaseHandler):
         self.write(ret2)
         self.finish()
 
-class DatasetJobCountsStatusHandler(BaseHandler):
+class DatasetJobCountsStatusHandler(APIBase):
     """
     Handle job counts by status.
     """
-    @authorization(roles=['admin','client','system'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='read')
     async def get(self, dataset_id):
         """
         Get the job counts for all jobs in a dataset, group by status.

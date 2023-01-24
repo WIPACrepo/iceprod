@@ -32,7 +32,6 @@ from rest_tools.utils import Auth
 from rest_tools.server import RestServer
 
 from iceprod.server.modules.rest_api import setup_rest
-import iceprod.server.rest.logs
 
 from . import RestTestCase
 

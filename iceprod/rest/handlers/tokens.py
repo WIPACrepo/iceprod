@@ -3,86 +3,74 @@ import json
 import uuid
 
 import tornado.web
-import pymongo
-import motor
 
-from iceprod.server.rest import RESTHandler, IceProdRestConfig, authorization, lookup_auth
+from ..base_handler import APIBase
+from ..auth import authorization, attr_auth
 from iceprod.server.util import nowstr
 
 logger = logging.getLogger('rest.tokens')
 
 
-def setup(config, **kwargs):
+def setup(handler_cfg):
     """
     Setup method for Tokens REST API.
 
-    Sets up any database connections or other prerequisites.
-
     Args:
-        config (dict): an instance of :py:class:`iceprod.server.config`.
+        handler_cfg (dict): args to pass to the route
 
     Returns:
-        list: Routes for logs, which can be passed to :py:class:`tornado.web.Application`.
+        dict: routes, indexes
     """
-    cfg_rest = config.get('rest',{}).get('task_stats',{})
-    db_cfg = cfg_rest.get('database',{})
+    return {
+        'routes': [
+            (r'/users/(?P<username>\w+)/tokens', UserTokensHandler, handler_cfg),
+        ],
+        'indexes': {
+            'tokens': {
+                'username_index': {'keys': 'username', 'unique': True},
+            }
+        }
+    }
 
-    # add indexes
-    db = pymongo.MongoClient(**db_cfg).task_stats
-    if 'task_stat_id_index' not in db.task_stats.index_information():
-        db.task_stats.create_index('task_stat_id', name='task_stat_id_index', unique=True)
-    if 'task_id_index' not in db.task_stats.index_information():
-        db.task_stats.create_index('task_id', name='task_id_index', unique=False)
-    if 'dataset_id_index' not in db.task_stats.index_information():
-        db.task_stats.create_index('dataset_id', name='dataset_id_index', unique=False)
 
-    database = motor.motor_tornado.MotorClient(**db_cfg).task_stats
-    handler_cfg = IceProdRestConfig(config, database=database, **kwargs)
-
-    return [
-        (r'/tasks/(?P<task_id>\w+)/task_stats', MultiTaskStatsHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/task_stats', DatasetsMultiTaskStatsHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/bulk/task_stats', DatasetsBulkTaskStatsHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/task_stats/(?P<task_stat_id>\w+)', DatasetsTaskStatsHandler, handler_cfg),
-    ]
-
-class BaseHandler(RESTHandler):
-    def initialize(self, database=None, **kwargs):
-        super(BaseHandler, self).initialize(**kwargs)
-        self.db = database
-
-class MultiTaskStatsHandler(BaseHandler):
+class UserTokensHandler(APIBase):
     """
-    Handle multi task_stats requests.
+    Handle user tokens requests.
     """
-    @authorization(roles=['admin','client','pilot'])
-    async def post(self, task_id):
+    @authorization(roles=['admin', 'system'])
+    async def get(self, username):
         """
-        Create a task_stat entry.
-
-        Body should contain the task stat data.
+        Get a user's tokens.
 
         Args:
-            task_id (str): the task id for this task_stat
-
-        Returns:
-            dict: {'result': <task_stat_id>}
+            username (str): username
         """
-        stat_data = json.loads(self.request.body)
-        if 'dataset_id' not in stat_data:
-            raise tornado.web.HTTPError(400, reason='Missing dataset_id in body')
+        async for row in self.db.tokens.find({'username': username}, {'_id': False}):
+            self.write(row)
+            return
+        raise tornado.web.HTTPError(404, 'not found')
 
-        # set some fields
-        task_stat_id = uuid.uuid1().hex
-        data = {
-            'task_stat_id': task_stat_id,
-            'task_id': task_id,
-            'dataset_id': stat_data['dataset_id'],
-            'create_date': nowstr(),
-            'stats': stat_data,
-        }
+    @authorization(roles=['admin', 'system'])
+    async def put(self, username):
+        """
+        Set a user's tokens.
 
-        ret = await self.db.task_stats.insert_one(data)
-        self.set_status(201)
-        self.write({'result': task_stat_id})
-        self.finish()
+        Body args:
+            access_token (str): access token
+            refresh_token (str): refresh token
+
+        Args:
+            username (str): username
+        """
+        access_token = self.get_json_body_argument('access_token', default='', type=str)
+        refresh_token = self.get_json_body_argument('refresh_token', default='', type=str)
+
+        data = {'refresh_token': refresh_token}
+        if access_token:
+            data['access_token']
+
+        await self.db.tokens.update_one(
+            {'username': username},
+            {'$set': data},
+            upsert=True,
+        )

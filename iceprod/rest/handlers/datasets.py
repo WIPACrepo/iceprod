@@ -4,65 +4,48 @@ import uuid
 from collections import defaultdict
 
 import tornado.web
-import tornado.httpclient
-from tornado.platform.asyncio import to_asyncio_future
-import pymongo
-import motor
 
-from rest_tools.client import RestClient
-from iceprod.server.rest import RESTHandler, RESTHandlerSetup, authorization
+from ..base_handler import APIBase
+from ..auth import authorization, attr_auth
 from iceprod.server.util import nowstr, dataset_statuses, dataset_status_sort
 
 logger = logging.getLogger('rest.datasets')
 
-def setup(config, *args, **kwargs):
+
+def setup(handler_cfg):
     """
     Setup method for Dataset REST API.
 
-    Sets up any database connections or other prerequisites.
-
     Args:
-        config (dict): an instance of :py:class:`iceprod.server.config`.
+        handler_cfg (dict): args to pass to the route
 
     Returns:
-        list: Routes for dataset, which can be passed to :py:class:`tornado.web.Application`.
+        dict: routes, indexes
     """
-    cfg_rest = config.get('rest',{}).get('datasets',{})
-    db_cfg = cfg_rest.get('database',{})
+    return {
+        'routes': [
+            (r'/datasets', MultiDatasetHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)', DatasetHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/description', DatasetDescriptionHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/status', DatasetStatusHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/priority', DatasetPriorityHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/jobs_submitted', DatasetJobsSubmittedHandler, handler_cfg),
+            (r'/dataset_summaries/status', DatasetSummariesStatusHandler, handler_cfg),
+        ],
+        'indexes': {
+            'datasets': {
+                'dataset_id_index': {'keys': 'dataset_id', 'unique': True},
+            }
+        }
+    }
 
-    # add indexes
-    db = pymongo.MongoClient(**db_cfg).datasets
-    if 'dataset_id_index' not in db.datasets.index_information():
-        db.datasets.create_index('dataset_id', name='dataset_id_index', unique=True)
 
-    handler_cfg = RESTHandlerSetup(config, *args, **kwargs)
-    handler_cfg.update({
-        'database': motor.motor_tornado.MotorClient(**db_cfg).datasets,
-    })
 
-    return [
-        (r'/datasets', MultiDatasetHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)', DatasetHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/description', DatasetDescriptionHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/status', DatasetStatusHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/priority', DatasetPriorityHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/jobs_submitted', DatasetJobsSubmittedHandler, handler_cfg),
-        (r'/dataset_summaries/status', DatasetSummariesStatusHandler, handler_cfg),
-    ]
-
-class BaseHandler(RESTHandler):
+class MultiDatasetHandler(APIBase):
     """
-    Base handler for Dataset REST API. 
+    Handle multi-dataset requests.
     """
-    def initialize(self, database=None, **kwargs):
-        super(BaseHandler, self).initialize(**kwargs)
-        self.db = database
-
-class MultiDatasetHandler(BaseHandler):
-    """
-    Handle multi-group requests.
-    """
-    @authorization(roles=['admin','client','system','user']) #TODO: figure out how to do auth for each dataset in the list
+    @authorization(roles=['admin', 'user', 'system'])
     async def get(self):
         """
         Get a dict of datasets.
@@ -91,6 +74,7 @@ class MultiDatasetHandler(BaseHandler):
         keys = self.get_argument('keys', None)
         if keys:
             projection.update({x:True for x in keys.split('|') if x})
+        projection['dataset_id'] = True  # must be in projection
 
         ret = {}
         async for row in self.db.datasets.find(query, projection=projection):
@@ -99,7 +83,7 @@ class MultiDatasetHandler(BaseHandler):
         self.write(ret)
         self.finish()
 
-    @authorization(roles=['admin','user']) # anyone should be able to create a dataset
+    @authorization(roles=['admin', 'user'])
     async def post(self):
         """
         Add a dataset.
@@ -162,7 +146,7 @@ class MultiDatasetHandler(BaseHandler):
         if 'status' not in data:
             data['status'] = 'processing'
         data['start_date'] = nowstr()
-        data['username'] = self.auth_data['username']
+        data['username'] = self.current_user
         if 'priority' not in data:
             data['priority'] = 0.5
         if 'debug' not in data:
@@ -174,14 +158,12 @@ class MultiDatasetHandler(BaseHandler):
         ret = await self.db.datasets.insert_one(data)
 
         # set auth rules
-        url = '/auths/'+data['dataset_id']
-        http_client = RestClient(self.auth_url, token=self.module_auth_key)
-        auth_data = {
-            'read_groups':['admin',data['group'],'users'],
-            'write_groups':['admin',data['group']],
-        }
-        logger.info('Authorization header: %s', 'bearer '+self.module_auth_key)
-        await http_client.request('PUT', url, auth_data)
+        write_groups = list({'admin', data['group']}) if data['group'] != users else ['admin']
+        await self.set_auth_attr('dataset_id', data['dataset_id'],
+            read_groups=list({'admin', data['group'], 'users'}),
+            write_groups=write_groups,
+            write_users=data['username'],
+        )
 
         # return success
         self.set_status(201)
@@ -189,11 +171,12 @@ class MultiDatasetHandler(BaseHandler):
         self.write({'result': f'/datasets/{dataset_id}'})
         self.finish()
 
-class DatasetHandler(BaseHandler):
+class DatasetHandler(APIBase):
     """
     Handle dataset requests.
     """
-    @authorization(roles=['admin','client','system','pilot'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='read')
     async def get(self, dataset_id):
         """
         Get a dataset.
@@ -212,11 +195,12 @@ class DatasetHandler(BaseHandler):
             self.write(ret)
             self.finish()
 
-class DatasetDescriptionHandler(BaseHandler):
+class DatasetDescriptionHandler(APIBase):
     """
     Handle dataset description updates.
     """
-    @authorization(roles=['admin'], attrs=['dataset_id:write'])
+    @authorization(roles=['admin', 'user'])
+    @attr_auth(arg='dataset_id', role='write')
     async def put(self, dataset_id):
         """
         Set a dataset description.
@@ -242,11 +226,12 @@ class DatasetDescriptionHandler(BaseHandler):
             self.write({})
             self.finish()
 
-class DatasetStatusHandler(BaseHandler):
+class DatasetStatusHandler(APIBase):
     """
     Handle dataset status updates.
     """
-    @authorization(roles=['admin','system','client'], attrs=['dataset_id:write'])
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='write')
     async def put(self, dataset_id):
         """
         Set a dataset status.
@@ -272,11 +257,12 @@ class DatasetStatusHandler(BaseHandler):
             self.write({})
             self.finish()
 
-class DatasetPriorityHandler(BaseHandler):
+class DatasetPriorityHandler(APIBase):
     """
     Handle dataset priority updates.
     """
-    @authorization(roles=['admin','system','client'], attrs=['dataset_id:write'])
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='write')
     async def put(self, dataset_id):
         """
         Set a dataset priority.
@@ -302,11 +288,12 @@ class DatasetPriorityHandler(BaseHandler):
             self.write({})
             self.finish()
 
-class DatasetJobsSubmittedHandler(BaseHandler):
+class DatasetJobsSubmittedHandler(APIBase):
     """
     Handle dataset jobs_submitted updates.
     """
-    @authorization(roles=['admin'], attrs=['dataset_id:write'])
+    @authorization(roles=['admin', 'user'])
+    @attr_auth(arg='dataset_id', role='write')
     async def put(self, dataset_id):
         """
         Set a dataset's jobs_submitted.
@@ -352,11 +339,11 @@ class DatasetJobsSubmittedHandler(BaseHandler):
             self.write({})
             self.finish()
 
-class DatasetSummariesStatusHandler(BaseHandler):
+class DatasetSummariesStatusHandler(APIBase):
     """
     Handle dataset summary grouping by status.
     """
-    @authorization(roles=['admin','system','client','user']) #TODO: figure out how to do auth for each dataset in the list
+    @authorization(roles=['admin', 'user', 'system'])
     async def get(self):
         """
         Get the dataset summary for all datasets, group by status.

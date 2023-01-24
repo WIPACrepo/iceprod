@@ -7,8 +7,7 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
 import tornado.web
-import pymongo
-import motor
+from wipac_dev_tools import from_environment
 
 try:
     import boto3
@@ -17,28 +16,26 @@ try:
 except ImportError:
     boto3 = None
 
+from ..base_handler import APIBase
+from ..auth import authorization, attr_auth
 from iceprod.server.util import nowstr
-from iceprod.server.rest import RESTHandler, RESTHandlerSetup, authorization, catch_error
 
 logger = logging.getLogger('rest.logs')
 
 
 class S3:
     """S3 wrapper for uploading and downloading objects"""
-    def __init__(self, config):
+    def __init__(self, address, access_key, secret_key):
         self.s3 = None
         self.bucket = 'iceprod2-logs'
-        if (boto3 and 's3' in config and 'access_key' in config['s3'] and
-            'secret_key' in config['s3']):
-            try:
-                self.s3 = boto3.client('s3','us-east-1',
-                    endpoint_url=config['s3'].get('host', None),
-                    aws_access_key_id=config['s3']['access_key'],
-                    aws_secret_access_key=config['s3']['secret_key'],
-                    config=botocore.client.Config(max_pool_connections=101))
-            except Exception:
-                logger.warning('failed to connect to s3: %r',
-                            config['s3'], exc_info=True)
+        try:
+            self.s3 = boto3.client('s3','us-east-1',
+                endpoint_url=address,
+                aws_access_key_id=access_key,
+                aws_secret_access_key=secret_key,
+                config=botocore.client.Config(max_pool_connections=101))
+        except Exception:
+            logger.warning('failed to connect to s3: %r', address, exc_info=True)
         self.executor = ThreadPoolExecutor(max_workers=20)
 
     async def get(self, key):
@@ -82,59 +79,57 @@ class S3:
                 partial(self.s3.delete_object, Bucket=self.bucket, Key=key))
 
 
-def setup(config, *args, **kwargs):
+def setup(handler_cfg):
     """
     Setup method for Logs REST API.
 
-    Sets up any database connections or other prerequisites.
-
     Args:
-        config (dict): an instance of :py:class:`iceprod.server.config`.
+        handler_cfg (dict): args to pass to the route
 
     Returns:
-        list: Routes for logs, which can be passed to :py:class:`tornado.web.Application`.
+        dict: routes, indexes
     """
-    cfg_rest = config.get('rest',{}).get('logs',{})
-    db_cfg = cfg_rest.get('database',{})
+    # S3 setup
+    default_config = {
+        'S3_ADDRESS': '',
+        'S3_ACCESS_KEY': '',
+        'S3_SECRET_KEY': '',
+    }
+    config = from_environment(default_config)
+    if boto3 and config['S3_ADDRESS'] and config['S3_ACCESS_KEY'] and config['S3_SECRET_KEY']:
+        handler_cfg['s3'] = S3(config['S3_ADDRESS'], config['S3_ACCESS_KEY'], config['S3_SECRET_KEY'])
+    else:
+        logger.warning('S3 is not available for rest/logs')
 
-    # add indexes
-    db = pymongo.MongoClient(**db_cfg).logs
-    if 'log_id_index' not in db.logs.index_information():
-        db.logs.create_index('log_id', name='log_id_index', unique=True)
-    if 'task_id_index' not in db.logs.index_information():
-        db.logs.create_index('task_id', name='task_id_index', unique=False)
-    if 'dataset_id_index' not in db.logs.index_information():
-        db.logs.create_index('dataset_id', name='dataset_id_index', unique=False)
-
-    # S3
-    s3 = S3(config) if boto3 and 's3' in config else None
-
-    handler_cfg = RESTHandlerSetup(config, *args, **kwargs)
-    handler_cfg.update({
-        'database': motor.motor_tornado.MotorClient(**db_cfg).logs,
-        's3': s3,
-    })
-
-    return [
-        (r'/logs', MultiLogsHandler, handler_cfg),
-        (r'/logs/(?P<log_id>\w+)', LogsHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/logs', DatasetMultiLogsHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/logs/(?P<log_id>\w+)', DatasetLogsHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/logs', DatasetTaskLogsHandler, handler_cfg),
-    ]
+    return {
+        'routes': [
+            (r'/logs', MultiLogsHandler, handler_cfg),
+            (r'/logs/(?P<log_id>\w+)', LogsHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/logs', DatasetMultiLogsHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/logs/(?P<log_id>\w+)', DatasetLogsHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/logs', DatasetTaskLogsHandler, handler_cfg),
+        ],
+        'indexes': {
+            'logs': {
+                'log_id_index': {'keys': 'log_id', 'unique': True},
+                'task_id_index': {'keys': 'task_id', 'unique': False},
+                'dataset_id_index': {'keys': 'dataset_id', 'unique': False},
+            }
+        }
+    }
 
 
-class BaseHandler(RESTHandler):
-    def initialize(self, database=None, s3=None, **kwargs):
-        super(BaseHandler, self).initialize(**kwargs)
-        self.db = database
+class LogAPIBase(APIBase):
+    def initialize(self, s3=None, **kwargs):
+        super().initialize(**kwargs)
         self.s3 = s3
 
-class MultiLogsHandler(BaseHandler):
+
+class MultiLogsHandler(LogAPIBase):
     """
     Handle logs requests.
     """
-    @authorization(roles=['admin','client'])
+    @authorization(roles=['admin', 'system'])
     async def get(self):
         """
         Get multiple log entries based on search arguments.
@@ -189,7 +184,7 @@ class MultiLogsHandler(BaseHandler):
         self.write(ret)
         self.finish()
 
-    @authorization(roles=['admin','client','pilot'])
+    @authorization(roles=['admin', 'system'])
     async def post(self):
         """
         Create a log entry.
@@ -221,7 +216,7 @@ class MultiLogsHandler(BaseHandler):
         self.write({'result': log_id})
         self.finish()
 
-class LogsHandler(BaseHandler):
+class LogsHandler(LogAPIBase):
     """
     Handle logs requests.
     """
@@ -249,7 +244,7 @@ class LogsHandler(BaseHandler):
             self.write(ret)
             self.finish()
 
-    @authorization(roles=['admin','client'])
+    @authorization(roles=['admin', 'system'])
     async def delete(self, log_id):
         """
         Delete a log entry.
@@ -272,11 +267,12 @@ class LogsHandler(BaseHandler):
         self.write({})
         self.finish()
 
-class DatasetMultiLogsHandler(BaseHandler):
+class DatasetMultiLogsHandler(LogAPIBase):
     """
     Handle logs requests.
     """
-    @authorization(roles=['admin'], attrs=['dataset_id:write'])
+    @authorization(roles=['admin', 'user'])
+    @attr_auth(arg='dataset_id', role='write')
     async def post(self, dataset_id):
         """
         Create a log entry.
@@ -309,11 +305,12 @@ class DatasetMultiLogsHandler(BaseHandler):
         self.write({'result': log_id})
         self.finish()
 
-class DatasetLogsHandler(BaseHandler):
+class DatasetLogsHandler(LogAPIBase):
     """
     Handle logs requests.
     """
-    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin', 'user'])
+    @attr_auth(arg='dataset_id', role='write')
     async def get(self, dataset_id, log_id):
         """
         Get a log.
@@ -338,11 +335,12 @@ class DatasetLogsHandler(BaseHandler):
             self.write(ret)
             self.finish()
 
-class DatasetTaskLogsHandler(BaseHandler):
+class DatasetTaskLogsHandler(LogAPIBase):
     """
     Handle log requests for a task
     """
-    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin', 'user'])
+    @attr_auth(arg='dataset_id', role='read')
     async def get(self, dataset_id, task_id):
         """
         Get logs for a dataset and task.
@@ -421,7 +419,8 @@ class DatasetTaskLogsHandler(BaseHandler):
             self.write({'logs':ret})
             self.finish()
 
-    @authorization(roles=['admin'], attrs=['dataset_id:write'])
+    @authorization(roles=['admin', 'user'])
+    @attr_auth(arg='dataset_id', role='write')
     async def delete(self, dataset_id, task_id):
         """
         Delete all logs for a dataset and task.

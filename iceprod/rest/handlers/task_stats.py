@@ -3,60 +3,47 @@ import json
 import uuid
 
 import tornado.web
-import pymongo
-import motor
 
-from iceprod.server.rest import RESTHandler, RESTHandlerSetup, authorization
+from ..base_handler import APIBase
+from ..auth import authorization, attr_auth
 from iceprod.server.util import nowstr
 
 logger = logging.getLogger('rest.task_stats')
 
-def setup(config, *args, **kwargs):
-    """
-    Setup method for TaskStats REST API.
 
-    Sets up any database connections or other prerequisites.
+def setup(handler_cfg):
+    """
+    Setup method for Task Stats REST API.
 
     Args:
-        config (dict): an instance of :py:class:`iceprod.server.config`.
+        handler_cfg (dict): args to pass to the route
 
     Returns:
-        list: Routes for logs, which can be passed to :py:class:`tornado.web.Application`.
+        dict: routes, indexes
     """
-    cfg_rest = config.get('rest',{}).get('task_stats',{})
-    db_cfg = cfg_rest.get('database',{})
+    return {
+        'routes': [
+            (r'/tasks/(?P<task_id>\w+)/task_stats', MultiTaskStatsHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/task_stats', DatasetsMultiTaskStatsHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/bulk/task_stats', DatasetsBulkTaskStatsHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/task_stats/(?P<task_stat_id>\w+)', DatasetsTaskStatsHandler, handler_cfg),
+        ],
+        'indexes': {
+            'jobs': {
+                'task_stat_id_index': {'keys': 'task_stat_id', 'unique': True},
+                'task_id_index': {'keys': 'task_id', 'unique': False},
+                'dataset_id_index': {'keys': 'dataset_id', 'unique': False},
+            }
+        }
+    }
 
-    # add indexes
-    db = pymongo.MongoClient(**db_cfg).task_stats
-    if 'task_stat_id_index' not in db.task_stats.index_information():
-        db.task_stats.create_index('task_stat_id', name='task_stat_id_index', unique=True)
-    if 'task_id_index' not in db.task_stats.index_information():
-        db.task_stats.create_index('task_id', name='task_id_index', unique=False)
-    if 'dataset_id_index' not in db.task_stats.index_information():
-        db.task_stats.create_index('dataset_id', name='dataset_id_index', unique=False)
 
-    handler_cfg = RESTHandlerSetup(config, *args, **kwargs)
-    handler_cfg.update({
-        'database': motor.motor_tornado.MotorClient(**db_cfg).task_stats,
-    })
 
-    return [
-        (r'/tasks/(?P<task_id>\w+)/task_stats', MultiTaskStatsHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/task_stats', DatasetsMultiTaskStatsHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/bulk/task_stats', DatasetsBulkTaskStatsHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/task_stats/(?P<task_stat_id>\w+)', DatasetsTaskStatsHandler, handler_cfg),
-    ]
-
-class BaseHandler(RESTHandler):
-    def initialize(self, database=None, **kwargs):
-        super(BaseHandler, self).initialize(**kwargs)
-        self.db = database
-
-class MultiTaskStatsHandler(BaseHandler):
+class MultiTaskStatsHandler(APIBase):
     """
     Handle multi task_stats requests.
     """
-    @authorization(roles=['admin','client','pilot'])
+    @authorization(roles=['admin', 'system'])
     async def post(self, task_id):
         """
         Create a task_stat entry.
@@ -88,13 +75,14 @@ class MultiTaskStatsHandler(BaseHandler):
         self.write({'result': task_stat_id})
         self.finish()
 
-class DatasetsBulkTaskStatsHandler(BaseHandler):
+class DatasetsBulkTaskStatsHandler(APIBase):
     """
     Handle a dataset bulk task_stats requests.
 
     Stream the output of all stats.
     """
-    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='read')
     async def get(self, dataset_id):
         """
         Get task_stats for a dataset and task.
@@ -166,11 +154,12 @@ class DatasetsBulkTaskStatsHandler(BaseHandler):
                     self.write('\n')
         self.finish()
 
-class DatasetsMultiTaskStatsHandler(BaseHandler):
+class DatasetsMultiTaskStatsHandler(APIBase):
     """
     Handle multi task_stats requests.
     """
-    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='read')
     async def get(self, dataset_id, task_id):
         """
         Get task_stats for a dataset and task.
@@ -205,11 +194,12 @@ class DatasetsMultiTaskStatsHandler(BaseHandler):
         self.write({row['task_stat_id']:row for row in ret})
         self.finish()
 
-class DatasetsTaskStatsHandler(BaseHandler):
+class DatasetsTaskStatsHandler(APIBase):
     """
     Handle single task_stat requests.
     """
-    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='read')
     async def get(self, dataset_id, task_id, task_stat_id):
         """
         Get a task_stat entry.

@@ -7,18 +7,19 @@ from datetime import datetime
 import importlib
 import logging
 import os
-import pathlib
+from pathlib import Path
+import pkgutil
 import string
 
 import pymongo.errors
 import motor.motor_asyncio
 from rest_tools.server import RestServer, RestHandler
-from rest_tools.server.handler import keycloak_role_auth, catch_error
+from rest_tools.server import keycloak_role_auth, catch_error
 from tornado.escape import json_decode
 from tornado.web import RequestHandler, HTTPError
 from wipac_dev_tools import from_environment
 
-from ..server.modules import FakeStatsClient, StatsClientIgnoreErrors
+from ..server.module import FakeStatsClient, StatsClientIgnoreErrors
 from .base_handler import IceProdRestConfig
 
 
@@ -59,7 +60,13 @@ class Server:
                     'audience': config['OPENID_AUDIENCE'],
                 }
             })
-        elif not config['CI_TESTING']:
+        elif config['CI_TESTING']:
+            rest_config.update({
+                'auth': {
+                    'secret': 'secret',
+                }
+            })
+        else:
             raise RuntimeError('OPENID_URL not specified, and CI_TESTING not enabled!')
 
         statsd = FakeStatsClient()
@@ -89,10 +96,11 @@ class Server:
         handler_path = str(Path(__file__).parent / 'handlers')
         for _, name, _ in pkgutil.iter_modules([handler_path]):
             mod = importlib.import_module(f'iceprod.rest.handlers.{name}')
-            ret = mod.setup()
-            routes.extend(ret['routes'])
+            ret = mod.setup(kwargs)
+            for route,cls,kw in ret['routes']:
+                server.add_route(route, cls, kw)
             for col in ret['indexes']:
-                self.indexes[col].update(ret['indexes'])
+                self.indexes[col].update(ret['indexes'][col])
 
         server.add_route('/healthz', Health)
         server.add_route(r'/(.*)', Error)
@@ -106,8 +114,8 @@ class Server:
             existing = await self.db[collection].index_information()
             for name in self.indexes[collection]:
                 if name not in existing:
-                    logging.info('DB: creating index %s:%s', collection, name)
                     kwargs = self.indexes[collection][name]
+                    logging.info('DB: creating index %s:%s %r', collection, name, kwargs)
                     await self.db[collection].create_index(name=name, **kwargs)
 
     async def stop(self):

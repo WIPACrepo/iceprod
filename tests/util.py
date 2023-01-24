@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import os
 import sys
 import logging
@@ -121,9 +119,6 @@ def listmodules(package_name=''):
             ret.append(package_name+'.'+tmp)
     return ret
 
-# standardize unittest
-if sys.version_info[0] == 2:
-    unittest.TestCase.assertCountEqual = unittest.TestCase.assertItemsEqual
 def assertCountEqualRecursive(self, a, b, skip=[]):
     self.assertEqual(type(a), type(b))
     if isinstance(a, dict):

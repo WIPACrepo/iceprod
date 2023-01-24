@@ -5,87 +5,64 @@ import math
 from collections import defaultdict
 
 import tornado.web
-import pymongo
-import motor
 
+from ..base_handler import APIBase
+from ..auth import authorization, attr_auth
 from iceprod.core import dataclasses
 from iceprod.core.resources import Resources
-from iceprod.server.rest import RESTHandler, RESTHandlerSetup, authorization
 from iceprod.server.util import nowstr, task_statuses, task_status_sort
 
 logger = logging.getLogger('rest.tasks')
 
-def setup(config, *args, **kwargs):
+
+def setup(handler_cfg):
     """
     Setup method for Tasks REST API.
 
-    Sets up any database connections or other prerequisites.
-
     Args:
-        config (dict): an instance of :py:class:`iceprod.server.config`.
+        handler_cfg (dict): args to pass to the route
 
     Returns:
-        list: Routes for logs, which can be passed to :py:class:`tornado.web.Application`.
+        dict: routes, indexes
     """
-    cfg_rest = config.get('rest',{}).get('tasks',{})
-    db_cfg = cfg_rest.get('database',{})
+    return {
+        'routes': [
+            (r'/tasks', MultiTasksHandler, handler_cfg),
+            (r'/tasks/(?P<task_id>\w+)', TasksHandler, handler_cfg),
+            (r'/tasks/(?P<task_id>\w+)/status', TasksStatusHandler, handler_cfg),
+            (r'/task_actions/queue', TasksActionsQueueHandler, handler_cfg),
+            (r'/task_actions/bulk_status/(?P<status>\w+)', TaskBulkStatusHandler, handler_cfg),
+            (r'/task_actions/process', TasksActionsProcessingHandler, handler_cfg),
+            (r'/task_counts/status', TaskCountsStatusHandler, handler_cfg),
+            (r'/tasks/(?P<task_id>\w+)/task_actions/reset', TasksActionsErrorHandler, handler_cfg),
+            (r'/tasks/(?P<task_id>\w+)/task_actions/complete', TasksActionsCompleteHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/tasks', DatasetMultiTasksHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)', DatasetTasksHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/status', DatasetTasksStatusHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/task_summaries/status', DatasetTaskSummaryStatusHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/task_counts/status', DatasetTaskCountsStatusHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/task_counts/name_status', DatasetTaskCountsNameStatusHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/task_actions/bulk_status/(?P<status>\w+)', DatasetTaskBulkStatusHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/task_actions/bulk_requirements/(?P<name>\w+)', DatasetTaskBulkRequirementsHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/task_stats', DatasetTaskStatsHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/files', DatasetMultiFilesHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/files/(?P<task_id>\w+)', DatasetTaskFilesHandler, handler_cfg),
+        ],
+        'indexes': {
+            'jobs': {
+                'job_id_index': {'keys': 'job_id', 'unique': True},
+                'dataset_id_index': {'keys': 'dataset_id', 'unique': False},
+            }
+        }
+    }
 
-    # add indexes
-    db = pymongo.MongoClient(**db_cfg).tasks
-    if 'task_id_index' not in db.tasks.index_information():
-        db.tasks.create_index('task_id', name='task_id_index', unique=True)
-    if 'dataset_id_index' not in db.tasks.index_information():
-        db.tasks.create_index('dataset_id', name='dataset_id_index', unique=False)
-    if 'job_id_index' not in db.tasks.index_information():
-        db.tasks.create_index('job_id', name='job_id_index', unique=False)
-    if 'status_index' not in db.tasks.index_information():
-        db.tasks.create_index('status', name='status_index', unique=False)
-    if 'priority_index' not in db.tasks.index_information():
-        db.tasks.create_index([('status',pymongo.ASCENDING),('priority',pymongo.DESCENDING)], name='priority_index', unique=False)
 
-    if 'dataset_id_index' not in db.dataset_files.index_information():
-        db.dataset_files.create_index('dataset_id', name='dataset_id_index', unique=False)
-    if 'task_id_index' not in db.dataset_files.index_information():
-        db.dataset_files.create_index('task_id', name='task_id_index', unique=False)
 
-    handler_cfg = RESTHandlerSetup(config, *args, **kwargs)
-    handler_cfg.update({
-        'database': motor.motor_tornado.MotorClient(**db_cfg).tasks,
-    })
-
-    return [
-        (r'/tasks', MultiTasksHandler, handler_cfg),
-        (r'/tasks/(?P<task_id>\w+)', TasksHandler, handler_cfg),
-        (r'/tasks/(?P<task_id>\w+)/status', TasksStatusHandler, handler_cfg),
-        (r'/task_actions/queue', TasksActionsQueueHandler, handler_cfg),
-        (r'/task_actions/bulk_status/(?P<status>\w+)', TaskBulkStatusHandler, handler_cfg),
-        (r'/task_actions/process', TasksActionsProcessingHandler, handler_cfg),
-        (r'/task_counts/status', TaskCountsStatusHandler, handler_cfg),
-        (r'/tasks/(?P<task_id>\w+)/task_actions/reset', TasksActionsErrorHandler, handler_cfg),
-        (r'/tasks/(?P<task_id>\w+)/task_actions/complete', TasksActionsCompleteHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/tasks', DatasetMultiTasksHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)', DatasetTasksHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/status', DatasetTasksStatusHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/task_summaries/status', DatasetTaskSummaryStatusHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/task_counts/status', DatasetTaskCountsStatusHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/task_counts/name_status', DatasetTaskCountsNameStatusHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/task_actions/bulk_status/(?P<status>\w+)', DatasetTaskBulkStatusHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/task_actions/bulk_requirements/(?P<name>\w+)', DatasetTaskBulkRequirementsHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/task_stats', DatasetTaskStatsHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/files', DatasetMultiFilesHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/files/(?P<task_id>\w+)', DatasetTaskFilesHandler, handler_cfg),
-    ]
-
-class BaseHandler(RESTHandler):
-    def initialize(self, database=None, **kwargs):
-        super(BaseHandler, self).initialize(**kwargs)
-        self.db = database
-
-class MultiTasksHandler(BaseHandler):
+class MultiTasksHandler(APIBase):
     """
     Handle multi tasks requests.
     """
-    @authorization(roles=['admin','system','client'])
+    @authorization(roles=['admin', 'system'])
     async def get(self):
         """
         Get task entries.
@@ -133,7 +110,7 @@ class MultiTasksHandler(BaseHandler):
             ret.append(row)
         self.write({'tasks': ret})
 
-    @authorization(roles=['admin','system','client'])
+    @authorization(roles=['admin', 'system'])
     async def post(self):
         """
         Create a task entry.
@@ -184,11 +161,11 @@ class MultiTasksHandler(BaseHandler):
         self.write({'result': task_id})
         self.finish()
 
-class TasksHandler(BaseHandler):
+class TasksHandler(APIBase):
     """
     Handle single task requests.
     """
-    @authorization(roles=['admin','client','system','pilot'])
+    @authorization(roles=['admin', 'system'])
     async def get(self, task_id):
         """
         Get a task entry.
@@ -207,7 +184,7 @@ class TasksHandler(BaseHandler):
             self.write(ret)
             self.finish()
 
-    @authorization(roles=['admin','client','system','pilot'])
+    @authorization(roles=['admin', 'system'])
     async def patch(self, task_id):
         """
         Update a task entry.
@@ -235,11 +212,11 @@ class TasksHandler(BaseHandler):
             self.write(ret)
             self.finish()
 
-class TasksStatusHandler(BaseHandler):
+class TasksStatusHandler(APIBase):
     """
     Handle single task requests.
     """
-    @authorization(roles=['admin','client','system', 'pilot'])
+    @authorization(roles=['admin', 'system'])
     async def put(self, task_id):
         """
         Set a task status.
@@ -270,11 +247,11 @@ class TasksStatusHandler(BaseHandler):
             self.write({})
             self.finish()
 
-class TaskCountsStatusHandler(BaseHandler):
+class TaskCountsStatusHandler(APIBase):
     """
     Handle task summary grouping by status.
     """
-    @authorization(roles=['admin','client','system'])
+    @authorization(roles=['admin', 'system'])
     async def get(self):
         """
         Get the task counts for all tasks, group by status.
@@ -292,11 +269,12 @@ class TaskCountsStatusHandler(BaseHandler):
         self.write(ret2)
         self.finish()
 
-class DatasetMultiTasksHandler(BaseHandler):
+class DatasetMultiTasksHandler(APIBase):
     """
     Handle multi tasks requests.
     """
-    @authorization(roles=['admin','client','system'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='read')
     async def get(self, dataset_id):
         """
         Get task entries.
@@ -341,11 +319,12 @@ class DatasetMultiTasksHandler(BaseHandler):
             ret[row['task_id']] = row
         self.write(ret)
 
-class DatasetTasksHandler(BaseHandler):
+class DatasetTasksHandler(APIBase):
     """
     Handle single task requests.
     """
-    @authorization(roles=['admin','client','system'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='read')
     async def get(self, dataset_id, task_id):
         """
         Get a task entry.
@@ -374,11 +353,12 @@ class DatasetTasksHandler(BaseHandler):
             self.write(ret)
             self.finish()
 
-class DatasetTasksStatusHandler(BaseHandler):
+class DatasetTasksStatusHandler(APIBase):
     """
     Handle single task requests.
     """
-    @authorization(roles=['admin','client','system'], attrs=['dataset_id:write'])
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='write')
     async def put(self, dataset_id, task_id):
         """
         Set a task status.
@@ -412,11 +392,12 @@ class DatasetTasksStatusHandler(BaseHandler):
             self.write({})
             self.finish()
 
-class DatasetTaskSummaryStatusHandler(BaseHandler):
+class DatasetTaskSummaryStatusHandler(APIBase):
     """
     Handle task summary grouping by status.
     """
-    @authorization(roles=['admin','client','system'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='read')
     async def get(self, dataset_id):
         """
         Get the task summary for all tasks in a dataset, group by status.
@@ -438,11 +419,12 @@ class DatasetTaskSummaryStatusHandler(BaseHandler):
         self.write(ret2)
         self.finish()
 
-class DatasetTaskCountsStatusHandler(BaseHandler):
+class DatasetTaskCountsStatusHandler(APIBase):
     """
     Handle task summary grouping by status.
     """
-    @authorization(roles=['admin','client','system'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='read')
     async def get(self, dataset_id):
         """
         Get the task counts for all tasks in a dataset, group by status.
@@ -466,11 +448,12 @@ class DatasetTaskCountsStatusHandler(BaseHandler):
         self.write(ret2)
         self.finish()
 
-class DatasetTaskCountsNameStatusHandler(BaseHandler):
+class DatasetTaskCountsNameStatusHandler(APIBase):
     """
     Handle task summary grouping by name and status.
     """
-    @authorization(roles=['admin','client','system'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='read')
     async def get(self, dataset_id):
         """
         Get the task counts for all tasks in a dataset, group by name,status.
@@ -500,11 +483,12 @@ class DatasetTaskCountsNameStatusHandler(BaseHandler):
         self.write(ret2)
         self.finish()
 
-class DatasetTaskStatsHandler(BaseHandler):
+class DatasetTaskStatsHandler(APIBase):
     """
     Handle task stats
     """
-    @authorization(roles=['admin','client','system'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='read')
     async def get(self, dataset_id):
         """
         Get the task statistics for all tasks in a dataset, group by name.
@@ -543,11 +527,11 @@ class DatasetTaskStatsHandler(BaseHandler):
         self.write(ret2)
         self.finish()
 
-class TasksActionsQueueHandler(BaseHandler):
+class TasksActionsQueueHandler(APIBase):
     """
     Handle task action for waiting -> queued.
     """
-    @authorization(roles=['admin','client'])
+    @authorization(roles=['admin', 'system'])
     async def post(self):
         """
         Take a number of waiting tasks and queue them.
@@ -578,11 +562,11 @@ class TasksActionsQueueHandler(BaseHandler):
         logger.info(f'queued {queued} tasks')
         self.write({'queued': queued})
 
-class TasksActionsProcessingHandler(BaseHandler):
+class TasksActionsProcessingHandler(APIBase):
     """
     Handle task action for queued -> processing.
     """
-    @authorization(roles=['admin','client','pilot'])
+    @authorization(roles=['admin', 'system'])
     async def post(self):
         """
         Take one queued task, set its status to processing, and return it.
@@ -639,11 +623,11 @@ class TasksActionsProcessingHandler(BaseHandler):
             self.write(ret)
             self.finish()
 
-class TasksActionsErrorHandler(BaseHandler):
+class TasksActionsErrorHandler(APIBase):
     """
     Handle task action on error (* -> reset).
     """
-    @authorization(roles=['admin','client','pilot'])
+    @authorization(roles=['admin', 'system'])
     async def post(self, task_id):
         """
         Take one task, set its status to reset.
@@ -732,11 +716,11 @@ class TasksActionsErrorHandler(BaseHandler):
             self.write(ret)
             self.finish()
 
-class TasksActionsCompleteHandler(BaseHandler):
+class TasksActionsCompleteHandler(APIBase):
     """
     Handle task action on processing -> complete.
     """
-    @authorization(roles=['admin','client','pilot'])
+    @authorization(roles=['admin', 'system'])
     async def post(self, task_id):
         """
         Take one task, set its status to complete.
@@ -777,11 +761,11 @@ class TasksActionsCompleteHandler(BaseHandler):
             self.write(ret)
             self.finish()
 
-class TaskBulkStatusHandler(BaseHandler):
+class TaskBulkStatusHandler(APIBase):
     """
     Update the status of multiple tasks at once.
     """
-    @authorization(roles=['admin','client','system'])
+    @authorization(roles=['admin', 'system'])
     async def post(self, status):
         """
         Set multiple tasks' status.
@@ -819,11 +803,12 @@ class TaskBulkStatusHandler(BaseHandler):
             self.write({})
             self.finish()
 
-class DatasetTaskBulkStatusHandler(BaseHandler):
+class DatasetTaskBulkStatusHandler(APIBase):
     """
     Update the status of multiple tasks at once.
     """
-    @authorization(roles=['admin','client','system'], attrs=['dataset_id:write'])
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='write')
     async def post(self, dataset_id, status):
         """
         Set multiple tasks' status.
@@ -863,11 +848,12 @@ class DatasetTaskBulkStatusHandler(BaseHandler):
             self.write({})
             self.finish()
 
-class DatasetTaskBulkRequirementsHandler(BaseHandler):
+class DatasetTaskBulkRequirementsHandler(APIBase):
     """
     Update the requirements of multiple tasks at once.
     """
-    @authorization(roles=['admin','client','system'], attrs=['dataset_id:write'])
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='write')
     async def patch(self, dataset_id, name):
         """
         Set multiple tasks' requirements. Sets for all tasks in a dataset
@@ -920,11 +906,12 @@ class DatasetTaskBulkRequirementsHandler(BaseHandler):
             self.write({})
             self.finish()
 
-class DatasetMultiFilesHandler(BaseHandler):
+class DatasetMultiFilesHandler(APIBase):
     """
     Handle multi files requests, by dataset.
     """
-    @authorization(roles=['admin','system','client'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='read')
     async def get(self, dataset_id):
         """
         Get dataset_files entries.
@@ -942,7 +929,8 @@ class DatasetMultiFilesHandler(BaseHandler):
             ret.append(row)
         self.write({'files': ret})
 
-    @authorization(roles=['admin','system','client'], attrs=['dataset_id:write'])
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='write')
     async def post(self, dataset_id):
         """
         Create a dataset_files entry.
@@ -1018,11 +1006,12 @@ class DatasetMultiFilesHandler(BaseHandler):
         self.write({'result': file_data['task_id']})
         self.finish()
 
-class DatasetTaskFilesHandler(BaseHandler):
+class DatasetTaskFilesHandler(APIBase):
     """
     Handle multi files requests, by task.
     """
-    @authorization(roles=['admin','system','client','pilot'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='read')
     async def get(self, dataset_id, task_id):
         """
         Get dataset_files entries.
@@ -1041,7 +1030,8 @@ class DatasetTaskFilesHandler(BaseHandler):
             ret.append(row)
         self.write({'files': ret})
 
-    @authorization(roles=['admin','system','client'], attrs=['dataset_id:write'])
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='write')
     async def post(self, dataset_id, task_id):
         """
         Create a dataset_files entry.
@@ -1103,7 +1093,8 @@ class DatasetTaskFilesHandler(BaseHandler):
         self.write({})
         self.finish()
 
-    @authorization(roles=['admin','system','client'], attrs=['dataset_id:write'])
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='write')
     async def delete(self, dataset_id, task_id):
         """
         Delete dataset_files entries.
