@@ -1,128 +1,67 @@
-"""
-Test script for REST/grids
-"""
+import pytest
+import requests.exceptions
 
-import logging
-logger = logging.getLogger('rest_grids_test')
 
-import os
-import sys
-import time
-import random
-import shutil
-import tempfile
-import unittest
-import subprocess
-import json
-from functools import partial
-from unittest.mock import patch, MagicMock
+async def test_rest_grids_empty(server):
+    client = server(roles=['system'])
 
-from tests.util import unittest_reporter, glob_tests
+    ret = await client.request('GET', '/grids')
+    assert ret == {}
 
-import ldap3
-import tornado.web
-import tornado.ioloop
-from tornado.httpclient import AsyncHTTPClient, HTTPError
-from tornado.testing import AsyncTestCase
 
-from rest_tools.utils import Auth
-from rest_tools.server import RestServer
+async def test_rest_grids_add(server):
+    client = server(roles=['system'])
 
-from iceprod.server.modules.rest_api import setup_rest
+    data = {
+        'host': 'foo.bar.baz',
+        'queues': {'foo': 'HTCondor'},
+        'version': '1.2.3',
+    }
+    ret = await client.request('POST', '/grids', data)
+    grid_id = ret['result']
 
-from . import RestTestCase
+    ret = await client.request('GET', '/grids')
+    assert grid_id in ret
+    for k in data:
+        assert k in ret[grid_id]
+        assert data[k] == ret[grid_id][k]
 
-class rest_grids_test(RestTestCase):
-    def setUp(self):
-        config = {'rest':{'grids':{}}}
-        super(rest_grids_test,self).setUp(config=config)
 
-    @unittest_reporter(name='REST GET    /grids')
-    def test_100_grids(self):
-        client = AsyncHTTPClient()
-        r = yield client.fetch('http://localhost:%d/grids'%self.port,
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        self.assertEqual(ret, {})
+async def test_rest_grids_details(server):
+    client = server(roles=['system'])
 
-    @unittest_reporter(name='REST POST   /grids')
-    def test_105_grids(self):
-        client = AsyncHTTPClient()
-        data = {
-            'host': 'foo.bar.baz',
-            'queues': {'foo': 'HTCondor'},
-            'version': '1.2.3',
-        }
-        r = yield client.fetch('http://localhost:%d/grids'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        grid_id = ret['result']
+    data = {
+        'host': 'foo.bar.baz',
+        'queues': {'foo': 'HTCondor'},
+        'version': '1.2.3',
+    }
+    ret = await client.request('POST', '/grids', data)
+    grid_id = ret['result']
 
-        r = yield client.fetch('http://localhost:%d/grids'%self.port,
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        self.assertIn(grid_id, ret)
-        for k in data:
-            self.assertIn(k, ret[grid_id])
-            self.assertEqual(data[k], ret[grid_id][k])
+    ret = await client.request('GET', f'/grids/{grid_id}')
+    for k in data:
+        assert k in ret
+        assert data[k] == ret[k]
 
-    @unittest_reporter(name='REST GET    /grids/<grid_id>')
-    def test_110_grids(self):
-        client = AsyncHTTPClient()
-        data = {
-            'host': 'foo.bar.baz',
-            'queues': {'foo': 'HTCondor'},
-            'version': '1.2.3',
-        }
-        r = yield client.fetch('http://localhost:%d/grids'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        grid_id = ret['result']
+async def test_rest_grids_patch(server):
+    client = server(roles=['system'])
 
-        r = yield client.fetch('http://localhost:%d/grids/%s'%(self.port,grid_id),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        for k in data:
-            self.assertIn(k, ret)
-            self.assertEqual(data[k], ret[k])
+    data = {
+        'host': 'foo.bar.baz',
+        'queues': {'foo': 'HTCondor'},
+        'version': '1.2.3',
+    }
+    ret = await client.request('POST', '/grids', data)
+    grid_id = ret['result']
 
-    @unittest_reporter(name='REST PATCH  /grids/<grid_id>')
-    def test_120_grids(self):
-        client = AsyncHTTPClient()
-        data = {
-            'host': 'foo.bar.baz',
-            'queues': {'foo': 'HTCondor'},
-            'version': '1.2.3',
-        }
-        r = yield client.fetch('http://localhost:%d/grids'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        grid_id = ret['result']
-
-        new_data = {
-            'queues': {'foo': 'HTCondor', 'bar': 'HTCondor'},
-            'version': '1.2.8',
-        }
-        r = yield client.fetch('http://localhost:%d/grids/%s'%(self.port,grid_id),
-                method='PATCH', body=json.dumps(new_data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        for k in new_data:
-            self.assertIn(k, ret)
-            self.assertEqual(new_data[k], ret[k])
-
-def load_tests(loader, tests, pattern):
-    suite = unittest.TestSuite()
-    alltests = glob_tests(loader.getTestCaseNames(rest_grids_test))
-    suite.addTests(loader.loadTestsFromNames(alltests,rest_grids_test))
-    return suite
+    new_data = {
+        'queues': {'foo': 'HTCondor', 'bar': 'HTCondor'},
+        'version': '1.2.8',
+    }
+    ret = await client.request('PATCH', f'/grids/{grid_id}', new_data)
+    
+    ret2 = await client.request('GET', f'/grids/{grid_id}')
+    assert ret == ret2
+    for k in new_data:
+        assert k in ret
+        assert new_data[k] == ret[k]

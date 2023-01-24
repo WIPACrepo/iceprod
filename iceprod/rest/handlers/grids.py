@@ -2,6 +2,7 @@ import logging
 import json
 import uuid
 
+import pymongo
 import tornado.web
 
 from ..base_handler import APIBase
@@ -80,7 +81,6 @@ class MultiGridsHandler(APIBase):
         data['grid_id'] = grid_id
         data['start_date'] = nowstr()
         data['last_update'] = data['start_date']
-        data['username'] = self.auth_data['username']
         if 'debug' not in data:
             data['debug'] = False
 
