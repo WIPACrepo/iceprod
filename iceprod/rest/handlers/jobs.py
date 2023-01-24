@@ -3,6 +3,7 @@ import json
 import uuid
 from collections import defaultdict
 
+import pymongo
 import tornado.web
 
 from ..base_handler import APIBase

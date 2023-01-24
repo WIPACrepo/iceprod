@@ -1,225 +1,160 @@
-"""
-Test script for REST/jobs
-"""
+import pytest
+import requests.exceptions
 
-import logging
-logger = logging.getLogger('rest_jobs_test')
 
-import os
-import sys
-import time
-import random
-import shutil
-import tempfile
-import unittest
-import subprocess
-import json
-from functools import partial
-from unittest.mock import patch, MagicMock
 
-from tests.util import unittest_reporter, glob_tests
 
-import ldap3
-import tornado.web
-import tornado.ioloop
-from tornado.httpclient import AsyncHTTPClient, HTTPError
-from tornado.testing import AsyncTestCase
+async def test_rest_jobs_add(server):
+    client = server(roles=['system'])
 
-from rest_tools.utils import Auth
-from rest_tools.server import RestServer
+    data = {
+        'dataset_id': 'foo',
+        'job_index': 0,
+    }
+    ret = await client.request('POST', '/jobs', data)
+    job_id = ret['result']
 
-from iceprod.server.modules.rest_api import setup_rest
+    ret = await client.request('GET', f'/jobs/{job_id}')
+    for k in data:
+        assert k in ret
+        assert data[k] == ret[k]
+    for k in ('status','status_changed'):
+        assert k in ret
+    assert ret['status'] == 'processing'
 
-from . import RestTestCase
 
-class rest_jobs_test(RestTestCase):
-    def setUp(self):
-        config = {'rest':{'jobs':{}}}
-        super(rest_jobs_test,self).setUp(config=config)
+async def test_rest_jobs_add_bad_role(server):
+    client = server(roles=['user'], groups=['users'])
 
-    @unittest_reporter(name='REST POST   /jobs')
-    def test_105_jobs(self):
-        client = AsyncHTTPClient()
-        data = {
-            'dataset_id': 'foo',
-            'job_index': 0,
-        }
-        r = yield client.fetch('http://localhost:%d/jobs'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        self.assertIn('result', ret)
+    data = {
+        'dataset_id': 'foo',
+        'job_index': 0,
+    }
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('POST', '/jobs', data)
+    assert exc_info.value.response.status_code == 403
 
-    @unittest_reporter(name='REST GET    /jobs/<job_id>')
-    def test_110_jobs(self):
-        client = AsyncHTTPClient()
-        data = {
-            'dataset_id': 'foo',
-            'job_index': 0,
-        }
-        r = yield client.fetch('http://localhost:%d/jobs'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        job_id = ret['result']
 
-        r = yield client.fetch('http://localhost:%d/jobs/%s'%(self.port,job_id),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        for k in data:
-            self.assertIn(k, ret)
-            self.assertEqual(data[k], ret[k])
-        for k in ('status','status_changed'):
-            self.assertIn(k, ret)
-        self.assertEqual(ret['status'], 'processing')
+async def test_rest_jobs_patch(server):
+    client = server(roles=['system'])
 
-    @unittest_reporter(name='REST PATCH  /jobs/<job_id>')
-    def test_120_jobs(self):
-        client = AsyncHTTPClient()
-        data = {
-            'dataset_id': 'foo',
-            'job_index': 0,
-        }
-        r = yield client.fetch('http://localhost:%d/jobs'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        job_id = ret['result']
+    data = {
+        'dataset_id': 'foo',
+        'job_index': 0,
+    }
+    ret = await client.request('POST', '/jobs', data)
+    job_id = ret['result']
 
-        new_data = {
-            'status': 'processing',
-        }
-        r = yield client.fetch('http://localhost:%d/jobs/%s'%(self.port,job_id),
-                method='PATCH', body=json.dumps(new_data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        for k in new_data:
-            self.assertIn(k, ret)
-            self.assertEqual(new_data[k], ret[k])
+    new_data = {
+        'status': 'suspended',
+    }
+    ret = await client.request('PATCH', f'/jobs/{job_id}', new_data)
 
-    @unittest_reporter(name='REST GET    /datasets/<dataset_id>/jobs')
-    def test_200_jobs(self):
-        client = AsyncHTTPClient()
-        data = {
-            'dataset_id': 'foo',
-            'job_index': 0,
-        }
-        r = yield client.fetch('http://localhost:%d/jobs'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        job_id = ret['result']
+    ret = await client.request('GET', f'/jobs/{job_id}')
+    assert ret['status'] == 'suspended'
 
-        r = yield client.fetch('http://localhost:%d/datasets/%s/jobs'%(self.port,data['dataset_id']),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        self.assertIn(job_id, ret)
-        for k in data:
-            self.assertIn(k, ret[job_id])
-            self.assertEqual(data[k], ret[job_id][k])
 
-    @unittest_reporter(name='REST GET    /datasets/<dataset_id>/jobs/<job_id>')
-    def test_210_jobs(self):
-        client = AsyncHTTPClient()
-        data = {
-            'dataset_id': 'foo',
-            'job_index': 0,
-        }
-        r = yield client.fetch('http://localhost:%d/jobs'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        job_id = ret['result']
+async def test_rest_jobs_dataset_get(server):
+    client = server(roles=['system'])
 
-        r = yield client.fetch('http://localhost:%d/datasets/%s/jobs/%s'%(self.port,data['dataset_id'],job_id),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        for k in data:
-            self.assertIn(k, ret)
-            self.assertEqual(data[k], ret[k])
-        for k in ('status','status_changed'):
-            self.assertIn(k, ret)
-        self.assertEqual(ret['status'], 'processing')
+    data = {
+        'dataset_id': 'foo',
+        'job_index': 0,
+    }
+    ret = await client.request('POST', '/jobs', data)
+    job_id = ret['result']
 
-    @unittest_reporter(name='REST PUT    /datasets/<dataset_id>/jobs/<job_id>/status')
-    def test_220_jobs(self):
-        client = AsyncHTTPClient()
-        data = {
-            'dataset_id': 'foo',
-            'job_index': 0,
-            'status': 'processing'
-        }
-        r = yield client.fetch('http://localhost:%d/jobs'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        job_id = ret['result']
+    ret = await client.request('GET', f'/datasets/{data["dataset_id"]}/jobs')
+    assert job_id in ret
+    for k in data:
+        assert k in ret[job_id]
+        assert data[k] == ret[job_id][k]
 
-        data2 = {'status':'errors'}
-        r = yield client.fetch('http://localhost:%d/datasets/%s/jobs/%s/status'%(self.port,data['dataset_id'],job_id),
-                method='PUT', body=json.dumps(data2),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
 
-        r = yield client.fetch('http://localhost:%d/datasets/%s/jobs/%s'%(self.port,data['dataset_id'],job_id),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        self.assertIn('status', ret)
-        self.assertEqual(ret['status'], 'errors')
+async def test_rest_jobs_dataset_get_details(server):
+    client = server(roles=['system'])
 
-    @unittest_reporter(name='REST GET    /datasets/<dataset_id>/job_summaries/status')
-    def test_300_jobs(self):
-        client = AsyncHTTPClient()
-        data = {
-            'dataset_id': 'foo',
-            'job_index': 0,
-        }
-        r = yield client.fetch('http://localhost:%d/jobs'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        job_id = ret['result']
+    data = {
+        'dataset_id': 'foo',
+        'job_index': 0,
+    }
+    ret = await client.request('POST', '/jobs', data)
+    job_id = ret['result']
 
-        r = yield client.fetch('http://localhost:%d/datasets/%s/job_summaries/status'%(self.port,data['dataset_id']),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        self.assertEqual(ret, {'processing': [job_id]})
+    ret = await client.request('GET', f'/datasets/{data["dataset_id"]}/jobs/{job_id}')
+    for k in data:
+        assert k in ret
+        assert data[k] == ret[k]
+    for k in ('status','status_changed'):
+        assert k in ret
+    assert ret['status'] == 'processing'
 
-    @unittest_reporter(name='REST GET    /datasets/<dataset_id>/job_counts/status')
-    def test_400_jobs(self):
-        client = AsyncHTTPClient()
-        data = {
-            'dataset_id': 'foo',
-            'job_index': 0,
-        }
-        r = yield client.fetch('http://localhost:%d/jobs'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        job_id = ret['result']
 
-        r = yield client.fetch('http://localhost:%d/datasets/%s/job_counts/status'%(self.port,data['dataset_id']),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        self.assertEqual(ret, {'processing': 1})
+async def test_rest_jobs_empty(server):
+    client = server(roles=['system'])
 
-def load_tests(loader, tests, pattern):
-    suite = unittest.TestSuite()
-    alltests = glob_tests(loader.getTestCaseNames(rest_jobs_test))
-    suite.addTests(loader.loadTestsFromNames(alltests,rest_jobs_test))
-    return suite
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('GET', '/datasets/foo/jobs/bar')
+    assert exc_info.value.response.status_code == 404
+
+
+async def test_rest_jobs_dataset_set_status(server):
+    client = server(roles=['system'])
+
+    data = {
+        'dataset_id': 'foo',
+        'job_index': 0,
+    }
+    ret = await client.request('POST', '/jobs', data)
+    job_id = ret['result']
+
+    new_data = {'status': 'errors'}
+    ret = await client.request('PUT', f'/datasets/{data["dataset_id"]}/jobs/{job_id}/status', new_data)
+
+    ret = await client.request('GET', f'/jobs/{job_id}')
+    assert ret['status'] == new_data['status']
+
+
+async def test_rest_jobs_dataset_bulk_set_status(server):
+    client = server(roles=['system'])
+
+    data = {
+        'dataset_id': 'foo',
+        'job_index': 0,
+    }
+    ret = await client.request('POST', '/jobs', data)
+    job_id = ret['result']
+
+    new_data = {'jobs': [job_id]}
+    ret = await client.request('POST', f'/datasets/{data["dataset_id"]}/job_actions/bulk_status/errors', new_data)
+
+    ret = await client.request('GET', f'/jobs/{job_id}')
+    assert ret['status'] == 'errors'
+
+
+async def test_rest_jobs_dataset_summaries_status(server):
+    client = server(roles=['system'])
+
+    data = {
+        'dataset_id': 'foo',
+        'job_index': 0,
+    }
+    ret = await client.request('POST', '/jobs', data)
+    job_id = ret['result']
+
+    ret = await client.request('GET', f'/datasets/{data["dataset_id"]}/job_summaries/status')
+    assert ret == {'processing': [job_id]}
+    
+
+async def test_rest_jobs_dataset_counts_status(server):
+    client = server(roles=['system'])
+
+    data = {
+        'dataset_id': 'foo',
+        'job_index': 0,
+    }
+    ret = await client.request('POST', '/jobs', data)
+    job_id = ret['result']
+
+    ret = await client.request('GET', f'/datasets/{data["dataset_id"]}/job_counts/status')
+    assert ret == {'processing': 1}
