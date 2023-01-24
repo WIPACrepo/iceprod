@@ -3,6 +3,7 @@ import json
 import uuid
 from collections import defaultdict
 
+import pymongo
 import tornado.web
 
 from ..base_handler import APIBase
@@ -158,8 +159,8 @@ class MultiDatasetHandler(APIBase):
         ret = await self.db.datasets.insert_one(data)
 
         # set auth rules
-        write_groups = list({'admin', data['group']}) if data['group'] != users else ['admin']
-        await self.set_auth_attr('dataset_id', data['dataset_id'],
+        write_groups = list({'admin', data['group']}) if data['group'] != 'users' else ['admin']
+        await self.set_attr_auth('dataset_id', data['dataset_id'],
             read_groups=list({'admin', data['group'], 'users'}),
             write_groups=write_groups,
             write_users=data['username'],

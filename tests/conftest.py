@@ -1,3 +1,4 @@
+import os
 import socket
 
 import motor.motor_asyncio
@@ -38,4 +39,15 @@ async def mongo_clear():
         for c in cols:
             await db[c].drop()
 
+
+@pytest.fixture(scope='module')
+def monkeymodule():
+    with pytest.MonkeyPatch.context() as mp:
+        yield mp
+
+
+@pytest.fixture(scope='module')
+def mongo_url(monkeymodule):
+    if 'DB_URL' not in os.environ:
+        monkeymodule.setenv('DB_URL', 'mongodb://localhost/iceprod')
 

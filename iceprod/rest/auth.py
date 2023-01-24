@@ -3,6 +3,7 @@ from functools import wraps
 import os
 
 from rest_tools.server import catch_error, token_attribute_role_mapping_auth
+from tornado.web import HTTPError
 
 logger = logging.getLogger('rest-auth')
 
@@ -36,9 +37,9 @@ class AttrAuthMixin:
             write_users (list): user names of users that should have write access
         """
         if any(g for g in read_groups if g not in GROUPS):
-            raise Exception(f'Invalid read group: {g}')
+            raise Exception(f'Invalid read groups: {read_groups}')
         if any(g for g in write_groups if g not in GROUPS):
-            raise Exception(f'Invalid write group: {g}')
+            raise Exception(f'Invalid write groups: {write_groups}')
 
         await self.db.attr_auths.find_one_and_update(
             {arg: val},
@@ -60,56 +61,44 @@ class AttrAuthMixin:
         """
         ret = await self.db.attr_auths.find_one({arg: val}, projection={'_id':False})
         if not ret:
-            raise tornado.web.HTTPError(403, reason='attr not found')
+            raise HTTPError(403, reason='attr not found')
         elif role+'_groups' not in ret:
-            raise tornado.web.HTTPError(403, reason='role not found')
+            raise HTTPError(403, reason='role not found')
         elif not (set(ret.get(role+'_groups', []))&set(self.auth_groups) or
-            self.current_user in set(ret.get(role+'_users', []))):
-            raise tornado.web.HTTPError(403, reason='authorization failed')
+            self.current_user in ret.get(role+'_users', [])):
+            logger.debug('arg=%r, val=%r, role=%r, auth_groups=%r, current_user=%r, auths=%r', arg, val, role, self.auth_groups, self.current_user, ret.get(role+'_users', []))
+            raise HTTPError(403, reason='authorization failed')
 
 
-# if os.environ.get('CI_TESTING', False):
-    # logger.warning('*** Auth is DISABLED for CI testing! ***')
-    # def authorization(**_auth):
-        # def make_wrapper(method):
-            # @catch_error
-            # @wraps(method)
-            # async def wrapper(self, *args, **kwargs):
-                # return await method(self, *args, **kwargs)
-            # return wrapper
-        # return make_wrapper
-    # attr_auth = authorization
-# else:
-if True:
-    #: match token roles and groups
-    authorization = token_attribute_role_mapping_auth(role_attrs=ROLES, group_attrs=GROUPS)
+#: match token roles and groups
+authorization = token_attribute_role_mapping_auth(role_attrs=ROLES, group_attrs=GROUPS)
 
-    def attr_auth(**_auth):
-        """
-        Check attribute auth.  Assume a user is already role-authorized.
+def attr_auth(**_auth):
+    """
+    Check attribute auth.  Assume a user is already role-authorized.
 
-        Args:
-            arg (str): argument name to look up
-            role (str): the role to append to the auth request (read|write)
-            token_role_bypass (list): token roles that bypass this auth (default: admin,system)
-        """
-        def make_wrapper(method):
-            @catch_error
-            @wraps(method)
-            async def wrapper(self, *args, **kwargs):
-                arg = _auth['arg']
-                role = _auth.get('role', '')
-                token_role_bypass = _auth.get('token_role_bypass', ['admin', 'system'])
+    Args:
+        arg (str): argument name to look up
+        role (str): the role to append to the auth request (read|write)
+        token_role_bypass (list): token roles that bypass this auth (default: admin,system)
+    """
+    def make_wrapper(method):
+        @catch_error
+        @wraps(method)
+        async def wrapper(self, *args, **kwargs):
+            arg = _auth['arg']
+            role = _auth.get('role', '')
+            token_role_bypass = _auth.get('token_role_bypass', ['admin', 'system'])
 
-                if any(r in self.auth_roles for r in token_role_bypass):
-                    logger.debug('token role bypass')
-                else:
-                    # we need to do an auth check
-                    val = kwargs.get(arg, None)
-                    if (not val) or not isinstance(val, str):
-                        raise tornado.web.HTTPError(403, reason='authorization failed')
-                    await self.check_attr_auth(arg, val, role)
+            if any(r in self.auth_roles for r in token_role_bypass):
+                logger.debug('token role bypass')
+            else:
+                # we need to do an auth check
+                val = kwargs.get(arg, None)
+                if (not val) or not isinstance(val, str):
+                    raise HTTPError(403, reason='authorization failed')
+                await self.check_attr_auth(arg, val, role)
 
-                return await method(self, *args, **kwargs)
-            return wrapper
-        return make_wrapper
+            return await method(self, *args, **kwargs)
+        return wrapper
+    return make_wrapper

@@ -1,7 +1,5 @@
 import logging
-import os
 
-import pytest
 import pytest_asyncio
 from rest_tools.client import RestClient
 from rest_tools.utils import Auth
@@ -10,18 +8,9 @@ from iceprod.rest.auth import ROLES, GROUPS
 from iceprod.rest.server import Server
 
 
-@pytest.fixture(scope='module')
-def monkeymodule():
-    with pytest.MonkeyPatch.context() as mp:
-        yield mp
-
-@pytest.fixture(scope='module')
-def mongo_url(monkeymodule):
-    if 'DB_URL' not in os.environ:
-        monkeymodule.setenv('DB_URL', 'mongodb://localhost/iceprod')
-
 @pytest_asyncio.fixture
 async def server(monkeypatch, port, mongo_url, mongo_clear):
+    monkeypatch.setenv('CI_TESTING', '1')
     monkeypatch.setenv('PORT', str(port))
 
     s = Server()
@@ -56,4 +45,3 @@ async def server(monkeypatch, port, mongo_url, mongo_clear):
         yield client
     finally:
         await s.stop()
-

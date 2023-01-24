@@ -235,7 +235,13 @@ class Server:
                     'audience': config['OPENID_AUDIENCE'],
                 }
             })
-        elif not config['CI_TESTING']:
+        elif config['CI_TESTING']:
+            rest_config.update({
+                'auth': {
+                    'secret': 'secret',
+                }
+            })
+        else:
             raise RuntimeError('OPENID_URL not specified, and CI_TESTING not enabled!')
 
         statsd = FakeStatsClient()
