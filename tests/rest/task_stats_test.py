@@ -1,140 +1,111 @@
-"""
-Test script for REST/task_stats
-"""
+import asyncio
 
-import logging
-logger = logging.getLogger('rest_task_stats_test')
-
-import os
-import sys
-import time
-import random
-import shutil
-import tempfile
-import unittest
-import subprocess
-import json
-from functools import partial
-from unittest.mock import patch, MagicMock
-
-from tests.util import unittest_reporter, glob_tests
-
-import ldap3
-import tornado.web
-import tornado.ioloop
-from tornado.httpclient import AsyncHTTPClient, HTTPError
-from tornado.testing import AsyncTestCase
-
-from rest_tools.utils import Auth
-from rest_tools.server import RestServer
-
-from iceprod.server.modules.rest_api import setup_rest
-
-from . import RestTestCase
-
-class rest_task_stats_test(RestTestCase):
-    def setUp(self):
-        config = {'rest':{'task_stats':{}}}
-        super(rest_task_stats_test,self).setUp(config=config)
+import pytest
+import requests.exceptions
+from rest_tools.utils.json_util import json_decode
 
 
-    @unittest_reporter(name='REST POST   /tasks/<task_id>/task_stats')
-    def test_100_task_stats(self):
-        client = AsyncHTTPClient()
-        data = {
-            'dataset_id': 'foo',
-            'bar': 1.23456,
-            'baz': [1,2,3,4],
-        }
-        r = yield client.fetch('http://localhost:%d/tasks/%s/task_stats'%(self.port,'bar'),
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        task_stat_id = ret['result']
+async def test_rest_task_stats_post(server):
+    client = server(roles=['system'])
 
-    @unittest_reporter(name='REST GET    /datasets/<dataset_id>/tasks/<task_id>/task_stats')
-    def test_200_task_stats(self):
-        client = AsyncHTTPClient()
-        data = {
-            'dataset_id': 'foo',
-            'bar': 1.23456,
-            'baz': [1,2,3,4],
-        }
-        task_id = 'bar'
-        r = yield client.fetch('http://localhost:%d/tasks/%s/task_stats'%(self.port,task_id),
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        task_stat_id = ret['result']
+    task_id = 'bar'
+    data = {
+        'dataset_id': 'foo',
+        'bar': 1.23456,
+        'baz': [1,2,3,4],
+    }
+    ret = await client.request('POST', f'/tasks/{task_id}/task_stats', data)
+    task_stat_id = ret['result']
 
-        time.sleep(0.1)
-        r = yield client.fetch('http://localhost:%d/tasks/%s/task_stats'%(self.port,task_id),
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        task_stat_id2 = ret['result']
 
-        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/task_stats'%(self.port,'foo',task_id),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        self.assertEqual(len(ret), 2)
-        self.assertIn(task_stat_id, ret)
-        self.assertIn(task_stat_id2, ret)
-        self.assertIn('task_id', ret[task_stat_id])
-        self.assertEqual(task_id, ret[task_stat_id]['task_id'])
-        self.assertEqual(data, ret[task_stat_id]['stats'])
+async def test_rest_task_stats_post_bad_role(server):
+    client = server(roles=['user'])
 
-        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/task_stats?last=true'%(self.port,'foo',task_id),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        self.assertEqual(len(ret), 1)
-        self.assertIn(task_stat_id2, ret)
-        self.assertIn('task_id', ret[task_stat_id2])
-        self.assertEqual(task_id, ret[task_stat_id2]['task_id'])
-        self.assertEqual(data, ret[task_stat_id2]['stats'])
+    task_id = 'bar'
+    data = {
+        'dataset_id': 'foo',
+        'bar': 1.23456,
+        'baz': [1,2,3,4],
+    }
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('POST', f'/tasks/{task_id}/task_stats', data)
+    assert exc_info.value.response.status_code == 403
 
-        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/task_stats?last=true&keys=task_id'%(self.port,'foo',task_id),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        self.assertEqual(len(ret), 1)
-        self.assertIn(task_stat_id2, ret)
-        self.assertIn('task_id', ret[task_stat_id2])
-        self.assertEqual(task_id, ret[task_stat_id2]['task_id'])
-        self.assertNotIn('stats', ret[task_stat_id2])
 
-    # note: the name is so long it needs a break to wrap correctly
-    @unittest_reporter(name='REST GET    /datasets/<dataset_id>/tasks/<task_id>/task_stats/<task_stat_id>')
-    def test_210_task_stats(self):
-        client = AsyncHTTPClient()
-        data = {
-            'dataset_id': 'foo',
-            'bar': 1.23456,
-            'baz': [1,2,3,4],
-        }
-        task_id = 'bar'
-        r = yield client.fetch('http://localhost:%d/tasks/%s/task_stats'%(self.port,task_id),
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        task_stat_id = ret['result']
+async def test_rest_task_stats_bulk(server):
+    client = server(roles=['system'])
 
-        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/task_stats/%s'%(self.port,'foo',task_id,task_stat_id),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        self.assertEqual(task_stat_id, ret['task_stat_id'])
-        self.assertEqual(task_id, ret['task_id'])
-        self.assertEqual(data, ret['stats'])
+    task_id = 'bar'
+    data = {
+        'dataset_id': 'foo',
+        'bar': 1.23456,
+        'baz': [1,2,3,4],
+    }
+    ret = await client.request('POST', f'/tasks/{task_id}/task_stats', data)
+    task_stat_id = ret['result']
+    ret = await client.request('POST', f'/tasks/{task_id}/task_stats', data)
+    task_stat_id2 = ret['result']
+    ret = await client.request('POST', f'/tasks/{task_id}/task_stats', data)
+    task_stat_id3 = ret['result']
 
-def load_tests(loader, tests, pattern):
-    suite = unittest.TestSuite()
-    alltests = glob_tests(loader.getTestCaseNames(rest_task_stats_test))
-    suite.addTests(loader.loadTestsFromNames(alltests,rest_task_stats_test))
-    return suite
+    url, kwargs = client._prepare('GET', f'/datasets/{data["dataset_id"]}/bulk/task_stats', {'buffer_size': 2})
+    ret = await asyncio.wrap_future(client.session.request('GET', url, **kwargs))
+    ret.raise_for_status()
+    task_stats = [json_decode(r) for r in ret.content.split(b'\n') if r.strip()]
+    ret_task_ids = [t['task_stat_id'] for t in task_stats]
+    assert ret_task_ids == [task_stat_id, task_stat_id2, task_stat_id3]
+
+
+async def test_rest_task_stats_get(server):
+    client = server(roles=['system'])
+
+    task_id = 'bar'
+    data = {
+        'dataset_id': 'foo',
+        'bar': 1.23456,
+        'baz': [1,2,3,4],
+    }
+    ret = await client.request('POST', f'/tasks/{task_id}/task_stats', data)
+    task_stat_id = ret['result']
+    ret = await client.request('POST', f'/tasks/{task_id}/task_stats', data)
+    task_stat_id2 = ret['result']
+
+    ret = await client.request('GET', f'/datasets/{data["dataset_id"]}/tasks/{task_id}/task_stats')
+    assert len(ret) == 2
+    assert task_stat_id in ret
+    assert task_stat_id2 in ret
+    assert 'task_id' in ret[task_stat_id]
+    assert task_id == ret[task_stat_id]['task_id']
+    assert data == ret[task_stat_id]['stats']
+
+    ret = await client.request('GET', f'/datasets/{data["dataset_id"]}/tasks/{task_id}/task_stats', {'last': 'true'})
+    assert len(ret) == 1
+    assert task_stat_id2 in ret
+    assert 'task_id' in ret[task_stat_id2]
+    assert task_id == ret[task_stat_id2]['task_id']
+    assert data == ret[task_stat_id2]['stats']
+
+    ret = await client.request('GET', f'/datasets/{data["dataset_id"]}/tasks/{task_id}/task_stats', {'last': 'true', 'keys': 'task_id'})
+    assert len(ret) == 1
+    assert task_stat_id2 in ret
+    assert 'task_id' in ret[task_stat_id2]
+    assert task_id == ret[task_stat_id2]['task_id']
+    assert 'stats' not in ret[task_stat_id2]
+
+
+async def test_rest_task_stats_get_details(server):
+    client = server(roles=['system'])
+
+    task_id = 'bar'
+    data = {
+        'dataset_id': 'foo',
+        'bar': 1.23456,
+        'baz': [1,2,3,4],
+    }
+    ret = await client.request('POST', f'/tasks/{task_id}/task_stats', data)
+    task_stat_id = ret['result']
+
+    ret = await client.request('GET', f'/datasets/{data["dataset_id"]}/tasks/{task_id}/task_stats/{task_stat_id}')
+    assert task_stat_id == ret['task_stat_id']
+    assert task_id == ret['task_id']
+    assert data == ret['stats']
