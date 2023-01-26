@@ -1,155 +1,87 @@
-"""
-Test script for REST/pilots
-"""
+import pytest
+import requests.exceptions
 
-import logging
-logger = logging.getLogger('rest_pilots_test')
 
-import os
-import sys
-import time
-import random
-import shutil
-import tempfile
-import unittest
-import subprocess
-import json
-from functools import partial
-from unittest.mock import patch, MagicMock
+async def test_rest_pilots_empty(server):
+    client = server(roles=['system'])
 
-from tests.util import unittest_reporter, glob_tests
+    ret = await client.request('GET', '/pilots')
+    assert ret == {}
 
-import ldap3
-import tornado.web
-import tornado.ioloop
-from tornado.httpclient import AsyncHTTPClient, HTTPError
-from tornado.testing import AsyncTestCase
 
-from rest_tools.utils import Auth
-from rest_tools.server import RestServer
+async def test_rest_pilots_post(server):
+    client = server(roles=['system'])
 
-from iceprod.server.modules.rest_api import setup_rest
+    data = {
+        'queue_host': 'foo.bar.baz',
+        'queue_version': '1.2.3',
+        'resources': {'foo':1}
+    }
+    ret = await client.request('POST', '/pilots', data)
+    pilot_id = ret['result']
 
-from . import RestTestCase
+    ret = await client.request('GET', '/pilots')
+    assert pilot_id in ret
+    for k in data:
+        assert k in ret[pilot_id]
+        assert data[k] == ret[pilot_id][k]
 
-class rest_pilots_test(RestTestCase):
-    def setUp(self):
-        config = {'rest':{'pilots':{}}}
-        super(rest_pilots_test,self).setUp(config=config)
 
-    @unittest_reporter(name='REST GET    /pilots')
-    def test_100_pilots(self):
-        client = AsyncHTTPClient()
-        r = yield client.fetch('http://localhost:%d/pilots'%self.port,
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        self.assertEqual(ret, {})
+async def test_rest_pilots_details(server):
+    client = server(roles=['system'])
 
-    @unittest_reporter(name='REST POST   /pilots')
-    def test_105_pilots(self):
-        client = AsyncHTTPClient()
-        data = {
-            'queue_host': 'foo.bar.baz',
-            'queue_version': '1.2.3',
-            'resources': {'foo':1}
-        }
-        r = yield client.fetch('http://localhost:%d/pilots'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        pilot_id = ret['result']
+    data = {
+        'queue_host': 'foo.bar.baz',
+        'queue_version': '1.2.3',
+        'resources': {'foo':1}
+    }
+    ret = await client.request('POST', '/pilots', data)
+    pilot_id = ret['result']
 
-        r = yield client.fetch('http://localhost:%d/pilots'%self.port,
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        self.assertIn(pilot_id, ret)
-        for k in data:
-            self.assertIn(k, ret[pilot_id])
-            self.assertEqual(data[k], ret[pilot_id][k])
+    ret = await client.request('GET', f'/pilots/{pilot_id}')
+    for k in data:
+        assert k in ret
+        assert data[k] == ret[k]
 
-    @unittest_reporter(name='REST GET    /pilots/<pilot_id>')
-    def test_110_pilots(self):
-        client = AsyncHTTPClient()
-        data = {
-            'queue_host': 'foo.bar.baz',
-            'queue_version': '1.2.3',
-            'resources': {'foo':1}
-        }
-        r = yield client.fetch('http://localhost:%d/pilots'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        pilot_id = ret['result']
+    assert 'tasks' in ret
+    assert ret['tasks'] == []
 
-        r = yield client.fetch('http://localhost:%d/pilots/%s'%(self.port,pilot_id),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        for k in data:
-            self.assertIn(k, ret)
-            self.assertEqual(data[k], ret[k])
-        self.assertIn('tasks', ret)
-        self.assertEqual(ret['tasks'], [])
 
-    @unittest_reporter(name='REST PATCH  /pilots/<pilot_id>')
-    def test_120_pilots(self):
-        client = AsyncHTTPClient()
-        data = {
-            'queue_host': 'foo.bar.baz',
-            'queue_version': '1.2.3',
-            'resources': {'foo':1}
-        }
-        r = yield client.fetch('http://localhost:%d/pilots'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        pilot_id = ret['result']
+async def test_rest_pilots_patch(server):
+    client = server(roles=['system'])
 
-        new_data = {
-            'queues': {'foo': 'HTCondor', 'bar': 'HTCondor'},
-            'version': '1.2.8',
-            'tasks': ['baz'],
-        }
-        r = yield client.fetch('http://localhost:%d/pilots/%s'%(self.port,pilot_id),
-                method='PATCH', body=json.dumps(new_data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        for k in new_data:
-            self.assertIn(k, ret)
-            self.assertEqual(new_data[k], ret[k])
+    data = {
+        'queue_host': 'foo.bar.baz',
+        'queue_version': '1.2.3',
+        'resources': {'foo':1}
+    }
+    ret = await client.request('POST', '/pilots', data)
+    pilot_id = ret['result']
 
-    @unittest_reporter(name='REST DELETE /pilots/<pilot_id>')
-    def test_130_pilots(self):
-        client = AsyncHTTPClient()
-        data = {
-            'queue_host': 'foo.bar.baz',
-            'queue_version': '1.2.3',
-            'resources': {'foo':1}
-        }
-        r = yield client.fetch('http://localhost:%d/pilots'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        pilot_id = ret['result']
+    new_data = {
+        'queues': {'foo': 'HTCondor', 'bar': 'HTCondor'},
+        'version': '1.2.8',
+        'tasks': ['baz'],
+    }
+    ret = await client.request('PATCH', f'/pilots/{pilot_id}', new_data)
+    for k in new_data:
+        assert k in ret
+        assert new_data[k] == ret[k]
 
-        r = yield client.fetch('http://localhost:%d/pilots/%s'%(self.port,pilot_id),
-                method='DELETE',
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
 
-        with self.assertRaises(Exception):
-            r = yield client.fetch('http://localhost:%d/pilots/%s'%(self.port,pilot_id),
-                    headers={'Authorization': 'bearer '+self.token})
+async def test_rest_pilots_delete(server):
+    client = server(roles=['system'])
 
-def load_tests(loader, tests, pattern):
-    suite = unittest.TestSuite()
-    alltests = glob_tests(loader.getTestCaseNames(rest_pilots_test))
-    suite.addTests(loader.loadTestsFromNames(alltests,rest_pilots_test))
-    return suite
+    data = {
+        'queue_host': 'foo.bar.baz',
+        'queue_version': '1.2.3',
+        'resources': {'foo':1}
+    }
+    ret = await client.request('POST', '/pilots', data)
+    pilot_id = ret['result']
+
+    ret = await client.request('DELETE', f'/pilots/{pilot_id}')
+
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('GET', f'/pilots/{pilot_id}')
+    assert exc_info.value.response.status_code == 404

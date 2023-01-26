@@ -2,6 +2,7 @@ import logging
 import json
 import uuid
 
+import pymongo
 import tornado.web
 
 from ..base_handler import APIBase
