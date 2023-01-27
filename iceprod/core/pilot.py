@@ -381,7 +381,7 @@ class Pilot:
                 logger.info('wait while tasks are running. timeout=%r',self.run_timeout)
                 start_time = time.time()
                 while self.tasks and time.time()-self.run_timeout < start_time:
-                    done,pending = await asyncio.wait([task['p'].wait() for task in self.tasks.values()],
+                    done,pending = await asyncio.wait([asyncio.create_task(task['p'].wait()) for task in self.tasks.values()],
                                                       timeout=self.resource_interval,
                                                       return_when=concurrent.futures.FIRST_COMPLETED)
                     if done:
