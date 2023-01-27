@@ -71,12 +71,7 @@ jobs:
           pip install .[tests]
       - name: Run Tests
         run: |
-          ./coverage.sh
-      - uses: actions/upload-artifact@v3
-        if: failure()
-        with:
-          name: tests.log
-          path: tests.log
+          python -m pytest --tb=short --cov=iceprod --cov-report= tests
       - name: Coverage report
         if: always() && steps.dependencies.outcome != 'failure'
         run: |
