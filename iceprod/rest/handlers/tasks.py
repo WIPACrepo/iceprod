@@ -627,7 +627,7 @@ class TasksActionsProcessingHandler(APIBase):
             logger.info('filter_query: %r', filter_query)
             self.send_error(404, reason="Task not found")
         else:
-            self.module.statsd.incr('site.{}.task_processing'.format(site))
+            self.statsd.incr('site.{}.task_processing'.format(site))
             self.write(ret)
             self.finish()
 
@@ -695,7 +695,7 @@ class TasksActionsErrorHandler(APIBase):
             if 'site' in data:
                 site = data['site']
                 update_query['$set']['site'] = site
-            if self.module and self.module.statsd and 'reason' in data and data['reason']:
+            if self.statsd and 'reason' in data and data['reason']:
                 reason = 'other'
                 reasons = [
                     ('Exception: failed to download', 'download_failure'),
@@ -713,13 +713,13 @@ class TasksActionsErrorHandler(APIBase):
                     if text in data['reason']:
                         reason = r
                         break
-                self.module.statsd.incr('site.{}.task_reset.{}'.format(site, reason))
+                self.statsd.incr('site.{}.task_reset.{}'.format(site, reason))
         ret = await self.db.tasks.find_one_and_update(filter_query,
                 update_query,
                 projection={'_id':False})
         if not ret:
             logger.info('filter_query: %r', filter_query)
-            self.send_error(404, reason="Task not found")
+            self.send_error(400, reason="Task not found")
         else:
             self.write(ret)
             self.finish()
@@ -758,13 +758,13 @@ class TasksActionsCompleteHandler(APIBase):
             if 'site' in data:
                 site = data['site']
                 update_query['$set']['site'] = site
-            self.module.statsd.incr('site.{}.task_complete'.format(site))
+            self.statsd.incr('site.{}.task_complete'.format(site))
         ret = await self.db.tasks.find_one_and_update(filter_query,
                 update_query,
                 projection={'_id':False})
         if not ret:
             logger.info('filter_query: %r', filter_query)
-            self.send_error(404, reason="Task not found or not processing")
+            self.send_error(400, reason="Task not found or not processing")
         else:
             self.write(ret)
             self.finish()
