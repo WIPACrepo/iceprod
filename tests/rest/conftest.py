@@ -1,5 +1,8 @@
 import logging
 
+import boto3
+from moto import mock_s3
+import pytest
 import pytest_asyncio
 from rest_tools.client import RestClient
 from rest_tools.utils import Auth
@@ -7,13 +10,26 @@ from rest_tools.utils import Auth
 from iceprod.rest.auth import ROLES, GROUPS
 from iceprod.rest.server import Server
 
+@pytest.fixture
+def s3conn(monkeypatch):
+    monkeypatch.setenv('S3_ADDRESS', 'htpp://localhost:5000')
+    monkeypatch.setenv('S3_ACCESS_KEY', 'XXXX')
+    monkeypatch.setenv('S3_SECRET_KEY', 'XXXX')
+
+    with mock_s3():
+        conn = boto3.client('s3', region_name='us-east-1')
+        conn.create_bucket(Bucket='iceprod2-logs')
+        yield conn
+
 
 @pytest_asyncio.fixture
-async def server(monkeypatch, port, mongo_url, mongo_clear):
+async def server(monkeypatch, port, mongo_url, mongo_clear, s3conn):
     monkeypatch.setenv('CI_TESTING', '1')
     monkeypatch.setenv('PORT', str(port))
+    monkeypatch.setenv('S3_ACCESS_KEY', 'XXXX')
+    monkeypatch.setenv('S3_SECRET_KEY', 'XXXX')
 
-    s = Server()
+    s = Server(s3_override=s3conn)
     await s.start()
 
     auth = Auth('secret')

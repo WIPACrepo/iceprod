@@ -4,6 +4,7 @@ import uuid
 import math
 from collections import defaultdict
 
+import pymongo
 import tornado.web
 
 from ..base_handler import APIBase
@@ -49,9 +50,16 @@ def setup(handler_cfg):
             (r'/datasets/(?P<dataset_id>\w+)/files/(?P<task_id>\w+)', DatasetTaskFilesHandler, handler_cfg),
         ],
         'indexes': {
-            'jobs': {
-                'job_id_index': {'keys': 'job_id', 'unique': True},
+            'tasks': {
+                'task_id_index': {'keys': 'task_id', 'unique': True},
                 'dataset_id_index': {'keys': 'dataset_id', 'unique': False},
+                'job_id_index': {'keys': 'job_id', 'unique': False},
+                'status_index': {'keys': 'status', 'unique': False},
+                'priority_index': {'keys': [('status', pymongo.ASCENDING), ('priority', pymongo.DESCENDING)], 'unique': False},
+            },
+            'dataset_files': {
+                'dataset_id_index': {'keys': 'dataset_id', 'unique': False},
+                'task_id_index': {'keys': 'task_id', 'unique': False},
             }
         }
     }

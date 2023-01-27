@@ -1,393 +1,256 @@
-"""
-Test script for REST/logs
-"""
-
+import asyncio
 import logging
-logger = logging.getLogger('rest_logs_test')
-
-import os
-import sys
-import time
 import random
-import shutil
-import tempfile
-import unittest
-import subprocess
-import json
-from functools import partial
-from unittest.mock import patch, MagicMock
 import string
 
-from tests.util import unittest_reporter, glob_tests
-
-import tornado.web
-import tornado.ioloop
-from tornado.httputil import url_concat
-from tornado.httpclient import AsyncHTTPClient, HTTPError
-from tornado.testing import AsyncTestCase
 import boto3
 from moto import mock_s3
+import pytest
+import requests.exceptions
+from rest_tools.utils.json_util import json_decode
 
-from rest_tools.utils import Auth
-from rest_tools.server import RestServer
+import iceprod.rest.base_handler 
+from iceprod.rest.base_handler import IceProdRestConfig
 
-from iceprod.server.modules.rest_api import setup_rest
 
-from . import RestTestCase
+async def test_rest_logs_post(server):
+    client = server(roles=['system'])
+
+    data = {'data':'foo bar baz'}
+    ret = await client.request('POST', '/logs', data)
+    log_id = ret['result']
+
+
+async def test_rest_logs_get(server):
+    client = server(roles=['system'])
+
+    data = {'name': 'stdlog', 'data': 'foo bar baz'}
+    ret = await client.request('POST', '/logs', data)
+    log_id = ret['result']
+
+    ret = await client.request('GET', '/logs')
+    assert log_id in ret
+    assert len(ret) == 1
+    for k in data:
+        assert k in ret[log_id]
+        assert data[k] == ret[log_id][k]
+
+    args = {'name': 'stdlog', 'keys': 'log_id|name|data'}
+    ret = await client.request('GET', '/logs', args)
+    assert log_id in ret
+
+
+async def test_rest_logs_get_details(server):
+    client = server(roles=['system'])
+
+    data = {'data': 'foo bar baz'}
+    ret = await client.request('POST', '/logs', data)
+    log_id = ret['result']
+
+    ret = await client.request('GET', f'/logs/{log_id}')
+    for k in data:
+        assert k in ret
+        assert data[k] == ret[k]
+
+
+async def test_rest_logs_dataset_post(server):
+    client = server(roles=['user'], groups=['users'])
+
+    data = {
+        'description': 'blah',
+        'tasks_per_job': 4,
+        'jobs_submitted': 1,
+        'tasks_submitted': 4,
+        'group': 'users',
+    }
+    ret = await client.request('POST', '/datasets', data)
+    dataset_id = ret['result'].split('/')[-1]
+
+    data = {'data':'foo bar baz'}
+    ret = await client.request('POST', f'/datasets/{dataset_id}/logs', data)
+    log_id = ret['result']
+
+
+async def test_rest_logs_dataset_get(server):
+    client = server(roles=['user'], groups=['users'])
+
+    data = {
+        'description': 'blah',
+        'tasks_per_job': 4,
+        'jobs_submitted': 1,
+        'tasks_submitted': 4,
+        'group': 'users',
+    }
+    ret = await client.request('POST', '/datasets', data)
+    dataset_id = ret['result'].split('/')[-1]
+
+    data = {'data':'foo bar baz', 'dataset_id': dataset_id}
+    ret = await client.request('POST', f'/datasets/{dataset_id}/logs', data)
+    log_id = ret['result']
+
+    ret = await client.request('GET', f'/datasets/{dataset_id}/logs/{log_id}')
+    for k in data:
+        assert k in ret
+        assert data[k] == ret[k]
+
+
+async def test_rest_logs_dataset_task_get(server):
+    client = server(roles=['user'], groups=['users'])
+
+    data = {
+        'description': 'blah',
+        'tasks_per_job': 4,
+        'jobs_submitted': 1,
+        'tasks_submitted': 4,
+        'group': 'users',
+    }
+    ret = await client.request('POST', '/datasets', data)
+    dataset_id = ret['result'].split('/')[-1]
+
+    data = {'data':'foo', 'dataset_id': dataset_id, 'task_id': 'bar', 'name': 'stdout'}
+    ret = await client.request('POST', f'/datasets/{dataset_id}/logs', data)
+    log_id = ret['result']
+
+    ret = await client.request('GET', f'/datasets/{dataset_id}/tasks/bar/logs')
+    assert 'logs' in ret
+    assert len(ret['logs']) == 1
+    assert ret['logs'][0]['log_id'] == log_id
+    assert data['data'] == ret['logs'][0]['data']
+
+    # now try for groupings (only last of named type)
+    data = {'data':'bar', 'dataset_id': dataset_id, 'task_id': 'bar', 'name': 'stderr'}
+    await client.request('POST', f'/datasets/{dataset_id}/logs', data)
+    
+    data = {'data':'baz', 'dataset_id': dataset_id, 'task_id': 'bar', 'name': 'stdout'}
+    await client.request('POST', f'/datasets/{dataset_id}/logs', data)
+    
+    ret = await client.request('GET', f'/datasets/{dataset_id}/tasks/bar/logs', {'group': 'true'})
+    assert 'logs' in ret
+    assert len(ret['logs']) == 2
+    assert ret['logs'][0]['data'] == 'baz'
+    assert ret['logs'][1]['data'] == 'bar'
+
+    # now check order, num, and keys
+    ret = await client.request('GET', f'/datasets/{dataset_id}/tasks/bar/logs', {'order': 'asc', 'num': 1, 'keys': 'log_id|data'})
+    assert 'logs' in ret
+    assert len(ret['logs']) == 1
+    assert ret['logs'][0]['log_id'] == log_id
+    assert ret['logs'][0]['data'] == 'foo'
 
 
 def fake_data(N):
     return ''.join(random.choices(string.printable, k=N))
 
-class rest_logs_test(RestTestCase):
-    def setUp(self):
-        config = {'rest':{'logs':{}}}
-        super(rest_logs_test,self).setUp(config=config)
 
-    @unittest_reporter(name='REST POST   /logs')
-    def test_100_logs(self):
-        client = AsyncHTTPClient()
-        data = {'data':'foo bar baz'}
-        r = yield client.fetch('http://localhost:%d/logs'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        log_id = ret['result']
+async def test_rest_logs_s3_post(s3conn, server):
+    client = server(roles=['system'])
 
-    @unittest_reporter(name='REST GET    /logs')
-    def test_105_logs(self):
-        client = AsyncHTTPClient()
-        data = {'name': 'stdlog', 'data': 'foo bar baz'}
-        r = yield client.fetch('http://localhost:%d/logs'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        log_id = ret['result']
+    data = {'data': fake_data(2000000)}
+    ret = await client.request('POST', '/logs', data)
+    log_id = ret['result']
 
-        r = yield client.fetch('http://localhost:%d/logs'%self.port,
-                method='GET',
-                headers={'Authorization': 'bearer '+self.token})
-        ret = json.loads(r.body)
-        self.assertIn(log_id, ret)
-        self.assertEqual(len(ret), 1)
-        for k in data:
-            self.assertIn(k, ret[log_id])
-            self.assertEqual(data[k], ret[log_id][k])
+    body = s3conn.get_object(Bucket='iceprod2-logs', Key=log_id)['Body'].read().decode('utf-8')
+    assert body == data['data']
 
-        args = {'name': 'stdlog', 'keys': 'log_id|name|data'}
-        r = yield client.fetch(url_concat('http://localhost:%d/logs'%self.port, args),
-                method='GET',
-                headers={'Authorization': 'bearer '+self.token})
-        ret = json.loads(r.body)
-        self.assertIn(log_id, ret)
+    data = {'data': fake_data(200000)}
+    ret = await client.request('POST', '/logs', data)
+    log_id = ret['result']
 
-    @unittest_reporter(name='REST GET    /logs/<log_id>')
-    def test_110_logs(self):
-        client = AsyncHTTPClient()
-        data = {'data':'foo bar baz'}
-        r = yield client.fetch('http://localhost:%d/logs'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        log_id = ret['result']
-
-        r = yield client.fetch('http://localhost:%d/logs/%s'%(self.port,log_id),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        self.assertEqual(data['data'], ret['data'])
-
-    @unittest_reporter(name='REST POST   /datasets/<dataset_id>/logs')
-    def test_120_logs(self):
-        client = AsyncHTTPClient()
-        data = {'data':'foo bar baz'}
-        r = yield client.fetch('http://localhost:%d/datasets/12345/logs'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        log_id = ret['result']
-
-    @unittest_reporter(name='REST GET    /datasets/<dataset_id>/logs/<log_id>')
-    def test_130_logs(self):
-        client = AsyncHTTPClient()
-        data = {'dataset_id':'12345','data':'foo bar baz'}
-        r = yield client.fetch('http://localhost:%d/logs'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        log_id = ret['result']
-
-        r = yield client.fetch('http://localhost:%d/datasets/12345/logs/%s'%(self.port,log_id),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        self.assertEqual(data['data'], ret['data'])
-
-    @unittest_reporter(name='REST GET    /datasets/<dataset_id>/tasks/<task_id>/logs')
-    def test_140_logs(self):
-        client = AsyncHTTPClient()
-        data = {'data':'foo', 'dataset_id': 'foo', 'task_id': 'bar', 'name': 'stdout'}
-        r = yield client.fetch('http://localhost:%d/logs'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        log_id = ret['result']
-
-        r = yield client.fetch('http://localhost:%d/datasets/foo/tasks/bar/logs'%(self.port,),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        self.assertIn('logs', ret)
-        self.assertEqual(len(ret['logs']), 1)
-        self.assertEqual(ret['logs'][0]['log_id'], log_id)
-        self.assertEqual(data['data'], ret['logs'][0]['data'])
-
-        # now try for groupings
-        data = {'data':'bar', 'dataset_id': 'foo', 'task_id': 'bar', 'name': 'stderr'}
-        r = yield client.fetch('http://localhost:%d/logs'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        
-        data = {'data':'baz', 'dataset_id': 'foo', 'task_id': 'bar', 'name': 'stdout'}
-        r = yield client.fetch('http://localhost:%d/logs'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        
-        r = yield client.fetch('http://localhost:%d/datasets/foo/tasks/bar/logs?group=true'%(self.port,),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        self.assertIn('logs', ret)
-        logging.debug('logs: %r', ret['logs'])
-        self.assertEqual(len(ret['logs']), 2)
-        self.assertEqual('baz', ret['logs'][0]['data'])
-        self.assertEqual('bar', ret['logs'][1]['data'])
-
-        # now check order, num, and keys
-        r = yield client.fetch('http://localhost:%d/datasets/foo/tasks/bar/logs?order=asc&num=1&keys=log_id|data'%(self.port,),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        self.assertIn('logs', ret)
-        logging.debug('logs: %r', ret['logs'])
-        self.assertEqual(len(ret['logs']), 1)
-        self.assertEqual(ret['logs'][0]['log_id'], log_id)
-        self.assertEqual('foo', ret['logs'][0]['data'])
-        self.assertCountEqual(['log_id','data'], list(ret['logs'][0].keys()))
-
-class rest_logs_test2(RestTestCase):
-    def setUp(self):
-        config = {
-            'rest':{
-                'logs':{},
-            },
-            's3': {
-                'access_key': 'XXX',
-                'secret_key': 'XXX',
-            },
-        }
-        super(rest_logs_test2,self).setUp(config=config)
-
-    @mock_s3
-    @unittest_reporter(name='REST POST   /logs - S3')
-    def test_200_logs(self):
-        conn = boto3.resource('s3', region_name='us-east-1')
-        conn.create_bucket(Bucket='iceprod2-logs')
-
-        client = AsyncHTTPClient()
-        data = {'data':fake_data(2000000)}
-        r = yield client.fetch('http://localhost:%d/logs'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        log_id = ret['result']
-
-        body = conn.Object('iceprod2-logs', log_id).get()['Body'].read().decode('utf-8')
-        self.assertEqual(body, data['data'])
-        
-        data = {'data':fake_data(200000)}
-        r = yield client.fetch('http://localhost:%d/logs'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        log_id = ret['result']
-
-        with self.assertRaises(Exception):
-            conn.Object('iceprod2-logs', log_id).get()
-
-    @mock_s3
-    @unittest_reporter(name='REST GET    /logs/<log_id> - S3')
-    def test_210_logs(self):
-        conn = boto3.resource('s3', region_name='us-east-1')
-        conn.create_bucket(Bucket='iceprod2-logs')
-
-        client = AsyncHTTPClient()
-        data = {'data':fake_data(2000000)}
-        r = yield client.fetch('http://localhost:%d/logs'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        log_id = ret['result']
-
-        body = conn.Object('iceprod2-logs', log_id).get()['Body'].read().decode('utf-8')
-        self.assertEqual(body, data['data'])
-
-        r = yield client.fetch('http://localhost:%d/logs/%s'%(self.port,log_id),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        self.assertEqual(data['data'], ret['data'])
-        
-        data = {'data':fake_data(200000)}
-        r = yield client.fetch('http://localhost:%d/logs'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        log_id = ret['result']
-
-        with self.assertRaises(Exception):
-            conn.Object('iceprod2-logs', log_id).get()
-
-        r = yield client.fetch('http://localhost:%d/logs/%s'%(self.port,log_id),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        self.assertEqual(data['data'], ret['data'])
-
-    @mock_s3
-    @unittest_reporter(name='REST POST   /datasets/<dataset_id>/logs - S3')
-    def test_220_logs(self):
-        conn = boto3.resource('s3', region_name='us-east-1')
-        conn.create_bucket(Bucket='iceprod2-logs')
-
-        client = AsyncHTTPClient()
-        data = {'data':fake_data(2000000)}
-        r = yield client.fetch('http://localhost:%d/datasets/12345/logs'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        log_id = ret['result']
-
-        body = conn.Object('iceprod2-logs', log_id).get()['Body'].read().decode('utf-8')
-        self.assertEqual(body, data['data'])
-
-        data = {'data':fake_data(200000)}
-        r = yield client.fetch('http://localhost:%d/datasets/12345/logs'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        log_id = ret['result']
-
-        with self.assertRaises(Exception):
-            conn.Object('iceprod2-logs', log_id).get()
-
-    @mock_s3
-    @unittest_reporter(name='REST GET    /datasets/<dataset_id>/logs/<log_id> - S3')
-    def test_230_logs(self):
-        conn = boto3.resource('s3', region_name='us-east-1')
-        conn.create_bucket(Bucket='iceprod2-logs')
-
-        client = AsyncHTTPClient()
-        data = {'dataset_id':'12345','data':fake_data(2000000)}
-        r = yield client.fetch('http://localhost:%d/logs'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        log_id = ret['result']
-
-        body = conn.Object('iceprod2-logs', log_id).get()['Body'].read().decode('utf-8')
-        self.assertEqual(body, data['data'])
-
-        r = yield client.fetch('http://localhost:%d/datasets/12345/logs/%s'%(self.port,log_id),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        self.assertEqual(data['data'], ret['data'])
-        
-        data = {'dataset_id':'12345','data':fake_data(200000)}
-        r = yield client.fetch('http://localhost:%d/logs'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        log_id = ret['result']
-
-        with self.assertRaises(Exception):
-            conn.Object('iceprod2-logs', log_id).get()
-
-        r = yield client.fetch('http://localhost:%d/datasets/12345/logs/%s'%(self.port,log_id),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        self.assertEqual(data['data'], ret['data'])
-
-    @mock_s3
-    @unittest_reporter(name='REST GET    /datasets/<dataset_id>/tasks/<task_id>/logs - S3')
-    def test_240_logs(self):
-        conn = boto3.resource('s3', region_name='us-east-1')
-        conn.create_bucket(Bucket='iceprod2-logs')
-
-        client = AsyncHTTPClient()
-        data = {'data':fake_data(2000000), 'dataset_id': 'foo', 'task_id': 'bar'}
-        r = yield client.fetch('http://localhost:%d/logs'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        log_id = ret['result']
-
-        body = conn.Object('iceprod2-logs', log_id).get()['Body'].read().decode('utf-8')
-        self.assertEqual(body, data['data'])
-
-        r = yield client.fetch('http://localhost:%d/datasets/foo/tasks/bar/logs'%(self.port,),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        self.assertIn('logs', ret)
-        self.assertEqual(len(ret['logs']), 1)
-        self.assertEqual(ret['logs'][0]['log_id'], log_id)
-        self.assertEqual(data['data'], ret['logs'][0]['data'])
-        
-        data = {'data':fake_data(200000), 'dataset_id': 'foo', 'task_id': 'bar'}
-        r = yield client.fetch('http://localhost:%d/logs'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        log_id = ret['result']
-
-        with self.assertRaises(Exception):
-            conn.Object('iceprod2-logs', log_id).get()
-
-        r = yield client.fetch('http://localhost:%d/datasets/foo/tasks/bar/logs?order=asc'%(self.port,),
-                headers={'Authorization': 'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        self.assertIn('logs', ret)
-        self.assertEqual(len(ret['logs']), 2)
-        self.assertEqual(ret['logs'][1]['log_id'], log_id)
-        self.assertEqual(data['data'], ret['logs'][1]['data'])
+    with pytest.raises(Exception):
+        s3conn.get_object(Bucket='iceprod2-logs', Key=log_id)
 
 
-def load_tests(loader, tests, pattern):
-    suite = unittest.TestSuite()
-    alltests = glob_tests(loader.getTestCaseNames(rest_logs_test))
-    suite.addTests(loader.loadTestsFromNames(alltests,rest_logs_test))
-    alltests = glob_tests(loader.getTestCaseNames(rest_logs_test2))
-    suite.addTests(loader.loadTestsFromNames(alltests,rest_logs_test2))
-    return suite
+async def test_rest_logs_s3_get(s3conn, server):
+    client = server(roles=['system'])
+
+    data = {'data': fake_data(2000000)}
+    ret = await client.request('POST', '/logs', data)
+    log_id = ret['result']
+
+    body = s3conn.get_object(Bucket='iceprod2-logs', Key=log_id)['Body'].read().decode('utf-8')
+    assert body == data['data']
+
+    ret = await client.request('GET', f'/logs/{log_id}')
+    assert ret['data'] == data['data']
+
+    data = {'data': fake_data(200000)}
+    ret = await client.request('POST', '/logs', data)
+    log_id = ret['result']
+
+    with pytest.raises(Exception):
+        s3conn.get_object(Bucket='iceprod2-logs', Key=log_id)
+
+    ret = await client.request('GET', f'/logs/{log_id}')
+    assert ret['data'] == data['data']
+
+
+async def test_rest_logs_s3_dataset_post(s3conn, server):
+    client = server(roles=['user'], groups=['users'])
+
+    data = {
+        'description': 'blah',
+        'tasks_per_job': 4,
+        'jobs_submitted': 1,
+        'tasks_submitted': 4,
+        'group': 'users',
+    }
+    ret = await client.request('POST', '/datasets', data)
+    dataset_id = ret['result'].split('/')[-1]
+
+    data = {'data': fake_data(2000000)}
+    ret = await client.request('POST', f'/datasets/{dataset_id}/logs', data)
+    log_id = ret['result']
+
+    body = s3conn.get_object(Bucket='iceprod2-logs', Key=log_id)['Body'].read().decode('utf-8')
+    assert body == data['data']
+
+    ret = await client.request('GET', f'/datasets/{dataset_id}/logs/{log_id}')
+    assert ret['data'] == data['data']
+
+    data = {'data': fake_data(200000)}
+    ret = await client.request('POST', f'/datasets/{dataset_id}/logs', data)
+    log_id = ret['result']
+
+    with pytest.raises(Exception):
+        s3conn.get_object(Bucket='iceprod2-logs', Key=log_id)
+
+    ret = await client.request('GET', f'/datasets/{dataset_id}/logs/{log_id}')
+    assert ret['data'] == data['data']
+
+
+async def test_rest_logs_s3_dataset_task_get(server):
+    client = server(roles=['user'], groups=['users'])
+
+    data = {
+        'description': 'blah',
+        'tasks_per_job': 4,
+        'jobs_submitted': 1,
+        'tasks_submitted': 4,
+        'group': 'users',
+    }
+    ret = await client.request('POST', '/datasets', data)
+    dataset_id = ret['result'].split('/')[-1]
+
+    data = {'data': fake_data(2000000), 'dataset_id': dataset_id, 'task_id': 'bar', 'name': 'stdout'}
+    ret = await client.request('POST', f'/datasets/{dataset_id}/logs', data)
+    log_id = ret['result']
+
+    ret = await client.request('GET', f'/datasets/{dataset_id}/tasks/bar/logs')
+    assert 'logs' in ret
+    assert len(ret['logs']) == 1
+    assert ret['logs'][0]['log_id'] == log_id
+    assert data['data'] == ret['logs'][0]['data']
+
+    data = {'data': fake_data(200000), 'dataset_id': dataset_id, 'task_id': 'bar', 'name': 'stdout'}
+    ret = await client.request('POST', f'/datasets/{dataset_id}/logs', data)
+    log_id = ret['result']
+
+    with pytest.raises(Exception):
+        s3conn.get_object(Bucket='iceprod2-logs', Key=log_id)
+
+    ret = await client.request('GET', f'/datasets/{dataset_id}/tasks/bar/logs', {'order': 'asc'})
+    assert 'logs' in ret
+    assert len(ret['logs']) == 2
+    assert ret['logs'][1]['log_id'] == log_id
+    assert data['data'] == ret['logs'][1]['data']
+

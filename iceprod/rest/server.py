@@ -19,6 +19,7 @@ from tornado.escape import json_decode
 from tornado.web import RequestHandler, HTTPError
 from wipac_dev_tools import from_environment
 
+from ..s3 import boto3, S3, FakeS3
 from ..server.module import FakeStatsClient, StatsClientIgnoreErrors
 from .base_handler import IceProdRestConfig
 
@@ -35,7 +36,7 @@ class Health(RequestHandler):
 
 
 class Server:
-    def __init__(self):
+    def __init__(self, s3_override=None):
         default_config = {
             'HOST': 'localhost',
             'PORT': 8080,
@@ -45,6 +46,9 @@ class Server:
             'DB_URL': 'mongodb://localhost/iceprod',
             'STATSD_ADDRESS': '',
             'STATSD_PREFIX': 'rest_api',
+            'S3_ADDRESS': '',
+            'S3_ACCESS_KEY': '',
+            'S3_SECRET_KEY': '',
             'CI_TESTING': '',
         }
         config = from_environment(default_config)
@@ -81,6 +85,14 @@ class Server:
             except Exception:
                 logger.warning('failed to connect to statsd: %r', config['STATSD_ADDRESS'], exc_info=True)
 
+        if s3_override:
+            logging.warning('S3 in testing mode')
+            s3conn = FakeS3(s3_override)
+        elif boto3 and config['S3_ACCESS_KEY'] and config['S3_SECRET_KEY']:
+            s3conn = S3(config['S3_ADDRESS'], config['S3_ACCESS_KEY'], config['S3_SECRET_KEY'])
+        else:
+            logger.warning('S3 is not available!')
+
         logging_url = config["DB_URL"].split('@')[-1] if '@' in config["DB_URL"] else config["DB_URL"]
         logging.info(f'DB: {logging_url}')
         db_url, db_name = config['DB_URL'].rsplit('/', 1)
@@ -89,7 +101,7 @@ class Server:
         self.db = db[db_name]
         self.indexes = defaultdict(dict)
 
-        kwargs = IceProdRestConfig(rest_config, statsd=statsd, database=self.db)
+        kwargs = IceProdRestConfig(rest_config, statsd=statsd, database=self.db, s3conn=s3conn)
 
         server = RestServer(debug=config['DEBUG'])
 
