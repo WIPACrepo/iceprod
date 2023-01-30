@@ -71,10 +71,11 @@ jobs:
           pip install .[tests]
       - name: Run Tests
         run: |
-          python -m pytest --tb=short --cov=iceprod --cov-report= tests
+          coverage run --source iceprod,bin --parallel-mode --branch -m pytest --tb=short tests
       - name: Coverage report
         if: always() && steps.dependencies.outcome != 'failure'
         run: |
+          coverage combine
           coverage report -m --fail-under=50
 
   release:
