@@ -1,12 +1,10 @@
 import logging
 import json
-import uuid
-import time
 
 import tornado.web
 
 from ..base_handler import APIBase
-from ..auth import authorization, attr_auth, ROLES, GROUPS
+from ..auth import authorization, ROLES, GROUPS
 
 logger = logging.getLogger('rest.auth')
 
@@ -25,11 +23,14 @@ def setup(handler_cfg):
         'routes': [
             ('/roles', MultiRoleHandler, handler_cfg),
             ('/groups', MultiGroupHandler, handler_cfg),
-            ('/users', MultiUserHandler, handler_cfg),
+            ('/auths', AuthHandler, handler_cfg),
         ],
         'indexes': {
             'users': {
                 'username_index': {'keys': 'username', 'unique': True},
+            },
+            'attr_auths': {
+                'dataset_id_index': {'keys': 'dataset_id', 'unique': False},
             }
         }
     }
@@ -65,48 +66,44 @@ class MultiGroupHandler(APIBase):
         self.write({'results': list(GROUPS)})
 
 
-class MultiUserHandler(APIBase):
+class AuthHandler(APIBase):
     """
-    Handle multi-user requests.
+    Handle authorization requests.
     """
-    @authorization(roles=['admin', 'system'])
-    async def get(self):
-        """
-        Get a list of users.
-
-        Body args:
-            username: username to filter by
-
-        Returns:
-            dict: {'results': list of users}
-        """
-        filters = {}
-        try:
-            data = json.loads(self.request.body)
-            if 'username' in data:
-                filters['username'] = data['username']
-        except Exception:
-            pass
-
-        ret = await self.db.users.find(filters, projection={'_id':False}).to_list(length=1000)
-        self.write({'results':ret})
-
     @authorization(roles=['admin', 'system'])
     async def post(self):
         """
-        Add a user.
+        Do a remote auth lookup.  Raises a 403 on auth failure.
 
-        Body should contain all necessary fields for a user.
+        Body Args:
+            name (str): name of attr
+            value (str): value of attr
+            role (str): the role to check (read | write)
+            username (str): username
+            groups (list): groups for user
+
+        Returns:
+            dict: {result: ok}
         """
         data = json.loads(self.request.body)
-        if 'username' not in data:
-            raise tornado.web.HTTPError(400, reason='missing username')
-        ret = await self.db.users.find_one({'username': data['username']})
-        if ret:
-            raise tornado.web.HTTPError(400, reason='duplicate username')
 
-        if 'priority' not in data:
-            data['priority'] = 0.5
-        ret = await self.db.users.insert_one(data)
-        self.set_status(201)
+        # validate first
+        req_fields = {
+            'name': str,
+            'value': str,
+            'role': str,
+            'username': str,
+            'groups': list,
+        }
+        for k in req_fields:
+            if k not in data:
+                raise tornado.web.HTTPError(400, reason='missing key: '+k)
+            if not isinstance(data[k], req_fields[k]):
+                r = 'key "{}" should be of type {}'.format(k, req_fields[k].__name__)
+                raise tornado.web.HTTPError(400, reason=r)
+
+        # check auth
+        self.current_user = data['username']
+        self.auth_groups = data['groups']
+        await self.check_attr_auth(data['name'], data['value'], data['role'])
         self.write({})

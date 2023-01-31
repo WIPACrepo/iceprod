@@ -163,7 +163,8 @@ class MultiDatasetHandler(APIBase):
         await self.set_attr_auth('dataset_id', data['dataset_id'],
             read_groups=list({'admin', data['group'], 'users'}),
             write_groups=write_groups,
-            write_users=data['username'],
+            read_users=[data['username']],
+            write_users=[data['username']],
         )
 
         # return success

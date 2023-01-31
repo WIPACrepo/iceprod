@@ -11,13 +11,14 @@ import uuid
 import pymongo
 import pymongo.errors
 import motor.motor_asyncio
+import requests.exceptions
 from rest_tools.client import RestClient, ClientCredentialsAuth
 from rest_tools.server import RestServer
 from tornado.web import HTTPError
 from tornado.web import RequestHandler as TornadoRequestHandler
 from wipac_dev_tools import from_environment
 
-from ..rest.auth import authorization
+from ..rest.auth import authorization, attr_auth
 from ..rest.base_handler import IceProdRestConfig, APIBase
 from ..server.module import FakeStatsClient, StatsClientIgnoreErrors
 from ..server.util import nowstr, datetime2str
@@ -27,9 +28,10 @@ logger = logging.getLogger('server')
 
 
 class BaseHandler(APIBase):
-    def initialize(self, materialization_service=None, **kwargs):
+    def initialize(self, materialization_service=None, rest_client=None, **kwargs):
         super().initialize(**kwargs)
         self.materialization_service = materialization_service
+        self.rest_client = rest_client
 
     async def new_request(self, args):
         # validate first
@@ -62,13 +64,40 @@ class BaseHandler(APIBase):
         # insert
         await self.db.materialization.insert_one(data)
         return data
+        
+    async def check_attr_auth(self, arg, val, role):
+        """
+        Based on the request groups or username, check if they are allowed to
+        access `arg`:`role`.
+
+        Runs a remote query to the IceProd API.
+
+        Args:
+            arg (str): attribute name to check
+            val (str): attribute value
+            role (str): the role to check for (read|write)
+        """
+        args = {
+            'name': arg,
+            'value': val,
+            'role': role,
+            'username': self.current_user,
+            'groups': self.auth_groups,
+        }
+        try:
+            await self.rest_client.request('POST', '/auths', args)
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 403:
+                raise HTTPError(403, 'auth failed')
+            else:
+                raise HTTPError(500, 'auth could not be completed')
 
 
 class StatusHandler(BaseHandler):
     """
     Handle materialization status requests.
     """
-    @authorization(roles=['admin', 'user', 'system'])
+    @authorization(roles=['admin', 'system'])
     async def get(self, materialization_id):
         """
         Get materialization status.
@@ -120,6 +149,7 @@ class RequestDatasetHandler(BaseHandler):
     Handle dataset materialization requests.
     """
     @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='write')
     async def post(self, dataset_id):
         """
         Create dataset materialization request.
@@ -143,6 +173,35 @@ class RequestDatasetHandler(BaseHandler):
         # return success
         self.set_status(201)
         self.write({'result': data['materialization_id']})
+
+
+class DatasetStatusHandler(BaseHandler):
+    """
+    Handle dataset materialization request statuses.
+    """
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='read')
+    async def get(self, dataset_id):
+        """
+        Get latest materialization status for a dataset, if any.
+
+        If dataset_id is invalid, returns http code 404.
+
+        Args:
+            dataset_id (str): dataset id to check
+
+        Returns:
+            dict: materialization metadata
+        """
+        ret = await self.db.materialization.find_one(
+            {'dataset_id': dataset_id},
+            projection={'_id':False},
+            sort=[('modify_timestamp', pymongo.DESCENDING)],
+        )
+        if not ret:
+            self.send_error(404, reason="Materialization request not found")
+        else:
+            self.write(ret)
 
 
 class HealthHandler(BaseHandler):
@@ -288,12 +347,14 @@ class Server:
 
         kwargs = IceProdRestConfig(rest_config, statsd=statsd, database=self.db)
         kwargs['materialization_service'] = self.materialization_service
+        kwargs['rest_client'] = rest_client
 
         server = RestServer(debug=config['DEBUG'])
 
         server.add_route(r'/status/(?P<materialization_id>\w+)', StatusHandler, kwargs)
         server.add_route('/', RequestHandler, kwargs)
         server.add_route(r'/request/(?P<dataset_id>\w+)', RequestDatasetHandler, kwargs)
+        server.add_route(r'/request/(?P<dataset_id>\w+)/status', DatasetStatusHandler, kwargs)
         server.add_route('/healthz', HealthHandler, kwargs)
         server.add_route(r'/(.*)', Error)
 

@@ -2,6 +2,7 @@ import logging
 from functools import wraps
 import os
 
+import pymongo
 from rest_tools.server import catch_error, token_attribute_role_mapping_auth
 from tornado.web import HTTPError
 
@@ -36,17 +37,31 @@ class AttrAuthMixin:
             read_users (list): user names of users that should have read access
             write_users (list): user names of users that should have write access
         """
+        if not read_groups:
+            read_groups = []
+        if not write_groups:
+            write_groups = []
+        if not read_users:
+            read_users = []
+        if not write_users:
+            write_users = []
         if any(g for g in read_groups if g not in GROUPS):
             raise Exception(f'Invalid read groups: {read_groups}')
         if any(g for g in write_groups if g not in GROUPS):
             raise Exception(f'Invalid write groups: {write_groups}')
 
-        await self.db.attr_auths.find_one_and_update(
+        new_attrs = {'read_groups': read_groups, 'write_groups': write_groups,
+                     'read_users': read_users, 'write_users': write_users}
+
+        logger.debug('setting attr auths: arg=%r, val=%r, auths=%r', arg, val, new_attrs)
+        ret = await self.db.attr_auths.find_one_and_update(
             {arg: val},
-            {'$set': {'read_groups': read_groups, 'write_groups': write_groups,
-                      'read_users': read_users, 'write_users': write_users}},
+            {'$set': new_attrs},
             upsert=True,
+            return_document=pymongo.ReturnDocument.AFTER,
         )
+        if ret is None:
+            raise RuntimeError('failed to insert auth')
 
     async def check_attr_auth(self, arg, val, role):
         """
@@ -59,15 +74,19 @@ class AttrAuthMixin:
             val (str): attribute value
             role (str): the role to check for (read|write)
         """
-        ret = await self.db.attr_auths.find_one({arg: val}, projection={'_id':False})
-        if not ret:
-            raise HTTPError(403, reason='attr not found')
-        elif role+'_groups' not in ret:
-            raise HTTPError(403, reason='role not found')
-        elif not (set(ret.get(role+'_groups', []))&set(self.auth_groups) or
-            self.current_user in ret.get(role+'_users', [])):
-            logger.debug('arg=%r, val=%r, role=%r, auth_groups=%r, current_user=%r, auths=%r', arg, val, role, self.auth_groups, self.current_user, ret.get(role+'_users', []))
-            raise HTTPError(403, reason='authorization failed')
+        try:
+            ret = await self.db.attr_auths.find_one({arg: val}, projection={'_id':False})
+            if not ret:
+                raise HTTPError(403, reason='attr not found')
+            elif role+'_groups' not in ret:
+                raise HTTPError(403, reason='role not found')
+            elif not (set(ret.get(role+'_groups', []))&set(self.auth_groups) or
+                self.current_user in ret.get(role+'_users', [])):
+                logger.debug('arg=%r, val=%r, role=%r, auth_groups=%r, current_user=%r, auths=%r', arg, val, role, self.auth_groups, self.current_user, ret.get(role+'_users', []))
+                raise HTTPError(403, reason='authorization failed')
+        except (TypeError, ValueError, KeyError) as e:
+            logger.debug('arg=%r, val=%r, role=%r, auths=%r', arg, val, role, ret, exc_info=True)
+            raise HTTPError(403, reason='failed auth')
 
 
 #: match token roles and groups

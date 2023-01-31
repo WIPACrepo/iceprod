@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import socket
 from unittest.mock import AsyncMock, MagicMock
 
@@ -18,6 +19,7 @@ from iceprod.materialization.server import Server
 async def server(monkeypatch, port, mongo_url, mongo_clear):
     monkeypatch.setenv('CI_TESTING', '1')
     monkeypatch.setenv('PORT', str(port))
+    monkeypatch.setenv('ICEPROD_API_ADDRESS', 'http://test.iceprod')
 
     s = Server()
     # don't call start, because we don't want materialization to run
@@ -85,11 +87,28 @@ async def test_materialization_server_request_bad_role(server):
         await client.request('POST', '/', {})
     assert exc_info.value.response.status_code == 403
 
-async def test_materialization_server_request_dataset(server):
+async def test_materialization_server_request_dataset(server, requests_mock):
+    requests_mock.register_uri('GET', re.compile('localhost'), real_http=True)
+    requests_mock.register_uri('POST', re.compile('localhost'), real_http=True)
+
+    requests_mock.post('http://test.iceprod/auths', status_code=200, json={})
+
     client = server(roles=['user'])
     ret = await client.request('POST', '/request/d123', {})
-    assert 'result' in ret
+    ret = await client.request('POST', '/request/d123', {})
+    mat_id = ret['result']
+    
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('GET', f'/status/{ret["result"]}')
+    assert exc_info.value.response.status_code == 403
 
-    ret = await client.request('GET', f'/status/{ret["result"]}')
+    ret = await client.request('GET', '/request/d123/status')
     assert ret['status'] == 'waiting'
     assert ret['dataset_id'] == 'd123'
+    assert ret['materialization_id'] == mat_id
+
+    # test no auth
+    requests_mock.post('http://test.iceprod/auths', status_code=403, json={})
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('GET', '/request/d123/status')
+    assert exc_info.value.response.status_code == 403
