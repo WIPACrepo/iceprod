@@ -101,6 +101,10 @@ class init_test(unittest.TestCase):
                     logger.info('len: %d. salt: %s',length,s)
                     raise Exception('salt is not correct length')
 
+    def test_100_get_pkg_binary(self):
+        ret = iceprod.server.get_pkg_binary('iceprod', 'loader.sh')
+        assert ret != None
+
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
     alltests = glob_tests(loader.getTestCaseNames(init_test))
