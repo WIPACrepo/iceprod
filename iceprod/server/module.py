@@ -15,7 +15,7 @@ try:
 except ImportError:
     boto3 = None
 
-from rest_tools.client import RestClient
+from rest_tools.client import ClientCredentialsAuth
 
 logger = logging.getLogger('module')
 
@@ -150,13 +150,19 @@ class module(object):
                 logger.warning('failed to connect to s3: %r',
                             self.cfg['s3'], exc_info=True)
         if ('rest_api' in self.cfg and 'url' in self.cfg['rest_api']
-            and 'auth_key' in self.cfg['rest_api']):
+            and 'oauth_url' in self.cfg['rest_api']
+            and 'oauth_client_id' in self.cfg['rest_api']
+            and 'oauth_client_secret' in self.cfg['rest_api']):
             try:
-                self.rest_client = RestClient(self.cfg['rest_api']['url'],
-                                              self.cfg['rest_api']['auth_key'])
+                self.rest_client = ClientCredentialsAuth(
+                    address=self.cfg['rest_api']['url'],
+                    token_url=self.cfg['rest_api']['oauth_url'],
+                    client_id=self.cfg['rest_api']['oauth_client_id'],
+                    client_secret=self.cfg['rest_api']['oauth_client_secret'],
+                )
             except Exception:
                 logger.warning('failed to connect to rest api: %r',
-                               self.cfg['rest_api'], exc_info=True)
+                               self.cfg['rest_api'].get('url',''), exc_info=True)
 
     def stop(self):
         logger.warning('stopping module %s', self.__class__.__name__)

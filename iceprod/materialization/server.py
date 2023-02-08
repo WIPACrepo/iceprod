@@ -18,10 +18,10 @@ from tornado.web import HTTPError
 from tornado.web import RequestHandler as TornadoRequestHandler
 from wipac_dev_tools import from_environment
 
-from ..rest.auth import authorization, attr_auth
-from ..rest.base_handler import IceProdRestConfig, APIBase
-from ..server.module import FakeStatsClient, StatsClientIgnoreErrors
-from ..server.util import nowstr, datetime2str
+from iceprod.rest.auth import authorization, attr_auth
+from iceprod.rest.base_handler import IceProdRestConfig, APIBase
+from iceprod.server.module import FakeStatsClient, StatsClientIgnoreErrors
+from iceprod.server.util import nowstr, datetime2str
 from .service import MaterializationService
 
 logger = logging.getLogger('server')

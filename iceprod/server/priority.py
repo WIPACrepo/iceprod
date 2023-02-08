@@ -1,8 +1,11 @@
 """
 Functions used to calculate dataset and task priority.
 """
+import argparse
 import asyncio
 import logging
+
+from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 
 logger = logging.getLogger('priority')
 
@@ -269,28 +272,25 @@ class Priority:
         return priority
 
 def main():
-    import argparse
     parser = argparse.ArgumentParser(description='get priority')
-    parser.add_argument('-t', '--token', help='auth token')
+    add_auth_to_argparse(parser)
     parser.add_argument('--debug', default=False, type=bool, help='debug enabled/disabled')
     parser.add_argument('dataset_id', help='dataset_id')
     parser.add_argument('--task_id', help='task_id (optional)')
 
     args = parser.parse_args()
-    args = vars(args)
 
     logformat='%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
-    logging.basicConfig(format=logformat, level=logging.DEBUG if args['debug'] else logging.INFO)
+    logging.basicConfig(format=logformat, level=logging.DEBUG if args.debug else logging.INFO)
 
-    from rest_tools.client import RestClient
-    rpc = RestClient('https://iceprod2-api.icecube.wisc.edu', args['token'])
+    rest_client = create_rest_client(args)
 
-    p = Priority(rpc)
-    if args['task_id']:
-        ret = asyncio.run(p.get_task_prio(args['dataset_id'], args['task_id']))
+    p = Priority(rest_client)
+    if args.task_id:
+        ret = asyncio.run(p.get_task_prio(args.dataset_id, args.task_id))
         print('task priority', ret)
     else:
-        ret = asyncio.run(p.get_dataset_prio(args['dataset_id']))
+        ret = asyncio.run(p.get_dataset_prio(args.dataset_id))
         print('dataset priority', ret)
 
 if __name__ == '__main__':

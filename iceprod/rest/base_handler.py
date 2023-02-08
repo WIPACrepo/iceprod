@@ -1,7 +1,6 @@
 import logging
 
-from rest_tools.server import RestHandler
-from rest_tools.server import RestHandlerSetup
+from rest_tools.server import RestHandlerSetup, RestHandler
 
 import iceprod
 from iceprod.server.module import FakeStatsClient
@@ -19,7 +18,7 @@ def IceProdRestConfig(config=None, statsd=None, database=None, s3conn=None):
     return ret
 
 
-class APIBase(RestHandler, AttrAuthMixin):
+class APIBase(AttrAuthMixin, RestHandler):
     """Default REST handler"""
     def initialize(self, database=None, statsd=None, s3=None, **kwargs):
         super().initialize(**kwargs)

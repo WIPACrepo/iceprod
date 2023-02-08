@@ -49,6 +49,7 @@ class Server:
             'S3_ADDRESS': '',
             'S3_ACCESS_KEY': '',
             'S3_SECRET_KEY': '',
+            'MAX_BODY_SIZE': 10**9,
             'CI_TESTING': '',
         }
         config = from_environment(default_config)
@@ -103,7 +104,7 @@ class Server:
 
         kwargs = IceProdRestConfig(rest_config, statsd=statsd, database=self.db, s3conn=s3conn)
 
-        server = RestServer(debug=config['DEBUG'])
+        server = RestServer(debug=config['DEBUG'], max_body_size=config['MAX_BODY_SIZE'])
 
         handler_path = str(Path(__file__).parent / 'handlers')
         for _, name, _ in pkgutil.iter_modules([handler_path]):

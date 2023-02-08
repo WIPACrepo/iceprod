@@ -17,6 +17,7 @@ from collections import namedtuple, Counter, defaultdict
 import socket
 import asyncio
 
+from cachetools.func import ttl_cache
 import tornado.gen
 from tornado.concurrent import run_on_executor
 
@@ -377,6 +378,10 @@ class BaseGrid(object):
             except Exception:
                 logger.error('error submitting pilots', exc_info=True)
 
+    @ttl_cache(ttl=600)
+    def get_token(self):
+        return self.rest_client.make_access_token()
+
     async def setup_submit_directory(self,task):
         """Set up submit directory"""
         # create directory for task
@@ -400,17 +405,11 @@ class BaseGrid(object):
                 raise
 
         # get passkey
-        expiration = self.queue_cfg['max_task_queued_time']
-        expiration += self.queue_cfg['max_task_processing_time']
-        expiration += self.queue_cfg['max_task_reset_time']
-
-        data = {
-            'type': 'system',
-            'role': 'pilot',
-            'exp': expiration,
-        }
-        passkey = await self.rest_client.request('POST', '/create_token', data)
-        passkey = passkey['result']
+        # expiration = self.queue_cfg['max_task_queued_time']
+        # expiration += self.queue_cfg['max_task_processing_time']
+        # expiration += self.queue_cfg['max_task_reset_time']
+        # TODO: take expiration into account
+        passkey = self.get_token()
 
         # write cfg
         cfg, filelist = self.write_cfg(task)

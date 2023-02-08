@@ -9,7 +9,6 @@ This is the external website users will see when interacting with IceProd.
 It has been broken down into several sub-handlers for easier maintenance.
 
 """
-from __future__ import absolute_import, division, print_function
 
 import sys
 import os
@@ -38,7 +37,9 @@ import tornado.gen
 import tornado.concurrent
 import concurrent.futures
 from rest_tools.client import RestClient
-from rest_tools.server import RestServer
+from rest_tools.server import (catch_error, RestServer, RestHandlerSetup, RestHandler,
+                               OpenIDLoginHandler, OpenIDWebHandlerMixin, KeycloakUsernameMixin)
+from rest_tools import telemetry as wtt
 
 import iceprod
 from iceprod.server import GlobalID, get_pkgdata_filename
@@ -48,6 +49,7 @@ import iceprod.core.functions
 from iceprod.server import documentation
 
 logger = logging.getLogger('website')
+
 
 class website(module.module):
     """
@@ -107,19 +109,43 @@ class website(module.module):
                         self.cfg['rest_api']['port'],
                 )
 
-            handler_args = {
-                'cfg':self.cfg,
-                'modules':self.modules,
-                'statsd':self.statsd,
-                'rest_api':rest_address,
-                'debug':True,
+            rest_cfg = {
+                'debug': False,
+                'server_header': 'IceProd/' + iceprod.__version__,
             }
+            if os.environ.get('CI_TESTING', None):
+                logger.warning('CI TESTING MODE!')
+                rest_cfg['auth'] = {
+                    'secret': 'secret'
+                }
+            else:
+                if not ('rest_api' in self.cfg and 'oauth_url' in self.cfg['rest_api']
+                        and 'oauth_client_id' in self.cfg['rest_api']
+                        and 'oauth_client_secret' in self.cfg['rest_api']):
+                    raise Exception('must set oauth_ params in cfg[rest_api]')
+                rest_cfg['auth'] = {
+                    'audience': self.cfg['rest_api'].get('oauth_audience', 'iceprod'),
+                    'openid_url': self.cfg['rest_api']['oauth_url'],
+                }
+            handler_args = RestHandlerSetup(rest_cfg)
+
             login_handler_args = handler_args.copy()
-            login_handler_args['module_rest_client'] = self.rest_client
+            if not os.environ.get('CI_TESTING', None):
+                login_handler_args['oauth_client_id'] = self.cfg['rest_api']['oauth_client_id']
+                login_handler_args['oauth_client_secret'] = self.cfg['rest_api']['oauth_client_secret']
+                login_handler_args['oauth_client_scope'] = 'offline_access posix profile'
+
+            handler_args.update({
+                'cfg': self.cfg,
+                'modules': self.modules,
+                'statsd': self.statsd,
+                'rest_api': rest_address,
+            })
             if 'debug' in self.cfg['webserver'] and self.cfg['webserver']['debug']:
                 handler_args['debug'] = True
             if 'cookie_secret' in self.cfg['webserver']:
                 cookie_secret = self.cfg['webserver']['cookie_secret']
+                logger.info('using supplied cookie secret %r', cookie_secret)
             else:
                 cookie_secret = ''.join(hex(random.randint(0,15))[-1] for _ in range(64))
                 self.cfg['webserver']['cookie_secret'] = cookie_secret
@@ -139,7 +165,7 @@ class website(module.module):
                 (r"/dataset/(\w+)/log/(\w+)", Log, handler_args),
                 #(r"/groups", GroupsHandler, handler_args),
                 (r'/profile', Profile, handler_args),
-                (r"/login", Login, login_handler_args),
+                (r"/login", OpenIDLoginHandler, login_handler_args),
                 (r"/logout", Logout, handler_args),
                 (r"/.*", Other, handler_args),
             ]
@@ -163,78 +189,26 @@ class website(module.module):
             raise
 
 
-def catch_error(method):
-    """Decorator to catch and handle errors on handlers"""
-    @wraps(method)
-    def wrapper(self, *args, **kwargs):
-        try:
-            return method(self, *args, **kwargs)
-        except Exception as e:
-            self.statsd.incr(self.__class__.__name__+'.error')
-            logger.warning('Error in website handler', exc_info=True)
-            message = 'Error generating page for '+self.__class__.__name__
-            if self.debug:
-                message = message + '\n' + str(e)
-            self.send_error(500, message=message)
-    return wrapper
-
-def authenticated_secure(method):
-    """Decorate methods with this to require that the user be logged in
-    to a secure area.
-
-    If the user is not logged in, they will be redirected to the configured
-    `login url <RequestHandler.get_login_url>`.
-
-    If you configure a login url with a query parameter, Tornado will
-    assume you know what you're doing and use it as-is.  If not, it
-    will add a `next` parameter so the login page knows where to send
-    you once you're logged in.
-    """
-    @wraps(method)
-    def wrapper(self, *args, **kwargs):
-        if not self.current_user_secure:
-            if self.request.method in ("GET", "HEAD"):
-                url = self.get_login_url()
-                if "?" not in url:
-                    if urlparse.urlsplit(url).scheme:
-                        # if login url is absolute, make next absolute too
-                        next_url = self.request.full_url()
-                    else:
-                        next_url = self.request.uri
-                    url += "?" + urlencode({'next':next_url,'secure':True})
-                self.redirect(url)
-                return
-            raise HTTPError(403)
-        return method(self, *args, **kwargs)
-    return wrapper
-
-
-class PublicHandler(tornado.web.RequestHandler):
+class PublicHandler(KeycloakUsernameMixin, OpenIDWebHandlerMixin, RestHandler):
     """Default Handler"""
-    def initialize(self, cfg, modules, debug=False, statsd=None,
-                   rest_api=None):
+    def initialize(self, cfg=None, modules=None, statsd=None, rest_api=None, **kwargs):
         """
         Get some params from the website module
 
         :param cfg: the global config
         :param modules: modules handle
-        :param debug: debug flag (optional)
+        :param statsd: statsd client
         :param rest_api: the rest api url
         """
+        super().initialize(**kwargs)
         self.cfg = cfg
         self.modules = modules
-        self.debug = debug
         self.statsd = statsd
         self.rest_api = rest_api
-        self.current_user = None
-        self.current_user_secure = None
         self.rest_client = None
 
-    def set_default_headers(self):
-        self._headers['Server'] = 'IceProd/' + iceprod.__version__
-
     def get_template_namespace(self):
-        namespace = super(PublicHandler,self).get_template_namespace()
+        namespace = super().get_template_namespace()
         namespace['version'] = iceprod.__version__
         namespace['section'] = self.request.uri.lstrip('/').split('?')[0].split('/')[0]
         namespace['master'] = ('master' in self.cfg and
@@ -250,26 +224,17 @@ class PublicHandler(tornado.web.RequestHandler):
         namespace['json_encode'] = json_encode
         return namespace
 
-    def prepare(self):
+    def get_current_user(self):
+        ret = super().get_current_user()
         try:
-            data = self.get_secure_cookie("user", max_age_days=1)
-            if not data:
-                raise Exception('user cookie is missing/empty')
-            data = json_decode(data)
-            user_secure = self.get_secure_cookie("user_secure", max_age_days=0.01)
-            if user_secure is not None and data['username'] != user_secure:
-                raise Exception('mismatch between user_secure and username')
-            self.current_user = data['username']
-            self.current_user_data = data
-            self.current_user_secure = (user_secure is not None)
-            self.rest_client = RestClient(self.rest_api, data['token'], timeout=50)
+            if ret:
+                self.rest_client = RestClient(self.rest_api, self.auth_key, timeout=50, retries=1)
         except Exception:
-            logger.info('error getting current user', exc_info=True)
-            self.clear_cookie("user")
-            self.clear_cookie("user_secure")
-            self.current_user = None
+            pass
+        return ret
 
-    def write_error(self,status_code=500,**kwargs):
+    @wtt.evented(all_args=True)
+    def write_error(self, status_code=500, **kwargs):
         """Write out custom error page."""
         self.set_status(status_code)
         if status_code >= 500:
@@ -284,12 +249,14 @@ class PublicHandler(tornado.web.RequestHandler):
             self.write('<br />'.join(self._reason.split('\n')))
         self.finish()
 
+
 class Default(PublicHandler):
     """Handle / urls"""
     @catch_error
     async def get(self):
         self.statsd.incr('default')
         self.render('main.html')
+
 
 class Submit(PublicHandler):
     """Handle /submit urls"""
@@ -299,13 +266,10 @@ class Submit(PublicHandler):
         logger.info('here')
         self.statsd.incr('submit')
         url = self.request.uri[1:]
-        ret = await self.rest_client.request('POST','/create_token')
-        token = ret['result']
+        token = self.auth_key
         groups = []
-        logger.info('user_data: %r', self.current_user_data)
-        logger.info('token: %r', token)
-        if self.current_user_data and 'groups' in self.current_user_data:
-            groups = self.current_user_data['groups']
+        if self.auth_data and 'groups' in self.auth_data:
+            groups = self.auth_data['groups']
         default_config = {
           "categories": [],
           "dataset": 0,
@@ -328,6 +292,7 @@ class Submit(PublicHandler):
         }
         self.render('submit.html',**render_args)
 
+
 class Config(PublicHandler):
     """Handle /config urls"""
     @catch_error
@@ -341,8 +306,7 @@ class Config(PublicHandler):
         dataset = await self.rest_client.request('GET','/datasets/{}'.format(dataset_id))
         edit = self.get_argument('edit',default=False)
         if edit:
-            ret = await self.rest_client.request('POST','/create_token')
-            passkey = ret['result']
+            passkey = self.auth_key
         else:
             passkey = None
         config = await self.rest_client.request('GET','/config/{}'.format(dataset_id))
@@ -354,6 +318,7 @@ class Config(PublicHandler):
             'description':dataset.get('description',''),
         }
         self.render('submit.html',**render_args)
+
 
 class DatasetBrowse(PublicHandler):
     """Handle /dataset urls"""
@@ -381,6 +346,7 @@ class DatasetBrowse(PublicHandler):
         self.render('dataset_browse.html',datasets=datasets,
                     filter_options=filter_options,
                     filter_results=filter_results)
+
 
 class Dataset(PublicHandler):
     """Handle /dataset urls"""
@@ -433,6 +399,7 @@ class Dataset(PublicHandler):
         self.render('dataset_detail.html',dataset_id=dataset_id,dataset_num=dataset_num,
                     dataset=dataset,jobs=jobs,tasks=tasks,task_info=task_info,task_stats=task_stats,passkey=passkey)
 
+
 class TaskBrowse(PublicHandler):
     """Handle /task urls"""
     @catch_error
@@ -453,6 +420,7 @@ class TaskBrowse(PublicHandler):
         else:
             status = await self.rest_client.request('GET','/datasets/{}/task_counts/status'.format(dataset_id))
             self.render('tasks.html',status=status)
+
 
 class Task(PublicHandler):
     """Handle /task urls"""
@@ -488,6 +456,7 @@ class Task(PublicHandler):
             log_by_name = {}
         self.render('task_detail.html', dataset=dataset, task=task_details, task_stats=task_stats, logs=log_by_name, passkey=passkey)
 
+
 class JobBrowse(PublicHandler):
     """Handle /job urls"""
     @catch_error
@@ -507,6 +476,7 @@ class JobBrowse(PublicHandler):
                     continue
         self.render('job_browse.html', jobs=jobs, passkey=passkey)
 
+
 class Job(PublicHandler):
     """Handle /job urls"""
     @catch_error
@@ -525,13 +495,15 @@ class Job(PublicHandler):
         job['tasks'].sort(key=lambda x:x['task_index'])
         self.render('job_detail.html', dataset=dataset, job=job, passkey=passkey)
 
+
 class Documentation(PublicHandler):
     @catch_error
-    def get(self, url):
+    async def get(self, url):
         self.statsd.incr('documentation')
         doc_path = get_pkgdata_filename('iceprod.server','data/docs')
         self.write(documentation.load_doc(doc_path+'/' + url))
         self.flush()
+
 
 class Log(PublicHandler):
     @catch_error
@@ -546,21 +518,24 @@ class Log(PublicHandler):
         self.write(html)
         self.flush()
 
+
 class Help(PublicHandler):
     """Help Page"""
     @catch_error
-    def get(self):
+    async def get(self):
         self.statsd.incr('help')
         self.render('help.html')
+
 
 class Other(PublicHandler):
     """Handle any other urls - this is basically all 404"""
     @catch_error
-    def get(self):
+    async def get(self):
         self.statsd.incr('other')
         path = self.request.path
         self.set_status(404)
         self.render('404.html',path=path)
+
 
 class Profile(PublicHandler):
     """Handle user profile page"""
@@ -568,60 +543,22 @@ class Profile(PublicHandler):
     @tornado.web.authenticated
     async def get(self):
         self.statsd.incr('profile')
-        ret = await self.rest_client.request('POST','/create_token')
-        token = ret['result']
+        token = self.auth_key
         groups = []
-        logger.info('user_data: %r', self.current_user_data)
+        logger.info('user_data: %r', self.auth_data)
         logger.info('token: %r', token)
-        if self.current_user_data and 'groups' in self.current_user_data:
-            groups = self.current_user_data['groups']
+        if self.auth_data and 'groups' in self.auth_data:
+            groups = self.auth_data['groups']
         self.render('profile.html', username=self.current_user, groups=groups,
                     token=token)
 
-class Login(PublicHandler):
-    """Handle the login url"""
-    def initialize(self, module_rest_client, *args, **kwargs):
-        """
-        Get some params from the website module
-
-        :param module_rest_client: a REST Client
-        """
-        super(Login, self).initialize(*args, **kwargs)
-        self.module_rest_client = module_rest_client
-
-    @catch_error
-    def get(self):
-        self.statsd.incr('login')
-        n = self.get_argument('next', default='/')
-        secure = self.get_argument('secure', default=None)
-        self.clear_cookie("user")
-        self.clear_cookie("user_secure")
-        self.render('login.html', status=None, next=n)
-
-    @catch_error
-    async def post(self):
-        n = self.get_argument('next', default='/')
-        secure = self.get_argument('secure', default=None)
-        username = self.get_argument('username')
-        password = self.get_argument('password')
-        self.clear_cookie("user")
-        self.clear_cookie("user_secure")
-        try:
-            data = await self.module_rest_client.request('POST','/ldap',{'username':username,'password':password})
-            cookie = json_encode(data)
-            if secure:
-                self.set_secure_cookie('user_secure', username, expires_days=0.01)
-            self.set_secure_cookie('user', cookie, expires_days=1)
-            self.redirect(n)
-        except Exception:
-            logger.info('failed', exc_info=True)
-            self.render('login.html', status='failed', next=n)
 
 class Logout(PublicHandler):
     @catch_error
-    def get(self):
+    async def get(self):
         self.statsd.incr('logout')
-        self.clear_cookie("user")
-        self.clear_cookie("user_secure")
+        self.clear_cookie("access_token")
+        self.clear_cookie("refresh_token")
+        self.clear_cookie("identity")
         self.current_user = None
         self.render('logout.html', status=None)

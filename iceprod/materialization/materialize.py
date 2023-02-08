@@ -2,8 +2,7 @@ import argparse
 import asyncio
 import logging
 
-from rest_tools.client import RestClient
-
+from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 from iceprod.server.util import task_statuses
 from iceprod.core.parser import ExpParser
 from iceprod.core.resources import Resources
@@ -254,8 +253,7 @@ class Materialize:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Materialize a dataset')
     parser.add_argument('dataset_id')
-    parser.add_argument('--rest_url', default='https://iceprod2-api.icecube.wisc.edu')
-    parser.add_argument('-t', '--rest_token', default=None)
+    add_auth_to_argparse(parser)
     parser.add_argument('--set_status', default=None,help='initial task status')
     parser.add_argument('-n','--num', default=100,type=int,help='number of jobs to materialize')
     parser.add_argument('--job_index', type=int, help='specific job index to buffer')
@@ -267,7 +265,7 @@ if __name__ == '__main__':
         raise Exception('no token for rest api')
     logging.basicConfig(level=(logging.DEBUG if args.debug else logging.INFO))
 
-    rest_client = RestClient(args.rest_url, args.rest_token)
+    rest_client = create_rest_client(args)
     materialize = Materialize(rest_client)
     if args.job_index is not None:
         logging.warning('manually buffering a job for dataset %s job %d', args.dataset_id, args.job_index)
