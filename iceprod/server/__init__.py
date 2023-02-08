@@ -9,6 +9,7 @@ import sys
 import logging
 from pkgutil import get_loader
 import importlib
+import subprocess
 
 
 def find_module_recursive(name, path=None):
@@ -198,15 +199,6 @@ def get_pkg_binary(package, binary):
     except Exception:
         pass
 
-    # try going from current location
-    try:
-        f = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        filepath = os.path.join(f,'bin',binary)
-        if os.path.exists(filepath):
-            return filepath
-    except Exception:
-        pass
-
     # try going up from sys.argv[0]
     try:
         f = os.path.abspath(sys.argv[0])
@@ -223,7 +215,9 @@ def get_pkg_binary(package, binary):
 
     # try just asking the shell
     try:
-        return subprocess.check_output(["which",binary]).strip('\n')
+        filepath = subprocess.check_output(["which",binary]).decode('utf-8').strip('\n')
+        if os.path.exists(filepath):
+            return filepath
     except Exception:
         pass
     return None
