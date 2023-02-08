@@ -198,6 +198,15 @@ def get_pkg_binary(package, binary):
     except Exception:
         pass
 
+    # try going from current location
+    try:
+        f = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        filepath = os.path.join(f,'bin',binary)
+        if os.path.exists(filepath):
+            return filepath
+    except Exception:
+        pass
+
     # try going up from sys.argv[0]
     try:
         f = os.path.abspath(sys.argv[0])
