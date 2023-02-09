@@ -484,7 +484,7 @@ class Documentation(PublicHandler):
         self.statsd.incr('documentation')
         doc_path = get_pkgdata_filename('iceprod.server','data/docs')
         full_path = os.path.join(doc_path, url)
-        if not fulL_path.startswith(doc_path):
+        if not full_path.startswith(doc_path):
             self.set_status(404)
             self.render('404.html', path='bad docs path')
             return
