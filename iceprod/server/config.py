@@ -120,6 +120,7 @@ class IceProdConfig(dict):
 
     def defaults(self):
         """Set default values if unset."""
+        filename = None
         try:
             self.loading = True
             filename = get_pkgdata_filename('iceprod.server',
@@ -151,7 +152,7 @@ class IceProdConfig(dict):
                 logger.warning('Generating new site_id: %s',self['site_id'])
             logger.info('with defaults: %s',self)
         except Exception:
-            logger.warning('failed to load from default config file %s',
+            logger.warning('failed to load from default config file %r',
                            filename, exc_info=True)
         finally:
             self.loading = False
