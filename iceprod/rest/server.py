@@ -80,6 +80,7 @@ class Server:
             except Exception:
                 logger.warning('failed to connect to statsd: %r', config['STATSD_ADDRESS'], exc_info=True)
 
+        s3conn = None
         if s3_override:
             logging.warning('S3 in testing mode')
             s3conn = FakeS3(s3_override)
