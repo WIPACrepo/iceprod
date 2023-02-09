@@ -10,8 +10,7 @@ logger = logging.getLogger('plugin-condor_file_transfer')
 
 
 class condor_file_transfer(condor_direct):
-
-    ### Plugin Overrides ###
+    """Plugin Overrides for HTCondor with file transfer for osdf://"""
 
     batch_site = 'CondorFileTransfer'
     batch_resources = {}
@@ -22,7 +21,7 @@ class condor_file_transfer(condor_direct):
         out_files = []
 
         def escape_remap(x):
-            return x.replace('=','\=').replace(';','\;')
+            return x.replace('=','\\=').replace(';','\\;')
 
         def process_data(cfg):
             new_data = []

@@ -17,6 +17,7 @@ from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 
 logger = logging.getLogger('reset_tasks')
 
+
 def reset_tasks(module):
     """
     Initial entrypoint.
@@ -102,7 +103,7 @@ def main():
 
     args = parser.parse_args()
 
-    logformat='%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
+    logformat = '%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
     logging.basicConfig(format=logformat, level=getattr(logging, args.log_level.upper()))
 
     rest_client = create_rest_client(args)

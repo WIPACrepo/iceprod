@@ -1,6 +1,5 @@
 import logging
 from functools import wraps
-import os
 
 import pymongo
 from rest_tools.server import catch_error, token_attribute_role_mapping_auth
@@ -80,17 +79,18 @@ class AttrAuthMixin:
                 raise HTTPError(403, reason='attr not found')
             elif role+'_groups' not in ret:
                 raise HTTPError(403, reason='role not found')
-            elif not (set(ret.get(role+'_groups', []))&set(self.auth_groups) or
-                self.current_user in ret.get(role+'_users', [])):
+            elif not (set(ret.get(role+'_groups', [])) & set(self.auth_groups) or
+                      self.current_user in ret.get(role+'_users', [])):
                 logger.debug('arg=%r, val=%r, role=%r, auth_groups=%r, current_user=%r, auths=%r', arg, val, role, self.auth_groups, self.current_user, ret.get(role+'_users', []))
                 raise HTTPError(403, reason='authorization failed')
-        except (TypeError, ValueError, KeyError) as e:
+        except (TypeError, ValueError, KeyError):
             logger.debug('arg=%r, val=%r, role=%r, auths=%r', arg, val, role, ret, exc_info=True)
             raise HTTPError(403, reason='failed auth')
 
 
 #: match token roles and groups
 authorization = token_attribute_role_mapping_auth(role_attrs=ROLES, group_attrs=GROUPS)
+
 
 def attr_auth(**_auth):
     """

@@ -1,21 +1,14 @@
 """
 Server for queue management
 """
-import asyncio
 from collections import defaultdict
-from datetime import datetime
 import importlib
 import logging
-import os
 from pathlib import Path
 import pkgutil
-import string
 
-import pymongo.errors
 import motor.motor_asyncio
-from rest_tools.server import RestServer, RestHandler
-from rest_tools.server import keycloak_role_auth, catch_error
-from tornado.escape import json_decode
+from rest_tools.server import RestServer
 from tornado.web import RequestHandler, HTTPError
 from wipac_dev_tools import from_environment
 
@@ -23,6 +16,7 @@ from ..s3 import boto3, S3, FakeS3
 from ..server.module import FakeStatsClient, StatsClientIgnoreErrors
 from .base_handler import IceProdRestConfig
 
+logger = logging.getLogger('rest-server')
 
 
 class Error(RequestHandler):

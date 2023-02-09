@@ -9,8 +9,6 @@ import math
 from copy import deepcopy
 
 import subprocess
-import tempfile
-import shutil
 from collections import deque, defaultdict, OrderedDict
 import logging
 
@@ -135,7 +133,7 @@ class Resources:
         self.total = {
             'cpu':get_cpus(),
             'gpu':get_gpus(),
-            'memory':get_memory()-0.1, # trim auto-totals to prevent going over
+            'memory':get_memory()-0.1,  # trim auto-totals to prevent going over
             'disk':get_disk()-0.1,
             'time':get_time()-0.1,
         }
@@ -146,7 +144,7 @@ class Resources:
                         and not isinstance(raw[r], (float,int)))
                     or (isinstance(self.defaults[r], list)
                         and not isinstance(raw[r], list))
-                    ):
+                    ):  # noqa: E125
                     logging.error('bad type of supplied resource: %s=%r', r, raw[r])
                 else:
                     v = raw[r]
@@ -166,7 +164,7 @@ class Resources:
         self.available = deepcopy(self.total)
 
         #: resources allocated for each task
-        self.claimed = {} # dict of task_id:{resource}
+        self.claimed = {}  # dict of task_id:{resource}
 
         #: maximum usage for each claim
         # dict of task_id:{resource:{max,cnt,avg}}
@@ -256,19 +254,19 @@ class Resources:
                 if isinstance(self.available[r], (int,float)):
                     if val > self.available[r]:
                         raise Exception('not enough {} resources available: {} > {}'.format(
-                                r, val, self.available[r]))
+                                        r, val, self.available[r]))
                     elif val > 0:
                         claim[r] = val
                 elif isinstance(self.defaults[r], list):
                     if val > len(self.available[r]):
                         raise Exception('not enough {} resources available: {} > {}'.format(
-                                r, val, len(self.available[r])))
+                                        r, val, len(self.available[r])))
                     elif val > 0:
                         claim[r] = self.available[r][:val]
 
         # now that the claim is valid, remove resources from available
         for r in claim:
-            if r in ('time',): # unclaimable
+            if r in ('time',):  # unclaimable
                 continue
             if isinstance(claim[r], (int,float)):
                 self.available[r] -= claim[r]
@@ -299,7 +297,7 @@ class Resources:
         claim = self.claimed[task_id]
         for r in claim['resources']:
             v = claim['resources'][r]
-            if r in ('time',): # unclaimable
+            if r in ('time',):  # unclaimable
                 continue
             if isinstance(v, (int,float)):
                 self.available[r] += v
@@ -462,7 +460,7 @@ class Resources:
         gpu = 0
         if lookups['gpu']:
             for gpu_id in set(self.claimed[task_id]['resources']['gpu']):
-                gpu_id = ''.join(filter(lambda x: x.isdigit() or x==',', gpu_id))
+                gpu_id = ''.join(filter(lambda x: x.isdigit() or x == ',', gpu_id))
                 val = get_gpu_utilization_by_id(gpu_id)['utilization']
                 if val != -1:
                     gpu += val
@@ -470,7 +468,7 @@ class Resources:
             'cpu': cpu/100.0 if cpu else None,
             'memory': mem/1000000000.0 if mem else None,
             'disk': du(tmpdir)/1000000000.0 if lookups['disk'] else None,
-            'gpu':  gpu/100.0 if lookups['gpu'] else None,
+            'gpu': gpu/100.0 if lookups['gpu'] else None,
             'time': (now-task['create_time'])/3600,
         }
         logging.debug('used_resources: %r', used_resources)
@@ -547,6 +545,7 @@ class Resources:
             env['GPU_DEVICE_ORDINAL'] = '9999'
             env['ROCR_VISIBLE_DEVICES'] = '9999'
 
+
 def get_cpus():
     """Detect the number of available (allocated) cpus."""
     ret = None
@@ -572,6 +571,7 @@ def get_cpus():
         return Resources.defaults['cpu']
     else:
         return ret
+
 
 def get_gpus():
     """Detect the available (allocated) gpus.
@@ -630,6 +630,7 @@ def get_gpus():
     else:
         return ret
 
+
 def get_memory():
     """Detect the amount of available (allocated) memory (in GB)."""
     ret = None
@@ -656,6 +657,7 @@ def get_memory():
     else:
         return ret
 
+
 def get_disk():
     """Detect the amount of available (allocated) disk (in GB)."""
     ret = None
@@ -681,6 +683,7 @@ def get_disk():
         return Resources.defaults['disk']
     else:
         return ret
+
 
 def get_time():
     """Detect the time allocated for the job."""
@@ -720,6 +723,7 @@ def get_time():
     else:
         return ret
 
+
 def get_gpu_utilization_by_id(gpu_id):
     """Get gpu utilization based on gpu id"""
     ret = {'utilization':-1,'power':-1}
@@ -737,6 +741,7 @@ def get_gpu_utilization_by_id(gpu_id):
     except Exception:
         logging.info('nvidia-smi failed for gpu %s', gpu_id, exc_info=True)
     return ret
+
 
 def get_site():
     """Detect the site we are running on."""
@@ -782,6 +787,7 @@ def get_site():
     else:
         return ret
 
+
 def du(path):
     """
     Perform a "du" on a path, getting the disk usage.
@@ -806,6 +812,7 @@ def du(path):
     logging.info('du of %s finished: %r', path, total)
     return total
 
+
 def group_hasher(resources):
     """
     Hash a set of resources into a binned group.
@@ -823,10 +830,11 @@ def group_hasher(resources):
     if 'disk' in resources:
         ret ^= int(math.log(resources['disk'])*math.e)*1000000
     if 'time' in resources:
-        ret ^= int(resources['time'])*1000000000
+        ret ^= int(resources['time']) * 1000000000
     if 'os' in resources:
-        ret ^= hash(resources['os'])&(0b11111111<<32)
+        ret ^= hash(resources['os']) & (0b11111111 << 32)
     return ret
+
 
 def sanitized_requirements(reqs, use_defaults=False):
     """
@@ -857,6 +865,7 @@ def sanitized_requirements(reqs, use_defaults=False):
                 ret[k] = Resources.defaults[k]
     return ret
 
+
 def rounded_requirements(reqs, bins=None):
     """
     Round requirements into bins for submit systems to have
@@ -870,10 +879,11 @@ def rounded_requirements(reqs, bins=None):
     """
     if not bins:
         bins = RESOURCE_BINS
+
     def round_up(num, bins):
         """Round up to the next bin value"""
         for b in bins:
-            if num <= b*1.05: # within 5%
+            if num <= b*1.05:  # within 5%
                 return b
         raise Exception('num too big for bin sizes')
     ret = {}

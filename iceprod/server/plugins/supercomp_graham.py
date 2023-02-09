@@ -2,12 +2,8 @@
 A supercomputer plugin, specificially for
 `Graham <https://docs.computecanada.ca/wiki/Graham>`_.
 """
-from __future__ import print_function
 import os
-import sys
 import stat
-import random
-import math
 import logging
 import getpass
 import socket
@@ -16,18 +12,16 @@ import subprocess
 import asyncio
 from functools import partial
 
-import tornado.gen
 from tornado.concurrent import run_on_executor
 
 import iceprod
-from iceprod.core import dataclasses
 from iceprod.core import constants
-from iceprod.core import functions
 from iceprod.core.exe_json import ServerComms
 from iceprod.server import grid
 from iceprod.server.globus import SiteGlobusProxy
 
 logger = logging.getLogger('plugin-graham')
+
 
 async def subprocess_ssh(host, args):
     """A subprocess call over ssh"""
@@ -42,12 +36,14 @@ async def subprocess_ssh(host, args):
         raise Exception(f'command failed, return code {p.returncode}')
     return p
 
+
 async def check_call(*args, **kwargs):
     logger.info('subprocess_check_call: %r', args)
     p = await asyncio.create_subprocess_exec(*args, **kwargs)
     if p.returncode:
         raise Exception(f'command failed, return code {p.returncode}')
     return p
+
 
 async def check_output(*args, **kwargs):
     kwargs['stdout'] = subprocess.PIPE
@@ -59,13 +55,14 @@ async def check_output(*args, **kwargs):
         raise Exception(f'command failed, return code {p.returncode}')
     return out.decode('utf-8')
 
+
 class MyServerComms(ServerComms):
     def __init__(self, rest_client):
         self.rest = rest_client
 
-class supercomp_graham(grid.BaseGrid):
 
-    ### Plugin Overrides ###
+class supercomp_graham(grid.BaseGrid):
+    """Plugin Overrides for Graham SuperComputer"""
 
     # graham gpu queue requirements
     resources = {
@@ -159,7 +156,7 @@ class supercomp_graham(grid.BaseGrid):
                             reason = 'task error: return code '+line.rsplit(':',1)[-1]
 
         comms = MyServerComms(self.rest_client)
-        await comms.task_kill(task_id, dataset_id=dataset_id, 
+        await comms.task_kill(task_id, dataset_id=dataset_id,
                               reason=reason, resources=resources)
 
     async def finish_task(self, task_id, dataset_id, submit_dir):
@@ -190,7 +187,7 @@ class supercomp_graham(grid.BaseGrid):
                             break
 
         comms = MyServerComms(self.rest_client)
-        await comms.finish_task(task_id, dataset_id=dataset_id, 
+        await comms.finish_task(task_id, dataset_id=dataset_id,
                                 resources=resources)
 
     async def check_and_clean(self):
@@ -233,7 +230,7 @@ class supercomp_graham(grid.BaseGrid):
                     pilots_to_delete.add(pilot_id)
 
             for fut in asyncio.as_completed(pilot_futures):
-                pilot,e = await fut # upload is done
+                pilot,e = await fut  # upload is done
 
                 try:
                     task_id = pilot['tasks'][0]
@@ -269,11 +266,6 @@ class supercomp_graham(grid.BaseGrid):
         self.x509proxy.update_proxy()
         resources = self.resources.copy()
 
-        debug = False
-        if ('queue' in self.cfg and 'debug' in self.cfg['queue']
-            and self.cfg['queue']['debug']):
-            debug = True
-
         dataset_cache = {}
         task_futures = []
         for _ in range(self.get_queue_num()):
@@ -281,7 +273,7 @@ class supercomp_graham(grid.BaseGrid):
             args = {'requirements': supercomp_graham.resources.copy()}
             args['requirements']['os'] = 'RHEL_7_x86_64'
             try:
-                task = await self.rest_client.request('POST', f'/task_actions/process', args)
+                task = await self.rest_client.request('POST', '/task_actions/process', args)
             except Exception:
                 logger.info('no more tasks to queue')
                 break
@@ -328,13 +320,14 @@ class supercomp_graham(grid.BaseGrid):
             resources_available = {'time': resources['time']}
             for k in ('cpu','gpu','memory','disk'):
                 resources_available[k] = resources[k]-task['requirements'][k]
-            pilot = {'resources': resources,
-                     'resources_available': resources_available,
-                     'resources_claimed': task['requirements'],
-                     'tasks': [task['task_id']],
-                     'queue_host': host,
-                     'queue_version': iceprod.__version__,
-                     'version': iceprod.__version__,
+            pilot = {
+                'resources': resources,
+                'resources_available': resources_available,
+                'resources_claimed': task['requirements'],
+                'tasks': [task['task_id']],
+                'queue_host': host,
+                'queue_version': iceprod.__version__,
+                'version': iceprod.__version__,
             }
             ret = await self.rest_client.request('POST', '/pilots', pilot)
             pilot['pilot_id'] = ret['result']
@@ -392,13 +385,13 @@ class supercomp_graham(grid.BaseGrid):
             dict: task info
         """
         try:
-            #proxy = self.x509proxy.get_proxy()
+            # proxy = self.x509proxy.get_proxy()
             await subprocess_ssh(
-                    'gra-dtn1.computecanada.ca',
-                    ['python', '-m', 'iceprod.core.data_transfer', '-f',
-                     os.path.join(task['submit_dir'],'task.cfg'),
-                     '-d', task['submit_dir'],
-                     'input']
+                'gra-dtn1.computecanada.ca',
+                ['python', '-m', 'iceprod.core.data_transfer', '-f',
+                 os.path.join(task['submit_dir'],'task.cfg'),
+                 '-d', task['submit_dir'],
+                 'input']
             )
         except Exception as e:
             return (task, e)
@@ -414,13 +407,13 @@ class supercomp_graham(grid.BaseGrid):
             dict: task info
         """
         try:
-            #proxy = self.x509proxy.get_proxy()
+            # proxy = self.x509proxy.get_proxy()
             await subprocess_ssh(
-                    'gra-dtn1.computecanada.ca',
-                    ['python', '-m', 'iceprod.core.data_transfer', '-f',
-                     os.path.join(task['submit_dir'],'task.cfg'),
-                     '-d', task['submit_dir'],
-                     'output']
+                'gra-dtn1.computecanada.ca',
+                ['python', '-m', 'iceprod.core.data_transfer', '-f',
+                 os.path.join(task['submit_dir'],'task.cfg'),
+                 '-d', task['submit_dir'],
+                 'output']
             )
         except Exception as e:
             return (task,e)
@@ -456,8 +449,8 @@ class supercomp_graham(grid.BaseGrid):
                 if 'memory' in task['requirements'] and task['requirements']['memory']:
                     p('#SBATCH --mem={}M'.format(int(task['requirements']['memory']*1000)))
                 # we don't currently use the local disk, just the global scratch
-                #if 'disk' in task['requirements'] and task['requirements']['disk']:
-                #    p('#SBATCH --tmp={}M'.format(int(task['requirements']['disk']*1000)))
+                # if 'disk' in task['requirements'] and task['requirements']['disk']:
+                #     p('#SBATCH --tmp={}M'.format(int(task['requirements']['disk']*1000)))
                 if 'time' in task['requirements'] and task['requirements']['time']:
                     p('#SBATCH --time={}'.format(int(task['requirements']['time']*60)))
 
@@ -500,7 +493,7 @@ class supercomp_graham(grid.BaseGrid):
     async def get_grid_status(self):
         """
         Get all tasks running on the queue system.
-        
+
         Returns:
             dict: {grid_queue_id: {status, submit_dir} }
         """
@@ -527,7 +520,7 @@ class supercomp_graham(grid.BaseGrid):
     async def get_grid_completions(self):
         """
         Get completions in the last 4 days.
-        
+
         Returns:
             dict: {grid_queue_id: {status, submit_dir} }
         """

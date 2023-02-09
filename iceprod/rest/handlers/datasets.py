@@ -41,7 +41,6 @@ def setup(handler_cfg):
     }
 
 
-
 class MultiDatasetHandler(APIBase):
     """
     Handle multi-dataset requests.
@@ -160,7 +159,9 @@ class MultiDatasetHandler(APIBase):
 
         # set auth rules
         write_groups = list({'admin', data['group']}) if data['group'] != 'users' else ['admin']
-        await self.set_attr_auth('dataset_id', data['dataset_id'],
+        await self.set_attr_auth(
+            'dataset_id',
+            data['dataset_id'],
             read_groups=list({'admin', data['group'], 'users'}),
             write_groups=write_groups,
             read_users=[data['username']],
@@ -172,6 +173,7 @@ class MultiDatasetHandler(APIBase):
         self.set_header('Location', f'/datasets/{dataset_id}')
         self.write({'result': f'/datasets/{dataset_id}'})
         self.finish()
+
 
 class DatasetHandler(APIBase):
     """
@@ -189,13 +191,13 @@ class DatasetHandler(APIBase):
         Returns:
             dict: dataset metadata
         """
-        ret = await self.db.datasets.find_one({'dataset_id':dataset_id},
-                projection={'_id':False})
+        ret = await self.db.datasets.find_one({'dataset_id':dataset_id}, projection={'_id':False})
         if not ret:
             self.send_error(404, reason="Dataset not found")
         else:
             self.write(ret)
             self.finish()
+
 
 class DatasetDescriptionHandler(APIBase):
     """
@@ -219,14 +221,17 @@ class DatasetDescriptionHandler(APIBase):
         elif not isinstance(data['description'],str):
             raise tornado.web.HTTPError(400, reason='bad description')
 
-        ret = await self.db.datasets.find_one_and_update({'dataset_id':dataset_id},
-                {'$set':{'description': data['description']}},
-                projection=['_id'])
+        ret = await self.db.datasets.find_one_and_update(
+            {'dataset_id':dataset_id},
+            {'$set':{'description': data['description']}},
+            projection=['_id']
+        )
         if not ret:
             self.send_error(404, reason="Dataset not found")
         else:
             self.write({})
             self.finish()
+
 
 class DatasetStatusHandler(APIBase):
     """
@@ -250,14 +255,17 @@ class DatasetStatusHandler(APIBase):
         elif data['status'] not in dataset_statuses:
             raise tornado.web.HTTPError(400, reason='bad status')
 
-        ret = await self.db.datasets.find_one_and_update({'dataset_id':dataset_id},
-                {'$set':{'status': data['status']}},
-                projection=['_id'])
+        ret = await self.db.datasets.find_one_and_update(
+            {'dataset_id':dataset_id},
+            {'$set':{'status': data['status']}},
+            projection=['_id']
+        )
         if not ret:
             self.send_error(404, reason="Dataset not found")
         else:
             self.write({})
             self.finish()
+
 
 class DatasetPriorityHandler(APIBase):
     """
@@ -281,14 +289,17 @@ class DatasetPriorityHandler(APIBase):
         elif not isinstance(data['priority'], (int, float)):
             raise tornado.web.HTTPError(400, reason='priority is not a number')
 
-        ret = await self.db.datasets.find_one_and_update({'dataset_id':dataset_id},
-                {'$set':{'priority': data['priority']}},
-                projection=['_id'])
+        ret = await self.db.datasets.find_one_and_update(
+            {'dataset_id':dataset_id},
+            {'$set':{'priority': data['priority']}},
+            projection=['_id']
+        )
         if not ret:
             self.send_error(404, reason="Dataset not found")
         else:
             self.write({})
             self.finish()
+
 
 class DatasetJobsSubmittedHandler(APIBase):
     """
@@ -329,17 +340,20 @@ class DatasetJobsSubmittedHandler(APIBase):
         if 'tasks_per_job' not in ret or ret['tasks_per_job'] <= 0:
             raise tornado.web.HTTPError(400, reason='tasks_per_job not valid')
 
-        ret = await self.db.datasets.find_one_and_update({'dataset_id':dataset_id},
-                {'$set':{
-                    'jobs_submitted': jobs_submitted,
-                    'tasks_submitted': int(jobs_submitted*ret['tasks_per_job']),
-                }},
-                projection=['_id'])
+        ret = await self.db.datasets.find_one_and_update(
+            {'dataset_id':dataset_id},
+            {'$set':{
+                'jobs_submitted': jobs_submitted,
+                'tasks_submitted': int(jobs_submitted*ret['tasks_per_job']),
+            }},
+            projection=['_id']
+        )
         if not ret:
             self.send_error(404, reason="Dataset not found")
         else:
             self.write({})
             self.finish()
+
 
 class DatasetSummariesStatusHandler(APIBase):
     """
@@ -353,8 +367,7 @@ class DatasetSummariesStatusHandler(APIBase):
         Returns:
             dict: {<status>: [<dataset_id>,]}
         """
-        cursor = self.db.datasets.find(
-                projection={'_id':False,'status':True,'dataset_id':True})
+        cursor = self.db.datasets.find(projection={'_id':False,'status':True,'dataset_id':True})
         ret = defaultdict(list)
         async for row in cursor:
             ret[row['status']].append(row['dataset_id'])

@@ -10,7 +10,6 @@ Periodic delay: 5 minutes
 
 import argparse
 import asyncio
-from collections import defaultdict
 import logging
 import os
 import random
@@ -19,12 +18,12 @@ import time
 from tornado.ioloop import IOLoop
 
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
-from iceprod.server import GlobalID
 
 logger = logging.getLogger('queue_tasks')
 
 NTASKS = 250000
 NTASKS_PER_CYCLE = 1000
+
 
 def queue_tasks(module):
     """
@@ -35,6 +34,7 @@ def queue_tasks(module):
     """
     # initial delay
     IOLoop.current().call_later(random.randint(5,60), run, module.rest_client)
+
 
 async def run(rest_client, ntasks=NTASKS, ntasks_per_cycle=NTASKS_PER_CYCLE, debug=False):
     """
@@ -69,6 +69,7 @@ async def run(rest_client, ntasks=NTASKS, ntasks_per_cycle=NTASKS_PER_CYCLE, deb
             queue_tasks = []
             tasks_queue_pending = 0
             deps_futures = set()
+
             async def check_deps(task):
                 for dep in task.get('depends', []):
                     ret = await rest_client.request('GET', f'/tasks/{dep}')
@@ -143,12 +144,13 @@ def main():
 
     args = parser.parse_args()
 
-    logformat='%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
+    logformat = '%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
     logging.basicConfig(format=logformat, level=getattr(logging, args.log_level.upper()))
 
     rest_client = create_rest_client(args)
 
     asyncio.run(run(rest_client, ntasks=args.ntasks, ntasks_per_cycle=args.ntasks_per_cycle, debug=args.debug))
+
 
 if __name__ == '__main__':
     main()

@@ -64,7 +64,7 @@ class BaseHandler(APIBase):
         # insert
         await self.db.materialization.insert_one(data)
         return data
-        
+
     async def check_attr_auth(self, arg, val, role):
         """
         Based on the request groups or username, check if they are allowed to

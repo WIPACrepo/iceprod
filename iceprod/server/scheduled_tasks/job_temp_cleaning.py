@@ -26,6 +26,7 @@ from iceprod.server.util import str2datetime
 
 logger = logging.getLogger('job_temp_cleaning')
 
+
 def job_temp_cleaning(module):
     """
     Initial entrypoint.
@@ -35,7 +36,8 @@ def job_temp_cleaning(module):
     """
     # initial delay
     IOLoop.current().call_later(random.randint(10,60*10), run, module.rest_client,
-            module.cfg, module.executor)
+                                module.cfg, module.executor)
+
 
 async def run(rest_client, cfg, executor, dataset=None, debug=False):
     """
@@ -88,8 +90,7 @@ async def run(rest_client, cfg, executor, dataset=None, debug=False):
             logger.debug('jobs: %r', jobs)
             job_indexes = set()
             for job in jobs.values():
-                if job['status'] == 'complete' or (job['status'] != 'processing'
-                    and now - str2datetime(job['status_changed']) > suspend_time):
+                if job['status'] == 'complete' or (job['status'] != 'processing' and now - str2datetime(job['status_changed']) > suspend_time):
                     job_indexes.add(job['job_index'])
             logger.debug('job_indexes: %r', job_indexes)
             for job in job_dirs:
@@ -132,7 +133,7 @@ def main():
 
     args = parser.parse_args()
 
-    logformat='%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
+    logformat = '%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
     logging.basicConfig(format=logformat, level=getattr(logging, args.log_level.upper()))
 
     rest_client = create_rest_client(args)
@@ -146,6 +147,7 @@ def main():
     pool = ThreadPoolExecutor()
 
     asyncio.run(run(rest_client, cfg, pool, dataset=args.dataset, debug=args.debug))
+
 
 if __name__ == '__main__':
     main()

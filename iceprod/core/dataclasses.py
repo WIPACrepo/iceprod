@@ -17,7 +17,6 @@ dataclass, to be used in javascript.
 
 from __future__ import absolute_import, division, print_function
 
-import os
 import time
 
 from numbers import Number, Integral
@@ -35,6 +34,7 @@ _plurals = {
     'Dependence': 'Depends'
 }
 
+
 class Job(dict):
     """
     Holds all information about a running job.
@@ -51,14 +51,15 @@ class Job(dict):
     :ivar categories: []
     """
     plural = 'Jobs'
+
     def __init__(self,*args,**kwargs):
-        self['version']     = 3
-        self['options']     = {}
-        self['steering']    = None
-        self['tasks']       = []
-        self['difplus']     = None
+        self['version'] = 3
+        self['options'] = {}
+        self['steering'] = None
+        self['tasks'] = []
+        self['difplus'] = None
         self['description'] = ''
-        self['categories']  = []
+        self['categories'] = []
         super(Job,self).__init__(*args,**kwargs)
 
     def output(self):
@@ -80,7 +81,7 @@ class Job(dict):
 
     def convert(self):
         if (self['steering'] is not None and
-            not isinstance(self['steering'],Steering)):
+                not isinstance(self['steering'],Steering)):
             tmp = Steering(self['steering'])
             tmp.convert()
             self['steering'] = tmp
@@ -90,29 +91,31 @@ class Job(dict):
                 tmp.convert()
                 self['tasks'][i] = tmp
         if (self['difplus'] is not None and
-            not isinstance(self['difplus'],DifPlus)):
+                not isinstance(self['difplus'],DifPlus)):
             tmp = DifPlus(self['difplus'])
             tmp.convert()
             self['difplus'] = tmp
 
     def valid(self):
         try:
-            return (isinstance(self['version'],Number) and
-                    self['version'] >= 3 and
-                    isinstance(self['options'],dict) and
-                    (self['steering'] is None or (
-                        isinstance(self['steering'],Steering) and
-                        self['steering'].valid())) and
-                    isinstance(self['tasks'],list) and
-                    all(isinstance(t,Task) and t.valid() for t in self['tasks']) and
-                    (self['difplus'] is None or (
-                        isinstance(self['difplus'],DifPlus) and
-                        self['difplus'].valid())) and
-                    isinstance(self['description'],String) and
-                    isinstance(self['categories'],list)
-                   )
+            return (
+                isinstance(self['version'],Number)
+                and self['version'] >= 3
+                and isinstance(self['options'],dict)
+                and (self['steering'] is None or (
+                    isinstance(self['steering'],Steering)
+                    and self['steering'].valid()))
+                and isinstance(self['tasks'],list)
+                and all(isinstance(t,Task) and t.valid() for t in self['tasks'])
+                and (self['difplus'] is None or (
+                    isinstance(self['difplus'],DifPlus)
+                    and self['difplus'].valid()))
+                and isinstance(self['description'],String)
+                and isinstance(self['categories'],list)
+            )
         except Exception:
             return False
+
 
 class Steering(dict):
     """
@@ -125,12 +128,13 @@ class Steering(dict):
     :ivar data: []
     """
     plural = 'Steering'
+
     def __init__(self,*args,**kwargs):
         self['parameters'] = {}
-        self['batchsys']   = None
-        self['system']     = {}
-        self['resources']  = []
-        self['data']       = []
+        self['batchsys'] = None
+        self['system'] = {}
+        self['resources'] = []
+        self['data'] = []
         super(Steering,self).__init__(*args,**kwargs)
 
     def output(self):
@@ -150,7 +154,7 @@ class Steering(dict):
 
     def convert(self):
         if (self['batchsys'] is not None and
-            not isinstance(self['batchsys'],Batchsys)):
+                not isinstance(self['batchsys'],Batchsys)):
             tmp = Batchsys(self['batchsys'])
             tmp.convert()
             self['batchsys'] = tmp
@@ -167,18 +171,20 @@ class Steering(dict):
 
     def valid(self):
         try:
-            return (isinstance(self['parameters'],dict) and
-                    (self['batchsys'] is None or (
-                        isinstance(self['batchsys'],Batchsys) and
-                        self['batchsys'].valid())) and
-                    isinstance(self['system'],dict) and
-                    isinstance(self['resources'],list) and
-                    all(isinstance(r,Resource) and r.valid() for r in self['resources']) and
-                    isinstance(self['data'],list) and
-                    all(isinstance(d,Data) and d.valid() for d in self['data'])
-                   )
+            return (
+                isinstance(self['parameters'],dict)
+                and (self['batchsys'] is None or (
+                    isinstance(self['batchsys'],Batchsys)
+                    and self['batchsys'].valid()))
+                and isinstance(self['system'],dict)
+                and isinstance(self['resources'],list)
+                and all(isinstance(r,Resource) and r.valid() for r in self['resources'])
+                and isinstance(self['data'],list)
+                and all(isinstance(d,Data) and d.valid() for d in self['data'])
+            )
         except Exception:
             return False
+
 
 class Batchsys(dict):
     """
@@ -201,6 +207,7 @@ class Batchsys(dict):
         except Exception:
             return False
 
+
 class _TaskCommon(dict):
     """
     Holds common attributes used by task, tray, module.
@@ -212,10 +219,10 @@ class _TaskCommon(dict):
     :ivar parameters: {}
     """
     def __init__(self,*args,**kwargs):
-        self['name']       = ''
-        self['resources']  = []
-        self['data']       = []
-        self['classes']    = []
+        self['name'] = ''
+        self['resources'] = []
+        self['data'] = []
+        self['classes'] = []
         self['parameters'] = {}
         super(_TaskCommon,self).__init__(*args,**kwargs)
 
@@ -238,20 +245,23 @@ class _TaskCommon(dict):
 
     def valid(self):
         try:
-            return (isinstance(self['name'],String) and
-                    isinstance(self['resources'],list) and
-                    all(isinstance(r,Resource) and r.valid() for r in self['resources']) and
-                    isinstance(self['data'],list) and
-                    all(isinstance(d,Data) and d.valid() for d in self['data']) and
-                    isinstance(self['classes'],list) and
-                    all(isinstance(c,Class) and c.valid() for c in self['classes']) and
-                    isinstance(self['parameters'],dict)
-                   )
+            return (
+                isinstance(self['name'],String)
+                and isinstance(self['resources'],list)
+                and all(isinstance(r,Resource) and r.valid() for r in self['resources'])
+                and isinstance(self['data'],list)
+                and all(isinstance(d,Data) and d.valid() for d in self['data'])
+                and isinstance(self['classes'],list)
+                and all(isinstance(c,Class) and c.valid() for c in self['classes'])
+                and isinstance(self['parameters'],dict)
+            )
         except Exception:
             return False
 
+
 class Requirement(dict):
     plural = 'Requirements'
+
     def __init__(self, *args,**kwargs):
         self['cpu'] = None
         self['gpu'] = None
@@ -268,15 +278,20 @@ class Requirement(dict):
         for n in self:
             ret[n] = self[n]
         return ret
+
     def convert(self):
         pass
+
     def valid(self):
-        return ((self['cpu'] is None or isinstance(self['cpu'],(String,Number)))
-                and (self['gpu'] is None or isinstance(self['gpu'],(String,Number)))
-                and (self['memory'] is None or isinstance(self['memory'],(String,Number)))
-                and (self['disk'] is None or isinstance(self['disk'],(String,Number)))
-                and (self['os'] is None or isinstance(self['os'],String))
-                and (self['site'] is None or isinstance(self['site'],String)))
+        return (
+            (self['cpu'] is None or isinstance(self['cpu'],(String,Number)))
+            and (self['gpu'] is None or isinstance(self['gpu'],(String,Number)))
+            and (self['memory'] is None or isinstance(self['memory'],(String,Number)))
+            and (self['disk'] is None or isinstance(self['disk'],(String,Number)))
+            and (self['os'] is None or isinstance(self['os'],String))
+            and (self['site'] is None or isinstance(self['site'],String))
+        )
+
 
 class Task(_TaskCommon):
     """
@@ -289,10 +304,11 @@ class Task(_TaskCommon):
     :ivar task_files: False -- whether to use the task files API
     """
     plural = 'Tasks'
+
     def __init__(self,*args,**kwargs):
-        self['depends']  = []
+        self['depends'] = []
         self['batchsys'] = None
-        self['trays']    = []
+        self['trays'] = []
         self['requirements'] = Requirement()
         self['task_files'] = False
         super(Task,self).__init__(*args,**kwargs)
@@ -323,7 +339,7 @@ class Task(_TaskCommon):
     def convert(self):
         super(Task,self).convert()
         if (self['batchsys'] is not None and
-            not isinstance(self['batchsys'],Batchsys)):
+                not isinstance(self['batchsys'],Batchsys)):
             tmp = Batchsys(self['batchsys'])
             tmp.convert()
             self['batchsys'] = tmp
@@ -335,20 +351,22 @@ class Task(_TaskCommon):
 
     def valid(self):
         try:
-            return (super(Task,self).valid() and
-                    isinstance(self['depends'],list) and
-                    all(isinstance(r,(String,Number)) for r in self['depends']) and
-                    (self['batchsys'] is None or (
-                        isinstance(self['batchsys'],Batchsys) and
-                        self['batchsys'].valid())) and
-                    isinstance(self['trays'],list) and
-                    all(isinstance(t,Tray) and t.valid() for t in self['trays']) and
-                    isinstance(self['requirements'],Requirement) and
-                    self['requirements'].valid() and
-                    isinstance(self['task_files'],bool)
-                   )
+            return (
+                super(Task,self).valid()
+                and isinstance(self['depends'],list)
+                and all(isinstance(r,(String,Number)) for r in self['depends'])
+                and (self['batchsys'] is None or (
+                    isinstance(self['batchsys'],Batchsys)
+                    and self['batchsys'].valid()))
+                and isinstance(self['trays'],list)
+                and all(isinstance(t,Tray) and t.valid() for t in self['trays'])
+                and isinstance(self['requirements'],Requirement)
+                and self['requirements'].valid()
+                and isinstance(self['task_files'],bool)
+            )
         except Exception:
             return False
+
 
 class Tray(_TaskCommon):
     """
@@ -358,9 +376,10 @@ class Tray(_TaskCommon):
     :ivar modules: []
     """
     plural = 'Trays'
+
     def __init__(self,*args,**kwargs):
         self['iterations'] = 1
-        self['modules']    = []
+        self['modules'] = []
         super(Tray,self).__init__(*args,**kwargs)
 
     def output(self):
@@ -390,13 +409,15 @@ class Tray(_TaskCommon):
 
     def valid(self):
         try:
-            return (super(Tray,self).valid() and
-                    isinstance(self['iterations'],Integral) and
-                    isinstance(self['modules'],list) and
-                    all(isinstance(m,Module) and m.valid() for m in self['modules'])
-                   )
+            return (
+                super(Tray,self).valid()
+                and isinstance(self['iterations'],Integral)
+                and isinstance(self['modules'],list)
+                and all(isinstance(m,Module) and m.valid() for m in self['modules'])
+            )
         except Exception:
             return False
+
 
 class Module(_TaskCommon):
     """
@@ -415,13 +436,14 @@ class Module(_TaskCommon):
     any loaded classes.
     """
     plural = 'Modules'
+
     def __init__(self,*args,**kwargs):
         self['running_class'] = ''
-        self['src']           = ''
-        self['args']          = ''
-        self['env_shell']     = ''
-        self['env_clear']     = True
-        self['configs']       = {}
+        self['src'] = ''
+        self['args'] = ''
+        self['env_shell'] = ''
+        self['env_clear'] = True
+        self['configs'] = {}
         super(Module,self).__init__(*args,**kwargs)
 
     def output(self):
@@ -444,15 +466,17 @@ class Module(_TaskCommon):
 
     def valid(self):
         try:
-            return (super(Module,self).valid() and
-                    isinstance(self['running_class'],String) and
-                    isinstance(self['src'],String) and
-                    isinstance(self['env_shell'],String) and
-                    isinstance(self['env_clear'],bool) and
-                    isinstance(self['configs'],dict)
-                   )
+            return (
+                super(Module,self).valid()
+                and isinstance(self['running_class'],String)
+                and isinstance(self['src'],String)
+                and isinstance(self['env_shell'],String)
+                and isinstance(self['env_clear'],bool)
+                and isinstance(self['configs'],dict)
+            )
         except Exception:
             return False
+
 
 class Class(dict):
     """
@@ -466,13 +490,14 @@ class Class(dict):
     :ivar env_vars: None
     """
     plural = 'Classes'
+
     def __init__(self,*args,**kwargs):
-        self['name']          = ''
-        self['src']           = ''
+        self['name'] = ''
+        self['src'] = ''
         self['resource_name'] = ''
-        self['recursive']     = False
-        self['libs']          = ''
-        self['env_vars']      = ''
+        self['recursive'] = False
+        self['libs'] = ''
+        self['env_vars'] = ''
         super(Class,self).__init__(*args,**kwargs)
 
     def output(self):
@@ -488,15 +513,17 @@ class Class(dict):
 
     def valid(self):
         try:
-            return (isinstance(self['name'],String) and
-                    isinstance(self['src'],String) and
-                    isinstance(self['resource_name'],String) and
-                    isinstance(self['recursive'],bool) and
-                    isinstance(self['libs'],String) and
-                    isinstance(self['env_vars'],String)
-                   )
+            return (
+                isinstance(self['name'],String)
+                and isinstance(self['src'],String)
+                and isinstance(self['resource_name'],String)
+                and isinstance(self['recursive'],bool)
+                and isinstance(self['libs'],String)
+                and isinstance(self['env_vars'],String)
+            )
         except Exception:
             return False
+
 
 class _ResourceCommon(dict):
     """
@@ -509,10 +536,10 @@ class _ResourceCommon(dict):
     compression_options = [False,True,'none','gzip','gz','bzip','bz2','lzma']
 
     def __init__(self,*args,**kwargs):
-        self['remote']      = ''
-        self['local']       = ''
+        self['remote'] = ''
+        self['local'] = ''
         self['compression'] = False
-        self['transfer']    = True
+        self['transfer'] = True
         super(_ResourceCommon,self).__init__(*args,**kwargs)
 
     def convert(self):
@@ -520,11 +547,12 @@ class _ResourceCommon(dict):
 
     def valid(self):
         try:
-            return (isinstance(self['remote'],String) and
-                    isinstance(self['local'],String) and
-                    self['compression'] in self.compression_options and
-                    isinstance(self['transfer'],(String,Number,bool))
-                   )
+            return (
+                isinstance(self['remote'],String)
+                and isinstance(self['local'],String)
+                and self['compression'] in self.compression_options
+                and isinstance(self['transfer'],(String,Number,bool))
+            )
         except Exception:
             return False
 
@@ -546,6 +574,7 @@ class _ResourceCommon(dict):
                 ret = False
         return ret
 
+
 class Resource(_ResourceCommon):
     """
     A resource object, representing a file to download.
@@ -553,6 +582,7 @@ class Resource(_ResourceCommon):
     :ivar arch: None
     """
     plural = 'Resources'
+
     def __init__(self,*args,**kwargs):
         self['arch'] = ''
         super(Resource,self).__init__(*args,**kwargs)
@@ -572,11 +602,13 @@ class Resource(_ResourceCommon):
 
     def valid(self):
         try:
-            return (super(Resource,self).valid() and
-                    isinstance(self['arch'],String)
-                   )
+            return (
+                super(Resource,self).valid()
+                and isinstance(self['arch'],String)
+            )
         except Exception:
             return False
+
 
 class Data(_ResourceCommon):
     """
@@ -590,7 +622,7 @@ class Data(_ResourceCommon):
     movement_options = ['input','output','both']
 
     def __init__(self,*args,**kwargs):
-        self['type']     = 'permanent'
+        self['type'] = 'permanent'
         self['movement'] = 'both'
         super(Data,self).__init__(*args,**kwargs)
 
@@ -614,10 +646,11 @@ class Data(_ResourceCommon):
 
     def valid(self):
         try:
-            return (super(Data,self).valid() and
-                    self['type'] in self.type_options and
-                    self['movement'] in self.movement_options
-                   )
+            return (
+                super(Data,self).valid()
+                and self['type'] in self.type_options
+                and self['movement'] in self.movement_options
+            )
         except Exception:
             return False
 
@@ -659,6 +692,7 @@ class Data(_ResourceCommon):
                 return env['options']['filecatalog']
         raise Exception('%s not defined in env' % type)
 
+
 class DifPlus(dict):
     """
     A DifPlus object.
@@ -667,8 +701,9 @@ class DifPlus(dict):
     :ivar plus: None
     """
     plural = 'DifPlus'
+
     def __init__(self,*args,**kwargs):
-        self['dif']  = None
+        self['dif'] = None
         self['plus'] = None
         super(DifPlus,self).__init__(*args,**kwargs)
 
@@ -697,13 +732,13 @@ class DifPlus(dict):
 
     def valid(self):
         try:
-            return ((self['dif'] is None or (isinstance(self['dif'],Dif) and
-                     self['dif'].valid())) and
-                    (self['plus'] is None or (isinstance(self['plus'],Plus) and
-                     self['plus'].valid()))
-                   )
+            return (
+                (self['dif'] is None or (isinstance(self['dif'],Dif) and self['dif'].valid()))
+                and (self['plus'] is None or (isinstance(self['plus'],Plus) and self['plus'].valid()))
+            )
         except Exception:
             return False
+
 
 class Dif(dict):
     """
@@ -770,17 +805,17 @@ class Dif(dict):
     }
 
     def __init__(self,*args,**kwargs):
-        self['entry_id']     = None
-        self['entry_title']  = None
-        self['parameters']   = ''
+        self['entry_id'] = None
+        self['entry_title'] = None
+        self['parameters'] = ''
         self['iso_topic_category'] = 'geoscientificinformation'
-        self['data_ceter']   = None
-        self['summary']      = ''
+        self['data_ceter'] = None
+        self['summary'] = ''
         self['metadata_name'] = '[CEOS IDN DIF]'
         self['metadata_version'] = '9.4'
-        self['personnel']    = []
-        self['sensor_name']  = 'ICECUBE'
-        self['source_name']  = 'SIMULATION'
+        self['personnel'] = []
+        self['sensor_name'] = 'ICECUBE'
+        self['source_name'] = 'SIMULATION'
         self['dif_creation_date'] = time.strftime("%Y-%m-%d")
         super(Dif,self).__init__(*args,**kwargs)
 
@@ -804,25 +839,26 @@ class Dif(dict):
 
     def valid(self):
         try:
-            return ((self['entry_id'] is None or
-                     isinstance(self['entry_id'],(Number,String))) and
-                    (self['entry_title'] is None or
-                     isinstance(self['entry_title'],String)) and
-                    isinstance(self['parameters'],String) and
-                    isinstance(self['iso_topic_category'],String) and
-                    (self['data_ceter'] is None or
-                     (isinstance(self['data_ceter'],DataCenter) and
-                      self['data_center'].valid())) and
-                    isinstance(self['summary'],String) and
-                    isinstance(self['metadata_name'],String) and
-                    isinstance(self['metadata_version'],(Number,String)) and
-                    all(isinstance(p,Personnel) and p.valid() for p in self['personnel']) and
-                    isinstance(self['sensor_name'],String) and
-                    isinstance(self['source_name'],String) and
-                    isinstance(self['dif_creation_date'],(Number,String))
-                   )
+            return (
+                (self['entry_id'] is None or isinstance(self['entry_id'],(Number,String)))
+                and (self['entry_title'] is None or isinstance(self['entry_title'],String))
+                and isinstance(self['parameters'],String)
+                and isinstance(self['iso_topic_category'],String)
+                and (self['data_ceter'] is None or (
+                    isinstance(self['data_ceter'],DataCenter)
+                    and self['data_center'].valid())
+                )
+                and isinstance(self['summary'],String)
+                and isinstance(self['metadata_name'],String)
+                and isinstance(self['metadata_version'],(Number,String))
+                and all(isinstance(p,Personnel) and p.valid() for p in self['personnel'])
+                and isinstance(self['sensor_name'],String)
+                and isinstance(self['source_name'],String)
+                and isinstance(self['dif_creation_date'],(Number,String))
+            )
         except Exception:
             return False
+
 
 class Plus(dict):
     """
@@ -864,16 +900,16 @@ class Plus(dict):
     ]
 
     def __init__(self,*args,**kwargs):
-        self['start']        = None
-        self['end']          = None
-        self['category']     = None
-        self['subcategory']  = None
-        self['run_number']   = None
-        self['i3db_key']     = None
-        self['simdb_key']    = None
-        self['project']      = []
+        self['start'] = None
+        self['end'] = None
+        self['category'] = None
+        self['subcategory'] = None
+        self['run_number'] = None
+        self['i3db_key'] = None
+        self['simdb_key'] = None
+        self['project'] = []
         self['steering_file'] = None
-        self['log_file']     = None
+        self['log_file'] = None
         self['command_line'] = None
         super(Plus,self).__init__(*args,**kwargs)
 
@@ -893,31 +929,23 @@ class Plus(dict):
 
     def valid(self):
         try:
-            return ((self['start'] is None or
-                     isinstance(self['start'],(Number,String))) and
-                    (self['end'] is None or
-                     isinstance(self['end'],(Number,String))) and
-                    (self['category'] is None or
-                     isinstance(self['category'],String)) and
-                    (self['subcategory'] is None or
-                     isinstance(self['subcategory'],String)) and
-                    (self['run_number'] is None or
-                     isinstance(self['run_number'],(Number,String))) and
-                    (self['i3db_key'] is None or
-                     isinstance(self['i3db_key'],(Number,String))) and
-                    (self['simdb_key'] is None or
-                     isinstance(self['simdb_key'],(Number,String))) and
-                    all((isinstance(p,dict) and
-                         all(isinstance(k,String) for k in p.keys()) and
-                         all(isinstance(v,(Number,String)) for v in p.values())
-                        ) for p in self['project']) and
-                    (self['steering_file'] is None or
-                     isinstance(self['steering_file'],String)) and
-                    (self['log_file'] is None or
-                     isinstance(self['log_file'],String)) and
-                    (self['command_line'] is None or
-                     isinstance(self['command_line'],String))
-                   )
+            return (
+                (self['start'] is None or isinstance(self['start'],(Number,String)))
+                and (self['end'] is None or isinstance(self['end'],(Number,String)))
+                and (self['category'] is None or isinstance(self['category'],String))
+                and (self['subcategory'] is None or isinstance(self['subcategory'],String))
+                and (self['run_number'] is None or isinstance(self['run_number'],(Number,String)))
+                and (self['i3db_key'] is None or isinstance(self['i3db_key'],(Number,String)))
+                and (self['simdb_key'] is None or isinstance(self['simdb_key'],(Number,String)))
+                and all((
+                    isinstance(p,dict)
+                    and all(isinstance(k,String) for k in p.keys())
+                    and all(isinstance(v,(Number,String)) for v in p.values())
+                ) for p in self['project'])
+                and (self['steering_file'] is None or isinstance(self['steering_file'],String))
+                and (self['log_file'] is None or isinstance(self['log_file'],String))
+                and (self['command_line'] is None or isinstance(self['command_line'],String))
+            )
         except Exception:
             return False
 
@@ -932,11 +960,12 @@ class Personnel(dict):
    :ivar email: None
     """
     plural = 'Personnel'
+
     def __init__(self,*args,**kwargs):
-        self['role']       = None
+        self['role'] = None
         self['first_name'] = None
-        self['last_name']  = None
-        self['email']      = None
+        self['last_name'] = None
+        self['email'] = None
         super(Personnel,self).__init__(*args,**kwargs)
 
     def output(self):
@@ -952,17 +981,15 @@ class Personnel(dict):
 
     def valid(self):
         try:
-            return ((self['role'] is None or
-                     isinstance(self['role'],String)) and
-                    (self['first_name'] is None or
-                     isinstance(self['first_name'],String)) and
-                    (self['last_name'] is None or
-                     isinstance(self['last_name'],String)) and
-                    (self['email'] is None or
-                     isinstance(self['email'],String))
-                   )
+            return (
+                (self['role'] is None or isinstance(self['role'],String))
+                and (self['first_name'] is None or isinstance(self['first_name'],String))
+                and (self['last_name'] is None or isinstance(self['last_name'],String))
+                and (self['email'] is None or isinstance(self['email'],String))
+            )
         except Exception:
             return False
+
 
 class DataCenter(dict):
     """
@@ -975,7 +1002,7 @@ class DataCenter(dict):
     valid_names = ['UWI-MAD/A3RI > Antarctic Astronomy and Astrophysics Research Institute, University of Wisconsin, Madison']
 
     def __init__(self,*args,**kwargs):
-        self['name']      = None
+        self['name'] = None
         self['personnel'] = []
         super(DataCenter,self).__init__(*args,**kwargs)
 
@@ -999,9 +1026,9 @@ class DataCenter(dict):
 
     def valid(self):
         try:
-            return ((self['name'] is None or
-                     isinstance(self['name'],String)) and
-                    all(isinstance(p,Personnel) and p.valid() for p in self['personnel'])
-                   )
+            return (
+                (self['name'] is None or isinstance(self['name'],String))
+                and all(isinstance(p,Personnel) and p.valid() for p in self['personnel'])
+            )
         except Exception:
             return False

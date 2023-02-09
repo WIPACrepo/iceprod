@@ -23,6 +23,7 @@ from iceprod.server.util import datetime2str
 
 logger = logging.getLogger('pilot_monitor')
 
+
 def log_cleanup(module):
     """
     Initial entrypoint.
@@ -34,6 +35,7 @@ def log_cleanup(module):
     IOLoop.current().call_later(random.randint(60,60*60), run,
                                 module.rest_client)
 
+
 async def run(rest_client, debug=False):
     """
     Actual runtime / loop.
@@ -43,6 +45,7 @@ async def run(rest_client, debug=False):
         debug (bool): debug flag to propagate exceptions
     """
     start_time = time.time()
+
     async def delete_logs(name, days):
         time_limit = datetime.utcnow() - timedelta(days=days)
         args = {
@@ -58,10 +61,10 @@ async def run(rest_client, debug=False):
     try:
         while (await delete_logs('stdlog', 31)) == 100:
             await asyncio.sleep(60)
-        #while (await delete_logs('stderr', 365)) == 1000:
-        #    await asyncio.sleep(60)
-        #while (await delete_logs('stdout', 365)) == 1000:
-        #    await asyncio.sleep(60)
+        # while (await delete_logs('stderr', 365)) == 1000:
+        #     await asyncio.sleep(60)
+        # while (await delete_logs('stdout', 365)) == 1000:
+        #     await asyncio.sleep(60)
     except Exception:
         logger.error('error cleaning logs', exc_info=True)
         if debug:
@@ -80,12 +83,13 @@ def main():
     parser.add_argument('--debug', default=False, action='store_true', help='debug enabled')
     args = parser.parse_args()
 
-    logformat='%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
+    logformat = '%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
     logging.basicConfig(format=logformat, level=getattr(logging, args.log_level.upper()))
 
     rest_client = create_rest_client(args)
 
-    asyncio.run(run(rest_clint, debug=args.debug))
+    asyncio.run(run(rest_client, debug=args.debug))
+
 
 if __name__ == '__main__':
     main()

@@ -7,7 +7,6 @@ import os
 import time
 import json
 from copy import deepcopy
-from functools import wraps
 from datetime import datetime
 import gzip
 import logging
@@ -19,7 +18,6 @@ from iceprod.core import functions
 from iceprod.core import dataclasses
 from iceprod.core.resources import Resources
 from .serialization import dict_to_dataclasses
-from .jsonUtil import json_compressor,json_decode
 
 
 class ServerComms:
@@ -63,7 +61,7 @@ class ServerComms:
             resources['site'] = site
         args = {
             'gridspec': gridspec,
-            'hostname': hostname, 
+            'hostname': hostname,
             'domain': domain,
             'ifaces': ifaces,
             'requirements': resources,
@@ -144,8 +142,7 @@ class ServerComms:
         Args:
             task_id (str): task_id to mark as processing
         """
-        await self.rest.request('PUT', '/tasks/{}/status'.format(task_id),
-                              {'status': 'processing'})
+        await self.rest.request('PUT', '/tasks/{}/status'.format(task_id), {'status': 'processing'})
 
     async def finish_task(self, task_id, dataset_id=None, stats={},
                           stat_filter=None, start_time=None, resources=None,
@@ -188,12 +185,11 @@ class ServerComms:
         if dataset_id:
             iceprod_stats['dataset_id'] = dataset_id
 
-        await self.rest.request('POST', '/tasks/{}/task_stats'.format(task_id),
-                              iceprod_stats)
+        await self.rest.request('POST', '/tasks/{}/task_stats'.format(task_id), iceprod_stats)
 
         data = {}
         if t:
-            data['time_used'] =  t
+            data['time_used'] = t
         if site:
             data['site'] = site
         await self.rest.request('POST', '/tasks/{}/task_actions/complete'.format(task_id), data)
@@ -260,7 +256,7 @@ class ServerComms:
 
         data = {}
         if t:
-            data['time_used'] =  t
+            data['time_used'] = t
         if resources:
             data['resources'] = resources
         if site:
@@ -313,7 +309,7 @@ class ServerComms:
 
         data = {}
         if resources and 'time' in resources and resources['time']:
-            data['time_used'] =  resources['time']*3600.
+            data['time_used'] = resources['time']*3600.
         if resources:
             data['resources'] = resources
         if site:
@@ -413,7 +409,6 @@ class ServerComms:
         """
         await self.rest.request('DELETE', '/pilots/{}'.format(pilot_id))
 
-
     # --- synchronous versions to be used from a signal handler
     # --- or other non-async code
 
@@ -461,7 +456,7 @@ class ServerComms:
 
         data = {}
         if resources and 'time' in resources and resources['time']:
-            data['time_used'] =  resources['time']*3600.
+            data['time_used'] = resources['time']*3600.
         if resources:
             data['resources'] = resources
         if site:

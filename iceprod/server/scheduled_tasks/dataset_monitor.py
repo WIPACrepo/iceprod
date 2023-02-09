@@ -17,7 +17,6 @@ import time
 from tornado.ioloop import IOLoop
 
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
-from iceprod.server import GlobalID
 from iceprod.server.module import FakeStatsClient, StatsClientIgnoreErrors
 
 logger = logging.getLogger('dataset_monitor')
@@ -36,6 +35,7 @@ def dataset_monitor(module):
     # initial delay
     IOLoop.current().call_later(random.randint(5,60), run,
                                 module.rest_client, module.statsd)
+
 
 async def process_dataset(rest_client, statsd, dataset_id):
     """
@@ -108,6 +108,7 @@ async def run(rest_client, statsd, debug=False):
     start_time = time.time()
     try:
         future_resources = {'gpu': 0,'cpu': 0}
+
         async def process_task(t):
             ret = await t
             if ret:
@@ -143,6 +144,7 @@ async def run(rest_client, statsd, debug=False):
     delay = max(60*5 - (stop_time-start_time), 60)
     IOLoop.current().call_later(delay, run, rest_client, statsd)
 
+
 def main():
     parser = argparse.ArgumentParser(description='run a scheduled task once')
     add_auth_to_argparse(parser)
@@ -154,7 +156,7 @@ def main():
     args = parser.parse_args()
     args = vars(args)
 
-    logformat='%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
+    logformat = '%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
     logging.basicConfig(format=logformat, level=getattr(logging, args.log_level.upper()))
 
     rest_client = create_rest_client(args)
@@ -170,6 +172,7 @@ def main():
         statsd = StatsClientIgnoreErrors(addr, port=port, prefix=args.statsd_prefix+'.schedule')
 
     asyncio.run(run(rest_client, statsd, debug=args.debug))
+
 
 if __name__ == '__main__':
     main()

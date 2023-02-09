@@ -6,19 +6,18 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import logging
-from threading import Thread, Event
-from functools import partial
 from collections import namedtuple
 from datetime import datetime
-import time
 import tempfile
 import shutil
 import subprocess
 
 logger = logging.getLogger('gridftp')
 
+
 def _cmd(cmd, timeout=1200):
     subprocess.run(cmd, timeout=timeout, check=True)
+
 
 def _cmd_output(cmd, timeout=1200):
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -74,6 +73,7 @@ def listify(lines,details=False,dotfiles=False):
                 out.append(f)
     return out
 
+
 class GridFTP(object):
     """GridFTP interface to command line client.
 
@@ -82,7 +82,7 @@ class GridFTP(object):
                        filename='/path/to/file')
     """
 
-    _timeout = 3600 # 1 hour default timeout
+    _timeout = 3600  # 1 hour default timeout
 
     @classmethod
     def supported_address(cls,address):
@@ -475,7 +475,7 @@ class GridFTP(object):
         finally:
             shutil.rmtree(tmpdir,ignore_errors=True)
 
-    ### Some helper functions for different checksum types ###
+    # Some helper functions for different checksum types #
 
     @classmethod
     def md5sum(cls,address,request_timeout=None):

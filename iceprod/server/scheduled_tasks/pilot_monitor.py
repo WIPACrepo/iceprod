@@ -10,6 +10,7 @@ Periodic delay: 5 minutes
 import argparse
 import asyncio
 import logging
+import os
 import random
 import time
 from collections import defaultdict,Counter
@@ -22,6 +23,7 @@ from iceprod.server.module import FakeStatsClient, StatsClientIgnoreErrors
 
 logger = logging.getLogger('pilot_monitor')
 
+
 def pilot_monitor(module):
     """
     Initial entrypoint.
@@ -32,6 +34,7 @@ def pilot_monitor(module):
     # initial delay
     IOLoop.current().call_later(random.randint(5,60), run,
                                 module.rest_client, module.statsd)
+
 
 async def run(rest_client, statsd, debug=False):
     """
@@ -81,7 +84,7 @@ def main():
 
     args = parser.parse_args()
 
-    logformat='%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
+    logformat = '%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
     logging.basicConfig(format=logformat, level=getattr(logging, args.log_level.upper()))
 
     rest_client = create_rest_client(args)
@@ -97,6 +100,7 @@ def main():
         statsd = StatsClientIgnoreErrors(addr, port=port, prefix=args.statsd_prefix+'.schedule')
 
     asyncio.run(run(rest_client, statsd, debug=args.debug))
+
 
 if __name__ == '__main__':
     main()

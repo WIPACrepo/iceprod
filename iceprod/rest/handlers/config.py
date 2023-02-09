@@ -1,6 +1,5 @@
 import logging
 import json
-import uuid
 
 import tornado.web
 
@@ -48,8 +47,10 @@ class ConfigHandler(APIBase):
         Returns:
             dict: config
         """
-        ret = await self.db.config.find_one({'dataset_id':dataset_id},
-                projection={'_id':False, 'dataset_id':False})
+        ret = await self.db.config.find_one(
+            {'dataset_id':dataset_id},
+            projection={'_id':False, 'dataset_id':False}
+        )
         logger.info('get config: %r', ret)
         if not ret:
             self.send_error(404, reason="Config not found")

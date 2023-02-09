@@ -19,6 +19,7 @@ from iceprod.server.util import str2datetime
 
 logger = logging.getLogger('pilot_monitor')
 
+
 def pilot_cleanup(module):
     """
     Initial entrypoint.
@@ -30,6 +31,7 @@ def pilot_cleanup(module):
     IOLoop.current().call_later(random.randint(60,60*60), run,
                                 module.rest_client)
 
+
 async def run(rest_client, debug=False):
     """
     Actual runtime / loop.
@@ -40,6 +42,7 @@ async def run(rest_client, debug=False):
     """
     start_time = time.time()
     time_limit = datetime.utcnow() - timedelta(days=14)
+
     async def reset_pilot(pilot_id):
         await rest_client.request('DELETE', '/pilots/{}'.format(pilot_id))
     try:
@@ -67,12 +70,13 @@ def main():
 
     args = parser.parse_args()
 
-    logformat='%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
+    logformat = '%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
     logging.basicConfig(format=logformat, level=getattr(logging, args.log_level.upper()))
 
     rest_client = create_rest_client(args)
 
     asyncio.run(run(rest_client, debug=args.debug))
+
 
 if __name__ == '__main__':
     main()

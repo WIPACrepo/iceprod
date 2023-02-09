@@ -20,11 +20,14 @@ class S3:
         self.s3 = None
         self.bucket = 'iceprod2-logs'
         try:
-            self.s3 = boto3.client('s3','us-east-1',
+            self.s3 = boto3.client(
+                's3',
+                'us-east-1',
                 endpoint_url=address,
                 aws_access_key_id=access_key,
                 aws_secret_access_key=secret_key,
-                config=botocore.client.Config(max_pool_connections=101))
+                config=botocore.client.Config(max_pool_connections=101)
+            )
         except Exception:
             logger.warning('failed to connect to s3: %r', address, exc_info=True)
             raise
@@ -36,14 +39,12 @@ class S3:
         with io.BytesIO() as f:
             loop = asyncio.get_running_loop()
             try:
-                await loop.run_in_executor(self.executor,
-                        partial(self.s3.download_fileobj, Bucket=self.bucket,
-                                Key=key, Fileobj=f))
+                await loop.run_in_executor(self.executor, partial(self.s3.download_fileobj, Bucket=self.bucket, Key=key, Fileobj=f))
                 ret = f.getvalue()
             except botocore.exceptions.ClientError as e:
                 error_code = e.response['Error']['Code']
                 if error_code == '404':
-                    return '' # don't error on a 404
+                    return ''  # don't error on a 404
                 raise
         return ret.decode('utf-8')
 
@@ -51,15 +52,13 @@ class S3:
         """Upload object to S3"""
         with io.BytesIO(data.encode('utf-8')) as f:
             loop = asyncio.get_running_loop()
-            await loop.run_in_executor(self.executor,
-                    partial(self.s3.upload_fileobj, f, self.bucket, key))
+            await loop.run_in_executor(self.executor, partial(self.s3.upload_fileobj, f, self.bucket, key))
 
     async def exists(self, key):
         """Check existence in S3"""
         loop = asyncio.get_running_loop()
         try:
-            await loop.run_in_executor(self.executor,
-                    partial(self.s3.head_object, Bucket=self.bucket, Key=key))
+            await loop.run_in_executor(self.executor, partial(self.s3.head_object, Bucket=self.bucket, Key=key))
         except Exception:
             return False
         return True
@@ -67,8 +66,7 @@ class S3:
     async def delete(self, key):
         """Delete object in S3"""
         loop = asyncio.get_running_loop()
-        await loop.run_in_executor(self.executor,
-                partial(self.s3.delete_object, Bucket=self.bucket, Key=key))
+        await loop.run_in_executor(self.executor, partial(self.s3.delete_object, Bucket=self.bucket, Key=key))
 
 
 class FakeS3(S3):

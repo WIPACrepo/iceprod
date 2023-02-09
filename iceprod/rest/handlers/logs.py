@@ -1,22 +1,14 @@
-import logging
 import json
+import logging
 import uuid
-import io
-from functools import partial
-import asyncio
-from concurrent.futures import ThreadPoolExecutor
 
 import tornado.web
-from wipac_dev_tools import from_environment
-
 
 from ..base_handler import APIBase
 from ..auth import authorization, attr_auth
 from iceprod.server.util import nowstr
 
 logger = logging.getLogger('rest.logs')
-
-
 
 
 def setup(handler_cfg):
@@ -133,10 +125,11 @@ class MultiLogsHandler(APIBase):
         if self.s3 and len(data['data']) > 1000000:
             await self.s3.put(log_id, data['data'])
             del data['data']
-        ret = await self.db.logs.insert_one(data)
+        await self.db.logs.insert_one(data)
         self.set_status(201)
         self.write({'result': log_id})
         self.finish()
+
 
 class LogsHandler(APIBase):
     """
@@ -153,8 +146,7 @@ class LogsHandler(APIBase):
         Returns:
             dict: all body fields
         """
-        ret = await self.db.logs.find_one({'log_id':log_id},
-                projection={'_id':False})
+        ret = await self.db.logs.find_one({'log_id':log_id}, projection={'_id':False})
         if not ret:
             self.send_error(404, reason="Log not found")
         else:
@@ -189,6 +181,7 @@ class LogsHandler(APIBase):
         self.write({})
         self.finish()
 
+
 class DatasetMultiLogsHandler(APIBase):
     """
     Handle logs requests.
@@ -222,10 +215,11 @@ class DatasetMultiLogsHandler(APIBase):
         if self.s3 and len(data['data']) > 1000000:
             await self.s3.put(log_id, data['data'])
             del data['data']
-        ret = await self.db.logs.insert_one(data)
+        await self.db.logs.insert_one(data)
         self.set_status(201)
         self.write({'result': log_id})
         self.finish()
+
 
 class DatasetLogsHandler(APIBase):
     """
@@ -244,8 +238,10 @@ class DatasetLogsHandler(APIBase):
         Returns:
             dict: all body fields
         """
-        ret = await self.db.logs.find_one({'dataset_id':dataset_id,'log_id':log_id},
-                projection={'_id':False})
+        ret = await self.db.logs.find_one(
+            {'dataset_id':dataset_id,'log_id':log_id},
+            projection={'_id':False}
+        )
         if not ret:
             self.send_error(404, reason="Log not found")
         else:
@@ -256,6 +252,7 @@ class DatasetLogsHandler(APIBase):
                     raise tornado.web.HTTPError(500, reason='no data field and s3 disabled')
             self.write(ret)
             self.finish()
+
 
 class DatasetTaskLogsHandler(APIBase):
     """
@@ -295,12 +292,12 @@ class DatasetTaskLogsHandler(APIBase):
         order = self.get_argument('order', 'desc').lower()
         if order not in ('asc', 'desc'):
             raise tornado.web.HTTPError(400, reason='bad order param. should be "asc" or "desc".')
-        
+
         projection = {'_id': False}
         keys = self.get_argument('keys', None)
         if keys:
             projection.update({x:True for x in keys.split('|') if x})
-        
+
         steps = [
             {'$match': filters},
             {'$sort': {'timestamp': -1 if order == 'desc' else 1}},

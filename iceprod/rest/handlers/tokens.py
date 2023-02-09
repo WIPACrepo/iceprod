@@ -1,12 +1,9 @@
 import logging
-import json
-import uuid
 
 import tornado.web
 
 from ..base_handler import APIBase
-from ..auth import authorization, attr_auth
-from iceprod.server.util import nowstr
+from ..auth import authorization
 
 logger = logging.getLogger('rest.tokens')
 

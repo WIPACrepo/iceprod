@@ -65,7 +65,6 @@ def setup(handler_cfg):
     }
 
 
-
 class MultiTasksHandler(APIBase):
     """
     Handle multi tasks requests.
@@ -164,10 +163,11 @@ class MultiTasksHandler(APIBase):
         if 'priority' not in data:
             data['priority'] = 1.
 
-        ret = await self.db.tasks.insert_one(data)
+        await self.db.tasks.insert_one(data)
         self.set_status(201)
         self.write({'result': task_id})
         self.finish()
+
 
 class TasksHandler(APIBase):
     """
@@ -184,8 +184,7 @@ class TasksHandler(APIBase):
         Returns:
             dict: task entry
         """
-        ret = await self.db.tasks.find_one({'task_id':task_id},
-                projection={'_id':False})
+        ret = await self.db.tasks.find_one({'task_id':task_id}, projection={'_id':False})
         if not ret:
             self.send_error(404, reason="Task not found")
         else:
@@ -210,15 +209,18 @@ class TasksHandler(APIBase):
         if not data:
             raise tornado.web.HTTPError(400, reason='Missing update data')
 
-        ret = await self.db.tasks.find_one_and_update({'task_id':task_id},
-                {'$set':data},
-                projection={'_id':False},
-                return_document=pymongo.ReturnDocument.AFTER)
+        ret = await self.db.tasks.find_one_and_update(
+            {'task_id':task_id},
+            {'$set':data},
+            projection={'_id':False},
+            return_document=pymongo.ReturnDocument.AFTER
+        )
         if not ret:
             self.send_error(404, reason="Task not found")
         else:
             self.write(ret)
             self.finish()
+
 
 class TasksStatusHandler(APIBase):
     """
@@ -247,13 +249,13 @@ class TasksStatusHandler(APIBase):
             'status_changed': nowstr(),
         }
 
-        ret = await self.db.tasks.update_one({'task_id':task_id},
-                {'$set':update_data})
+        ret = await self.db.tasks.update_one({'task_id':task_id}, {'$set':update_data})
         if (not ret) or ret.modified_count < 1:
             self.send_error(404, reason="Task not found")
         else:
             self.write({})
             self.finish()
+
 
 class TaskCountsStatusHandler(APIBase):
     """
@@ -276,6 +278,7 @@ class TaskCountsStatusHandler(APIBase):
             ret2[k] = ret[k]
         self.write(ret2)
         self.finish()
+
 
 class DatasetMultiTasksHandler(APIBase):
     """
@@ -327,6 +330,7 @@ class DatasetMultiTasksHandler(APIBase):
             ret[row['task_id']] = row
         self.write(ret)
 
+
 class DatasetTasksHandler(APIBase):
     """
     Handle single task requests.
@@ -354,12 +358,13 @@ class DatasetTasksHandler(APIBase):
             projection['task_id'] = True
 
         ret = await self.db.tasks.find_one({'task_id':task_id,'dataset_id':dataset_id},
-                projection=projection)
+                                           projection=projection)
         if not ret:
             self.send_error(404, reason="Task not found")
         else:
             self.write(ret)
             self.finish()
+
 
 class DatasetTasksStatusHandler(APIBase):
     """
@@ -393,12 +398,13 @@ class DatasetTasksStatusHandler(APIBase):
             update_data['failures'] = 0
 
         ret = await self.db.tasks.update_one({'task_id':task_id,'dataset_id':dataset_id},
-                {'$set':update_data})
+                                             {'$set':update_data})
         if (not ret) or ret.modified_count < 1:
             self.send_error(404, reason="Task not found")
         else:
             self.write({})
             self.finish()
+
 
 class DatasetTaskSummaryStatusHandler(APIBase):
     """
@@ -417,7 +423,7 @@ class DatasetTaskSummaryStatusHandler(APIBase):
             dict: {<status>: [<task_id>,]}
         """
         cursor = self.db.tasks.find({'dataset_id':dataset_id},
-                projection={'_id':False,'status':True,'task_id':True})
+                                    projection={'_id':False,'status':True,'task_id':True})
         ret = defaultdict(list)
         async for row in cursor:
             ret[row['status']].append(row['task_id'])
@@ -426,6 +432,7 @@ class DatasetTaskSummaryStatusHandler(APIBase):
             ret2[k] = ret[k]
         self.write(ret2)
         self.finish()
+
 
 class DatasetTaskCountsStatusHandler(APIBase):
     """
@@ -455,6 +462,7 @@ class DatasetTaskCountsStatusHandler(APIBase):
             ret2[k] = ret[k]
         self.write(ret2)
         self.finish()
+
 
 class DatasetTaskCountsNameStatusHandler(APIBase):
     """
@@ -491,6 +499,7 @@ class DatasetTaskCountsNameStatusHandler(APIBase):
         self.write(ret2)
         self.finish()
 
+
 class DatasetTaskStatsHandler(APIBase):
     """
     Handle task stats
@@ -509,7 +518,8 @@ class DatasetTaskStatsHandler(APIBase):
         """
         cursor = self.db.tasks.aggregate([
             {'$match':{'dataset_id':dataset_id, 'status':'complete'}},
-            {'$group':{'_id':'$name',
+            {'$group':{
+                '_id':'$name',
                 'count': {'$sum': 1},
                 'gpu': {'$sum': '$requirements.gpu'},
                 'total_hrs': {'$sum': '$walltime'},
@@ -534,6 +544,7 @@ class DatasetTaskStatsHandler(APIBase):
             ret2[k] = ret[k]
         self.write(ret2)
         self.finish()
+
 
 class TasksActionsQueueHandler(APIBase):
     """
@@ -560,15 +571,19 @@ class TasksActionsQueueHandler(APIBase):
 
         queued = 0
         while queued < num_tasks:
-            ret = await self.db.tasks.find_one_and_update(query, val,
-                    projection={'_id':False,'task_id':True},
-                    sort=[('priority', -1)])
+            ret = await self.db.tasks.find_one_and_update(
+                query,
+                val,
+                projection={'_id':False,'task_id':True},
+                sort=[('priority', -1)]
+            )
             if not ret:
                 logger.debug('no more tasks to queue')
                 break
             queued += 1
         logger.info(f'queued {queued} tasks')
         self.write({'queued': queued})
+
 
 class TasksActionsProcessingHandler(APIBase):
     """
@@ -618,11 +633,13 @@ class TasksActionsProcessingHandler(APIBase):
                     raise tornado.web.HTTPError(400, reason=f'param {k} would override an already set filter')
                 filter_query[k] = params[k]
         print('filter_query', filter_query)
-        ret = await self.db.tasks.find_one_and_update(filter_query,
-                {'$set':{'status':'processing'}},
-                projection={'_id':False},
-                sort=sort_by,
-                return_document=pymongo.ReturnDocument.AFTER)
+        ret = await self.db.tasks.find_one_and_update(
+            filter_query,
+            {'$set':{'status':'processing'}},
+            projection={'_id':False},
+            sort=sort_by,
+            return_document=pymongo.ReturnDocument.AFTER
+        )
         if not ret:
             logger.info('filter_query: %r', filter_query)
             self.send_error(404, reason="Task not found")
@@ -630,6 +647,7 @@ class TasksActionsProcessingHandler(APIBase):
             self.statsd.incr('site.{}.task_processing'.format(site))
             self.write(ret)
             self.finish()
+
 
 class TasksActionsErrorHandler(APIBase):
     """
@@ -676,14 +694,14 @@ class TasksActionsErrorHandler(APIBase):
                     try:
                         new_val = float(data['resources'][k])
                         old_val = task['requirements'][k] if k in task['requirements'] else Resources.defaults[k]
-                        if k == 'cpu': # special handling for cpu
+                        if k == 'cpu':  # special handling for cpu
                             if new_val <= 1.1 or new_val > 20:
                                 continue
                             if new_val < old_val*1.1:
                                 continue
-                            new_val = old_val+1 # increase linearly
+                            new_val = old_val+1  # increase linearly
                         else:
-                            new_val *= 1.5 # increase new request by 1.5
+                            new_val *= 1.5  # increase new request by 1.5
                         if isinstance(Resources.defaults[k], (int, list)):
                             new_val = math.ceil(new_val)
                     except Exception:
@@ -714,15 +732,18 @@ class TasksActionsErrorHandler(APIBase):
                         reason = r
                         break
                 self.statsd.incr('site.{}.task_reset.{}'.format(site, reason))
-        ret = await self.db.tasks.find_one_and_update(filter_query,
-                update_query,
-                projection={'_id':False})
+        ret = await self.db.tasks.find_one_and_update(
+            filter_query,
+            update_query,
+            projection={'_id':False}
+        )
         if not ret:
             logger.info('filter_query: %r', filter_query)
             self.send_error(400, reason="Task not found")
         else:
             self.write(ret)
             self.finish()
+
 
 class TasksActionsCompleteHandler(APIBase):
     """
@@ -759,15 +780,18 @@ class TasksActionsCompleteHandler(APIBase):
                 site = data['site']
                 update_query['$set']['site'] = site
             self.statsd.incr('site.{}.task_complete'.format(site))
-        ret = await self.db.tasks.find_one_and_update(filter_query,
-                update_query,
-                projection={'_id':False})
+        ret = await self.db.tasks.find_one_and_update(
+            filter_query,
+            update_query,
+            projection={'_id':False}
+        )
         if not ret:
             logger.info('filter_query: %r', filter_query)
             self.send_error(400, reason="Task not found or not processing")
         else:
             self.write(ret)
             self.finish()
+
 
 class TaskBulkStatusHandler(APIBase):
     """
@@ -810,6 +834,7 @@ class TaskBulkStatusHandler(APIBase):
         else:
             self.write({})
             self.finish()
+
 
 class DatasetTaskBulkStatusHandler(APIBase):
     """
@@ -856,6 +881,7 @@ class DatasetTaskBulkStatusHandler(APIBase):
             self.write({})
             self.finish()
 
+
 class DatasetTaskBulkRequirementsHandler(APIBase):
     """
     Update the requirements of multiple tasks at once.
@@ -879,7 +905,7 @@ class DatasetTaskBulkRequirementsHandler(APIBase):
         valid_req_keys = set(Resources.defaults)
         valid_req_keys.add('os')
         valid_req_keys.add('site')
-        
+
         data = json.loads(self.request.body)
         if (not data):
             raise tornado.web.HTTPError(400, reason='Missing body')
@@ -906,13 +932,13 @@ class DatasetTaskBulkRequirementsHandler(APIBase):
             'dataset_id': dataset_id,
             'name': name,
         }
-        ret = await self.db.tasks.update_many(query,
-                {'$max':reqs})
+        ret = await self.db.tasks.update_many(query, {'$max':reqs})
         if (not ret) or ret.modified_count < 1:
             self.send_error(404, reason="Tasks not found")
         else:
             self.write({})
             self.finish()
+
 
 class DatasetMultiFilesHandler(APIBase):
     """
@@ -1014,6 +1040,7 @@ class DatasetMultiFilesHandler(APIBase):
         self.write({'result': file_data['task_id']})
         self.finish()
 
+
 class DatasetTaskFilesHandler(APIBase):
     """
     Handle multi files requests, by task.
@@ -1096,7 +1123,7 @@ class DatasetTaskFilesHandler(APIBase):
         if not file_data.valid():
             raise tornado.web.HTTPError(400, reason='invalid file data')
 
-        ret = await self.db.dataset_files.insert_one(dict(file_data))
+        await self.db.dataset_files.insert_one(dict(file_data))
         self.set_status(201)
         self.write({})
         self.finish()

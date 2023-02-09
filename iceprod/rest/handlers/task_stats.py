@@ -38,7 +38,6 @@ def setup(handler_cfg):
     }
 
 
-
 class MultiTaskStatsHandler(APIBase):
     """
     Handle multi task_stats requests.
@@ -70,10 +69,11 @@ class MultiTaskStatsHandler(APIBase):
             'stats': stat_data,
         }
 
-        ret = await self.db.task_stats.insert_one(data)
+        await self.db.task_stats.insert_one(data)
         self.set_status(201)
         self.write({'result': task_stat_id})
         self.finish()
+
 
 class DatasetsBulkTaskStatsHandler(APIBase):
     """
@@ -154,6 +154,7 @@ class DatasetsBulkTaskStatsHandler(APIBase):
                     self.write('\n')
         self.finish()
 
+
 class DatasetsMultiTaskStatsHandler(APIBase):
     """
     Handle multi task_stats requests.
@@ -185,14 +186,17 @@ class DatasetsMultiTaskStatsHandler(APIBase):
             if last:
                 projection['create_date'] = True
 
-        ret = await self.db.task_stats.find({'dataset_id':dataset_id,'task_id':task_id},
-                projection=projection).to_list(10000)
+        ret = await self.db.task_stats.find(
+            {'dataset_id':dataset_id,'task_id':task_id},
+            projection=projection
+        ).to_list(10000)
 
         if last:
             ret = sorted(ret, key=lambda x: x['create_date'])[-1:]
 
         self.write({row['task_stat_id']:row for row in ret})
         self.finish()
+
 
 class DatasetsTaskStatsHandler(APIBase):
     """
@@ -212,8 +216,10 @@ class DatasetsTaskStatsHandler(APIBase):
         Returns:
             dict: task_stat entry
         """
-        ret = await self.db.task_stats.find_one({'dataset_id':dataset_id,'task_id':task_id,'task_stat_id':task_stat_id},
-                projection={'_id':False})
+        ret = await self.db.task_stats.find_one(
+            {'dataset_id':dataset_id,'task_id':task_id,'task_stat_id':task_stat_id},
+            projection={'_id':False}
+        )
         if not ret:
             self.send_error(404, reason="Task stat not found")
         else:

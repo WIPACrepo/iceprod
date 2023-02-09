@@ -15,17 +15,14 @@ import os
 import logging
 import random
 import time
-import asyncio
 
 from tornado.ioloop import IOLoop
 from rest_tools.client import RestClient, ClientCredentialsAuth
 
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
-from iceprod.core.parser import ExpParser
-from iceprod.core.resources import Resources
-from iceprod.server.priority import Priority
 
 logger = logging.getLogger('buffer_jobs_tasks')
+
 
 def buffer_jobs_tasks(module):
     """
@@ -43,9 +40,9 @@ def buffer_jobs_tasks(module):
     if os.environ.get('CI_TESTING', False):
         rest_client = RestClient(url)
     elif ('rest_api' in module.cfg
-        and 'oauth_url' in module.cfg['rest_api']
-        and 'oauth_client_id' in module.cfg['rest_api']
-        and 'oauth_client_secret' in module.cfg['rest_api']):
+          and 'oauth_url' in module.cfg['rest_api']
+          and 'oauth_client_id' in module.cfg['rest_api']
+          and 'oauth_client_secret' in module.cfg['rest_api']):
         try:
             rest_client = ClientCredentialsAuth(
                 address=url,
@@ -60,6 +57,7 @@ def buffer_jobs_tasks(module):
         raise Exception('no auth credentials')
 
     IOLoop.current().call_later(random.randint(10,60*10), run, rest_client)
+
 
 async def run(rest_client, only_dataset=None, num=1000, run_once=False, delay=10, debug=False):
     """
@@ -95,7 +93,7 @@ async def run(rest_client, only_dataset=None, num=1000, run_once=False, delay=10
                 if run_once:
                     raise Exception('materialization failed: %r', ret)
                 break
-    except Exception as e:
+    except Exception:
         logger.warning('materialization error', exc_info=True)
         if debug or run_once:
             raise
@@ -117,12 +115,13 @@ def main():
 
     args = parser.parse_args()
 
-    logformat='%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
+    logformat = '%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
     logging.basicConfig(format=logformat, level=getattr(logging, args.log_level.upper()))
 
     rest_client = create_rest_client(args)
 
     asyncio.run(run(rest_client, only_dataset=args.dataset, num=args.num, run_once=True, debug=args.debug))
+
 
 if __name__ == '__main__':
     main()

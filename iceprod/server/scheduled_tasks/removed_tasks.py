@@ -6,19 +6,18 @@ Periodic delay: 5 minutes
 """
 
 import argparse
+import asyncio
 import logging
 import random
 import time
-import asyncio
-from datetime import datetime
 
 from tornado.ioloop import IOLoop
 import requests.exceptions
 
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
-from iceprod.server.util import str2datetime
 
 logger = logging.getLogger('removed_tasks')
+
 
 def removed_tasks(module):
     """
@@ -29,6 +28,7 @@ def removed_tasks(module):
     """
     # initial delay
     IOLoop.current().call_later(random.randint(60,60*5), run, module.rest_client)
+
 
 async def run(rest_client, debug=False):
     """
@@ -87,11 +87,12 @@ def main():
 
     args = parser.parse_args()
 
-    logformat='%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
+    logformat = '%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
     logging.basicConfig(format=logformat, level=getattr(logging, args.log_level.upper()))
 
     rest_client = create_rest_client(args)
     asyncio.run(run(rest_client, debug=args.debug))
+
 
 if __name__ == '__main__':
     main()

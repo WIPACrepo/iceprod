@@ -21,6 +21,7 @@ def find_module_recursive(name, path=None):
         path = [res[1]]
     return res
 
+
 def listmodules(package_name=''):
     """List modules in a package or directory"""
     file, pathname, description = find_module_recursive(package_name)
@@ -33,6 +34,7 @@ def listmodules(package_name=''):
             tmp = os.path.splitext(module)[0]
             ret.append(package_name+'.'+tmp)
     return ret
+
 
 def run_module(name,*args,**kwargs):
     """Import and start the module"""
@@ -55,7 +57,7 @@ class GlobalID(object):
 
     @classmethod
     def int2char(cls,i):
-        if not isinstance(i,int) or i < 0: # only deal with positive ints
+        if not isinstance(i,int) or i < 0:  # only deal with positive ints
             logging.warning('bad input to int2char: %r',i)
             raise Exception('bad input to int2char')
         out = ''
@@ -66,7 +68,7 @@ class GlobalID(object):
 
     @classmethod
     def char2int(cls,c):
-        if not isinstance(c,str) or len(c) < 1: # only deal with string
+        if not isinstance(c,str) or len(c) < 1:  # only deal with string
             logging.warning('bad input to char2int: %r',c)
             raise Exception('bad input to char2int')
         out = -1
@@ -112,6 +114,7 @@ class GlobalID(object):
             ret = cls.int2char(ret)
         return ret
 
+
 def salt(length=2):
     """Returns a string of random letters"""
     import string
@@ -119,20 +122,22 @@ def salt(length=2):
     letters = string.ascii_letters+string.digits
     return ''.join([random.SystemRandom().choice(letters) for _ in range(length)])
 
+
 class KwargConfig(object):
     """A way to validate kwargs passed in to a class"""
     def __init__(self):
         # defaults
         self._cfg = {}
         self._cfg_types = {}
+
     def validate(self,kwargs):
         # setup cfg variables
         for s in kwargs.keys():
             v = kwargs[s]
             if not isinstance(s,str):
                 raise Exception('parameter name %s is not a string'%(str(s)))
-            if not s in self._cfg:
-                logger.warning('%s is not a valid arg',s)
+            if s not in self._cfg:
+                logging.warning('%s is not a valid arg',s)
                 continue
             t = self._cfg_types[s]
             if t in ('str','file','dir'):
@@ -182,6 +187,7 @@ def get_pkgdata_filename(package, resource):
     parts = resource.split('/')
     parts.insert(0, os.path.dirname(mod.__file__))
     return os.path.join(*parts)
+
 
 def get_pkg_binary(package, binary):
     """Try finding the binary path based on the python package"""

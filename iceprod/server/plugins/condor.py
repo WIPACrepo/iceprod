@@ -4,26 +4,18 @@ The Condor plugin.  Allows submission to
 
 Note: Condor was renamed to HTCondor in 2012.
 """
-from __future__ import print_function
 import os
-import sys
-import random
-import math
 import logging
 import getpass
-from datetime import datetime,timedelta
 import subprocess
 from functools import partial
 
-import tornado.gen
 from tornado.concurrent import run_on_executor
 
-from iceprod.core import dataclasses
-from iceprod.core import functions
-from iceprod.server import GlobalID
 from iceprod.server import grid
 
 logger = logging.getLogger('condor')
+
 
 def check_call_clean_env(*args, **kwargs):
     env = os.environ.copy()
@@ -31,11 +23,13 @@ def check_call_clean_env(*args, **kwargs):
     kwargs['env'] = env
     return subprocess.check_call(*args, **kwargs)
 
+
 def check_output_clean_env(*args, **kwargs):
     env = os.environ.copy()
     del env['LD_LIBRARY_PATH']
     kwargs['env'] = env
     return subprocess.check_output(*args, **kwargs)
+
 
 def condor_os_reqs(os_arch):
     """Convert from OS_ARCH to Condor OS requirements"""
@@ -45,9 +39,9 @@ def condor_os_reqs(os_arch):
     reqs = reqs + ' || OSGVO_OS_STRING =?= "{}"'.format(os_arch.replace('_',' '))
     return '('+reqs+')'
 
-class condor(grid.BaseGrid):
 
-    ### Plugin Overrides ###
+class condor(grid.BaseGrid):
+    """Plugin Overrides for HTCondor pilot submission"""
 
     # let the basic plugin be dumb and implement as little as possible
 
@@ -67,7 +61,7 @@ class condor(grid.BaseGrid):
                 batch_opts[b] = self.queue_cfg['batchopts'][b]
         if cfg:
             if (cfg['steering'] and 'batchsys' in cfg['steering'] and
-                cfg['steering']['batchsys']):
+                    cfg['steering']['batchsys']):
                 for b in cfg['steering']['batchsys']:
                     if b.lower().startswith(self.__class__.__name__):
                         # these settings apply to this batchsys
@@ -90,7 +84,7 @@ class condor(grid.BaseGrid):
                                     alltasks.append(tt)
                         except Exception:
                             logger.warning('error finding specified task to run for %r',
-                                        task,exc_info=True)
+                                           task,exc_info=True)
                 else:
                     alltasks = cfg['tasks']
                 for t in alltasks:
@@ -115,7 +109,7 @@ class condor(grid.BaseGrid):
             p('output = condor.out.$(Process)')
             p('error = condor.err.$(Process)')
             p('notification = never')
-            p('+IsIceProdJob = True') # mark as IceProd for monitoring
+            p('+IsIceProdJob = True')  # mark as IceProd for monitoring
             p('want_graceful_removal = True')
             if filelist:
                 p('transfer_input_files = {}'.format(','.join(filelist)))

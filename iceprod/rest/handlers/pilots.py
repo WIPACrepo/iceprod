@@ -86,8 +86,8 @@ class MultiPilotsHandler(APIBase):
         # validate first
         req_fields = {
             'queue_host': str,
-            'queue_version': str, # iceprod version
-            'resources': dict, # min resources requested
+            'queue_version': str,  # iceprod version
+            'resources': dict,  # min resources requested
         }
         for k in req_fields:
             if k not in data:
@@ -117,7 +117,7 @@ class MultiPilotsHandler(APIBase):
         if 'resources_claimed' not in data:
             data['resources_claimed'] = {}
 
-        ret = await self.db.pilots.insert_one(data)
+        await self.db.pilots.insert_one(data)
         self.set_status(201)
         self.write({'result': pilot_id})
         self.finish()
@@ -138,8 +138,7 @@ class PilotsHandler(APIBase):
         Returns:
             dict: pilot entry
         """
-        ret = await self.db.pilots.find_one({'pilot_id':pilot_id},
-                projection={'_id':False})
+        ret = await self.db.pilots.find_one({'pilot_id':pilot_id}, projection={'_id':False})
         if not ret:
             self.send_error(404, reason="Pilot not found")
         else:
@@ -165,10 +164,12 @@ class PilotsHandler(APIBase):
             raise tornado.web.HTTPError(400, reason='Missing update data')
         data['last_update'] = nowstr()
 
-        ret = await self.db.pilots.find_one_and_update({'pilot_id':pilot_id},
-                {'$set':data},
-                projection={'_id':False},
-                return_document=pymongo.ReturnDocument.AFTER)
+        ret = await self.db.pilots.find_one_and_update(
+            {'pilot_id':pilot_id},
+            {'$set':data},
+            projection={'_id':False},
+            return_document=pymongo.ReturnDocument.AFTER
+        )
         if not ret:
             self.send_error(404, reason="Pilot not found")
         else:

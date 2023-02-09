@@ -9,6 +9,7 @@ from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 
 logger = logging.getLogger('priority')
 
+
 class Priority:
     def __init__(self, rest_client):
         self.rest_client = rest_client
@@ -36,9 +37,10 @@ class Priority:
                     ret = await f
                     if ret:
                         d = list(ret.values())[0]['dataset_id']
-                        self.dataset_cache[d]['tasks'] = {k:
-                            {'task_index': ret[k]['task_index'], 'job_index': ret[k]['job_index']}
-                            for k in ret}
+                        self.dataset_cache[d]['tasks'] = {
+                            k: {'task_index': ret[k]['task_index'], 'job_index': ret[k]['job_index']}
+                            for k in ret
+                        }
 
             dataset_id = dataset_ids.pop()
             self.dataset_cache[dataset_id]['tasks'] = {}
@@ -142,11 +144,6 @@ class Priority:
                     pass
         return num
 
-    async def _get_dataset(self, dataset_id):
-        if not self.dataset_cache:
-            await self._populate_dataset_cache()
-        return self.dataset_cache[dataset_id]
-
     async def get_dataset_prio(self, dataset_id):
         """
         Calculate priority for a dataset.
@@ -207,7 +204,7 @@ class Priority:
             logger.info(f'{dataset_id} after group adjustment: {priority}')
 
         # bias against large datasets
-        factor =  (10000. / num_dataset_tasks)**.15 if num_dataset_tasks > 0 else 1.
+        factor = (10000. / num_dataset_tasks)**.15 if num_dataset_tasks > 0 else 1.
         if factor > 1:
             factor = 1.
         priority *= factor
@@ -271,6 +268,7 @@ class Priority:
 
         return priority
 
+
 def main():
     parser = argparse.ArgumentParser(description='get priority')
     add_auth_to_argparse(parser)
@@ -280,7 +278,7 @@ def main():
 
     args = parser.parse_args()
 
-    logformat='%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
+    logformat = '%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
     logging.basicConfig(format=logformat, level=logging.DEBUG if args.debug else logging.INFO)
 
     rest_client = create_rest_client(args)
@@ -292,6 +290,7 @@ def main():
     else:
         ret = asyncio.run(p.get_dataset_prio(args.dataset_id))
         print('dataset priority', ret)
+
 
 if __name__ == '__main__':
     main()

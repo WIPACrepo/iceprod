@@ -30,21 +30,9 @@ import sys
 import os
 import stat
 import time
-import imp
 import glob
 import copy
-import filecmp
-import tempfile
-import shutil
-import inspect
 from datetime import datetime
-from functools import partial
-try:
-    from collections.abc import Container
-except ImportError:
-    from collections import Container
-from contextlib import contextmanager
-import subprocess
 import asyncio
 
 try:
@@ -55,8 +43,7 @@ except Exception:
 import logging
 
 
-from iceprod.core import to_log,constants
-from iceprod.core import util
+from iceprod.core import constants
 from iceprod.core import dataclasses
 from iceprod.core import util
 from iceprod.core import functions
@@ -99,12 +86,13 @@ class Config:
         elif isinstance(obj,(list,tuple)):
             return [self.parseObject(v,env) for v in obj]
         elif isinstance(obj,dict):
-            ret = copy.copy(obj) # in case it's a subclass of dict, like dataclasses
+            ret = copy.copy(obj)  # in case it's a subclass of dict, like dataclasses
             for k in obj:
                 ret[k] = self.parseObject(obj[k],env)
             return ret
         else:
             return obj
+
 
 class SetupEnv:
     """
@@ -117,7 +105,7 @@ class SetupEnv:
         scopes, or as eval or sprinf functions.
 
     resources
-        \ 
+        \\
 
     data
         Resources and data are similar in that they handle extra files that
@@ -126,7 +114,7 @@ class SetupEnv:
         and/or output. Compression can be automatically handled by IceProd.
         Both resources and data are defined in the environment as strings to
         their file location.
-        
+
     classes
         This is where external software gets added.  The software can be an
         already downloaded resource or just a url to download.  All python
@@ -142,7 +130,7 @@ class SetupEnv:
     uploads
         These are files that should be uploaded when the scope ends.
         Mostly Data objects that are used as output.
-    
+
     shell environment
         An environment to reset to when exiting the context manager.
 
@@ -163,7 +151,7 @@ class SetupEnv:
         self.oldenv = oldenv
         self.env = {}
         self.logger = logger if logger else logging
-        
+
         # validation of input
         if not self.obj:
             raise util.NoncriticalError('object to load environment from is empty')
@@ -243,9 +231,9 @@ class SetupEnv:
                 for c in self.obj['classes']:
                     await setupClass(self.env, self.cfg.parseObject(c, self.env), logger=self.logger)
 
-        except util.NoncriticalError as e:
+        except util.NoncriticalError:
             self.logger.warning('Noncritical error when setting up environment', exc_info=True)
-        except Exception as e:
+        except Exception:
             self.logger.critical('Serious error when setting up environment', exc_info=True)
             raise
 
@@ -255,11 +243,14 @@ class SetupEnv:
         try:
             if not exc_type:
                 # upload data if there was no exception
-                if 'uploads' in self.env and ('offline' not in self.cfg.config['options']
+                if 'uploads' in self.env and (
+                        'offline' not in self.cfg.config['options']
                         or (not self.cfg.config['options']['offline'])
-                        or (self.cfg.config['options']['offline']
+                        or (
+                            self.cfg.config['options']['offline']
                             and 'offline_transfer' in self.cfg.config['options']
-                            and self.cfg.config['options']['offline_transfer'])):
+                            and self.cfg.config['options']['offline_transfer']
+                        )):
                     for d in self.env['uploads']:
                         await uploadData(self.env, d, logger=self.logger)
         finally:
@@ -268,12 +259,12 @@ class SetupEnv:
                 for f in reversed(self.env['deletions']):
                     try:
                         os.remove(f)
-                        base = os.path.basename(f)
+                        # base = os.path.basename(f)
                     except OSError as e:
                         self.logger.error('failed to delete file %s - %s',(str(f),str(e)))
                         if ('options' in self.env and
-                            'debug' in self.env['options'] and
-                            self.env['options']['debug']):
+                                'debug' in self.env['options'] and
+                                self.env['options']['debug']):
                             raise
 
             # reset environment
@@ -305,7 +296,7 @@ async def downloadResource(env, resource, remote_base=None,
     if execute is False:
         logger.info('not transferring file %s', url)
         return
-        
+
     if not local_base:
         if 'subprocess_dir' in env['options']:
             local_base = env['options']['subprocess_dir']
@@ -372,8 +363,7 @@ async def downloadResource(env, resource, remote_base=None,
                 print(f'{stats["now"]} Data movement stats: input {stats["duration"]:.3f} {stats["size"]:.0f} {stats["name"]}')
 
     # check compression
-    if (resource['compression'] and
-        (functions.iscompressed(url) or functions.istarred(url))):
+    if resource['compression'] and (functions.iscompressed(url) or functions.istarred(url)):
         # uncompress file
         files = functions.uncompress(local)
         # add uncompressed file(s) to env
@@ -382,6 +372,7 @@ async def downloadResource(env, resource, remote_base=None,
         # add file to env
         env['files'][resource['local']] = local
     logger.warning('resource %s added to env',resource['local'])
+
 
 async def downloadData(env, data, logger=None):
     """Download data and put location in the env"""
@@ -392,7 +383,7 @@ async def downloadData(env, data, logger=None):
         local_base = env['options']['subprocess_dir']
     else:
         local_base = os.getcwd()
-    
+
     execute = data.do_transfer()
     checksum = None
     if execute is not False:
@@ -404,6 +395,7 @@ async def downloadData(env, data, logger=None):
             pass
     await downloadResource(env, data, remote_base, local_base,
                            checksum=checksum, logger=logger)
+
 
 async def uploadData(env, data, logger=None):
     """Upload data"""
@@ -439,7 +431,7 @@ async def uploadData(env, data, logger=None):
     if data['compression']:
         # get compression type, if specified
         if ((functions.iscompressed(url) or functions.istarred(url)) and
-            not (functions.iscompressed(local) or functions.istarred(local))):
+                not (functions.iscompressed(local) or functions.istarred(local))):
             # url has compression on it, so use that
             if '.tar.' in url:
                 c = '.'.join(url.rsplit('.',2)[-2:])
@@ -490,7 +482,7 @@ async def uploadData(env, data, logger=None):
     try:
         filecatalog = data.filecatalog(env)
     except Exception:
-        pass # no filecatalog available
+        pass  # no filecatalog available
     else:
         try:
             cksm = functions.sha512sum(local)
@@ -508,11 +500,12 @@ async def uploadData(env, data, logger=None):
         except Exception:
             logger.warning('failed to add %r to filecatalog', url, exc_info=True)
 
+
 async def setupClass(env, class_obj, logger=None):
     """Set up a class for use in modules, and put it in the env"""
     if not logger:
         logger = logging
-    if not 'classes' in env:
+    if 'classes' not in env:
         env['classes'] = {}
     if not class_obj:
         raise Exception('Class is not defined')
@@ -529,8 +522,7 @@ async def setupClass(env, class_obj, logger=None):
             local = env['files'][class_obj['resource_name']]
             if not isinstance(local,dataclasses.String):
                 local = local[0]
-            if (class_obj['src'] and
-                os.path.exists(os.path.join(local,class_obj['src']))):
+            if class_obj['src'] and os.path.exists(os.path.join(local,class_obj['src'])):
                 # treat src as a path inside the resource
                 local = os.path.join(local,class_obj['src'])
             loaded = True
@@ -540,7 +532,7 @@ async def setupClass(env, class_obj, logger=None):
         while True:
             url = class_obj['src']
             if url and functions.isurl(url):
-                i = 10 # skip repeat download attempts
+                i = 10  # skip repeat download attempts
             else:
                 if i == 0:
                     # first, look in resources
@@ -582,13 +574,12 @@ async def setupClass(env, class_obj, logger=None):
             # download class
             logger.warning('attempting to download class %s to %s',url,local_temp)
             try:
-                download_local = await functions.download(url, local_temp,
-                        options=download_options)
+                download_local = await functions.download(url, local_temp, options=download_options)
             except Exception:
                 logger.info('download failed, {} attempts left'.format(i), exc_info=True)
                 if i < 10:
                     i += 1
-                    continue # retry with different url
+                    continue  # retry with different url
                 raise
             if not os.path.exists(download_local):
                 raise Exception('failed to download {} to {}'.format(url, local))
@@ -608,8 +599,7 @@ async def setupClass(env, class_obj, logger=None):
                         logger.info('rename %r to %r', local, dirname)
                         local = dirname
                 else:
-                    logger.warning('files is strange datatype: %r',
-                                type(files))
+                    logger.warning('files is strange datatype: %r', type(files))
             elif local != download_local:
                 logger.info('rename %r to %r', download_local, local)
                 os.rename(download_local, local)
@@ -624,24 +614,26 @@ async def setupClass(env, class_obj, logger=None):
         # add binary libraries to the LD_LIBRARY_PATH
         def ldpath(root,f=None):
             root = os.path.abspath(root)
+
             def islib(f):
                 return f[-3:] == '.so' or '.so.' in f or f[-2:] == '.a' or '.a.' in f
             if (f and islib(f)) or any(islib(f) for f in os.listdir(root)):
                 logger.info('adding to LD_LIBRARY_PATH: %s',root)
                 if 'LD_LIBRARY_PATH' in os.environ:
                     if root in os.environ['LD_LIBRARY_PATH'].split(':'):
-                        return # already present
+                        return  # already present
                     os.environ['LD_LIBRARY_PATH'] = root+':'+os.environ['LD_LIBRARY_PATH']
                 else:
                     os.environ['LD_LIBRARY_PATH'] = root
             else:
                 logger.debug('no libs in %s',root)
+
         def addToPythonPath(root):
             if glob.glob(os.path.join(root,'*.py')):
                 logger.info('adding to PYTHONPATH: %s',root)
                 if 'PYTHONPATH' in os.environ:
                     if root in os.environ['PYTHONPATH'].split(':'):
-                        return # already present
+                        return  # already present
                     os.environ['PYTHONPATH'] = root+':'+os.environ['PYTHONPATH']
                 else:
                     os.environ['PYTHONPATH'] = root
@@ -683,7 +675,9 @@ async def setupClass(env, class_obj, logger=None):
                 else:
                     os.environ[k] = v
 
-### Run Functions ###
+
+# Run Functions #
+
 
 async def runtask(cfg, globalenv, task, logger=None):
     """Run the specified task"""
@@ -728,6 +722,7 @@ async def runtask(cfg, globalenv, task, logger=None):
 
     globalenv['stats']['tasks'].append(stats)
 
+
 async def runtray(cfg, globalenv,tray,stats={}, logger=None):
     """Run the specified tray"""
     if not tray:
@@ -762,6 +757,7 @@ async def runtray(cfg, globalenv,tray,stats={}, logger=None):
             logger.warning('error removing tray_temp directory: %s',
                            str(e), exc_info=True)
 
+
 async def runmodule(cfg, globalenv, module, stats={}, logger=None):
     """Run the specified module"""
     if not module:
@@ -790,6 +786,7 @@ async def runmodule(cfg, globalenv, module, stats={}, logger=None):
             # yield process back to pilot or driver, so it can be killed
             yield process
 
+
 class ForkModule:
     """
     Modules are run in a forked process to prevent segfaults from killing IceProd.
@@ -816,7 +813,7 @@ class ForkModule:
         self.logger = logger
         self.stats = stats if stats else {}
         self.proc = None
-        
+
         self.error_filename = constants['task_exception']
         self.stats_filename = constants['stats']
         if 'subprocess_dir' in cfg.config['options'] and cfg.config['options']['subprocess_dir']:
@@ -870,10 +867,10 @@ class ForkModule:
 
         if module_src:
             self.logger.warning('running module \'%s\' with src %s',
-                    self.module['name'], module_src)
+                                self.module['name'], module_src)
         else:
             self.logger.warning('running module \'%s\' with class %s',
-                    self.module['name'], self.module['running_class'])
+                                self.module['name'], self.module['running_class'])
 
         # set up the args
         args = self.module['args']
@@ -945,6 +942,7 @@ class ForkModule:
                     else:
                         return ret+'='+str(b)
                 args = args['args']+[splitter(a,args['kwargs'][a]) for a in args['kwargs']]
+
                 # force args to string
                 def toStr(a):
                     if isinstance(a,(bytes,str)):
@@ -967,7 +965,7 @@ class ForkModule:
                             shebang = True
                 except Exception:
                     self.logger.warning('cannot get shebang for %s', module_src,
-                                   exc_info=True)
+                                        exc_info=True)
 
             if (not shebang) and module_src[-3:] == '.py':
                 # call as python script
@@ -1002,7 +1000,7 @@ class ForkModule:
                     pass
                 else:
                     # filter SROOT out of environ
-                    ret = [x for x in os.environ[k].split(':') if x.strip() and (not x.startswith(prefix)) and not 'iceprod' in x.lower()]
+                    ret = [x for x in os.environ[k].split(':') if x.strip() and (not x.startswith(prefix)) and 'iceprod' not in x.lower()]
                     if ret:
                         env[k] = ':'.join(ret)
             # handle resource environment
@@ -1041,7 +1039,7 @@ class ForkModule:
                 try:
                     new_stats = pickle.load(open(self.stats_filename, 'rb'))
                     if self.module['name']:
-                        self.stats[module['name']] = new_stats
+                        self.stats[self.module['name']] = new_stats
                     else:
                         self.stats.update(new_stats)
                 except Exception:

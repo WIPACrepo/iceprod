@@ -10,6 +10,7 @@ from iceprod.server.config import IceProdConfig
 
 logger = logging.getLogger('globus')
 
+
 class SiteGlobusProxy(object):
     """
     Manage site-wide globus proxy
@@ -50,9 +51,16 @@ class SiteGlobusProxy(object):
         if 'duration' not in self.cfg:
             raise Exception('duration missing')
         logger.info('duration: %r',self.cfg['duration'])
-        if subprocess.call(['grid-proxy-info','-e',
-                            '-valid','%d:0'%self.cfg['duration'],
-                           ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL):
+        if subprocess.call(
+            [
+                'grid-proxy-info',
+                '-e',
+                '-valid',
+                '%d:0'%self.cfg['duration'],
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        ):
             # proxy needs updating
             if 'voms_vo' in self.cfg and self.cfg['voms_vo']:
                 cmd = ['voms-proxy-init']
@@ -75,7 +83,7 @@ class SiteGlobusProxy(object):
             if 'voms_vo' in self.cfg and self.cfg['voms_vo']:
                 for line in p.stdout.decode('utf-8').split('\n'):
                     if line.startswith('Creating proxy') and line.endswith('Done'):
-                        break # this is a good proxy
+                        break  # this is a good proxy
                 else:
                     raise Exception('voms-proxy-init failed')
             elif p.returncode > 0:

@@ -5,7 +5,6 @@ File Catalog
 Interface to communicate with a File Catalog using REST over HTTP.
 """
 
-import time
 import logging
 
 import requests
@@ -17,7 +16,7 @@ logger = logging.getLogger('file_catalog')
 
 class FileCatalog(object):
     """
-    High level file catalog interface.  
+    High level file catalog interface.
 
     Args:
         url (str): url of the file catalog server

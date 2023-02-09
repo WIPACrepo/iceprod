@@ -10,24 +10,12 @@ It has been broken down into several sub-handlers for easier maintenance.
 
 """
 
-import sys
 import os
-import time
 import random
-import binascii
-import socket
-from threading import Thread,Event,Condition
 import logging
-from contextlib import contextmanager
-from functools import partial, wraps
-try:
-    from urlparse import urlparse
-except ImportError:
-    from urllib.parse import urlparse
-from datetime import timedelta
 from collections import defaultdict
 
-from iceprod.core.jsonUtil import json_encode,json_decode
+from iceprod.core.jsonUtil import json_encode
 
 import tornado.ioloop
 import tornado.web
@@ -35,16 +23,14 @@ import tornado.httpserver
 import tornado.gen
 
 import tornado.concurrent
-import concurrent.futures
 from rest_tools.client import RestClient
 from rest_tools.server import (catch_error, RestServer, RestHandlerSetup, RestHandler,
                                OpenIDLoginHandler, OpenIDWebHandlerMixin, KeycloakUsernameMixin)
 from rest_tools import telemetry as wtt
 
 import iceprod
-from iceprod.server import GlobalID, get_pkgdata_filename
+from iceprod.server import get_pkgdata_filename
 from iceprod.server import module
-from iceprod.server.ssl_cert import create_cert, verify_cert
 import iceprod.core.functions
 from iceprod.server import documentation
 
@@ -105,8 +91,8 @@ class website(module.module):
             else:
                 # for local systems
                 rest_address = 'http://{}:{}'.format(
-                        self.cfg['rest_api']['address'],
-                        self.cfg['rest_api']['port'],
+                    self.cfg['rest_api']['address'],
+                    self.cfg['rest_api']['port'],
                 )
 
             rest_cfg = {
@@ -163,7 +149,6 @@ class website(module.module):
                 (r"/help", Help, handler_args),
                 (r"/docs/(.*)", Documentation, handler_args),
                 (r"/dataset/(\w+)/log/(\w+)", Log, handler_args),
-                #(r"/groups", GroupsHandler, handler_args),
                 (r'/profile', Profile, handler_args),
                 (r"/login", OpenIDLoginHandler, login_handler_args),
                 (r"/logout", Logout, handler_args),
@@ -182,7 +167,7 @@ class website(module.module):
             # start tornado
             self.http_server.startup(
                 port=self.cfg['webserver']['port'],
-                address='0.0.0.0', # bind to all
+                address='0.0.0.0',  # bind to all
             )
         except Exception:
             logger.error('website startup error',exc_info=True)
@@ -265,22 +250,20 @@ class Submit(PublicHandler):
     async def get(self):
         logger.info('here')
         self.statsd.incr('submit')
-        url = self.request.uri[1:]
         token = self.auth_key
         groups = []
         if self.auth_data and 'groups' in self.auth_data:
             groups = self.auth_data['groups']
         default_config = {
-          "categories": [],
-          "dataset": 0,
-          "description": "",
-          "difplus": None,
-          "options": {
-          },
-          "parent_id": 0,
-          "steering": None,
-          "tasks": [],
-          "version": 3
+            "categories": [],
+            "dataset": 0,
+            "description": "",
+            "difplus": None,
+            "options": {},
+            "parent_id": 0,
+            "steering": None,
+            "tasks": [],
+            "version": 3
         }
         render_args = {
             'passkey':token,
@@ -342,7 +325,6 @@ class DatasetBrowse(PublicHandler):
 
         ret = await self.rest_client.request('GET', url)
         datasets = sorted(ret.values(), key=lambda x:x['dataset'], reverse=True)
-        #logger.info('datasets: %r', datasets)
         self.render('dataset_browse.html',datasets=datasets,
                     filter_options=filter_options,
                     filter_results=filter_results)
@@ -428,25 +410,25 @@ class Task(PublicHandler):
     @tornado.web.authenticated
     async def get(self, dataset_id, task_id):
         self.statsd.incr('task')
-        status = self.get_argument('status',default=None)
+        status = self.get_argument('status', default=None)
 
         ret = await self.rest_client.request('POST','/create_token')
         passkey = ret['result']
 
         dataset = await self.rest_client.request('GET', '/datasets/{}'.format(dataset_id))
-        task_details = await self.rest_client.request('GET','/datasets/{}/tasks/{}'.format(dataset_id, task_id))
+        task_details = await self.rest_client.request('GET','/datasets/{}/tasks/{}?status={}'.format(dataset_id, task_id, status))
         task_stats = await self.rest_client.request('GET','/datasets/{}/tasks/{}/task_stats?last=true'.format(dataset_id, task_id))
         if task_stats:
             task_stats = list(task_stats.values())[0]
         try:
             ret = await self.rest_client.request('GET','/datasets/{}/tasks/{}/logs?group=true'.format(dataset_id, task_id))
             logs = ret['logs']
-            #logger.info("logs: %r", logs)
+            # logger.info("logs: %r", logs)
             ret2 = await self.rest_client.request('GET','/datasets/{}/tasks/{}/logs?keys=log_id|name|timestamp'.format(dataset_id, task_id))
             logs2 = ret2['logs']
             logger.info("logs2: %r", logs2)
             log_by_name = defaultdict(list)
-            for log in sorted(logs2,key=lambda l:l['timestamp'] if 'timestamp' in l else '',reverse=True):
+            for log in sorted(logs2,key=lambda lg:lg['timestamp'] if 'timestamp' in lg else '',reverse=True):
                 log_by_name[log['name']].append(log)
             for log in logs:
                 if 'data' not in log or not log['data']:
@@ -490,7 +472,7 @@ class Job(PublicHandler):
 
         dataset = await self.rest_client.request('GET', '/datasets/{}'.format(dataset_id))
         job = await self.rest_client.request('GET', '/datasets/{}/jobs/{}'.format(dataset_id,job_id))
-        tasks = await self.rest_client.request('GET','/datasets/{}/tasks?job_id={}'.format(dataset_id,job_id))
+        tasks = await self.rest_client.request('GET','/datasets/{}/tasks?job_id={}&status={}'.format(dataset_id,job_id,status))
         job['tasks'] = list(tasks.values())
         job['tasks'].sort(key=lambda x:x['task_index'])
         self.render('job_detail.html', dataset=dataset, job=job, passkey=passkey)

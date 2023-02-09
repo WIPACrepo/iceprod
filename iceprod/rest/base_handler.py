@@ -3,7 +3,6 @@ import logging
 from rest_tools.server import RestHandlerSetup, RestHandler
 
 import iceprod
-from iceprod.server.module import FakeStatsClient
 from .auth import AttrAuthMixin
 
 logger = logging.getLogger('rest')

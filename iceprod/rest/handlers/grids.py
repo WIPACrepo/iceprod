@@ -66,8 +66,8 @@ class MultiGridsHandler(APIBase):
         # validate first
         req_fields = {
             'host': str,
-            'queues': dict, # dict of {name: type}
-            'version': str, # iceprod version
+            'queues': dict,  # dict of {name: type}
+            'version': str,  # iceprod version
         }
         for k in req_fields:
             if k not in data:
@@ -84,10 +84,11 @@ class MultiGridsHandler(APIBase):
         if 'debug' not in data:
             data['debug'] = False
 
-        ret = await self.db.grids.insert_one(data)
+        await self.db.grids.insert_one(data)
         self.set_status(201)
         self.write({'result': grid_id})
         self.finish()
+
 
 class GridsHandler(APIBase):
     """
@@ -104,8 +105,7 @@ class GridsHandler(APIBase):
         Returns:
             dict: grid entry
         """
-        ret = await self.db.grids.find_one({'grid_id':grid_id},
-                projection={'_id':False})
+        ret = await self.db.grids.find_one({'grid_id':grid_id}, projection={'_id':False})
         if not ret:
             self.send_error(404, reason="Grid not found")
         else:
@@ -131,10 +131,12 @@ class GridsHandler(APIBase):
             raise tornado.web.HTTPError(400, reason='Missing update data')
         data['last_update'] = nowstr()
 
-        ret = await self.db.grids.find_one_and_update({'grid_id':grid_id},
-                {'$set':data},
-                projection={'_id':False},
-                return_document=pymongo.ReturnDocument.AFTER)
+        ret = await self.db.grids.find_one_and_update(
+            {'grid_id':grid_id},
+            {'$set':data},
+            projection={'_id':False},
+            return_document=pymongo.ReturnDocument.AFTER
+        )
         if not ret:
             self.send_error(404, reason="Grid not found")
         else:

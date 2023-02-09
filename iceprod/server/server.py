@@ -10,7 +10,6 @@ from __future__ import absolute_import, division, print_function
 import os
 import sys
 import logging
-from functools import partial
 import importlib
 import subprocess
 from datetime import datetime, timedelta
@@ -26,6 +25,7 @@ from iceprod.server.config import IceProdConfig
 
 logger = logging.getLogger('Server')
 
+
 class Server(object):
     """
     The actual server.
@@ -36,13 +36,15 @@ class Server(object):
         self.executor = ThreadPoolExecutor(max_workers=10)
         self.cfg = IceProdConfig(override=config_params)
         self.modules = {}
-        self.services = {'daemon': {'restart': self.restart,
-                                    'reload': self.reload,
-                                    'stop': self.stop,
-                                    'kill': self.kill,
-                                    'get_running_modules': lambda: self.modules.keys(),
-                                   },
-                        }
+        self.services = {
+            'daemon': {
+                'restart': self.restart,
+                'reload': self.reload,
+                'stop': self.stop,
+                'kill': self.kill,
+                'get_running_modules': lambda: self.modules.keys(),
+            },
+        }
         self.outfile = outfile
         self.errfile = errfile
 
@@ -109,11 +111,12 @@ class Server(object):
             m.kill()
         self.io_loop.stop()
 
+
 def roll_files(fd, filename, num_files=5):
     d = datetime.utcnow()
     ext = (d-timedelta(days=num_files-1)).strftime('%Y-%m-%d')
     newfile = f'{filename}.{ext}'
-    if os.path.exists(newfile): # delete last file
+    if os.path.exists(newfile):  # delete last file
         os.remove(newfile)
     for i in range(num_files-2, 0, -1):
         ext = (d-timedelta(days=i)).strftime('%Y-%m-%d')

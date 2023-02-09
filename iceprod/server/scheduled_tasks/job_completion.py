@@ -19,6 +19,7 @@ from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 
 logger = logging.getLogger('job_completion')
 
+
 def job_completion(module):
     """
     Initial entrypoint.
@@ -28,6 +29,7 @@ def job_completion(module):
     """
     # initial delay
     IOLoop.current().call_later(random.randint(10,60*10), run, module.rest_client)
+
 
 async def run(rest_client, debug=False):
     """
@@ -87,12 +89,13 @@ def main():
 
     args = parser.parse_args()
 
-    logformat='%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
+    logformat = '%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
     logging.basicConfig(format=logformat, level=getattr(logging, args.log_level.upper()))
 
     rest_client = create_rest_client(args)
 
     asyncio.run(run(rest_client, debug=args.debug))
+
 
 if __name__ == '__main__':
     main()

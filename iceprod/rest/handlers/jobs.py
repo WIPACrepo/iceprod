@@ -87,10 +87,11 @@ class MultiJobsHandler(APIBase):
             'status_changed': nowstr(),
         })
 
-        ret = await self.db.jobs.insert_one(data)
+        await self.db.jobs.insert_one(data)
         self.set_status(201)
         self.write({'result': job_id})
         self.finish()
+
 
 class JobsHandler(APIBase):
     """
@@ -107,8 +108,7 @@ class JobsHandler(APIBase):
         Returns:
             dict: job entry
         """
-        ret = await self.db.jobs.find_one({'job_id':job_id},
-                projection={'_id':False})
+        ret = await self.db.jobs.find_one({'job_id':job_id}, projection={'_id':False})
         if not ret:
             self.send_error(404, reason="Job not found")
         else:
@@ -133,15 +133,18 @@ class JobsHandler(APIBase):
         if not data:
             raise tornado.web.HTTPError(400, reason='Missing update data')
 
-        ret = await self.db.jobs.find_one_and_update({'job_id':job_id},
-                {'$set':data},
-                projection={'_id':False},
-                return_document=pymongo.ReturnDocument.AFTER)
+        ret = await self.db.jobs.find_one_and_update(
+            {'job_id':job_id},
+            {'$set':data},
+            projection={'_id':False},
+            return_document=pymongo.ReturnDocument.AFTER
+        )
         if not ret:
             self.send_error(404, reason="Job not found")
         else:
             self.write(ret)
             self.finish()
+
 
 class DatasetMultiJobsHandler(APIBase):
     """
@@ -189,6 +192,7 @@ class DatasetMultiJobsHandler(APIBase):
         self.write(ret)
         self.finish()
 
+
 class DatasetJobsHandler(APIBase):
     """
     Handle single job requests.
@@ -206,13 +210,16 @@ class DatasetJobsHandler(APIBase):
         Returns:
             dict: job entry
         """
-        ret = await self.db.jobs.find_one({'job_id':job_id,'dataset_id':dataset_id},
-                projection={'_id':False})
+        ret = await self.db.jobs.find_one(
+            {'job_id':job_id,'dataset_id':dataset_id},
+            projection={'_id':False}
+        )
         if not ret:
             self.send_error(404, reason="Job not found")
         else:
             self.write(ret)
             self.finish()
+
 
 class DatasetJobsStatusHandler(APIBase):
     """
@@ -243,13 +250,16 @@ class DatasetJobsStatusHandler(APIBase):
             'status_changed': nowstr(),
         }
 
-        ret = await self.db.jobs.update_one({'job_id':job_id,'dataset_id':dataset_id},
-                {'$set':update_data})
+        ret = await self.db.jobs.update_one(
+            {'job_id':job_id,'dataset_id':dataset_id},
+            {'$set':update_data}
+        )
         if (not ret) or ret.modified_count < 1:
             self.send_error(404, reason="Job not found")
         else:
             self.write({})
             self.finish
+
 
 class DatasetJobBulkStatusHandler(APIBase):
     """
@@ -294,6 +304,7 @@ class DatasetJobBulkStatusHandler(APIBase):
             self.write({})
             self.finish()
 
+
 class DatasetJobSummariesStatusHandler(APIBase):
     """
     Handle job summary grouping by status.
@@ -310,8 +321,10 @@ class DatasetJobSummariesStatusHandler(APIBase):
         Returns:
             dict: {<status>: [<job_id>,]}
         """
-        cursor = self.db.jobs.find({'dataset_id':dataset_id},
-                projection={'_id':False,'status':True,'job_id':True})
+        cursor = self.db.jobs.find(
+            {'dataset_id':dataset_id},
+            projection={'_id':False,'status':True,'job_id':True}
+        )
         ret = defaultdict(list)
         async for row in cursor:
             ret[row['status']].append(row['job_id'])
@@ -320,6 +333,7 @@ class DatasetJobSummariesStatusHandler(APIBase):
             ret2[k] = ret[k]
         self.write(ret2)
         self.finish()
+
 
 class DatasetJobCountsStatusHandler(APIBase):
     """
