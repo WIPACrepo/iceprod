@@ -1,9 +1,7 @@
 """
 Task submission directly to condor.
 """
-import sys
 import os
-import copy
 import logging
 import getpass
 from datetime import datetime,timedelta
@@ -12,14 +10,10 @@ import asyncio
 from functools import partial
 import gzip
 
-import tornado.gen
-from tornado.concurrent import run_on_executor
 import requests.exceptions
 
 import iceprod
-from iceprod.core import dataclasses
 from iceprod.core import constants
-from iceprod.core import functions
 from iceprod.core.exe import Config
 from iceprod.core.resources import sanitized_requirements, rounded_requirements
 from iceprod.core.exe_json import ServerComms
@@ -29,12 +23,14 @@ from iceprod.server.plugins.condor import condor_os_reqs
 
 logger = logging.getLogger('plugin-condor_direct')
 
+
 async def check_call(*args, **kwargs):
     logger.info('subprocess_check_call: %r', args)
     p = await asyncio.create_subprocess_exec(*args, **kwargs)
     if await p.wait():
         raise Exception(f'command failed, return code {p.returncode}')
     return p
+
 
 async def check_call_clean_env(*args, **kwargs):
     logger.info('subprocess_check_call: %r', args)
@@ -46,6 +42,7 @@ async def check_call_clean_env(*args, **kwargs):
         raise Exception(f'command failed, return code {p.returncode}')
     return p
 
+
 async def check_output(*args, **kwargs):
     kwargs['stdout'] = subprocess.PIPE
     kwargs['stderr'] = subprocess.STDOUT
@@ -55,6 +52,7 @@ async def check_output(*args, **kwargs):
     if p.returncode:
         raise Exception(f'command failed, return code {p.returncode}')
     return out.decode('utf-8')
+
 
 async def check_output_clean_env(*args, **kwargs):
     logger.info('subprocess_check_output: %r', args)
@@ -70,9 +68,11 @@ async def check_output_clean_env(*args, **kwargs):
         raise Exception(f'command failed, return code {p.returncode}')
     return out.decode('utf-8')
 
+
 class MyServerComms(ServerComms):
     def __init__(self, rest_client):
         self.rest = rest_client
+
 
 class TaskInfo(dict):
     def __init__(self, **kwargs):
@@ -84,6 +84,7 @@ class TaskInfo(dict):
         self['submit_dir'] = None
         super(TaskInfo, self).__init__(**kwargs)
 
+
 def run_async(func,*args,**kwargs):
     async def myfunc():
         return_obj = {'args':args,'kwargs':kwargs}
@@ -94,6 +95,7 @@ def run_async(func,*args,**kwargs):
             return_obj['exception'] = e
         return return_obj
     return asyncio.ensure_future(myfunc())
+
 
 def read_filename(filename):
     """Read a file that may potentially be gzipped"""
@@ -129,9 +131,9 @@ def read_filename(filename):
         data = data[-1*10**8:]
     return data
 
-class condor_direct(grid.BaseGrid):
 
-    ### Plugin Overrides ###
+class condor_direct(grid.BaseGrid):
+    """Plugin Overrides for HTCondor direct job submission"""
 
     batch_site = 'CondorDirect'
     batch_outfile = 'condor.out'
@@ -304,7 +306,7 @@ class condor_direct(grid.BaseGrid):
                                   resources=resources, message=message, site=site)
         else:
             await comms.task_error(task_id, dataset_id=dataset_id, reason=reason,
-                                  resources=resources, site=site)
+                                   resources=resources, site=site)
 
     async def finish_task(self, task_id, dataset_id, submit_dir, site=None):
         """complete a task"""
@@ -344,9 +346,7 @@ class condor_direct(grid.BaseGrid):
 
     async def check_and_clean(self):
         """Check and clean the grid"""
-        #return ### for queueing, don't need this
         host = grid.get_host()
-        #self.x509proxy.update_proxy()
 
         # get time limits
         try:
@@ -384,8 +384,8 @@ class condor_direct(grid.BaseGrid):
         pilots = {}
         for pilot_id in ret:
             if (ret[pilot_id]['queue_host'] == host
-                and 'grid_queue_id' in ret[pilot_id]
-                and ret[pilot_id]['grid_queue_id']):
+                    and 'grid_queue_id' in ret[pilot_id]
+                    and ret[pilot_id]['grid_queue_id']):
                 pilots[ret[pilot_id]['grid_queue_id']] = ret[pilot_id]
 
         # first, check if anything has completed successfully
@@ -455,8 +455,7 @@ class condor_direct(grid.BaseGrid):
                                             grid=grid_history[gid])
                             awaitables.add(run_async(post_process, task))
                             while len(awaitables) >= 10:
-                                done, pending = await asyncio.wait(awaitables,
-                                        return_when=asyncio.FIRST_COMPLETED)
+                                done, pending = await asyncio.wait(awaitables, return_when=asyncio.FIRST_COMPLETED)
                                 awaitables = pending
                                 for fut in done:
                                     await post_process_complete(fut)
@@ -479,8 +478,7 @@ class condor_direct(grid.BaseGrid):
                 if gid in pilots:
                     del pilots[gid]
 
-
-        ### Now do the regular check and clean
+        # Now do the regular check and clean
         reset_pilots = set(pilots).difference(grid_jobs)
         prechecked_dirs = set()
 
@@ -506,12 +504,12 @@ class condor_direct(grid.BaseGrid):
 
             if now - submit_time > time_dict[status]:
                 logger.info('pilot over time: %r', pilots[grid_queue_id]['pilot_id'])
-                #reset_pilots.add(grid_queue_id)
+                # reset_pilots.add(grid_queue_id)
                 remove_grid_jobs.add(grid_queue_id)
             elif status == 'error':
                 logger.info('job error. pilot_id: %r, grid_id: %r',
                             pilots[grid_queue_id]['pilot_id'], grid_queue_id)
-                #reset_pilots.add(grid_queue_id)
+                # reset_pilots.add(grid_queue_id)
                 remove_grid_jobs.add(grid_queue_id)
 
                 pilot = pilots[grid_queue_id]
@@ -546,7 +544,7 @@ class condor_direct(grid.BaseGrid):
                 # use all_time instead of suspend_time because the
                 # dir will have the submit time, not the last time
                 if now-mtime < all_time:
-                    continue # skip for suspended or failed tasks
+                    continue  # skip for suspended or failed tasks
                 delete_dirs.add(d)
 
         logger.info('%d processing pilots', self.grid_processing)
@@ -570,7 +568,7 @@ class condor_direct(grid.BaseGrid):
                     pass
                 except requests.exceptions.HTTPError as e:
                     if e.response.status_code == 404:
-                        continue # a missing pilot is the point of deleting it
+                        continue  # a missing pilot is the point of deleting it
                     logger.info('delete pilot error', exc_info=True)
                 except Exception:
                     logger.info('delete pilot error', exc_info=True)
@@ -583,17 +581,9 @@ class condor_direct(grid.BaseGrid):
         if delete_dirs:
             await asyncio.ensure_future(self._delete_dirs(delete_dirs))
 
-        #os._exit(0) # only run this once, then exit once cleanup is done
-
     async def queue(self):
         """Submit a pilot for each task, up to the limit"""
         host = grid.get_host()
-        #self.x509proxy.update_proxy()
-
-        debug = False
-        if ('queue' in self.cfg and 'debug' in self.cfg['queue']
-            and self.cfg['queue']['debug']):
-            debug = True
 
         dataset_cache = {}
 
@@ -666,14 +656,15 @@ class condor_direct(grid.BaseGrid):
                     resources_claimed[k] = resources[k]
                 else:
                     resources_claimed[k] = 0
-            pilot = {'resources': resources,
-                     'resources_available': resources_available,
-                     'resources_claimed': resources_claimed,
-                     'tasks': [task['task_id']],
-                     'queue_host': host,
-                     'queue_version': iceprod.__version__,
-                     'host': self.site,
-                     'version': iceprod.__version__,
+            pilot = {
+                'resources': resources,
+                'resources_available': resources_available,
+                'resources_claimed': resources_claimed,
+                'tasks': [task['task_id']],
+                'queue_host': host,
+                'queue_version': iceprod.__version__,
+                'host': self.site,
+                'version': iceprod.__version__,
             }
             ret = await self.rest_client.request('POST', '/pilots', pilot)
             pilot['pilot_id'] = ret['result']
@@ -713,7 +704,7 @@ class condor_direct(grid.BaseGrid):
         for _ in range(queue_num):
             # get a processing task
             try:
-                ret = await self.rest_client.request('POST', f'/task_actions/process', args)
+                ret = await self.rest_client.request('POST', '/task_actions/process', args)
             except Exception:
                 logger.info('no more tasks to queue')
                 break
@@ -745,7 +736,6 @@ class condor_direct(grid.BaseGrid):
                 if 'grid_queue_id' in task['pilot'] and task['pilot']['grid_queue_id']:
                     grid_queue_ids.append(task['pilot']['grid_queue_id'])
 
-
     async def download_input(self, task):
         pass
 
@@ -756,7 +746,7 @@ class condor_direct(grid.BaseGrid):
         pass
 
     async def generate_submit_file(self, task, cfg=None, passkey=None,
-                             filelist=None):
+                                   filelist=None):
         """Generate queueing system submit file for task in dir."""
         args = self.get_submit_args(task,cfg=cfg)
         args.extend(['--offline', '--offline_transfer', 'True', '--gzip-logs'])
@@ -774,7 +764,7 @@ class condor_direct(grid.BaseGrid):
                 batch_opts[b] = self.queue_cfg['batchopts'][b]
         if cfg:
             if (cfg['steering'] and 'batchsys' in cfg['steering'] and
-                cfg['steering']['batchsys']):
+                    cfg['steering']['batchsys']):
                 for b in cfg['steering']['batchsys']:
                     if self.__class__.__name__.startswith(b.lower()):
                         # these settings apply to this batchsys
@@ -798,7 +788,7 @@ class condor_direct(grid.BaseGrid):
                                 alltasks.append(tt)
                     except Exception:
                         logger.warning('error finding specified task to run for %r',
-                                    task,exc_info=True)
+                                       task,exc_info=True)
             else:
                 alltasks = cfg['tasks']
             logger.info(f'{task["task_id"]} selected tasks: {alltasks}')
@@ -833,7 +823,7 @@ class condor_direct(grid.BaseGrid):
             p('output = condor.out')
             p('error = condor.err')
             p('notification = never')
-            p('+IsIceProdJob = True') # mark as IceProd for monitoring
+            p('+IsIceProdJob = True')  # mark as IceProd for monitoring
             p('want_graceful_removal = True')
             if input_files:
                 p('transfer_input_files = {}'.format(','.join(input_files)))
@@ -903,14 +893,14 @@ class condor_direct(grid.BaseGrid):
     async def submit(self,task):
         """Submit task to queueing system."""
         cmd = ['condor_submit','-terse','condor.submit']
-        for tries in range(3): # make three attempts
+        for tries in range(3):  # make three attempts
             try:
                 out = await check_output_clean_env(*cmd, cwd=task['submit_dir'])
                 break
-            except:
+            except Exception:
                 if tries >= 2:
                     raise
-                await asyncio.sleep(1) # backoff a bit
+                await asyncio.sleep(1)  # backoff a bit
         grid_queue_id = []
         for line in out.split('\n'):
             # look for range

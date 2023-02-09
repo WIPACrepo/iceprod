@@ -18,10 +18,11 @@ constants = {'stdout': 'iceprod_out',
              'task_exception': 'iceprod_task_exception',
              'args': 'iceprod_args',}
 
+
 @contextmanager
 def to_file(stream=None, file='out'):
     """redirect a stream (like stdout) to regular file
-    
+
        :param stream: previous file object
        :param file: new file object
     """
@@ -29,14 +30,15 @@ def to_file(stream=None, file='out'):
     with open(file,'w') as f:
         os.dup2(f.fileno(), stream.fileno())
         try:
-            yield # go do something useful
+            yield  # go do something useful
         finally:
             os.dup2(oldstream, stream.fileno())
+
 
 @contextmanager
 def to_log(stream=None, prefix='', level='info'):
     """redirect a stream (like stdout) to log file
-    
+
        :param stream: file object
        :param prefix: logging prefix
        :param level: logging level
@@ -53,7 +55,7 @@ def to_log(stream=None, prefix='', level='info'):
         stream.flush()
         os.dup2(f.fileno(), stream.fileno())
         try:
-            yield # go do something useful
+            yield  # go do something useful
         finally:
             f.flush()
             os.dup2(oldstream, stream.fileno())
@@ -74,4 +76,3 @@ def to_log(stream=None, prefix='', level='info'):
                     logger.critical(s)
                 else:
                     logger.warning('error printing logging')
-    

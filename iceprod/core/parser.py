@@ -8,50 +8,53 @@ other parts of the same configuration.
 from __future__ import absolute_import, division, print_function
 
 import re
-import string
 import random
 import functools
 import json
 import builtins
 import logging
-
-logger = logging.getLogger('parser')
+import ast
+import operator as op
 
 from iceprod.core import dataclasses
 
+logger = logging.getLogger('parser')
+
+
 class safe_eval:
-    import ast
-    import operator as op
     # supported operators
-    operators = {ast.Add: op.add,
-                 ast.Sub: op.sub,
-                 ast.Mult: op.mul,
-                 ast.Div: op.truediv,
-                 ast.FloorDiv: op.floordiv,
-                 ast.Mod: op.mod,
-                 ast.Pow: op.pow,
-                 ast.BitXor: op.xor,
-                 ast.Invert: op.invert,
-                 ast.Not: op.not_,
-                 ast.UAdd: op.pos,
-                 ast.USub: op.neg,
-                }
+    operators = {
+        ast.Add: op.add,
+        ast.Sub: op.sub,
+        ast.Mult: op.mul,
+        ast.Div: op.truediv,
+        ast.FloorDiv: op.floordiv,
+        ast.Mod: op.mod,
+        ast.Pow: op.pow,
+        ast.BitXor: op.xor,
+        ast.Invert: op.invert,
+        ast.Not: op.not_,
+        ast.UAdd: op.pos,
+        ast.USub: op.neg,
+    }
+
     @classmethod
     def eval(cls,expr):
         """
         Safe evaluation of arithmatic operations using
         :mod:`Abstract Syntax Trees <ast>`.
         """
-        return cls.__eval(cls.ast.parse(expr).body[0].value) # Module(body=[Expr(value=...)])
+        return cls.__eval(ast.parse(expr).body[0].value)  # Module(body=[Expr(value=...)])
+
     @classmethod
     def __eval(cls,node):
-        if isinstance(node, cls.ast.Num): # <number>
+        if isinstance(node, ast.Num):  # <number>
             return node.n
-        elif isinstance(node, (cls.ast.operator,cls.ast.unaryop)): # <operator>
+        elif isinstance(node, (ast.operator,ast.unaryop)):  # <operator>
             return cls.operators[type(node)]
-        elif isinstance(node, cls.ast.BinOp): # <left> <operator> <right>
+        elif isinstance(node, ast.BinOp):  # <left> <operator> <right>
             return cls.__eval(node.op)(cls.__eval(node.left), cls.__eval(node.right))
-        elif isinstance(node, cls.ast.UnaryOp): # <operator> <right>
+        elif isinstance(node, ast.UnaryOp):  # <operator> <right>
             return cls.__eval(node.op)(cls.__eval(node.operand))
         else:
             raise TypeError(node)
@@ -59,6 +62,7 @@ class safe_eval:
 
 class GrammarException(Exception):
     pass
+
 
 def getType(output):
     try:
@@ -79,13 +83,16 @@ def getType(output):
         pass
     return output
 
+
 def parse_ret_type(ret):
     if isinstance(ret, (list,dict)):
         return ret
     else:
         return str(ret)
 
+
 tokens = ["word", "name", "starter", "scopeL", "scopeR", "bracketL", "bracketR"]
+
 
 def scanner(data):
     """A lexical scanner, yielding token pairs"""
@@ -115,6 +122,7 @@ def scanner(data):
             word += ch
     if word:
         yield ('word', word)
+
 
 def parser(data):
     """A syntactic parser, yielding syntactically accurate token pairs"""
@@ -217,6 +225,7 @@ def parser(data):
     if nestings or stack:
         raise SyntaxError()
 
+
 class ExpParser:
     """
     Expression parsing class for parameter values.
@@ -263,16 +272,17 @@ class ExpParser:
         self.env = None
         self.depth = 0
         # dict of keyword : function mappings
-        self.keywords = {'steering' : self.steering_func,
-                         'system' : self.system_func,
-                         'environ' : self.environ_func,
-                         'args' : self.options_func,
-                         'options' : self.options_func,
-                         'metadata' : self.difplus_func,
-                         'eval' : self.eval_func,
-                         'choice' : self.choice_func,
-                         'sprintf' : self.sprintf_func
-                        }
+        self.keywords = {
+            'steering' : self.steering_func,
+            'system' : self.system_func,
+            'environ' : self.environ_func,
+            'args' : self.options_func,
+            'options' : self.options_func,
+            'metadata' : self.difplus_func,
+            'eval' : self.eval_func,
+            'choice' : self.choice_func,
+            'sprintf' : self.sprintf_func
+        }
         for reduction in 'sum', 'min', 'max', 'len':
             self.keywords[reduction] = functools.partial(self.reduce_func, getattr(builtins, reduction))
 
@@ -310,7 +320,7 @@ class ExpParser:
             self.env = env
         else:
             self.env = {}
-        self.depth = 0 # start at a depth of 0
+        self.depth = 0  # start at a depth of 0
 
         while True:
             # parse input
@@ -325,9 +335,9 @@ class ExpParser:
                         word = ''
                         while stack and stack[-1][0] != 'scopeL':
                             word = stack.pop()[1] + word
-                        stack.pop() # remove scopeL
+                        stack.pop()  # remove scopeL
                         name = stack.pop()[1]
-                        stack.pop() # remove starter
+                        stack.pop()  # remove starter
 
                         # try evaluating this
                         try:
@@ -347,7 +357,7 @@ class ExpParser:
                         word = ''
                         while stack and stack[-1][0] != 'bracketL':
                             word = stack.pop()[1] + word
-                        stack.pop() # remove bracketL
+                        stack.pop()  # remove bracketL
 
                         # try evaluating this
                         if word.endswith(']'):
@@ -399,7 +409,7 @@ class ExpParser:
     def process_phrase(self,keyword,param=None):
         # search for keyword in special list
         ret = None
-        if keyword in self.keywords and param != None:
+        if keyword in self.keywords and param is not None:
             try:
                 ret = self.keywords[keyword](param)
             except GrammarException:
@@ -415,7 +425,7 @@ class ExpParser:
                     ret = self.job[keyword]
                 except Exception:
                     pass
-            elif keyword in self.job['options']: # search options third
+            elif keyword in self.job['options']:  # search options third
                 try:
                     ret = self.job['options'][keyword]
                 except Exception:
@@ -481,20 +491,19 @@ class ExpParser:
 
     def eval_func(self,param):
         """Evaluate param as arithmetic expression"""
-        #bad = re.search(r'(import)|(open)|(for)|(while)|(def)|(class)|(lambda)', param )
         bad = functools.reduce(lambda a, b: a or (b in param),('import','open','for','while','def','class','lambda'),False)
         if bad:
             raise GrammarException('Unsafe operator call')
         else:
             try:
                 return parse_ret_type(safe_eval.eval(param))
-            except Exception as e:
+            except Exception:
                 raise GrammarException('Eval is not basic arithmetic')
 
     def reduce_func(self, func, param):
         try:
             return parse_ret_type(func(getType(param)))
-        except Exception as e:
+        except Exception:
             raise GrammarException('Not a reducible sequence')
 
     def sprintf_func(self,param):
@@ -526,13 +535,19 @@ class ExpParser:
             # cast args to correct type
             def cast_string(fstring,arg):
                 """cast string to value according to formatting character"""
-                if not fstring: return arg
+                if not fstring:
+                    return arg
                 if fstring[-1] in 'cs':
-                    if arg[0] in '\'"':            return str(arg[1:-1])
-                    else:                          return str(arg)
-                elif fstring[-1] == 'r':           return repr(arg)
-                elif fstring[-1].lower() in 'xo':   return int(arg)
-                elif fstring[-1].lower() in 'idufeg': return float(arg)
+                    if arg[0] in '\'"':
+                        return str(arg[1:-1])
+                    else:
+                        return str(arg)
+                elif fstring[-1] == 'r':
+                    return repr(arg)
+                elif fstring[-1].lower() in 'xo':
+                    return int(arg)
+                elif fstring[-1].lower() in 'idufeg':
+                    return float(arg)
                 else:
                     raise GrammarException('Unable to cast %s using format %s'%(arg,fstring))
 

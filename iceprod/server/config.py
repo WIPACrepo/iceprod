@@ -42,6 +42,7 @@ def locateconfig(filename):
             return os.path.join(cfgpath,filename)
     raise Exception('config {} not found'.format(filename))
 
+
 class IceProdConfig(dict):
     """
     IceProd configuration.
@@ -119,12 +120,14 @@ class IceProdConfig(dict):
 
     def defaults(self):
         """Set default values if unset."""
+        filename = None
         try:
             self.loading = True
             filename = get_pkgdata_filename('iceprod.server',
                                             'data/etc/config_defaults.json')
             text = open(filename).read()
             obj = json_decode(text)
+
             def setter(new_obj,self_obj):
                 logger.debug('setter()')
                 orig_keys = self_obj.keys()
@@ -149,8 +152,8 @@ class IceProdConfig(dict):
                 logger.warning('Generating new site_id: %s',self['site_id'])
             logger.info('with defaults: %s',self)
         except Exception:
-            logger.warning('failed to load from default config file %s',
-                        filename, exc_info=True)
+            logger.warning('failed to load from default config file %r',
+                           filename, exc_info=True)
         finally:
             self.loading = False
 
@@ -181,7 +184,7 @@ class IceProdConfig(dict):
             raise
         except Exception:
             logger.warning('failed to load from config file %s',self.filename,
-                        exc_info=True)
+                           exc_info=True)
         finally:
             self.loading = False
 
@@ -198,25 +201,26 @@ class IceProdConfig(dict):
             self.save()
 
     def save_to_string(self):
-        return json_encode(self, indent = 4)
+        return json_encode(self, indent=4)
 
     def save(self):
         """Save config from file."""
         if not self.loading:
             try:
-                text = json_encode(self, indent = 4)
+                text = json_encode(self, indent=4)
                 # save securely
                 with os.fdopen(os.open(self.filename+'.tmp', os.O_WRONLY | os.O_CREAT, 0o600),'w') as f:
                     f.write(text)
                 os.rename(self.filename+'.tmp',self.filename)
             except Exception:
                 logger.warning('failed to save to config file %s',self.filename,
-                            exc_info=True)
+                               exc_info=True)
 
     # insert save function into dict methods
     def __setitem__(self, key, value):
         super(IceProdConfig,self).__setitem__(key, value)
         self.save()
+
     def __delitem__(self, key):
         super(IceProdConfig,self).__delitem__(key)
         self.save()

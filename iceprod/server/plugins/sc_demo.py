@@ -3,24 +3,19 @@ A supercomputer-like plugin, specificially for the SC 2019 Demo.
 
 Basically, task submission directly to condor.
 """
-import sys
-import os
-import logging
-import getpass
-from datetime import datetime,timedelta
-import subprocess
 import asyncio
+from datetime import datetime,timedelta
 from functools import partial
+import getpass
 import gzip
+import logging
+import os
+import subprocess
 
-import tornado.gen
-from tornado.concurrent import run_on_executor
 import requests.exceptions
 
 import iceprod
-from iceprod.core import dataclasses
 from iceprod.core import constants
-from iceprod.core import functions
 from iceprod.core.exe_json import ServerComms
 from iceprod.server import grid
 from iceprod.server.globus import SiteGlobusProxy
@@ -28,12 +23,14 @@ from iceprod.server.plugins.condor import condor_os_reqs
 
 logger = logging.getLogger('plugin-sc_demo')
 
+
 async def check_call(*args, **kwargs):
     logger.info('subprocess_check_call: %r', args)
     p = await asyncio.create_subprocess_exec(*args, **kwargs)
     if p.returncode:
         raise Exception(f'command failed, return code {p.returncode}')
     return p
+
 
 async def check_call_clean_env(*args, **kwargs):
     logger.info('subprocess_check_call: %r', args)
@@ -44,6 +41,7 @@ async def check_call_clean_env(*args, **kwargs):
     if p.returncode:
         raise Exception(f'command failed, return code {p.returncode}')
     return p
+
 
 async def check_output_clean_env(*args, **kwargs):
     logger.info('subprocess_check_output: %r', args)
@@ -59,9 +57,11 @@ async def check_output_clean_env(*args, **kwargs):
         raise Exception(f'command failed, return code {p.returncode}')
     return out.decode('utf-8')
 
+
 class MyServerComms(ServerComms):
     def __init__(self, rest_client):
         self.rest = rest_client
+
 
 class TaskInfo(dict):
     def __init__(self, **kwargs):
@@ -72,6 +72,7 @@ class TaskInfo(dict):
         self['pilot'] = None
         self['submit_dir'] = None
         super(TaskInfo, self).__init__(**kwargs)
+
 
 def run_async(func,*args,**kwargs):
     async def myfunc():
@@ -86,8 +87,7 @@ def run_async(func,*args,**kwargs):
 
 
 class sc_demo(grid.BaseGrid):
-
-    ### Plugin Overrides ###
+    """Plugin Overrides for SC Demo"""
 
     def __init__(self, *args, **kwargs):
         super(sc_demo, self).__init__(*args, **kwargs)
@@ -187,7 +187,7 @@ class sc_demo(grid.BaseGrid):
             reason = 'unknown failure'
 
         comms = MyServerComms(self.rest_client)
-        await comms.task_error(task_id, dataset_id=dataset_id, 
+        await comms.task_error(task_id, dataset_id=dataset_id,
                                reason=reason, resources=resources,
                                site=self.site)
 
@@ -219,15 +219,15 @@ class sc_demo(grid.BaseGrid):
                             break
 
         comms = MyServerComms(self.rest_client)
-        await comms.finish_task(task_id, dataset_id=dataset_id, 
+        await comms.finish_task(task_id, dataset_id=dataset_id,
                                 resources=resources)
 
     async def check_and_clean(self):
         """Check and clean the grid"""
-        #return ### for queueing, don't need this
+        # return ### for queueing, don't need this
         host = grid.get_host()
-        #self.x509proxy.update_proxy()
-        
+        # self.x509proxy.update_proxy()
+
         # get time limits
         try:
             queued_time = timedelta(seconds=self.queue_cfg['max_task_queued_time'])
@@ -264,8 +264,8 @@ class sc_demo(grid.BaseGrid):
         pilots = {}
         for pilot_id in ret:
             if (ret[pilot_id]['queue_host'] == host
-                and 'grid_queue_id' in ret[pilot_id]
-                and ret[pilot_id]['grid_queue_id']):
+                    and 'grid_queue_id' in ret[pilot_id]
+                    and ret[pilot_id]['grid_queue_id']):
                 pilots[ret[pilot_id]['grid_queue_id']] = ret[pilot_id]
 
         # first, check if anything has completed successfully
@@ -311,7 +311,7 @@ class sc_demo(grid.BaseGrid):
                         pilots_to_delete[pilot_id] = gid
 
             for fut in asyncio.as_completed(pilot_futures):
-                pilot,e = await fut # upload is done
+                pilot,e = await fut  # upload is done
 
                 try:
                     task_id = pilot['tasks'][0]
@@ -346,8 +346,7 @@ class sc_demo(grid.BaseGrid):
                 if gid in pilots:
                     del pilots[gid]
 
-
-        ### Now do the regular check and clean
+        # Now do the regular check and clean
         reset_pilots = set(pilots).difference(grid_jobs)
         prechecked_dirs = set()
 
@@ -397,7 +396,7 @@ class sc_demo(grid.BaseGrid):
                 # use all_time instead of suspend_time because the
                 # dir will have the submit time, not the last time
                 if now-mtime < all_time:
-                    continue # skip for suspended or failed tasks
+                    continue  # skip for suspended or failed tasks
                 delete_dirs.add(d)
 
         logger.info('%d processing pilots', self.grid_processing)
@@ -421,7 +420,7 @@ class sc_demo(grid.BaseGrid):
                     pass
                 except requests.exceptions.HTTPError as e:
                     if e.response.status_code == 404:
-                        continue # a missing pilot is the point of deleting it
+                        continue  # a missing pilot is the point of deleting it
                     logger.info('delete pilot error', exc_info=True)
                 except Exception:
                     logger.info('delete pilot error', exc_info=True)
@@ -434,17 +433,12 @@ class sc_demo(grid.BaseGrid):
         if delete_dirs:
             await asyncio.ensure_future(self._delete_dirs(delete_dirs))
 
-        #os._exit(0) # only run this once, then exit once cleanup is done
+        # os._exit(0) # only run this once, then exit once cleanup is done
 
     async def queue(self):
         """Submit a pilot for each task, up to the limit"""
         host = grid.get_host()
-        #self.x509proxy.update_proxy()
-
-        debug = False
-        if ('queue' in self.cfg and 'debug' in self.cfg['queue']
-            and self.cfg['queue']['debug']):
-            debug = True
+        # self.x509proxy.update_proxy()
 
         dataset_cache = {}
 
@@ -462,14 +456,15 @@ class sc_demo(grid.BaseGrid):
                     resources_available[k] = resources[k]-task['requirements'][k]
                 else:
                     resources_available[k] = 0
-            pilot = {'resources': resources,
-                     'resources_available': resources_available,
-                     'resources_claimed': task['requirements'],
-                     'tasks': [task['task_id']],
-                     'queue_host': host,
-                     'queue_version': iceprod.__version__,
-                     'host': self.site,
-                     'version': iceprod.__version__,
+            pilot = {
+                'resources': resources,
+                'resources_available': resources_available,
+                'resources_claimed': task['requirements'],
+                'tasks': [task['task_id']],
+                'queue_host': host,
+                'queue_version': iceprod.__version__,
+                'host': self.site,
+                'version': iceprod.__version__,
             }
             ret = await self.rest_client.request('POST', '/pilots', pilot)
             pilot['pilot_id'] = ret['result']
@@ -533,7 +528,7 @@ class sc_demo(grid.BaseGrid):
             }
             args['requirements']['os'] = 'RHEL_7_x86_64'
             try:
-                ret = await self.rest_client.request('POST', f'/task_actions/process', args)
+                ret = await self.rest_client.request('POST', '/task_actions/process', args)
             except Exception:
                 logger.info('no more tasks to queue')
                 break
@@ -566,8 +561,8 @@ class sc_demo(grid.BaseGrid):
                     grid_queue_ids.append(task['pilot']['grid_queue_id'])
 
         # DEMO: put jobs on hold, to releaes when it's time
-        #cmd = ['condor_hold']+grid_queue_ids
-        #out = await check_output_clean_env(*cmd)
+        # cmd = ['condor_hold']+grid_queue_ids
+        # out = await check_output_clean_env(*cmd)
 
     async def download_input(self, task):
         """
@@ -581,11 +576,11 @@ class sc_demo(grid.BaseGrid):
         try:
             await check_call(
                 'python', '-m', 'iceprod.core.data_transfer', '-f',
-                 os.path.join(task['submit_dir'],'task.cfg'),
-                 '-d', task['submit_dir'],
-                 'input'
+                os.path.join(task['submit_dir'],'task.cfg'),
+                '-d', task['submit_dir'],
+                'input'
             )
-        except Exception as e:
+        except Exception:
             logger.info('error downloading', exc_info=True)
             raise
 
@@ -601,9 +596,9 @@ class sc_demo(grid.BaseGrid):
         try:
             await check_call(
                 'python', '-m', 'iceprod.core.data_transfer', '-f',
-                 os.path.join(task['submit_dir'],'task.cfg'),
-                 '-d', task['submit_dir'],
-                 'output'
+                os.path.join(task['submit_dir'],'task.cfg'),
+                '-d', task['submit_dir'],
+                'output'
             )
         except Exception as e:
             logger.info('error uploading', exc_info=True)
@@ -611,7 +606,7 @@ class sc_demo(grid.BaseGrid):
         return (task,None)
 
     async def generate_submit_file(self, task, cfg=None, passkey=None,
-                             filelist=None):
+                                   filelist=None):
         """Generate queueing system submit file for task in dir."""
         args = self.get_submit_args(task,cfg=cfg)
         args.extend(['--offline', '--gzip-logs'])
@@ -626,7 +621,7 @@ class sc_demo(grid.BaseGrid):
                 batch_opts[b] = self.queue_cfg['batchopts'][b]
         if cfg:
             if (cfg['steering'] and 'batchsys' in cfg['steering'] and
-                cfg['steering']['batchsys']):
+                    cfg['steering']['batchsys']):
                 for b in cfg['steering']['batchsys']:
                     if b.lower().startswith(self.__class__.__name__):
                         # these settings apply to this batchsys
@@ -648,7 +643,7 @@ class sc_demo(grid.BaseGrid):
                                 alltasks.append(tt)
                     except Exception:
                         logger.warning('error finding specified task to run for %r',
-                                    task,exc_info=True)
+                                       task,exc_info=True)
             else:
                 alltasks = cfg['tasks']
             for t in alltasks:
@@ -673,7 +668,7 @@ class sc_demo(grid.BaseGrid):
             p('output = condor.out')
             p('error = condor.err')
             p('notification = never')
-            p('+IsIceProdJob = True') # mark as IceProd for monitoring
+            p('+IsIceProdJob = True')  # mark as IceProd for monitoring
             p('want_graceful_removal = True')
             if filelist:
                 p('transfer_input_files = {}'.format(','.join(filelist)))
@@ -690,8 +685,8 @@ class sc_demo(grid.BaseGrid):
             if 'gpu' in task['requirements'] and task['requirements']['gpu']:
                 p('request_gpus = {}'.format(task['requirements']['gpu']))
                 # DEMO: gpu jobs need region set by condor_qedit
-                #p('+CHUNK_Locations="NONE"')
-                #requirements.append('stringListIMember(CLOUD_DATARegion, CHUNK_Locations)')
+                # p('+CHUNK_Locations="NONE"')
+                # requirements.append('stringListIMember(CLOUD_DATARegion, CHUNK_Locations)')
             else:
                 p('+CPU_START=False')
                 requirements.append('(!isUndefined(Target.GPUs) ? Target.GPUs == 0 : True) && CPU_START')
@@ -716,14 +711,14 @@ class sc_demo(grid.BaseGrid):
     async def submit(self,task):
         """Submit task to queueing system."""
         cmd = ['condor_submit','-terse','condor.submit']
-        for tries in range(3): # make three attempts
+        for tries in range(3):  # make three attempts
             try:
                 out = await check_output_clean_env(*cmd, cwd=task['submit_dir'])
                 break
-            except:
+            except Exception:
                 if tries >= 2:
                     raise
-                await asyncio.sleep(1) # backoff a bit
+                await asyncio.sleep(1)  # backoff a bit
         grid_queue_id = []
         for line in out.split('\n'):
             # look for range
@@ -756,7 +751,7 @@ class sc_demo(grid.BaseGrid):
             cmd = parts[-1]
             if 'loader.sh' not in cmd:
                 continue
-            if status in ('0', '1', '5'): # DEMO: treat held jobs as queued
+            if status in ('0', '1', '5'):  # DEMO: treat held jobs as queued
                 status = 'queued'
             elif status in ('2', '3', '6', '7'):
                 status = 'processing'

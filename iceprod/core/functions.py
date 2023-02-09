@@ -4,26 +4,15 @@ Common functions
 
 from __future__ import absolute_import, division, print_function
 
-import sys
 import os
-import re
 import shutil
-import time
 import logging
 import socket
 import subprocess
-import tarfile
-import urllib
-import tempfile
 import hashlib
-from functools import partial
+from functools import partial, reduce
 from contextlib import contextmanager
 import asyncio
-
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
 
 try:
     import psutil
@@ -31,21 +20,18 @@ except ImportError:
     psutil = None
 
 import requests
-from requests.packages.urllib3.util.retry import Retry
-from requests.adapters import HTTPAdapter
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 from rest_tools.client import Session, AsyncSession
 
-from iceprod.core import util
 from iceprod.core.gridftp import GridFTP
-from iceprod.core.jsonUtil import json_encode, json_decode
 
 
-### Compression Functions ###
+# Compression Functions #
 _compress_suffixes = ('.tgz','.gz','.tbz2','.tbz','.bz2','.bz',
-                     '.lzma2','.lzma','.lz','.xz')
+                      '.lzma2','.lzma','.lz','.xz')
 _tar_suffixes = ('.tar', '.tar.gz', '.tgz', '.tar.bz2', '.tbz2', '.tbz',
-                '.tar.lzma', '.tar.xz', '.tlz', '.txz')
+                 '.tar.lzma', '.tar.xz', '.tlz', '.txz')
+
 
 def uncompress(infile, out_dir=None):
     """Uncompress a file, if possible"""
@@ -87,6 +73,7 @@ def uncompress(infile, out_dir=None):
     else:
         return files
 
+
 def compress(infile,compression='lzma'):
     """Compress a file or directory.
        The compression argument is used as the new file extension"""
@@ -112,13 +99,16 @@ def compress(infile,compression='lzma'):
         subprocess.call(cmd+['-kf',infile])
     return outfile
 
+
 def iscompressed(infile):
     """Check if a file is a compressed file, based on file name"""
     return any(infile.endswith(s) for s in _compress_suffixes)
 
+
 def istarred(infile):
     """Check if a file is a tarred file, based on file name"""
     return any(infile.endswith(s) for s in _tar_suffixes)
+
 
 def cksm(filename,type,buffersize=16384,file=True):
     """Return checksum of file using algorithm specified"""
@@ -142,29 +132,35 @@ def cksm(filename,type,buffersize=16384,file=True):
         digest.update(filename)
     return digest.hexdigest()
 
+
 def md5sum(filename,buffersize=16384):
     """Return md5 digest of file"""
     return cksm(filename,'md5',buffersize)
+
 
 def sha1sum(filename,buffersize=16384):
     """Return sha1 digest of file"""
     return cksm(filename,'sha1',buffersize)
 
+
 def sha256sum(filename,buffersize=16384):
     """Return sha256 digest of file"""
     return cksm(filename,'sha256',buffersize)
+
 
 def sha512sum(filename,buffersize=16384):
     """Return sha512 digest of file"""
     return cksm(filename,'sha512',buffersize)
 
+
 def load_cksm(sumfile, base_filename):
     """Load the checksum from a file"""
-    for l in open(sumfile,'r'):
-        if os.path.basename(base_filename) in l:
-            sum_cksm, name = l.strip('\n').split()
+    for line in open(sumfile, 'r'):
+        if os.path.basename(base_filename) in line:
+            sum_cksm, name = line.strip('\n').split()
             return sum_cksm
     raise Exception('could not find checksum in file')
+
 
 def check_cksm(file,type,sum):
     """Check a checksum of a file"""
@@ -182,24 +178,29 @@ def check_cksm(file,type,sum):
     logging.debug('sum_cksm:  %r', sum_cksm)
     return (file_cksm == sum_cksm)
 
+
 def check_md5sum(file,sum):
     """Check an md5sum of a file"""
     return check_cksm(file,'md5',sum)
+
 
 def check_sha1sum(file,sum):
     """Check an sha1sum of a file"""
     return check_cksm(file,'sha1',sum)
 
+
 def check_sha256sum(file,sum):
     """Check an sha256sum of a file"""
     return check_cksm(file,'sha256',sum)
+
 
 def check_sha512sum(file,sum):
     """Check an sha512sum of a file"""
     return check_cksm(file,'sha512',sum)
 
 
-### File and Directory Manipulation Functions ###
+# File and Directory Manipulation Functions #
+
 
 def removedirs(path):
     try:
@@ -209,6 +210,7 @@ def removedirs(path):
             os.remove(path)
     except Exception:
         pass
+
 
 def copy(src,dest):
     parent_dir = os.path.dirname(dest)
@@ -227,7 +229,8 @@ def copy(src,dest):
         shutil.copy2(src,dest)
 
 
-### Network Functions ###
+# Network Functions #
+
 
 def getInterfaces():
     """
@@ -255,12 +258,14 @@ def getInterfaces():
         interfaces[nic_name] = n
     return interfaces
 
+
 def get_local_ip_address():
     """Get the local (loopback) ip address"""
     try:
         return socket.gethostbyname('localhost')
     except Exception:
-        return socket.gethostbyname( socket.getfqdn() )
+        return socket.gethostbyname(socket.getfqdn())
+
 
 def gethostname():
     """Get hostname of this computer."""
@@ -275,6 +280,7 @@ def gethostname():
     except Exception:
         logging.info('error getting global ip', exc_info=True)
     return ret
+
 
 @contextmanager
 def _http_helper(options={}, sync=True):
@@ -295,10 +301,11 @@ def _http_helper(options={}, sync=True):
             s.verify = options['cacert']
         yield s
 
+
 async def download(url, local, options={}):
     """Download a file, checksumming if possible"""
     local = os.path.expanduser(os.path.expandvars(local))
-    url  = os.path.expanduser(os.path.expandvars(url))
+    url = os.path.expanduser(os.path.expandvars(url))
     if not isurl(url):
         if os.path.exists(url):
             url = 'file:'+url
@@ -329,6 +336,7 @@ async def download(url, local, options={}):
             for k in os.environ:
                 if k.lower() == 'http_proxy' and not os.environ[k].startswith('http'):
                     os.environ[k] = 'http://'+os.environ[k]
+
             def _d():
                 with _http_helper(options) as s:
                     r = s.get(url, stream=True, timeout=300)
@@ -341,12 +349,10 @@ async def download(url, local, options={}):
             url = url[5:]
             logging.info('copy from %s to %s', url, local)
             if os.path.exists(url):
-                await asyncio.get_event_loop().run_in_executor(None,
-                        partial(copy, url, local))
+                await asyncio.get_event_loop().run_in_executor(None, partial(copy, url, local))
         elif url.startswith('gsiftp:') or url.startswith('ftp:'):
             logging.info('gsiftp from %s to %s', url, local)
-            await asyncio.get_event_loop().run_in_executor(None,
-                    partial(GridFTP.get, url, filename=local))
+            await asyncio.get_event_loop().run_in_executor(None, partial(GridFTP.get, url, filename=local))
         else:
             raise Exception("unsupported protocol %s" % url)
 
@@ -358,10 +364,11 @@ async def download(url, local, options={}):
 
     return local
 
+
 async def upload(local, url, checksum=True, options={}):
     """Upload a file, checksumming if possible"""
     local = os.path.expandvars(local)
-    url  = os.path.expandvars(url)
+    url = os.path.expandvars(url)
     if not isurl(url):
         if url.startswith('/'):
             url = 'file:'+url
@@ -391,16 +398,17 @@ async def upload(local, url, checksum=True, options={}):
         for k in os.environ:
             if k.lower() == 'http_proxy' and not os.environ[k].startswith('http'):
                 os.environ[k] = 'http://'+os.environ[k]
+
         def _d():
             with _http_helper(options) as s:
                 with open(local, 'rb') as f:
                     m = MultipartEncoder(
                         fields={'field0': ('filename', f, 'text/plain')}
-                        )
+                    )
                     r = s.post(url, timeout=300, data=m,
                                headers={'Content-Type': m.content_type})
                     r.raise_for_status()
-                    if checksum: # get checksum
+                    if checksum:  # get checksum
                         r = s.get(url, stream=True, timeout=300)
                         try:
                             with open(local+'.tmp', 'wb') as f:
@@ -415,6 +423,7 @@ async def upload(local, url, checksum=True, options={}):
     elif url.startswith('file:'):
         # use copy command
         url = url[5:]
+
         def _c():
             if os.path.exists(url):
                 logging.warning('put: file already exists. overwriting!')
@@ -437,6 +446,7 @@ async def upload(local, url, checksum=True, options={}):
     else:
         raise Exception("unsupported protocol %s" % url)
 
+
 def delete(url, options={}):
     """Delete a url or file"""
     url = os.path.expandvars(url)
@@ -458,6 +468,7 @@ def delete(url, options={}):
         GridFTP.rmtree(url)
     else:
         raise Exception("unsupported protocol %s" % url)
+
 
 def isurl(url):
     """Determine if this is a supported protocol"""

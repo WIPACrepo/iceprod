@@ -10,6 +10,7 @@ from iceprod.server.globus import SiteGlobusProxy
 
 logger = logging.getLogger('modules_schedule')
 
+
 class schedule(module.module):
     """
     Run the schedule module, which handles periodic tasks.

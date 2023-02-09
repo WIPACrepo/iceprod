@@ -2,19 +2,18 @@
 A supercomputer plugin, specificially for
 `Cedar <https://docs.computecanada.ca/wiki/Cedar>`_.
 """
-import os
-import sys
-import stat
-import logging
-import getpass
-from datetime import datetime,timedelta
-import subprocess
 import asyncio
+from datetime import datetime,timedelta
 from functools import partial
+import getpass
+import logging
+import os
+import stat
 
-from .condor_direct import check_call, check_output, MyServerComms, TaskInfo, run_async, condor_direct
+from .condor_direct import check_call, check_output, condor_direct
 
 logger = logging.getLogger('plugin-cedar')
+
 
 async def subprocess_ssh(host, args):
     """A subprocess call over ssh"""
@@ -31,8 +30,7 @@ async def subprocess_ssh(host, args):
 
 
 class supercomp_cedar(condor_direct):
-
-    ### Plugin Overrides ###
+    """Plugin Overrides for Cedar"""
 
     batch_site = 'Cedar'
     batch_outfile = 'slurm.out'
@@ -92,7 +90,7 @@ class supercomp_cedar(condor_direct):
         Args:
             task (dict): task info
         """
-        proxy = self.x509proxy.get_proxy()
+        self.x509proxy.get_proxy()
         try:
             await check_call(
                 'python', '-m', 'iceprod.core.data_transfer', '-f',
@@ -100,7 +98,7 @@ class supercomp_cedar(condor_direct):
                 '-d', task['submit_dir'],
                 'input'
             )
-        except Exception as e:
+        except Exception:
             logger.info('failed to download input', exc_info=True)
             raise Exception(f'download input failed for {task["dataset_id"]}.{task["task_id"]}')
 
@@ -111,7 +109,7 @@ class supercomp_cedar(condor_direct):
         Args:
             task (dict): task info
         """
-        proxy = self.x509proxy.get_proxy()
+        self.x509proxy.get_proxy()
         try:
             await check_call(
                 'python', '-m', 'iceprod.core.data_transfer', '-f',
@@ -119,12 +117,11 @@ class supercomp_cedar(condor_direct):
                 '-d', task['submit_dir'],
                 'output'
             )
-        except Exception as e:
+        except Exception:
             logger.info('failed to upload output', exc_info=True)
             raise Exception(f'upload output failed for {task["dataset_id"]}.{task["task_id"]}')
 
-    async def generate_submit_file(self, task, cfg=None, passkey=None,
-                             filelist=None):
+    async def generate_submit_file(self, task, cfg=None, passkey=None, filelist=None):
         """Generate queueing system submit file for task in dir."""
         args = self.get_submit_args(task,cfg=cfg)
         args.extend(['--offline',])
@@ -152,8 +149,8 @@ class supercomp_cedar(condor_direct):
                 if 'memory' in task['requirements'] and task['requirements']['memory']:
                     p('#SBATCH --mem={}M'.format(int(task['requirements']['memory']*1000)))
                 # we don't currently use the local disk, just the global scratch
-                #if 'disk' in task['requirements'] and task['requirements']['disk']:
-                #    p('#SBATCH --tmp={}M'.format(int(task['requirements']['disk']*1000)))
+                # if 'disk' in task['requirements'] and task['requirements']['disk']:
+                #     p('#SBATCH --tmp={}M'.format(int(task['requirements']['disk']*1000)))
                 if 'time' in task['requirements'] and task['requirements']['time']:
                     p('#SBATCH --time={}'.format(int(task['requirements']['time']*60)))
 
@@ -200,7 +197,7 @@ class supercomp_cedar(condor_direct):
     async def get_grid_status(self):
         """
         Get all tasks running on the queue system.
-        
+
         Returns:
             dict: {grid_queue_id: {status, submit_dir} }
         """
@@ -228,7 +225,7 @@ class supercomp_cedar(condor_direct):
     async def get_grid_completions(self):
         """
         Get completions in the last 4 days.
-        
+
         Returns:
             dict: {grid_queue_id: {status, submit_dir} }
         """

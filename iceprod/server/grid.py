@@ -5,19 +5,16 @@ that inherit from this class.
 """
 
 import os
-import sys
 import random
-import math
 import logging
 import time
 from copy import deepcopy
-from io import BytesIO
 from datetime import datetime,timedelta
-from collections import namedtuple, Counter, defaultdict
+from collections import Counter, defaultdict
 import socket
 import asyncio
 
-import tornado.gen
+from cachetools.func import ttl_cache
 from tornado.concurrent import run_on_executor
 
 import iceprod
@@ -26,10 +23,7 @@ from iceprod.core import dataclasses
 from iceprod.core import functions
 from iceprod.core import serialization
 from iceprod.core.resources import Resources, group_hasher
-from iceprod.core.jsonUtil import json_encode,json_decode
-from iceprod.server import module
-from iceprod.server import get_pkg_binary,GlobalID
-from iceprod.server import dataset_prio
+from iceprod.server import get_pkg_binary
 
 
 logger = logging.getLogger('grid')
@@ -43,7 +37,8 @@ def get_host():
     host = socket.getfqdn()
     get_host.history = [t, host]
     return host
-get_host.history = None
+get_host.history = None  # noqa: E305
+
 
 class BaseGrid(object):
     """
@@ -69,18 +64,18 @@ class BaseGrid(object):
             self.site = self.queue_cfg['site']
 
         self.submit_dir = os.path.expanduser(os.path.expandvars(
-                self.cfg['queue']['submit_dir']))
+            self.cfg['queue']['submit_dir']))
         if not os.path.exists(self.submit_dir):
             try:
                 os.makedirs(self.submit_dir)
-            except Exception as e:
+            except Exception:
                 logger.warning('error making submit dir %s',self.submit_dir,
-                            exc_info=True)
+                               exc_info=True)
 
         self.grid_processing = 0
         self.grid_idle = 0
 
-    ### Public Functions ###
+    # Public Functions #
 
     async def check_and_clean(self):
         """Check and clean the grid"""
@@ -120,8 +115,8 @@ class BaseGrid(object):
         pilots = {}
         for pilot_id in ret:
             if (ret[pilot_id]['queue_host'] == host
-                and 'grid_queue_id' in ret[pilot_id]
-                and ret[pilot_id]['grid_queue_id']):
+                    and 'grid_queue_id' in ret[pilot_id]
+                    and ret[pilot_id]['grid_queue_id']):
                 pilots[ret[pilot_id]['grid_queue_id']] = ret[pilot_id]
 
         # get grid status
@@ -171,7 +166,7 @@ class BaseGrid(object):
                 # use all_time instead of suspend_time because the
                 # dir will have the submit time, not the last time
                 if now-mtime < all_time:
-                    continue # skip for suspended or failed tasks
+                    continue  # skip for suspended or failed tasks
                 delete_dirs.add(d)
 
         logger.info('%d processing pilots', self.grid_processing)
@@ -230,8 +225,7 @@ class BaseGrid(object):
         # queue new pilots
         await self.setup_pilots(tasks)
 
-
-    ### Private Functions ###
+    # Private Functions #
 
     def get_queue_num(self, available=100000):
         """Determine how many pilots to queue."""
@@ -296,7 +290,7 @@ class BaseGrid(object):
 
         debug = False
         if ('queue' in self.cfg and 'debug' in self.cfg['queue']
-            and self.cfg['queue']['debug']):
+                and self.cfg['queue']['debug']):
             debug = True
 
         # convert to resource requests and group them
@@ -348,12 +342,13 @@ class BaseGrid(object):
                             groups_to_queue[r], resources)
                 for name in resources:
                     self.statsd.incr('pilot_resources.'+name, resources[name])
-                pilot = {'task_id': 'pilot',
-                         'name': 'pilot',
-                         'debug': debug,
-                         'reqs': resources,
-                         'num': groups_to_queue[r],
-                         'pilot_ids': [],
+                pilot = {
+                    'task_id': 'pilot',
+                    'name': 'pilot',
+                    'debug': debug,
+                    'reqs': resources,
+                    'num': groups_to_queue[r],
+                    'pilot_ids': [],
                 }
 
                 args = {
@@ -370,12 +365,18 @@ class BaseGrid(object):
 
                 grid_queue_ids = pilot['grid_queue_id'].split(',')
                 for i,pilot_id in enumerate(pilot['pilot_ids']):
-                    ret = await self.rest_client.request('PATCH',
-                            '/pilots/{}'.format(pilot_id),
-                            {'grid_queue_id': grid_queue_ids[i]})
+                    ret = await self.rest_client.request(
+                        'PATCH',
+                        '/pilots/{}'.format(pilot_id),
+                        {'grid_queue_id': grid_queue_ids[i]}
+                    )
 
             except Exception:
                 logger.error('error submitting pilots', exc_info=True)
+
+    @ttl_cache(ttl=600)
+    def get_token(self):
+        return self.rest_client.make_access_token()
 
     async def setup_submit_directory(self,task):
         """Set up submit directory"""
@@ -389,36 +390,35 @@ class BaseGrid(object):
         task['submit_dir'] = task_dir
 
         # symlink or copy the .sh file
-        src = get_pkg_binary('iceprod','loader.sh')
+        src = get_pkg_binary('iceprod', 'loader.sh')
+        dest = os.path.join(task_dir, 'loader.sh')
         try:
-            os.symlink(src,os.path.join(task_dir,'loader.sh'))
-        except Exception as e:
+            os.symlink(src, dest)
+        except Exception:
             try:
-                functions.copy(src,os.path.join(task_dir,'loader.sh'))
-            except Exception as e:
-                logger.error('Error creating symlink or copy of .sh file: %s',e,exc_info=True)
+                functions.copy(src, dest)
+            except Exception:
+                logger.error('Error creating symlink or copy of .sh file: %s',dest,exc_info=True)
                 raise
 
         # get passkey
-        expiration = self.queue_cfg['max_task_queued_time']
-        expiration += self.queue_cfg['max_task_processing_time']
-        expiration += self.queue_cfg['max_task_reset_time']
-
-        data = {
-            'type': 'system',
-            'role': 'pilot',
-            'exp': expiration,
-        }
-        passkey = await self.rest_client.request('POST', '/create_token', data)
-        passkey = passkey['result']
+        # expiration = self.queue_cfg['max_task_queued_time']
+        # expiration += self.queue_cfg['max_task_processing_time']
+        # expiration += self.queue_cfg['max_task_reset_time']
+        # TODO: take expiration into account
+        passkey = self.get_token()
 
         # write cfg
         cfg, filelist = self.write_cfg(task)
 
         # create submit file
         try:
-            await asyncio.ensure_future(self.generate_submit_file(task,
-                    cfg=cfg, passkey=passkey, filelist=filelist))
+            await asyncio.ensure_future(self.generate_submit_file(
+                task,
+                cfg=cfg,
+                passkey=passkey,
+                filelist=filelist
+            ))
         except Exception:
             logger.error('Error generating submit file',exc_info=True)
             raise
@@ -457,10 +457,10 @@ class BaseGrid(object):
         if 'site_temp' in self.cfg['queue']:
             config['options']['site_temp'] = self.cfg['queue']['site_temp']
         if ('download' in self.cfg and 'http_username' in self.cfg['download']
-            and self.cfg['download']['http_username']):
+                and self.cfg['download']['http_username']):
             config['options']['username'] = self.cfg['download']['http_username']
         if ('download' in self.cfg and 'http_password' in self.cfg['download']
-            and self.cfg['download']['http_password']):
+                and self.cfg['download']['http_password']):
             config['options']['password'] = self.cfg['download']['http_password']
         if 'system' in self.cfg and 'remote_cacert' in self.cfg['system']:
             config['options']['ssl'] = {}
@@ -469,7 +469,7 @@ class BaseGrid(object):
             dest = os.path.join(task['submit_dir'],config['options']['ssl']['cacert'])
             try:
                 os.symlink(src,dest)
-            except Exception as e:
+            except Exception:
                 try:
                     functions.copy(src,dest)
                 except Exception:
@@ -484,7 +484,7 @@ class BaseGrid(object):
             dest = os.path.join(task['submit_dir'],config['options']['x509'])
             try:
                 os.symlink(src,dest)
-            except Exception as e:
+            except Exception:
                 try:
                     functions.copy(src,dest)
                 except Exception:
@@ -498,7 +498,7 @@ class BaseGrid(object):
                 dest = os.path.join(task['submit_dir'],os.path.basename(f))
                 try:
                     os.symlink(os.path.abspath(f),dest)
-                except Exception as e:
+                except Exception:
                     try:
                         functions.copy(f,dest)
                     except Exception:
@@ -524,7 +524,7 @@ class BaseGrid(object):
         """Get the submit arguments to start the loader script."""
         # get website address
         if ('rest_api' in self.cfg and self.cfg['rest_api'] and
-            'url' in self.cfg['rest_api'] and self.cfg['rest_api']['url']):
+                'url' in self.cfg['rest_api'] and self.cfg['rest_api']['url']):
             web_address = self.cfg['rest_api']['url']
         else:
             raise Exception('no web address for rest calls')
@@ -537,7 +537,7 @@ class BaseGrid(object):
         if 'x509proxy' in self.cfg['queue'] and self.cfg['queue']['x509proxy']:
             args.append('-x {}'.format(os.path.basename(self.cfg['queue']['x509proxy'])))
         if ('download' in self.cfg and 'http_proxy' in self.cfg['download']
-            and self.cfg['download']['http_proxy']):
+                and self.cfg['download']['http_proxy']):
             args.apend('-c {}'.format(self.cfg['download']['http_proxy']))
         args.append('--url {}'.format(web_address))
         if passkey:
@@ -548,7 +548,7 @@ class BaseGrid(object):
             args.append('--debug')
         return args
 
-    ### Plugin Overrides ###
+    # Plugin Overrides #
 
     async def get_grid_status(self):
         """Get all tasks running on the queue system.

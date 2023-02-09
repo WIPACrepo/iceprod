@@ -36,7 +36,7 @@ import iceprod.server
 from iceprod.server import module
 from iceprod.server.grid import BaseGrid
 from iceprod.core.resources import Resources
-from rest_tools.client import RestClient
+from rest_tools.client import RestClient, ClientCredentialsAuth
 
 from .module_test import module_test, TestExecutor
 
@@ -298,7 +298,7 @@ class grid_test(AsyncTestCase):
               }
 
         # init
-        client = MagicMock(spec=RestClient)
+        client = MagicMock(spec=ClientCredentialsAuth)
         g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
                  self.io_loop, self.executor, module.FakeStatsClient(),
                  client)

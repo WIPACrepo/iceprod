@@ -8,20 +8,22 @@ Initial delay: rand(1 minute)
 Periodic delay: 5 minutes
 """
 
+import argparse
+import asyncio
 import logging
+import os
 import random
 import time
-import asyncio
-from collections import defaultdict
 
 from tornado.ioloop import IOLoop
 
-from iceprod.server import GlobalID
+from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 
 logger = logging.getLogger('queue_tasks')
 
 NTASKS = 250000
 NTASKS_PER_CYCLE = 1000
+
 
 def queue_tasks(module):
     """
@@ -32,6 +34,7 @@ def queue_tasks(module):
     """
     # initial delay
     IOLoop.current().call_later(random.randint(5,60), run, module.rest_client)
+
 
 async def run(rest_client, ntasks=NTASKS, ntasks_per_cycle=NTASKS_PER_CYCLE, debug=False):
     """
@@ -66,6 +69,7 @@ async def run(rest_client, ntasks=NTASKS, ntasks_per_cycle=NTASKS_PER_CYCLE, deb
             queue_tasks = []
             tasks_queue_pending = 0
             deps_futures = set()
+
             async def check_deps(task):
                 for dep in task.get('depends', []):
                     ret = await rest_client.request('GET', f'/tasks/{dep}')
@@ -129,10 +133,8 @@ async def run(rest_client, ntasks=NTASKS, ntasks_per_cycle=NTASKS_PER_CYCLE, deb
 
 
 def main():
-    import argparse
-    import os
     parser = argparse.ArgumentParser(description='run a scheduled task once')
-    parser.add_argument('-t', '--token', default=os.environ.get('ICEPROD_TOKEN', None), help='auth token')
+    add_auth_to_argparse(parser)
     parser.add_argument('--ntasks', type=int, default=os.environ.get('NTASKS', NTASKS),
                         help='number of tasks to keep queued')
     parser.add_argument('--ntasks_per_cycle', type=int, default=os.environ.get('NTASKS_PER_CYCLE', NTASKS_PER_CYCLE),
@@ -141,15 +143,14 @@ def main():
     parser.add_argument('--debug', default=False, action='store_true', help='debug enabled')
 
     args = parser.parse_args()
-    args = vars(args)
 
-    logformat='%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
-    logging.basicConfig(format=logformat, level=getattr(logging, args['log_level'].upper()))
+    logformat = '%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
+    logging.basicConfig(format=logformat, level=getattr(logging, args.log_level.upper()))
 
-    from rest_tools.client import RestClient
-    rpc = RestClient('https://iceprod2-api.icecube.wisc.edu', args['token'])
+    rest_client = create_rest_client(args)
 
-    asyncio.run(run(rpc, ntasks=args['ntasks'], ntasks_per_cycle=args['ntasks_per_cycle'], debug=args['debug']))
+    asyncio.run(run(rest_client, ntasks=args.ntasks, ntasks_per_cycle=args.ntasks_per_cycle, debug=args.debug))
+
 
 if __name__ == '__main__':
     main()

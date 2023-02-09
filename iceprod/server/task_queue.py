@@ -29,6 +29,7 @@ def sched_prio(resources, time_in_queue=0):
     """
     return max(0, sum(resources.values()) - time_in_queue/600)
 
+
 def get_queue(resources):
     """
     Determine which queue this task belongs in.
@@ -45,6 +46,7 @@ def get_queue(resources):
         return 'memory'
     else:
         return 'default'
+
 
 def get_queue_for_pilot(resources):
     """

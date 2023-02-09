@@ -17,12 +17,14 @@ from iceprod.core.exe import Config, SetupEnv
 
 logger = logging.getLogger('io')
 
+
 def get_current_task(config):
     name = config['options']['task']
     for task in config['tasks']:
         if task['name'] == name:
             return task
     raise Exception('cannot find task in config')
+
 
 async def process(config):
     task = get_current_task(config)
@@ -37,6 +39,7 @@ async def process(config):
                         for module in tray['modules']:
                             async with SetupEnv(cfg, module, env3, logger=logger) as env:
                                 pass
+
 
 async def handle_input(config):
     """Handle downloading all input files for specified task"""
@@ -58,6 +61,7 @@ async def handle_input(config):
 
     # now do the download
     await process(config)
+
 
 async def handle_output(config):
     """Handle uploading all output files for specified task"""
@@ -83,6 +87,7 @@ async def handle_output(config):
 
     # now do the upload
     await process(config)
+
 
 def setup_directory(config, directory):
     """Set up directory in config"""
@@ -114,6 +119,7 @@ def setup_directory(config, directory):
     if 'local_temp' not in config['options']:
         config['options']['local_temp'] = os.path.join(config['options']['subprocess_dir'],'local_temp')
 
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description='Handle IceProd I/O')
@@ -136,6 +142,7 @@ def main():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(fut)
+
 
 if __name__ == '__main__':
     main()

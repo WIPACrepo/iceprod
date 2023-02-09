@@ -24,32 +24,26 @@ optional arguments:
 from __future__ import absolute_import, division, print_function
 
 import os
-import sys
 import logging
 import logging.config
 import time
-import signal
 import socket
 from functools import partial
-import tempfile
 import shutil
 import threading
 import asyncio
 import gzip
-import shutil
-
-from tornado.ioloop import IOLoop
 
 import iceprod
-from iceprod.core import to_file, to_log, constants
+from iceprod.core import constants
 import iceprod.core.dataclasses
 import iceprod.core.serialization
 import iceprod.core.exe
 from iceprod.core.exe_json import ServerComms
 import iceprod.core.pilot
 import iceprod.core.resources
-
 import iceprod.core.logger
+
 
 def load_config(cfgfile):
     """Load a config from file, serialized string, dictionary, etc"""
@@ -74,6 +68,7 @@ def load_config(cfgfile):
         logger.warning('cfgfile: %r',cfgfile)
         raise Exception('cfgfile is not a str or a Job')
     return config
+
 
 def main(cfgfile=None, logfile=None, url=None, debug=False,
          passkey='', pilot_id=None, offline=False, offline_transfer=False,
@@ -124,8 +119,8 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
     async def run():
         if offline:
             logging.info('offline mode')
-            async for proc in runner(config, debug=debug,
-                    offline=offline, offline_transfer=offline_transfer):
+            async for proc in runner(config, debug=debug, offline=offline,
+                                     offline_transfer=offline_transfer):
                 await proc.wait()
         elif 'tasks' in config and config['tasks']:
             logging.info('online mode - single task')
@@ -168,9 +163,10 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
                 pilot_kwargs['run_timeout'] = config['options']['run_timeout']
             if 'restrict_site' in config['options']:
                 pilot_kwargs['restrict_site'] = config['options']['restrict_site']
-            async with iceprod.core.pilot.Pilot(config, rpc=rpc, debug=debug,
-                                     runner=partial(runner, rpc=rpc, debug=debug),
-                                     pilot_id=pilot_id, **pilot_kwargs) as p:
+            async with iceprod.core.pilot.Pilot(
+                    config, rpc=rpc, debug=debug,
+                    runner=partial(runner, rpc=rpc, debug=debug),
+                    pilot_id=pilot_id, **pilot_kwargs) as p:
                 await p.run()
 
     loop = asyncio.get_event_loop()
@@ -178,6 +174,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
 
     logging.warning('finished running normally; exiting...')
     iceprod.core.logger.remove_handlers()
+
 
 async def runner(config, rpc=None, debug=False, offline=False,
                  offline_transfer=False, resources=None):
@@ -218,10 +215,10 @@ async def runner(config, rpc=None, debug=False, offline=False,
     if 'debug' not in config['options']:
         config['options']['debug'] = debug
     if ('debug' in config['options'] and config['options']['debug'] and
-        'loglevel' not in config['options']):
+            'loglevel' not in config['options']):
         config['options']['loglevel'] = 'INFO'
     if ('loglevel' in config['options'] and
-        config['options']['loglevel'].upper() in iceprod.core.logger.setlevel):
+            config['options']['loglevel'].upper() in iceprod.core.logger.setlevel):
         try:
             iceprod.core.logger.set_log_level(config['options']['loglevel'])
         except Exception:
@@ -280,6 +277,7 @@ async def runner(config, rpc=None, debug=False, offline=False,
             config['options']['resources'] = resources.claim(config['options']['task_id'])
             resources.register_process(config['options']['task_id'],
                                        psutil.Process(), os.getcwd())
+
             def track():
                 while not resource_stop:
                     resources.check_claims()
@@ -321,8 +319,7 @@ async def runner(config, rpc=None, debug=False, offline=False,
                             raise Exception('cannot find specified task')
                     elif isinstance(name, int):
                         # find task by index
-                        if (name >= 0 and
-                            name < len(config['tasks'])):
+                        if name >= 0 and name < len(config['tasks']):
                             async for proc in iceprod.core.exe.runtask(cfg, env, config['tasks'][name], logger=logger):
                                 yield proc
                         else:
@@ -345,11 +342,12 @@ async def runner(config, rpc=None, debug=False, offline=False,
             if (not offline) and 'task' in config['options']:
                 # finish task
                 logger.warning('task finishing')
-                await rpc.finish_task(config['options']['task_id'],
-                        dataset_id=config['options']['dataset_id'],
-                        stats=stats, start_time=start_time,
-                        resources=resources.get_final(config['options']['task_id']) if resources else None,
-                        site=resources.site if resources else None,
+                await rpc.finish_task(
+                    config['options']['task_id'],
+                    dataset_id=config['options']['dataset_id'],
+                    stats=stats, start_time=start_time,
+                    resources=resources.get_final(config['options']['task_id']) if resources else None,
+                    site=resources.site if resources else None,
                 )
 
         except Exception as e:
@@ -358,12 +356,13 @@ async def runner(config, rpc=None, debug=False, offline=False,
             # set task status on server
             if not offline:
                 try:
-                    await rpc.task_error(config['options']['task_id'],
-                            dataset_id=config['options']['dataset_id'],
-                            stats=stats, start_time=start_time,
-                            reason=str(e),
-                            resources=resources.get_final(config['options']['task_id']) if resources else None,
-                            site=resources.site if resources else None,
+                    await rpc.task_error(
+                        config['options']['task_id'],
+                        dataset_id=config['options']['dataset_id'],
+                        stats=stats, start_time=start_time,
+                        reason=str(e),
+                        resources=resources.get_final(config['options']['task_id']) if resources else None,
+                        site=resources.site if resources else None,
                     )
                 except Exception as e:
                     logger.error(e)
@@ -426,7 +425,7 @@ async def runner(config, rpc=None, debug=False, offline=False,
                         await rpc.uploadOut(filename=outfile,
                                             task_id=config['options']['task_id'],
                                             dataset_id=config['options']['dataset_id'])
-        except Exception as e:
+        except Exception:
             logger.error('failed when uploading logging info',exc_info=True)
 
     logger.warning('finished without error')

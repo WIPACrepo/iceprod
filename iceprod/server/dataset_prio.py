@@ -9,6 +9,7 @@ from collections import defaultdict
 
 from iceprod.server import GlobalID
 
+
 def apply_group_prios(datasets, groups=None, filters=None):
     """
     Apply the group priorities to the datasets.
@@ -19,7 +20,7 @@ def apply_group_prios(datasets, groups=None, filters=None):
     """
     if not groups:
         return datasets
-    
+
     # first, calculate group priorities with filtering
     base_groups = {groups[g]['name']:groups[g]['priority'] for g in groups}
     if filters:
@@ -60,6 +61,7 @@ def apply_group_prios(datasets, groups=None, filters=None):
                     ret[d]['priority'] = p_d*1.0/norm[gid] * p_g
     return ret
 
+
 def calc_dataset_prio(dataset, queueing_factor_priority=1.0,
                       queueing_factor_dataset=1.0, queueing_factor_tasks=1.0):
     """
@@ -97,6 +99,7 @@ def calc_dataset_prio(dataset, queueing_factor_priority=1.0,
         prio = 0
         logging.error('Dataset prio for dataset %s is <0',dataset['dataset_id'])
     return prio
+
 
 def calc_datasets_prios(datasets, queueing_factor_priority=1.0,
                         queueing_factor_dataset=1.0, queueing_factor_tasks=1.0):

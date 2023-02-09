@@ -3,9 +3,6 @@ Functions relating to OpenSSL certificates.
 """
 
 import os
-import time
-import socket
-import subprocess
 import hashlib
 import logging
 from datetime import datetime
@@ -40,11 +37,11 @@ def create_ca(cert_filename,key_filename,days=365,hostname=None):
 
         # create a self-signed cert
         cert = crypto.X509()
-        cert.set_version(2) # version 3, since count starts at 0
+        cert.set_version(2)  # version 3, since count starts at 0
         cert.get_subject().C = "US"
         cert.get_subject().ST = "Wisconsin"
         cert.get_subject().L = "Madison"
-        cert.get_subject().O = "University of Wisconsin-Madison"
+        cert.get_subject().O = "University of Wisconsin-Madison"  # noqa: E741
         cert.get_subject().OU = "IceCube IceProd Root CA"
         cert.get_subject().CN = hostname
         cert.set_serial_number(1)
@@ -58,7 +55,7 @@ def create_ca(cert_filename,key_filename,days=365,hostname=None):
         # so do it the hard way by extracting from key output
         pubkey = crypto.dump_privatekey(crypto.FILETYPE_TEXT, cert.get_pubkey())
         logger.info('%r',pubkey)
-        pubkey = [x.strip() for x in pubkey.split(b'\n') if len(x)>0 and x.startswith(b' ')]
+        pubkey = [x.strip() for x in pubkey.split(b'\n') if len(x) > 0 and x.startswith(b' ')]
         logger.info('%r',pubkey)
         pubkey = int(b''.join(pubkey).replace(b':',b''),16)
 
@@ -80,7 +77,7 @@ def create_ca(cert_filename,key_filename,days=365,hostname=None):
             crypto.X509Extension(b"subjectKeyIdentifier", False, hash,
                                  subject=cert),
             crypto.X509Extension(b"subjectAltName", False, b'DNS:'+hostname)
-            ])
+        ])
         cert.sign(k, 'sha512')
 
         open(cert_filename, "wb").write(
@@ -90,7 +87,7 @@ def create_ca(cert_filename,key_filename,days=365,hostname=None):
 
 
 def create_cert(cert_filename,key_filename,days=365,hostname=None,
-        cacert=None,cakey=None,allow_resign=False):
+                cacert=None,cakey=None,allow_resign=False):
     """Make a certificate and key pair"""
     cert_filename = os.path.abspath(os.path.expandvars(cert_filename))
     key_filename = os.path.abspath(os.path.expandvars(key_filename))
@@ -137,11 +134,11 @@ def create_cert(cert_filename,key_filename,days=365,hostname=None,
                 exts.extend([
                     crypto.X509Extension("basicConstraints", True,
                                          "CA:TRUE, pathlen:0"),
-                    #crypto.X509Extension("keyUsage", True,
-                    #                     "keyCertSign, cRLSign"),
-                    #crypto.X509Extension("subjectKeyIdentifier", False, hash,
-                    #                     subject=cert),
-                    ])
+                    # crypto.X509Extension("keyUsage", True,
+                    #                      "keyCertSign, cRLSign"),
+                    # crypto.X509Extension("subjectKeyIdentifier", False, hash,
+                    #                      subject=cert),
+                ])
             cert.add_extensions(exts)
             cert.sign(k, 'sha512')
 
@@ -149,7 +146,7 @@ def create_cert(cert_filename,key_filename,days=365,hostname=None,
             cert.get_subject().C = "US"
             cert.get_subject().ST = "Wisconsin"
             cert.get_subject().L = "Madison"
-            cert.get_subject().O = "University of Wisconsin-Madison"
+            cert.get_subject().O = "University of Wisconsin-Madison"  # noqa: E741
             cert.get_subject().OU = "IceCube IceProd"
             cert.get_subject().CN = hostname
 
@@ -178,11 +175,11 @@ def create_cert(cert_filename,key_filename,days=365,hostname=None,
                 exts.extend([
                     crypto.X509Extension(b"basicConstraints", True,
                                          b"CA:TRUE, pathlen:0"),
-                    #crypto.X509Extension("keyUsage", True,
-                    #                     "keyCertSign, cRLSign"),
-                    #crypto.X509Extension("subjectKeyIdentifier", False, hash,
-                    #                     subject=cert),
-                    ])
+                    # crypto.X509Extension("keyUsage", True,
+                    #                      "keyCertSign, cRLSign"),
+                    # crypto.X509Extension("subjectKeyIdentifier", False, hash,
+                    #                      subject=cert),
+                ])
             cert2.add_extensions(exts)
             cert2.sign(ca_key, 'sha512')
 
@@ -194,7 +191,8 @@ def create_cert(cert_filename,key_filename,days=365,hostname=None,
         open(key_filename, "wb").write(
             crypto.dump_privatekey(crypto.FILETYPE_PEM, k))
 
-def verify_cert(cert_filename,key_filename):
+
+def verify_cert(cert_filename, key_filename):
     """Verify if cert and key match.
        Return False for failure, True for success.
     """
@@ -227,5 +225,3 @@ def verify_cert(cert_filename,key_filename):
         return False
     else:
         return True
-
-

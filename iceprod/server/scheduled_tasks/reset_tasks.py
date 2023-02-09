@@ -5,6 +5,7 @@ Initial delay: rand(5 minutes)
 Periodic delay: 20 minutes
 """
 
+import argparse
 import asyncio
 import logging
 import random
@@ -12,7 +13,10 @@ import time
 
 from tornado.ioloop import IOLoop
 
+from iceprod.client_auth import add_auth_to_argparse, create_rest_client
+
 logger = logging.getLogger('reset_tasks')
+
 
 def reset_tasks(module):
     """
@@ -91,28 +95,23 @@ async def run(rest_client, debug=False):
 
 
 def main():
-    import argparse
-    import asyncio
-    import os
     parser = argparse.ArgumentParser(description='run a scheduled task once')
-    parser.add_argument('-t', '--token', default=os.environ.get('ICEPROD_TOKEN', None), help='auth token')
+    add_auth_to_argparse(parser)
     parser.add_argument('--dataset-id', default=None, help='dataset id to reset')
     parser.add_argument('--log-level', default='info', help='log level')
     parser.add_argument('--debug', default=False, action='store_true', help='debug enabled')
 
     args = parser.parse_args()
-    args = vars(args)
 
-    logformat='%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
-    logging.basicConfig(format=logformat, level=getattr(logging, args['log_level'].upper()))
+    logformat = '%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
+    logging.basicConfig(format=logformat, level=getattr(logging, args.log_level.upper()))
 
-    from rest_tools.client import RestClient
-    rpc = RestClient('https://iceprod2-api.icecube.wisc.edu', args['token'])
+    rest_client = create_rest_client(args)
 
-    if args['dataset_id']:
-        asyncio.run(reset_dataset(args['dataset_id'], rpc, debug=args['debug']))
+    if args.dataset_id:
+        asyncio.run(reset_dataset(args.dataset_id, rest_client, debug=args.debug))
     else:
-        asyncio.run(run(rpc, debug=args['debug']))
+        asyncio.run(run(rest_client, debug=args.debug))
 
 
 if __name__ == '__main__':

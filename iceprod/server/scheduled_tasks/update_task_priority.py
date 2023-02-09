@@ -5,18 +5,19 @@ Initial delay: rand(1 minute)
 Periodic delay: 5 minutes
 """
 
+import argparse
+import asyncio
 import logging
 import random
 import time
-import asyncio
-from collections import defaultdict
 
 from tornado.ioloop import IOLoop
 
-from iceprod.server import GlobalID
+from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 from iceprod.server.priority import Priority
 
 logger = logging.getLogger('update_task_priority')
+
 
 def update_task_priority(module):
     """
@@ -27,6 +28,7 @@ def update_task_priority(module):
     """
     # initial delay
     IOLoop.current().call_later(random.randint(60,600), run, module.rest_client)
+
 
 async def run(rest_client, dataset_id=None, debug=False):
     """
@@ -48,7 +50,6 @@ async def run(rest_client, dataset_id=None, debug=False):
             ret = await rest_client.request('GET', f'/datasets/{dataset_id}/tasks', args)
             tasks = ret.values()
         else:
-            url = f'/datasets/{dataset_id}/tasks'
             ret = await rest_client.request('GET', '/tasks', args)
             tasks = ret['tasks']
 
@@ -112,25 +113,20 @@ async def run(rest_client, dataset_id=None, debug=False):
 
 
 def main():
-    import argparse
-    import os
     parser = argparse.ArgumentParser(description='run a scheduled task once')
-    parser.add_argument('-t', '--token', default=os.environ.get('ICEPROD_TOKEN', None), help='auth token')
+    add_auth_to_argparse(parser)
     parser.add_argument('-d', '--dataset', type=str, default=None, help='dataset id (optional)')
     parser.add_argument('--log-level', default='info', help='log level')
     parser.add_argument('--debug', default=False, action='store_true', help='debug enabled')
-
     args = parser.parse_args()
-    args = vars(args)
 
-    logformat='%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
-    logging.basicConfig(format=logformat, level=getattr(logging, args['log_level'].upper()))
+    logformat = '%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
+    logging.basicConfig(format=logformat, level=getattr(logging, args.log_level.upper()))
 
-    from rest_tools.client import RestClient
-    rpc = RestClient('https://iceprod2-api.icecube.wisc.edu', args['token'])
+    rest_client = create_rest_client(args)
 
-    import asyncio
-    asyncio.run(run(rpc, dataset_id=args['dataset'], debug=args['debug']))
+    asyncio.run(run(rest_client, dataset_id=args.dataset, debug=args.debug))
+
 
 if __name__ == '__main__':
     main()

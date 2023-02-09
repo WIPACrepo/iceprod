@@ -10,9 +10,7 @@ import logging
 import tempfile
 import shutil
 import random
-from functools import partial
-from collections import namedtuple
-from datetime import datetime, timedelta
+from datetime import datetime
 from glob import glob
 import signal
 import traceback
@@ -21,11 +19,8 @@ import concurrent.futures
 
 import iceprod
 from iceprod.core.functions import gethostname
-from iceprod.core import to_file, constants
-from iceprod.core import exe_json
-from iceprod.core.exe import Config
+from iceprod.core import constants
 from iceprod.core.resources import Resources
-from iceprod.core.dataclasses import Number, String
 import iceprod.core.logger
 
 logger = logging.getLogger('pilot')
@@ -40,6 +35,7 @@ try:
 except ImportError:
     def setproctitle(name):
         pass
+
 
 class Pilot:
     """
@@ -115,12 +111,16 @@ class Pilot:
 
     async def __aenter__(self):
         # update pilot status
-        await self.rpc.update_pilot(self.pilot_id, tasks=[],
-                host=self.hostname, version=iceprod.__version__,
-                site=self.resources.site,
-                start_date=datetime.utcnow().isoformat(),
-                resources_available=self.resources.get_available(),
-                resources_claimed=self.resources.get_claimed())
+        await self.rpc.update_pilot(
+            self.pilot_id,
+            tasks=[],
+            host=self.hostname,
+            version=iceprod.__version__,
+            site=self.resources.site,
+            start_date=datetime.utcnow().isoformat(),
+            resources_available=self.resources.get_available(),
+            resources_claimed=self.resources.get_claimed()
+        )
 
         loop = asyncio.get_event_loop()
         # set up resource monitor
@@ -165,7 +165,6 @@ class Pilot:
     def term_handler(self):
         """Handle a SIGTERM gracefully"""
         logger.info('checking resources after SIGTERM')
-        start_time = time.time()
         overages = self.resources.check_claims()
         for task_id in list(self.tasks):
             task = self.tasks[task_id]
@@ -223,7 +222,7 @@ class Pilot:
     async def resource_monitor(self):
         """Monitor the tasks, killing any that go over resource limits"""
         try:
-            sleep_time = self.resource_interval # check every X seconds
+            sleep_time = self.resource_interval  # check every X seconds
             while self.running or self.tasks:
                 logger.debug('pilot monitor - checking resource usage')
                 start_time = time.time()
@@ -233,7 +232,7 @@ class Pilot:
                     for task_id in overages:
                         used_resources = self.resources.get_peak(task_id)
                         logger.warning('kill %r for going over resources: %r',
-                                    task_id, used_resources)
+                                       task_id, used_resources)
                         message = overages[task_id]
                         message += '\n\npilot_id: {}'.format(self.pilot_id)
                         message += '\nhostname: {}'.format(self.hostname)
@@ -261,10 +260,11 @@ class Pilot:
     async def run(self):
         """Run the pilot"""
         download_errors = max_download_errors = 5
-        iceprod_errors = max_iceprod_errors = 10
+        iceprod_errors = 10
         task_errors = max_task_errors = int(10**math.log10(10+self.resources.total['cpu']))
         logger.info('max_errors: %d, %d', max_download_errors, max_task_errors)
         tasks_running = 0
+
         async def backoff():
             """Backoff for rate limiting"""
             delay = self.backoff_delay+self.backoff_factor*(1+random.random())
@@ -279,15 +279,16 @@ class Pilot:
                     await asyncio.sleep(time.time()-self.last_download+self.download_delay)
                     break
                 self.last_download = time.time()
-                #if self.resources.total['gpu'] and not self.resources.available['gpu']:
-                #    logger.info('gpu pilot with no gpus left - not queueing')
-                #    break
+                # if self.resources.total['gpu'] and not self.resources.available['gpu']:
+                #     logger.info('gpu pilot with no gpus left - not queueing')
+                #     break
                 try:
                     task_configs = await self.rpc.download_task(
-                            self.config['options']['gridspec'],
-                            resources=self.resources.get_available(),
-                            site=self.resources.site,
-                            query_params=self.query_params)
+                        self.config['options']['gridspec'],
+                        resources=self.resources.get_available(),
+                        site=self.resources.site,
+                        query_params=self.query_params
+                    )
                 except Exception:
                     download_errors -= 1
                     if download_errors < 1:
@@ -328,7 +329,7 @@ class Pilot:
                                 self.running = False
                                 logger.warning('errors over limit, draining')
                             logger.warning('error claiming resources %s', task_id,
-                                        exc_info=True)
+                                           exc_info=True)
                             message = 'pilot_id: {}\nhostname: {}\n\n'.format(self.pilot_id, self.hostname)
                             message += traceback.format_exc()
                             kwargs = {
@@ -350,7 +351,7 @@ class Pilot:
                                 self.running = False
                                 logger.warning('errors over limit, draining')
                             logger.warning('error creating task %s', task_id,
-                                        exc_info=True)
+                                           exc_info=True)
                             message = 'pilot_id: {}\nhostname: {}\n\n'.format(self.pilot_id, self.hostname)
                             message += traceback.format_exc()
                             kwargs = {
@@ -365,12 +366,12 @@ class Pilot:
 
                     # update pilot status
                     await self.rpc.update_pilot(self.pilot_id, tasks=list(self.tasks),
-                                          resources_available=self.resources.get_available(),
-                                          resources_claimed=self.resources.get_claimed())
+                                                resources_available=self.resources.get_available(),
+                                                resources_claimed=self.resources.get_claimed())
 
                 if (self.resources.available['cpu'] < 1
-                    or self.resources.available['memory'] < 1
-                    or (self.resources.total['gpu'] and not self.resources.available['gpu'])):
+                        or self.resources.available['memory'] < 1
+                        or (self.resources.total['gpu'] and not self.resources.available['gpu'])):
                     logger.info('no resources left, so wait for tasks to finish')
                     break
                 # otherwise, backoff
@@ -381,7 +382,7 @@ class Pilot:
                 logger.info('wait while tasks are running. timeout=%r',self.run_timeout)
                 start_time = time.time()
                 while self.tasks and time.time()-self.run_timeout < start_time:
-                    done,pending = await asyncio.wait([task['p'].wait() for task in self.tasks.values()],
+                    done,pending = await asyncio.wait([asyncio.create_task(task['p'].wait()) for task in self.tasks.values()],
                                                       timeout=self.resource_interval,
                                                       return_when=concurrent.futures.FIRST_COMPLETED)
                     if done:
@@ -451,8 +452,8 @@ class Pilot:
                     logger.info('%d tasks removed', tasks_running-len(self.tasks))
                     tasks_running = len(self.tasks)
                     await self.rpc.update_pilot(self.pilot_id, tasks=list(self.tasks),
-                                          resources_available=self.resources.get_available(),
-                                          resources_claimed=self.resources.get_claimed())
+                                                resources_available=self.resources.get_available(),
+                                                resources_claimed=self.resources.get_claimed())
                     if self.running:
                         break
                 elif (self.running and self.resources.available['cpu'] > 1
@@ -463,8 +464,8 @@ class Pilot:
 
         # last update for pilot state
         await self.rpc.update_pilot(self.pilot_id, tasks=[],
-                              resources_available=self.resources.get_available(),
-                              resources_claimed=self.resources.get_claimed())
+                                    resources_available=self.resources.get_available(),
+                                    resources_claimed=self.resources.get_claimed())
 
         if task_errors < 1:
             logger.critical('too many errors when running tasks')
@@ -492,7 +493,7 @@ class Pilot:
         config['options']['subprocess_dir'] = tmpdir
 
         # start the task
-        r = config['options']['resources']
+        # r = config['options']['resources']
         async for proc in self.runner(config, resources=self.resources):
             ps = psutil.Process(proc.pid) if psutil else None
             self.resources.register_process(task_id, ps, tmpdir)
@@ -525,7 +526,7 @@ class Pilot:
                     try:
                         processes = task['process'].children(recursive=True)
                     except psutil.NoSuchProcess:
-                        pass # process already died
+                        pass  # process already died
                     else:
                         processes.reverse()
                         processes.append(task['process'])
@@ -536,7 +537,7 @@ class Pilot:
                                 pass
                             except Exception:
                                 logger.warning('error terminating process',
-                                            exc_info=True)
+                                               exc_info=True)
 
                         def on_terminate(proc):
                             logger.info("process %r terminated with exit code %r",
@@ -551,13 +552,13 @@ class Pilot:
                                     pass
                                 except Exception:
                                     logger.warning('error killing process',
-                                                exc_info=True)
+                                                   exc_info=True)
                         except Exception:
                             logger.warning('failed to kill processes',
-                                        exc_info=True)
+                                           exc_info=True)
                 task['p'].kill()
             except ProcessLookupError:
-                pass # process already died
+                pass  # process already died
             except Exception:
                 logger.warning('error deleting process', exc_info=True)
 

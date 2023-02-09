@@ -4,14 +4,9 @@ queueing system, putting tasks on the queue and removing them as necessary.
 """
 
 import os
-import time
 import logging
-from contextlib import contextmanager
 import socket
 
-import tornado.httpclient
-import tornado.gen
-from tornado.concurrent import run_on_executor
 import certifi
 
 import iceprod
@@ -20,10 +15,13 @@ from iceprod.server import module
 from iceprod.server.globus import SiteGlobusProxy
 import iceprod.core.functions
 
+
 class StopException(Exception):
     pass
 
+
 logger = logging.getLogger('modules_queue')
+
 
 class queue(module.module):
     """
@@ -116,13 +114,13 @@ class queue(module.module):
                     self.rest_client)
             try:
                 self.plugins.append(iceprod.server.run_module(p,*args))
-            except Exception as e:
-                logger.error('Error importing plugin',exc_info=True)
+            except Exception:
+                logger.error('Error importing plugin', exc_info=True)
             else:
                 desc = p_cfg['description'] if 'description' in p_cfg else ''
                 gridspec_types[self.cfg['site_id']+'.'+p_name] = {
-                        'type': p_cfg['type'],
-                        'description': desc,
+                    'type': p_cfg['type'],
+                    'description': desc,
                 }
                 duration = 0
                 if 'max_task_queued_time' in p_cfg:
@@ -140,17 +138,15 @@ class queue(module.module):
         }
         if 'grid_id' in self.cfg and self.cfg['grid_id']:
             try:
-                self.rest_client.request_seq('GET',
-                        '/grids/{}'.format(self.cfg['grid_id']))
+                self.rest_client.request_seq('GET', '/grids/{}'.format(self.cfg['grid_id']))
             except Exception:
                 logger.warning('grid_id %s not present in DB',
-                                self.cfg['grid_id'], exc_info=True)
+                               self.cfg['grid_id'], exc_info=True)
                 del self.cfg['grid_id']
         if 'grid_id' not in self.cfg:
             # register grid
             try:
-                ret = self.rest_client.request_seq('POST',
-                        '/grids', args)
+                ret = self.rest_client.request_seq('POST', '/grids', args)
                 self.cfg['grid_id'] = ret['result']
             except Exception:
                 logger.fatal('cannot register grid in DB', exc_info=True)
@@ -158,8 +154,7 @@ class queue(module.module):
         else:
             # update grid
             try:
-                ret = self.rest_client.request_seq('PATCH',
-                        '/grids/{}'.format(self.cfg['grid_id']), args)
+                ret = self.rest_client.request_seq('PATCH', '/grids/{}'.format(self.cfg['grid_id']), args)
             except Exception:
                 logger.warning('error updating grid in DB', exc_info=True)
 
@@ -177,7 +172,7 @@ class queue(module.module):
 
         # check proxy cert
         try:
-             self.check_proxy(self.max_duration)
+            self.check_proxy(self.max_duration)
         except Exception:
             logger.error('error checking proxy',exc_info=True)
 
