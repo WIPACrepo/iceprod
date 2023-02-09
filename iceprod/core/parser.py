@@ -44,17 +44,17 @@ class safe_eval:
         Safe evaluation of arithmatic operations using
         :mod:`Abstract Syntax Trees <ast>`.
         """
-        return cls.__eval(cls.ast.parse(expr).body[0].value)  # Module(body=[Expr(value=...)])
+        return cls.__eval(ast.parse(expr).body[0].value)  # Module(body=[Expr(value=...)])
 
     @classmethod
     def __eval(cls,node):
-        if isinstance(node, cls.ast.Num):  # <number>
+        if isinstance(node, ast.Num):  # <number>
             return node.n
-        elif isinstance(node, (cls.ast.operator,cls.ast.unaryop)):  # <operator>
+        elif isinstance(node, (ast.operator,ast.unaryop)):  # <operator>
             return cls.operators[type(node)]
-        elif isinstance(node, cls.ast.BinOp):  # <left> <operator> <right>
+        elif isinstance(node, ast.BinOp):  # <left> <operator> <right>
             return cls.__eval(node.op)(cls.__eval(node.left), cls.__eval(node.right))
-        elif isinstance(node, cls.ast.UnaryOp):  # <operator> <right>
+        elif isinstance(node, ast.UnaryOp):  # <operator> <right>
             return cls.__eval(node.op)(cls.__eval(node.operand))
         else:
             raise TypeError(node)

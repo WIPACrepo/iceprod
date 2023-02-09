@@ -342,9 +342,8 @@ class MyTest(IPBaseClass):
     @patch('iceprod.core.i3exec.runner')
     @patch('iceprod.core.i3exec.ServerComms')
     @patch('iceprod.core.logger.set_logger')
-    @patch('iceprod.core.i3exec.to_file')
     @unittest_reporter(name='main() online')
-    def test_92(self, to_file, logger, comms, runner, _):
+    def test_92(self, logger, comms, runner, _):
         async def run(*args, **kwargs):
             run.called = True
             yield await asyncio.create_subprocess_exec('sleep','0.1')
@@ -353,10 +352,6 @@ class MyTest(IPBaseClass):
         async def processing(*args, **kwargs):
             pass
         comms.return_value.processing.side_effect = processing
-        @contextmanager
-        def to_file2(*args,**kwargs):
-            yield
-        to_file.side_effect = to_file2
 
         config = self.make_config()
         task = iceprod.core.dataclasses.Task()
