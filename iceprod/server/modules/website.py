@@ -483,7 +483,12 @@ class Documentation(PublicHandler):
     async def get(self, url):
         self.statsd.incr('documentation')
         doc_path = get_pkgdata_filename('iceprod.server','data/docs')
-        self.write(documentation.load_doc(doc_path+'/' + url))
+        full_path = os.path.join(doc_path, url)
+        if not fulL_path.startswith(doc_path):
+            self.set_status(404)
+            self.render('404.html', path='bad docs path')
+            return
+        self.write(documentation.load_doc(full_path))
         self.flush()
 
 
@@ -516,7 +521,7 @@ class Other(PublicHandler):
         self.statsd.incr('other')
         path = self.request.path
         self.set_status(404)
-        self.render('404.html',path=path)
+        self.render('404.html', path=path)
 
 
 class Profile(PublicHandler):
