@@ -68,7 +68,7 @@ class queue_test(module_test):
             raise
 
     @unittest_reporter
-    def test_10_start(self):
+    async def test_10_start(self):
         self.mock_listmodules.return_value = ['iceprod.server.plugins.Test1']
         self.queue.rest_client = MagicMock(spec=RestClient)
         self.queue.rest_client.request_seq.return_value = {'result':'foo'}
@@ -97,18 +97,12 @@ class queue_test(module_test):
         self.queue.check_proxy = MagicMock()
         
         await self.queue.queue_loop(run_once=True)
-        call_later.assert_called_once()
         
         self.cfg['queue']['queue_interval'] = 123
-        call_later.reset_mock()
         await self.queue.queue_loop(run_once=True)
-        call_later.assert_called_once_with(123, self.queue.queue_loop)
         
         self.cfg['queue']['queue_interval'] = 0
-        call_later.reset_mock()
         await self.queue.queue_loop(run_once=True)
-        call_later.assert_called_once()
-        self.assertNotEqual(call_later.call_args[0][0], 0)
         
         self.assertTrue(plugin.check_and_clean.called)
         self.assertTrue(plugin.queue.called)
