@@ -42,11 +42,6 @@ class reset_tasks_test(AsyncTestCase):
         }
 
     @unittest_reporter
-    def test_100_reset_tasks_test(self):
-        s = schedule(self.cfg,None,None,None)
-        reset_tasks.reset_tasks(s)
-
-    @unittest_reporter
     async def test_200_run(self):
         rc = MagicMock(spec=RestClient)
         pilots = {}

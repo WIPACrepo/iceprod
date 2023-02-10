@@ -3,35 +3,17 @@ Reset tasks that are not active (in a pilot).
 
 Check all the tasks that are processing, and compare with the
 tasks in pilots.  Reset the difference.
-
-Initial delay: rand(5 minutes)
-Periodic delay: 10 minutes
 """
 
 import argparse
-import logging
-import random
-import time
 import asyncio
 from datetime import datetime
-
-from tornado.ioloop import IOLoop
+import logging
 
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 from iceprod.server.util import str2datetime
 
 logger = logging.getLogger('non_active_tasks')
-
-
-def non_active_tasks(module):
-    """
-    Initial entrypoint.
-
-    Args:
-        module (:py:class:`iceprod.server.modules.schedule`): schedule module
-    """
-    # initial delay
-    IOLoop.current().call_later(random.randint(60,60*5), run, module.rest_client)
 
 
 async def run(rest_client, debug=False):
@@ -42,8 +24,6 @@ async def run(rest_client, debug=False):
         rest_client (:py:class:`iceprod.core.rest_client.Client`): rest client
         debug (bool): debug flag to propagate exceptions
     """
-    start_time = time.time()
-
     try:
         datasets = await rest_client.request('GET', '/dataset_summaries/status')
         dataset_ids = []
@@ -124,11 +104,6 @@ async def run(rest_client, debug=False):
         logger.error('error resetting non-active tasks', exc_info=True)
         if debug:
             raise
-
-    # run again after 60 minute delay
-    stop_time = time.time()
-    delay = max(60*10 - (stop_time-start_time), 60)
-    IOLoop.current().call_later(delay, run, rest_client)
 
 
 def main():

@@ -2,9 +2,6 @@
 Clean job temp directories.
 
 Check job temp directories, and if the job is complete then delete it.
-
-Initial delay: rand(15 minutes)
-Periodic delay: 60 minutes
 """
 
 import argparse
@@ -14,10 +11,6 @@ from datetime import datetime, timedelta
 from functools import partial
 import logging
 import os
-import random
-import time
-
-from tornado.ioloop import IOLoop
 
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 from iceprod.core.gridftp import GridFTP
@@ -25,18 +18,6 @@ from iceprod.server.config import IceProdConfig
 from iceprod.server.util import str2datetime
 
 logger = logging.getLogger('job_temp_cleaning')
-
-
-def job_temp_cleaning(module):
-    """
-    Initial entrypoint.
-
-    Args:
-        module (:py:class:`iceprod.server.modules.schedule`): schedule module
-    """
-    # initial delay
-    IOLoop.current().call_later(random.randint(10,60*10), run, module.rest_client,
-                                module.cfg, module.executor)
 
 
 async def run(rest_client, cfg, executor, dataset=None, debug=False):
@@ -50,8 +31,6 @@ async def run(rest_client, cfg, executor, dataset=None, debug=False):
     """
     if 'queue' not in cfg or 'site_temp' not in cfg['queue']:
         return
-
-    start_time = time.time()
 
     suspend_time = timedelta(days=90)
     now = datetime.utcnow()
@@ -116,11 +95,6 @@ async def run(rest_client, cfg, executor, dataset=None, debug=False):
         logger.error('error checking job temp', exc_info=True)
         if debug:
             raise
-
-    # run again after 60 minute delay
-    stop_time = time.time()
-    delay = max(60*60 - (stop_time-start_time), 60*10)
-    IOLoop.current().call_later(delay, run, rest_client, cfg, executor, debug)
 
 
 def main():

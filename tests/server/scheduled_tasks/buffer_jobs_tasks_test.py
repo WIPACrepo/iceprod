@@ -2,32 +2,7 @@ import pytest
 
 from rest_tools.client import RestClient
 
-from iceprod.server.modules.schedule import schedule
 from iceprod.server.scheduled_tasks import buffer_jobs_tasks
-
-
-@pytest.fixture
-def cfg(tmp_path):
-    return {
-        'queue':{
-            'init_queue_interval':0.1,
-            'submit_dir': str(tmp_path),
-            '*':{'type':'Test1','description':'d'},
-        },
-        'master':{
-            'url':False,
-        },
-        'materialization': {
-            'url': 'http://iceprod.test',
-        },
-        'site_id':'abcd',
-    }
-
-
-def test_schedule_buffer_jobs_tasks(cfg, monkeypatch):
-    monkeypatch.setenv('CI_TESTING', '1')
-    s = schedule(cfg, None, None, None)
-    buffer_jobs_tasks.buffer_jobs_tasks(s)
 
 
 async def test_buffer_jobs_tasks_run(requests_mock):

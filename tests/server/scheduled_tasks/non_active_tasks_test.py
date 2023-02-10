@@ -42,11 +42,6 @@ class non_active_tasks_test(AsyncTestCase):
         }
 
     @unittest_reporter
-    def test_100_non_active_tasks(self):
-        s = schedule(self.cfg,None,None,None)
-        non_active_tasks.non_active_tasks(s)
-
-    @unittest_reporter
     async def test_200_run(self):
         rc = MagicMock(spec=RestClient)
         pilots = {}

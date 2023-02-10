@@ -40,11 +40,10 @@ async def server(monkeypatch, port):
             'auth_key': 'bar'
         },
     }
-    io_loop = asyncio.get_running_loop()
     executor = {}
     modules = services_mock()
 
-    s = website.website(cfg, io_loop, executor, modules)
+    s = website.website(cfg, executor, modules)
     s.start()
 
     auth = Auth('secret')

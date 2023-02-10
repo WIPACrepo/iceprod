@@ -2,19 +2,12 @@
 Monitor the datasets.
 
 Send monitoring data to graphite.
-
-Initial delay: rand(1 minute)
-Periodic delay: 5 minutes
 """
 
 import argparse
 import asyncio
 import logging
 import os
-import random
-import time
-
-from tornado.ioloop import IOLoop
 
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 from iceprod.server.module import FakeStatsClient, StatsClientIgnoreErrors
@@ -23,18 +16,6 @@ logger = logging.getLogger('dataset_monitor')
 
 
 TASKS_IN_PARALLEL = 100
-
-
-def dataset_monitor(module):
-    """
-    Initial entrypoint.
-
-    Args:
-        module (:py:class:`iceprod.server.modules.schedule`): schedule module
-    """
-    # initial delay
-    IOLoop.current().call_later(random.randint(5,60), run,
-                                module.rest_client, module.statsd)
 
 
 async def process_dataset(rest_client, statsd, dataset_id):
@@ -105,7 +86,6 @@ async def run(rest_client, statsd, debug=False):
         statsd (:py:class:`statsd.StatsClient`): statsd (graphite) client
         debug (bool): debug flag to propagate exceptions
     """
-    start_time = time.time()
     try:
         future_resources = {'gpu': 0,'cpu': 0}
 
@@ -138,11 +118,6 @@ async def run(rest_client, statsd, debug=False):
         logger.error('error monitoring datasets', exc_info=True)
         if debug:
             raise
-
-    # run again after 60 minute delay
-    stop_time = time.time()
-    delay = max(60*5 - (stop_time-start_time), 60)
-    IOLoop.current().call_later(delay, run, rest_client, statsd)
 
 
 def main():

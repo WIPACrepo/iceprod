@@ -103,13 +103,11 @@ class module(object):
     This is an abstract class representing a server module.
 
     :param cfg: An :class:`IceProdConfig`.
-    :param io_loop: An :class:`tornado.ioloop.IOLoop`.
     :param executor: A :class:`concurrent.futures.ThreadPoolExecutor`.
     :param modules: A dict of other module's public services.
     """
-    def __init__(self, cfg, io_loop, executor, modules):
+    def __init__(self, cfg, executor, modules):
         self.cfg = cfg
-        self.io_loop = io_loop
         self.executor = executor
         self.statsd = FakeStatsClient()
         self.elasticsearch = FakeStatsClient()

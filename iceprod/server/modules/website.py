@@ -17,7 +17,6 @@ from collections import defaultdict
 
 from iceprod.core.jsonUtil import json_encode
 
-import tornado.ioloop
 import tornado.web
 import tornado.httpserver
 import tornado.gen

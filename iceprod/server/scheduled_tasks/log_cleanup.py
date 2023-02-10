@@ -4,36 +4,17 @@ Clean up the logs based on retention policy.
 iceprod_log: 1 month
 stderr: 1 year
 stdout: 1 year
-
-Initial delay: rand(60 minute)
-Periodic delay: 12 hours
 """
 
 import argparse
 import asyncio
 from datetime import datetime, timedelta
 import logging
-import random
-import time
-
-from tornado.ioloop import IOLoop
 
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 from iceprod.server.util import datetime2str
 
 logger = logging.getLogger('pilot_monitor')
-
-
-def log_cleanup(module):
-    """
-    Initial entrypoint.
-
-    Args:
-        module (:py:class:`iceprod.server.modules.schedule`): schedule module
-    """
-    # initial delay
-    IOLoop.current().call_later(random.randint(60,60*60), run,
-                                module.rest_client)
 
 
 async def run(rest_client, debug=False):
@@ -44,8 +25,6 @@ async def run(rest_client, debug=False):
         rest_client (:py:class:`iceprod.core.rest_client.Client`): rest client
         debug (bool): debug flag to propagate exceptions
     """
-    start_time = time.time()
-
     async def delete_logs(name, days):
         time_limit = datetime.utcnow() - timedelta(days=days)
         args = {
@@ -69,11 +48,6 @@ async def run(rest_client, debug=False):
         logger.error('error cleaning logs', exc_info=True)
         if debug:
             raise
-
-    # run again after 12 hours
-    stop_time = time.time()
-    delay = max(12*3600 - (stop_time-start_time), 3600)
-    IOLoop.current().call_later(delay, run, rest_client)
 
 
 def main():

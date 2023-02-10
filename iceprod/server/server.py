@@ -13,8 +13,6 @@ import subprocess
 from datetime import datetime, timedelta
 import asyncio
 
-from tornado.ioloop import IOLoop
-
 from concurrent.futures import ThreadPoolExecutor
 
 from iceprod.core.logger import set_log_level
@@ -52,7 +50,6 @@ class Server(object):
                 try:
                     m = importlib.import_module('iceprod.server.modules.'+mod_name)
                     mod = getattr(m, mod_name)(cfg=self.cfg,
-                                               io_loop=self.io_loop,
                                                executor=self.executor,
                                                modules=self.services)
                     self.modules[mod_name] = mod
