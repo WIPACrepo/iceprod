@@ -209,7 +209,7 @@ async def test_website_config(server, requests_mock):
             # self.executor = {}
             # self.modules = services_mock()
             
-            # self.website = website(self.cfg, self.io_loop, self.executor, self.modules)
+            # self.website = website(self.cfg, self.executor, self.modules)
         # except:
             # logger.warning('error setting up modules_website', exc_info=True)
             # raise

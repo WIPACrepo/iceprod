@@ -121,9 +121,6 @@ class module(object):
     def start(self):
         """
         Set up a module.
-
-        Note that this is not on the io_loop and should not interact
-        with other modules.  Add a callback to the io_loop to do so.
         """
         logger.warning('starting module %s', self.__class__.__name__)
         if 'statsd' in self.cfg and self.cfg['statsd']:

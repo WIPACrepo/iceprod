@@ -2,7 +2,7 @@
 The queue module is responsible for interacting with the local batch or
 queueing system, putting tasks on the queue and removing them as necessary.
 """
-
+import asyncio
 import os
 import logging
 import socket
@@ -110,7 +110,7 @@ class queue(module.module):
             logger.warning('queueing plugin found: %s = %s', p_name, p_cfg['type'])
             # try instantiating the plugin
             args = (self.cfg['site_id']+'.'+p_name, p_cfg, self.cfg,
-                    self.modules, self.io_loop, self.executor, self.statsd,
+                    self.modules, self.executor, self.statsd,
                     self.rest_client)
             try:
                 self.plugins.append(iceprod.server.run_module(p,*args))
@@ -158,40 +158,44 @@ class queue(module.module):
             except Exception:
                 logger.warning('error updating grid in DB', exc_info=True)
 
-        self.io_loop.add_callback(self.queue_loop)
+        asyncio.create_task(self.queue_loop())
 
-    async def queue_loop(self):
+    async def queue_loop(self, run_once=False):
         """Run the queueing loop"""
-        # check and clean grids
-        for p in self.plugins:
+        while True:
+            # check and clean grids
+            for p in self.plugins:
+                try:
+                    await p.check_and_clean()
+                except Exception:
+                    logger.error('plugin %s.check_and_clean() raised exception',
+                                 p.__class__.__name__,exc_info=True)
+
+            # check proxy cert
             try:
-                await p.check_and_clean()
+                self.check_proxy(self.max_duration)
             except Exception:
-                logger.error('plugin %s.check_and_clean() raised exception',
-                             p.__class__.__name__,exc_info=True)
+                logger.error('error checking proxy',exc_info=True)
 
-        # check proxy cert
-        try:
-            self.check_proxy(self.max_duration)
-        except Exception:
-            logger.error('error checking proxy',exc_info=True)
+            # queue tasks to grids
+            for p in self.plugins:
+                try:
+                    await p.queue()
+                except Exception:
+                    logger.error('plugin %s.queue() raised exception',
+                                 p.__class__.__name__,exc_info=True)
 
-        # queue tasks to grids
-        for p in self.plugins:
-            try:
-                await p.queue()
-            except Exception:
-                logger.error('plugin %s.queue() raised exception',
-                             p.__class__.__name__,exc_info=True)
+            if run_once:
+                break
 
-        # set timeout
-        if 'queue' in self.cfg and 'queue_interval' in self.cfg['queue']:
-            timeout = self.cfg['queue']['queue_interval']
-            if timeout <= 0:
+            # set timeout
+            if 'queue' in self.cfg and 'queue_interval' in self.cfg['queue']:
+                timeout = self.cfg['queue']['queue_interval']
+                if timeout <= 0:
+                    timeout = 300
+            else:
                 timeout = 300
-        else:
-            timeout = 300
-        self.io_loop.call_later(timeout, self.queue_loop)
+            await asyncio.sleep(timeout)
 
     def check_proxy(self, duration=None):
         """

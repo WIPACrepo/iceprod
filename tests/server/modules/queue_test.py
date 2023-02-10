@@ -62,7 +62,7 @@ class queue_test(module_test):
             self.executor = TestExecutor()
             self.modules = services_mock()
             
-            self.queue = queue(self.cfg, self.io_loop, self.executor, self.modules)
+            self.queue = queue(self.cfg, self.executor, self.modules)
         except:
             logger.warning('error setting up modules_queue', exc_info=True)
             raise
@@ -81,9 +81,8 @@ class queue_test(module_test):
         self.assertTrue(self.queue.rest_client.request_seq.call_count, 2)
         self.assertTrue(self.queue.rest_client.request_seq.call_args[0][1], '/grids/foo')
 
-    @patch('tornado.ioloop.IOLoop.call_later')
     @unittest_reporter
-    async def test_20_queue(self, call_later):
+    async def test_20_queue(self):
         plugin = MagicMock()
         async def run(*args, **kwargs):
             return None
@@ -97,17 +96,17 @@ class queue_test(module_test):
         self.queue.plugins = [plugin]
         self.queue.check_proxy = MagicMock()
         
-        await self.queue.queue_loop()
+        await self.queue.queue_loop(run_once=True)
         call_later.assert_called_once()
         
         self.cfg['queue']['queue_interval'] = 123
         call_later.reset_mock()
-        await self.queue.queue_loop()
+        await self.queue.queue_loop(run_once=True)
         call_later.assert_called_once_with(123, self.queue.queue_loop)
         
         self.cfg['queue']['queue_interval'] = 0
         call_later.reset_mock()
-        await self.queue.queue_loop()
+        await self.queue.queue_loop(run_once=True)
         call_later.assert_called_once()
         self.assertNotEqual(call_later.call_args[0][0], 0)
         
@@ -121,7 +120,7 @@ class queue_test(module_test):
         plugin.check_and_clean = MagicMock(side_effect=run)
         plugin.queue = MagicMock(side_effect=run)
         self.queue.check_proxy = MagicMock(side_effect=Exception)
-        await self.queue.queue_loop()
+        await self.queue.queue_loop(run_once=True)
 
     @unittest_reporter
     def test_30_check_proxy(self):
