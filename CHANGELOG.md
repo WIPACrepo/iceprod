@@ -2,6 +2,9 @@
 
 <!--next-version-placeholder-->
 
+## v2.6.1 (2023-02-10)
+
+
 ## v2.6.0 (2023-02-09)
 ### Feature
 * Keycloak auth ([#323](https://github.com/WIPACrepo/iceprod/issues/323)) ([`f78aff0`](https://github.com/WIPACrepo/iceprod/commit/f78aff071b84d16e437325dc2b547b609ef0deac))
