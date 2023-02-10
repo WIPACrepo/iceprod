@@ -8,20 +8,22 @@ from .auth import AttrAuthMixin
 logger = logging.getLogger('rest')
 
 
-def IceProdRestConfig(config=None, statsd=None, database=None, s3conn=None):
+def IceProdRestConfig(config=None, statsd=None, database=None, auth_database=None, s3conn=None):
     config['server_header'] = 'IceProd/' + iceprod.__version__
     ret = RestHandlerSetup(config)
     ret['statsd'] = statsd
     ret['database'] = database
+    ret['auth_database'] = auth_database
     ret['s3'] = s3conn
     return ret
 
 
 class APIBase(AttrAuthMixin, RestHandler):
     """Default REST handler"""
-    def initialize(self, database=None, statsd=None, s3=None, **kwargs):
+    def initialize(self, database=None, auth_database=None, statsd=None, s3=None, **kwargs):
         super().initialize(**kwargs)
         self.db = database
+        self.auth_db = auth_database
         self.statsd = statsd
         self.s3 = s3
 

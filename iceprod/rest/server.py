@@ -108,6 +108,7 @@ class Server:
             for route,cls,kw in ret['routes']:
                 kw2 = kw.copy()
                 kw2['database'] = kw['database'][ret['database']]
+                kw2['auth_database'] = kw['database']['auth']
                 server.add_route(route, cls, kw2)
             ii = self.indexes[ret['database']]
             for col in ret['indexes']:
@@ -123,11 +124,11 @@ class Server:
     async def start(self):
         for database in self.indexes:
             db = self.db[database]
-            for collection in self.indexes:
+            for collection in self.indexes[database]:
                 existing = await db[collection].index_information()
-                for name in self.indexes[collection]:
+                for name in self.indexes[database][collection]:
                     if name not in existing:
-                        kwargs = self.indexes[collection][name]
+                        kwargs = self.indexes[database][collection][name]
                         logging.info('DB: creating index %s/%s:%s %r', database, collection, name, kwargs)
                         await db[collection].create_index(name=name, **kwargs)
 

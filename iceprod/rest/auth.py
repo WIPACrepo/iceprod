@@ -53,7 +53,7 @@ class AttrAuthMixin:
                      'read_users': read_users, 'write_users': write_users}
 
         logger.debug('setting attr auths: arg=%r, val=%r, auths=%r', arg, val, new_attrs)
-        ret = await self.db.attr_auths.find_one_and_update(
+        ret = await self.auth_db.attr_auths.find_one_and_update(
             {arg: val},
             {'$set': new_attrs},
             upsert=True,
@@ -74,7 +74,7 @@ class AttrAuthMixin:
             role (str): the role to check for (read|write)
         """
         try:
-            ret = await self.db.attr_auths.find_one({arg: val}, projection={'_id':False})
+            ret = await self.auth_db.attr_auths.find_one({arg: val}, projection={'_id':False})
             if not ret:
                 raise HTTPError(403, reason='attr not found')
             elif role+'_groups' not in ret:
