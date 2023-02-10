@@ -29,6 +29,7 @@ def setup(handler_cfg):
             (r'/datasets/(?P<dataset_id>\w+)/logs/(?P<log_id>\w+)', DatasetLogsHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/logs', DatasetTaskLogsHandler, handler_cfg),
         ],
+        'database': 'logs',
         'indexes': {
             'logs': {
                 'log_id_index': {'keys': 'log_id', 'unique': True},

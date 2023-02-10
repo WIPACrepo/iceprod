@@ -28,6 +28,7 @@ def setup(handler_cfg):
             (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/task_stats', DatasetsMultiTaskStatsHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/task_stats/(?P<task_stat_id>\w+)', DatasetsTaskStatsHandler, handler_cfg),
         ],
+        'database': 'task_stats',
         'indexes': {
             'jobs': {
                 'task_stat_id_index': {'keys': 'task_stat_id', 'unique': True},

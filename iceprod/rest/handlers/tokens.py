@@ -22,6 +22,7 @@ def setup(handler_cfg):
         'routes': [
             (r'/users/(?P<username>\w+)/tokens', UserTokensHandler, handler_cfg),
         ],
+        'database': 'tokens',
         'indexes': {
             'tokens': {
                 'username_index': {'keys': 'username', 'unique': True},

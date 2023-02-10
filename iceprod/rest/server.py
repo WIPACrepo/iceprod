@@ -2,6 +2,7 @@
 Server for queue management
 """
 from collections import defaultdict
+from functools import partial
 import importlib
 import logging
 from pathlib import Path
@@ -92,10 +93,9 @@ class Server:
         logging_url = config["DB_URL"].split('@')[-1] if '@' in config["DB_URL"] else config["DB_URL"]
         logging.info(f'DB: {logging_url}')
         db_url, db_name = config['DB_URL'].rsplit('/', 1)
-        db = motor.motor_asyncio.AsyncIOMotorClient(db_url)
+        self.db = motor.motor_asyncio.AsyncIOMotorClient(db_url)
         logging.info(f'DB name: {db_name}')
-        self.db = db[db_name]
-        self.indexes = defaultdict(dict)
+        self.indexes = defaultdict(partial(defaultdict, dict))
 
         kwargs = IceProdRestConfig(rest_config, statsd=statsd, database=self.db, s3conn=s3conn)
 
@@ -106,9 +106,13 @@ class Server:
             mod = importlib.import_module(f'iceprod.rest.handlers.{name}')
             ret = mod.setup(kwargs)
             for route,cls,kw in ret['routes']:
-                server.add_route(route, cls, kw)
+                kw2 = kw.copy()
+                kw2['database'] = kw['database'][ret['database']]
+                kw2['auth_database'] = kw['database']['auth']
+                server.add_route(route, cls, kw2)
+            ii = self.indexes[ret['database']]
             for col in ret['indexes']:
-                self.indexes[col].update(ret['indexes'][col])
+                ii[col].update(ret['indexes'][col])
 
         server.add_route('/healthz', Health)
         server.add_route(r'/(.*)', Error)
@@ -118,13 +122,15 @@ class Server:
         self.server = server
 
     async def start(self):
-        for collection in self.indexes:
-            existing = await self.db[collection].index_information()
-            for name in self.indexes[collection]:
-                if name not in existing:
-                    kwargs = self.indexes[collection][name]
-                    logging.info('DB: creating index %s:%s %r', collection, name, kwargs)
-                    await self.db[collection].create_index(name=name, **kwargs)
+        for database in self.indexes:
+            db = self.db[database]
+            for collection in self.indexes[database]:
+                existing = await db[collection].index_information()
+                for name in self.indexes[database][collection]:
+                    if name not in existing:
+                        kwargs = self.indexes[database][collection][name]
+                        logging.info('DB: creating index %s/%s:%s %r', database, collection, name, kwargs)
+                        await db[collection].create_index(name=name, **kwargs)
 
     async def stop(self):
         await self.server.stop()

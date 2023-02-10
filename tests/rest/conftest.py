@@ -21,9 +21,12 @@ def s3conn(monkeypatch):
         conn.create_bucket(Bucket='iceprod2-logs')
         yield conn
 
+@pytest.fixture
+def rest_dbs(monkeypatch):
+    monkeypatch.setenv('DATABASES', 'auth|config|datasets|grids|jobs|logs|pilots|task_stats|tasks')
 
 @pytest_asyncio.fixture
-async def server(monkeypatch, port, mongo_url, mongo_clear, s3conn):
+async def server(monkeypatch, port, mongo_url, rest_dbs, mongo_clear, s3conn):
     monkeypatch.setenv('CI_TESTING', '1')
     monkeypatch.setenv('PORT', str(port))
     monkeypatch.setenv('S3_ACCESS_KEY', 'XXXX')

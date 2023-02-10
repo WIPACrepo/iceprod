@@ -8,9 +8,9 @@ alabaster==0.7.13
     # via sphinx
 babel==2.11.0
     # via sphinx
-boto3==1.26.67
+boto3==1.26.69
     # via iceprod (setup.py)
-botocore==1.29.67
+botocore==1.29.69
     # via
     #   boto3
     #   s3transfer

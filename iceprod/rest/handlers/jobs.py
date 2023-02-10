@@ -34,6 +34,7 @@ def setup(handler_cfg):
             (r'/datasets/(?P<dataset_id>\w+)/job_summaries/status', DatasetJobSummariesStatusHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/job_counts/status', DatasetJobCountsStatusHandler, handler_cfg),
         ],
+        'database': 'jobs',
         'indexes': {
             'jobs': {
                 'job_id_index': {'keys': 'job_id', 'unique': True},

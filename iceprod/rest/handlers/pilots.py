@@ -27,6 +27,7 @@ def setup(handler_cfg):
             (r'/pilots', MultiPilotsHandler, handler_cfg),
             (r'/pilots/(?P<pilot_id>\w+)', PilotsHandler, handler_cfg),
         ],
+        'database': 'pilots',
         'indexes': {
             'jobs': {
                 'pilot_id_index': {'keys': 'pilot_id', 'unique': True},

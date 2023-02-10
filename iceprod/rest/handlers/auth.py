@@ -25,6 +25,7 @@ def setup(handler_cfg):
             ('/groups', MultiGroupHandler, handler_cfg),
             ('/auths', AuthHandler, handler_cfg),
         ],
+        'database': 'auth',
         'indexes': {
             'users': {
                 'username_index': {'keys': 'username', 'unique': True},
