@@ -128,8 +128,8 @@ class Server:
                 for name in self.indexes[collection]:
                     if name not in existing:
                         kwargs = self.indexes[collection][name]
-                        logging.info('DB: creating index %s:%s %r', collection, name, kwargs)
-                        await self.db[collection].create_index(name=name, **kwargs)
+                        logging.info('DB: creating index %s/%s:%s %r', database, collection, name, kwargs)
+                        await db[collection].create_index(name=name, **kwargs)
 
     async def stop(self):
         await self.server.stop()
