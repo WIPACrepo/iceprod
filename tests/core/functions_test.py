@@ -66,6 +66,8 @@ class functions_test(AsyncTestCase):
             for i in range(10):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
+                while os.path.exists(filename):
+                    filename = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
                 with open(filename,'w') as f:
                     file_contents = ''
                     for x in range(1000):
@@ -106,6 +108,8 @@ class functions_test(AsyncTestCase):
         for ext in ('tar.gz','tgz','tar.bz2','tbz','tar.xz','tar.lzma'):
             for i in range(10):
                 filename = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
+                while os.path.exists(filename):
+                    filename = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
                 os.mkdir(filename)
                 infiles = {}
                 for _ in range(10):
@@ -150,6 +154,8 @@ class functions_test(AsyncTestCase):
         """Test uncompressing a file with tar"""
         for ext in ('tar.gz','tgz','tar.bz2','tbz','tar.xz','tar.lzma'):
             filename = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
+            while os.path.exists(filename):
+                filename = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
             os.mkdir(filename)
             infiles = {}
             for _ in range(10):
@@ -255,6 +261,8 @@ class functions_test(AsyncTestCase):
         for i in range(0,10):
             # create test file
             filename = os.path.join(self.test_dir,'test_md5sum'+str(random.randint(0,100000)))
+            while os.path.exists(filename):
+                filename = os.path.join(self.test_dir,'test_md5sum'+str(random.randint(0,100000)))
             with open(filename,'w') as f:
                 file_contents = ''
                 for x in range(0,1000):
@@ -280,6 +288,8 @@ class functions_test(AsyncTestCase):
         for i in range(0,10):
             # create test file
             filename = os.path.join(self.test_dir,'test_md5sum'+str(random.randint(0,100000)))
+            while os.path.exists(filename):
+                filename = os.path.join(self.test_dir,'test_md5sum'+str(random.randint(0,100000)))
             with open(filename,'w') as f:
                 file_contents = ''
                 for x in range(0,1000):
@@ -298,6 +308,8 @@ class functions_test(AsyncTestCase):
         for i in range(0,10):
             # create test file
             filename = os.path.join(self.test_dir,'test_md5sum'+str(random.randint(0,100000)))
+            while os.path.exists(filename):
+                filename = os.path.join(self.test_dir,'test_md5sum'+str(random.randint(0,100000)))
             with open(filename,'w') as f:
                 file_contents = ''
                 for x in range(0,1000):
@@ -321,6 +333,8 @@ class functions_test(AsyncTestCase):
         for i in range(0,10):
             # create test file
             filename = os.path.join(self.test_dir,'test_sha1sum'+str(random.randint(0,100000)))
+            while os.path.exists(filename):
+                filename = os.path.join(self.test_dir,'test_sha1sum'+str(random.randint(0,100000)))
             with open(filename,'w') as f:
                 file_contents = ''
                 for x in range(0,1000):
@@ -346,6 +360,8 @@ class functions_test(AsyncTestCase):
         for i in range(0,10):
             # create test file
             filename = os.path.join(self.test_dir,'test_sha1sum'+str(random.randint(0,100000)))
+            while os.path.exists(filename):
+                filename = os.path.join(self.test_dir,'test_sha1sum'+str(random.randint(0,100000)))
             with open(filename,'w') as f:
                 file_contents = ''
                 for x in range(0,1000):
@@ -387,6 +403,8 @@ class functions_test(AsyncTestCase):
         for i in range(0,10):
             # create test file
             filename = os.path.join(self.test_dir,'test_sha256sum'+str(random.randint(0,100000)))
+            while os.path.exists(filename):
+                filename = os.path.join(self.test_dir,'test_sha256sum'+str(random.randint(0,100000)))
             with open(filename,'w') as f:
                 file_contents = ''
                 for x in range(0,1000):
@@ -412,6 +430,8 @@ class functions_test(AsyncTestCase):
         for i in range(0,10):
             # create test file
             filename = os.path.join(self.test_dir,'test_sha256sum'+str(random.randint(0,100000)))
+            while os.path.exists(filename):
+                filename = os.path.join(self.test_dir,'test_sha256sum'+str(random.randint(0,100000)))
             with open(filename,'w') as f:
                 file_contents = ''
                 for x in range(0,1000):
@@ -430,6 +450,8 @@ class functions_test(AsyncTestCase):
         for i in range(0,10):
             # create test file
             filename = os.path.join(self.test_dir,'test_sha256sum'+str(random.randint(0,100000)))
+            while os.path.exists(filename):
+                filename = os.path.join(self.test_dir,'test_sha256sum'+str(random.randint(0,100000)))
             with open(filename,'w') as f:
                 file_contents = ''
                 for x in range(0,1000):
@@ -453,6 +475,8 @@ class functions_test(AsyncTestCase):
         for i in range(0,10):
             # create test file
             filename = os.path.join(self.test_dir,'test_sha512sum'+str(random.randint(0,100000)))
+            while os.path.exists(filename):
+                filename = os.path.join(self.test_dir,'test_sha512sum'+str(random.randint(0,100000)))
             with open(filename,'w') as f:
                 file_contents = ''
                 for x in range(0,1000):
@@ -477,6 +501,8 @@ class functions_test(AsyncTestCase):
         for i in range(0,10):
             # create test file
             filename = os.path.join(self.test_dir,'test_sha512sum'+str(random.randint(0,100000)))
+            while os.path.exists(filename):
+                filename = os.path.join(self.test_dir,'test_sha512sum'+str(random.randint(0,100000)))
             with open(filename,'w') as f:
                 file_contents = ''
                 for x in range(0,1000):
@@ -495,6 +521,8 @@ class functions_test(AsyncTestCase):
         for i in range(0,10):
             # create test file
             filename = os.path.join(self.test_dir,'test_sha512sum'+str(random.randint(0,100000)))
+            while os.path.exists(filename):
+                filename = os.path.join(self.test_dir,'test_sha512sum'+str(random.randint(0,100000)))
             with open(filename,'w') as f:
                 file_contents = ''
                 for x in range(0,1000):
@@ -518,6 +546,8 @@ class functions_test(AsyncTestCase):
         for i in range(0,10):
             # create test file
             filename = os.path.join(self.test_dir,'test_removedirs'+str(random.randint(0,100000)))
+            while os.path.exists(filename):
+                filename = os.path.join(self.test_dir,'test_removedirs'+str(random.randint(0,100000)))
             with open(filename,'w') as f:
                 file_contents = ''
                 for x in range(0,1000):
@@ -534,6 +564,8 @@ class functions_test(AsyncTestCase):
         for i in range(0,10):
             # create test directory
             dir = os.path.join(self.test_dir,str(random.randint(0,100000)))
+            while os.path.exists(dir):
+                dir = os.path.join(self.test_dir,str(random.randint(0,100000)))
             os.mkdir(dir)
 
             # create a file in the directory
@@ -557,7 +589,11 @@ class functions_test(AsyncTestCase):
         for i in range(0,10):
             # create test file
             filename = os.path.join(self.test_dir,'test_copy'+str(random.randint(0,100000)))
+            while os.path.exists(filename):
+                filename = os.path.join(self.test_dir,'test_copy'+str(random.randint(0,100000)))
             filename2 = os.path.join(self.test_dir,'test_copy'+str(random.randint(0,100000)))
+            while os.path.exists(filename2) or filename == filename2:
+                filename2 = os.path.join(self.test_dir,'test_copy'+str(random.randint(0,100000)))
             with open(filename,'w') as f:
                 file_contents = ''
                 for x in range(0,1000):
@@ -578,7 +614,11 @@ class functions_test(AsyncTestCase):
         for i in range(0,10):
             # create test directory
             dir = os.path.join(self.test_dir,str(random.randint(0,100000)))
+            while os.path.exists(dir):
+                dir = os.path.join(self.test_dir,str(random.randint(0,100000)))
             dir2 = os.path.join(self.test_dir,str(random.randint(0,100000)))
+            while os.path.exists(dir2) or dir == dir2:
+                dir2 = os.path.join(self.test_dir,str(random.randint(0,100000)))
             os.mkdir(dir)
 
             # create a file in the directory
