@@ -23,21 +23,28 @@ def port():
 async def mongo_clear():
     default_config = {
         'DB_URL': 'mongodb://localhost/datasets',
+        'DATABASES': '',
     }
     config = from_environment(default_config)
     db_url, db_name = config['DB_URL'].rsplit('/', 1)
     client = motor.motor_asyncio.AsyncIOMotorClient(db_url, serverSelectionTimeoutMS=10)
-    db = client[db_name]
 
-    cols = await db.list_collection_names()
+    async def _clean(db_name):
+        db = client[db_name]
+        cols = await db.list_collection_names()
+        try:
+            for c in cols:
+                await db[c].drop()
+            yield
+        finally:
+            for c in cols:
+                await db[c].drop()
 
-    try:
-        for c in cols:
-            await db[c].drop()
-        yield
-    finally:
-        for c in cols:
-            await db[c].drop()
+    if not config['DATABASES']:
+        await _clean(db_name)
+    else:
+        for db_name in config['DATABASES'].split('|'):
+            await _clean(db_name)
 
 
 @pytest.fixture(scope='module')

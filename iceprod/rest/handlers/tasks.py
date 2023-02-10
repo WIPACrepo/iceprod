@@ -49,6 +49,7 @@ def setup(handler_cfg):
             (r'/datasets/(?P<dataset_id>\w+)/files', DatasetMultiFilesHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/files/(?P<task_id>\w+)', DatasetTaskFilesHandler, handler_cfg),
         ],
+        'database': 'tasks',
         'indexes': {
             'tasks': {
                 'task_id_index': {'keys': 'task_id', 'unique': True},

@@ -49,7 +49,7 @@ def runner(stdout=False, *args, **kwargs):
 
     # setup env
     cfg = IceProdConfig()
-    for key in ['HOST', 'PORT', 'OPENID_URL', 'OPENID_AUDIENCE', 'DB_URL', 'STATSD_ADDRESS', 'STATSD_PREFIX', 'S3_ADDRESS', 'S3_ACCESS_SECRET', 'S3_SECRET_KEY']:
+    for key in ['HOST', 'PORT', 'OPENID_URL', 'OPENID_AUDIENCE', 'DB_URL', 'STATSD_ADDRESS', 'STATSD_PREFIX', 'S3_ADDRESS', 'S3_ACCESS_KEY', 'S3_SECRET_KEY']:
         if key in cfg['rest']:
             os.environ[key] = cfg['rest'][key]
 

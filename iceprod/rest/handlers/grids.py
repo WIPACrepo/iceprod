@@ -27,6 +27,7 @@ def setup(handler_cfg):
             (r'/grids', MultiGridsHandler, handler_cfg),
             (r'/grids/(?P<grid_id>\w+)', GridsHandler, handler_cfg),
         ],
+        'database': 'grids',
         'indexes': {
             'grids': {
                 'grid_id_index': {'keys': 'grid_id', 'unique': True},

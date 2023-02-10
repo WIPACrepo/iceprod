@@ -33,11 +33,12 @@ def setup(handler_cfg):
             (r'/datasets/(?P<dataset_id>\w+)/jobs_submitted', DatasetJobsSubmittedHandler, handler_cfg),
             (r'/dataset_summaries/status', DatasetSummariesStatusHandler, handler_cfg),
         ],
+        'database': 'datasets',
         'indexes': {
             'datasets': {
                 'dataset_id_index': {'keys': 'dataset_id', 'unique': True},
             }
-        }
+        },
     }
 
 

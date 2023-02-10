@@ -23,6 +23,7 @@ def setup(handler_cfg):
         'routes': [
             (r'/config/(?P<dataset_id>\w+)', ConfigHandler, handler_cfg),
         ],
+        'database': 'config',
         'indexes': {
             'config': {
                 'dataset_id_index': {'keys': 'dataset_id', 'unique': True},
