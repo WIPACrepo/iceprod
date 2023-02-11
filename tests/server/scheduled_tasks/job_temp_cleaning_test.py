@@ -50,11 +50,6 @@ class job_temp_cleaning_test(AsyncTestCase):
         }
         self.executor = ThreadPoolExecutor(max_workers=2)
 
-    @unittest_reporter
-    def test_100_job_temp_cleaning(self):
-        s = schedule(self.cfg,None,self.executor,None)
-        job_temp_cleaning.job_temp_cleaning(s)
-
     @patch('iceprod.server.scheduled_tasks.job_temp_cleaning.GridFTP')
     @unittest_reporter
     async def test_200_run(self, gridftp):

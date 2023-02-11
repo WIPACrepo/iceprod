@@ -42,11 +42,6 @@ class queue_tasks_test(AsyncTestCase):
         }
 
     @unittest_reporter
-    def test_100_queue_tasks(self):
-        s = schedule(self.cfg,None,None,None)
-        queue_tasks.queue_tasks(s)
-
-    @unittest_reporter
     async def test_200_run(self):
         rc = MagicMock(spec=RestClient)
         async def client(method, url, args=None):

@@ -1,5 +1,4 @@
 """Utility functions"""
-
 from datetime import datetime
 
 

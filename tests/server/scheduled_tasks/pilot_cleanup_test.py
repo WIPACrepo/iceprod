@@ -45,11 +45,6 @@ class pilot_cleanup_test(AsyncTestCase):
         }
 
     @unittest_reporter
-    def test_100_pilot_cleanup(self):
-        s = schedule(self.cfg,None,None,None)
-        pilot_cleanup.pilot_cleanup(s)
-
-    @unittest_reporter
     async def test_200_run(self):
         rc = MagicMock(spec=RestClient)
         pilots = {}

@@ -103,13 +103,11 @@ class module(object):
     This is an abstract class representing a server module.
 
     :param cfg: An :class:`IceProdConfig`.
-    :param io_loop: An :class:`tornado.ioloop.IOLoop`.
     :param executor: A :class:`concurrent.futures.ThreadPoolExecutor`.
     :param modules: A dict of other module's public services.
     """
-    def __init__(self, cfg, io_loop, executor, modules):
+    def __init__(self, cfg, executor, modules):
         self.cfg = cfg
-        self.io_loop = io_loop
         self.executor = executor
         self.statsd = FakeStatsClient()
         self.elasticsearch = FakeStatsClient()
@@ -123,9 +121,6 @@ class module(object):
     def start(self):
         """
         Set up a module.
-
-        Note that this is not on the io_loop and should not interact
-        with other modules.  Add a callback to the io_loop to do so.
         """
         logger.warning('starting module %s', self.__class__.__name__)
         if 'statsd' in self.cfg and self.cfg['statsd']:

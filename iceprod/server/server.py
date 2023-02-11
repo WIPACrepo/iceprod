@@ -5,8 +5,6 @@ Server
 Run the iceprod server.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import sys
 import logging
@@ -14,8 +12,6 @@ import importlib
 import subprocess
 from datetime import datetime, timedelta
 import asyncio
-
-from tornado.ioloop import IOLoop
 
 from concurrent.futures import ThreadPoolExecutor
 
@@ -32,7 +28,6 @@ class Server(object):
 
     """
     def __init__(self, config_params=None, outfile=None, errfile=None):
-        self.io_loop = IOLoop.current()
         self.executor = ThreadPoolExecutor(max_workers=10)
         self.cfg = IceProdConfig(override=config_params)
         self.modules = {}
@@ -50,15 +45,11 @@ class Server(object):
 
         set_log_level(self.cfg['logging']['level'])
 
-        if 'blocking_threshold' in self.cfg['logging']:
-            self.io_loop.set_blocking_log_threshold(self.cfg['logging']['blocking_threshold'])
-
         for mod_name in self.cfg['modules']:
             if self.cfg['modules'][mod_name]:
                 try:
                     m = importlib.import_module('iceprod.server.modules.'+mod_name)
                     mod = getattr(m, mod_name)(cfg=self.cfg,
-                                               io_loop=self.io_loop,
                                                executor=self.executor,
                                                modules=self.services)
                     self.modules[mod_name] = mod
@@ -81,13 +72,8 @@ class Server(object):
                     roll_files(sys.stderr, self.errfile)
             await asyncio.sleep(3600)
 
-    def run(self):
-        try:
-            self.io_loop.add_callback(self.rotate_logs)
-            self.io_loop.start()
-        except Exception:
-            logger.critical('exception not caught', exc_info=True)
-            self.kill()
+    def start(self):
+        asyncio.create_task(self.rotate_logs())
 
     def restart(self):
         env = os.environ.copy()
@@ -104,12 +90,10 @@ class Server(object):
     def stop(self):
         for m in self.modules.values():
             m.stop()
-        self.io_loop.stop()
 
     def kill(self):
         for m in self.modules.values():
             m.kill()
-        self.io_loop.stop()
 
 
 def roll_files(fd, filename, num_files=5):

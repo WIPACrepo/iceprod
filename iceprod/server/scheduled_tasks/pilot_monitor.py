@@ -2,38 +2,19 @@
 Monitor the pilots.
 
 Send monitoring data to graphite.
-
-Initial delay: rand(1 minute)
-Periodic delay: 5 minutes
 """
 
 import argparse
 import asyncio
 import logging
 import os
-import random
-import time
 from collections import defaultdict,Counter
-
-from tornado.ioloop import IOLoop
 
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 from iceprod.core.resources import Resources
 from iceprod.server.module import FakeStatsClient, StatsClientIgnoreErrors
 
 logger = logging.getLogger('pilot_monitor')
-
-
-def pilot_monitor(module):
-    """
-    Initial entrypoint.
-
-    Args:
-        module (:py:class:`iceprod.server.modules.schedule`): schedule module
-    """
-    # initial delay
-    IOLoop.current().call_later(random.randint(5,60), run,
-                                module.rest_client, module.statsd)
 
 
 async def run(rest_client, statsd, debug=False):
@@ -45,7 +26,6 @@ async def run(rest_client, statsd, debug=False):
         statsd (:py:class:`statsd.StatsClient`): statsd (graphite) client
         debug (bool): debug flag to propagate exceptions
     """
-    start_time = time.time()
     try:
         pilots = await rest_client.request('GET', '/pilots')
         res = defaultdict(Counter)
@@ -67,11 +47,6 @@ async def run(rest_client, statsd, debug=False):
         logger.error('error monitoring pilots', exc_info=True)
         if debug:
             raise
-
-    # run again after 5 minute delay
-    stop_time = time.time()
-    delay = max(60*5 - (stop_time-start_time), 60)
-    IOLoop.current().call_later(delay, run, rest_client, statsd)
 
 
 def main():

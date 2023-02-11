@@ -1,33 +1,16 @@
 """
 Update pilots when tasks change state via a user.
-
-Initial delay: rand(5 minutes)
-Periodic delay: 5 minutes
 """
 
 import argparse
 import asyncio
 import logging
-import random
-import time
 
-from tornado.ioloop import IOLoop
 import requests.exceptions
 
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 
 logger = logging.getLogger('removed_tasks')
-
-
-def removed_tasks(module):
-    """
-    Initial entrypoint.
-
-    Args:
-        module (:py:class:`iceprod.server.modules.schedule`): schedule module
-    """
-    # initial delay
-    IOLoop.current().call_later(random.randint(60,60*5), run, module.rest_client)
 
 
 async def run(rest_client, debug=False):
@@ -38,8 +21,6 @@ async def run(rest_client, debug=False):
         rest_client (:py:class:`iceprod.core.rest_client.Client`): rest client
         debug (bool): debug flag to propagate exceptions
     """
-    start_time = time.time()
-
     try:
         async def test_pilot(pilot):
             new_tasks = []
@@ -72,11 +53,6 @@ async def run(rest_client, debug=False):
         logger.error('error updating pilot for removed tasks', exc_info=True)
         if debug:
             raise
-
-    # run again after 60 minute delay
-    stop_time = time.time()
-    delay = max(60*5 - (stop_time-start_time), 60)
-    IOLoop.current().call_later(delay, run, rest_client)
 
 
 def main():

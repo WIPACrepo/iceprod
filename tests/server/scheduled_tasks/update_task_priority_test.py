@@ -42,11 +42,6 @@ class update_task_priority_test(AsyncTestCase):
         }
 
     @unittest_reporter
-    def test_100_update_task_priority_test(self):
-        s = schedule(self.cfg,None,None,None)
-        update_task_priority.update_task_priority(s)
-
-    @unittest_reporter
     async def test_200_run(self):
         rc = MagicMock(spec=RestClient)
         async def client(method, url, args=None):

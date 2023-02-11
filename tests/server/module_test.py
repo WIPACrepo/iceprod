@@ -64,9 +64,8 @@ class module_test(AsyncTestCase):
         executor = {}
         modules = {}
 
-        m = module.module(cfg, self.io_loop, executor, modules)
+        m = module.module(cfg, executor, modules)
         self.assertIs(m.cfg, cfg)
-        self.assertIs(m.io_loop, self.io_loop)
         self.assertIs(m.executor, executor)
         self.assertIs(m.modules, modules)
         for method in ('start','stop','kill'):

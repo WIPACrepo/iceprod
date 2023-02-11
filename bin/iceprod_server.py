@@ -3,6 +3,7 @@
 Server process for starting IceProd.
 """
 
+import asyncio
 import os
 import sys
 import logging
@@ -16,8 +17,6 @@ bin_dir = os.path.dirname( os.path.abspath(sys.argv[0]) )
 root_path = os.path.dirname( bin_dir )
 if not root_path in sys.path:
     sys.path.append(root_path)
-
-from tornado.ioloop import IOLoop
 
 import iceprod
 import iceprod.server
@@ -57,6 +56,15 @@ def check_dependencies():
 
 check_dependencies()
 
+# start server
+async def start_server(*args, **kwargs):
+    s = Server(*args, **kwargs)
+    s.start()
+    try:
+        await asyncio.Event().wait()
+    finally:
+        s.stop()
+
 def runner(stdout=False, *args, **kwargs):
     # set logger
     if stdout:
@@ -71,19 +79,7 @@ def runner(stdout=False, *args, **kwargs):
     except Exception:
         logging.warning("could not rename process")
 
-    s = Server(*args, **kwargs)
-
-    # set signal handlers
-    def sig_handle(signum, frame):
-        logging.warning('signal handler called for %r', signum)
-        if signum == signal.SIGINT:
-            IOLoop.current().add_callback_from_signal(s.stop)
-        else:
-            IOLoop.current().add_callback_from_signal(s.kill)
-    signal.signal(signal.SIGINT, sig_handle)
-    signal.signal(signal.SIGQUIT, sig_handle)
-
-    s.run()
+    asyncio.run(start_server(*args, **kwargs))
     logging.warning('iceprod exiting')
 
 def setup_I3PROD():

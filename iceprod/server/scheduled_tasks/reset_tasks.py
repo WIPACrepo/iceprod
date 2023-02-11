@@ -1,32 +1,14 @@
 """
 Move tasks from reset to waiting/failed/suspended.
-
-Initial delay: rand(5 minutes)
-Periodic delay: 20 minutes
 """
 
 import argparse
 import asyncio
 import logging
-import random
-import time
-
-from tornado.ioloop import IOLoop
 
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 
 logger = logging.getLogger('reset_tasks')
-
-
-def reset_tasks(module):
-    """
-    Initial entrypoint.
-
-    Args:
-        module (:py:class:`iceprod.server.modules.schedule`): schedule module
-    """
-    # initial delay
-    IOLoop.current().call_later(random.randint(60,60*5), run, module.rest_client)
 
 
 async def reset_dataset(dataset_id, rest_client=None, debug=False):
@@ -63,8 +45,6 @@ async def run(rest_client, debug=False):
         rest_client (:py:class:`iceprod.core.rest_client.Client`): rest client
         debug (bool): debug flag to propagate exceptions
     """
-    start_time = time.time()
-
     try:
         datasets = await rest_client.request('GET', '/dataset_summaries/status')
         dataset_ids = []
@@ -87,11 +67,6 @@ async def run(rest_client, debug=False):
         logger.error('error resetting non-active tasks', exc_info=True)
         if debug:
             raise
-
-    # run again after 20 minute delay
-    stop_time = time.time()
-    delay = max(60*20 - (stop_time-start_time), 60)
-    IOLoop.current().call_later(delay, run, rest_client)
 
 
 def main():

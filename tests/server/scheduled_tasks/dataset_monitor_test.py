@@ -45,11 +45,6 @@ class dataset_monitor_test(AsyncTestCase):
         }
 
     @unittest_reporter
-    def test_100_dataset_monitor(self):
-        s = schedule(self.cfg,None,None,None)
-        dataset_monitor.dataset_monitor(s)
-
-    @unittest_reporter
     async def test_200_run(self):
         rc = MagicMock(spec=RestClient)
         pilots = {}

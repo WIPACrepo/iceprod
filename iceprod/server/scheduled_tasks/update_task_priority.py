@@ -1,33 +1,15 @@
 """
 Update task priority.
-
-Initial delay: rand(1 minute)
-Periodic delay: 5 minutes
 """
 
 import argparse
 import asyncio
 import logging
-import random
-import time
-
-from tornado.ioloop import IOLoop
 
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 from iceprod.server.priority import Priority
 
 logger = logging.getLogger('update_task_priority')
-
-
-def update_task_priority(module):
-    """
-    Initial entrypoint.
-
-    Args:
-        module (:py:class:`iceprod.server.modules.schedule`): schedule module
-    """
-    # initial delay
-    IOLoop.current().call_later(random.randint(60,600), run, module.rest_client)
 
 
 async def run(rest_client, dataset_id=None, debug=False):
@@ -39,7 +21,6 @@ async def run(rest_client, dataset_id=None, debug=False):
         dataset_id (str): (optional) dataset id to update
         debug (bool): debug flag to propagate exceptions
     """
-    start_time = time.time()
     prio = Priority(rest_client)
     try:
         args = {
@@ -105,11 +86,6 @@ async def run(rest_client, dataset_id=None, debug=False):
         logger.error('error updating task priority', exc_info=True)
         if debug:
             raise
-
-    # run again after 4 hour delay
-    stop_time = time.time()
-    delay = max(3600*4 - (stop_time-start_time), 600)
-    IOLoop.current().call_later(delay, run, rest_client)
 
 
 def main():

@@ -70,7 +70,7 @@ class grid_test(AsyncTestCase):
 
         # call normal init
         g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.io_loop, self.executor, module.FakeStatsClient(),
+                 self.executor, module.FakeStatsClient(),
                  None)
 
         self.assertTrue(g)
@@ -105,7 +105,7 @@ class grid_test(AsyncTestCase):
         # init
         client = MagicMock(spec=RestClient)
         g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.io_loop, self.executor, module.FakeStatsClient(),
+                 self.executor, module.FakeStatsClient(),
                  client)
         if not g:
             raise Exception('init did not return grid object')
@@ -174,7 +174,7 @@ class grid_test(AsyncTestCase):
         # init
         client = MagicMock(spec=RestClient)
         g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.io_loop, self.executor, module.FakeStatsClient(),
+                 self.executor, module.FakeStatsClient(),
                  client)
         if not g:
             raise Exception('init did not return grid object')
@@ -235,7 +235,7 @@ class grid_test(AsyncTestCase):
         # init
         client = MagicMock(spec=RestClient)
         g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.io_loop, self.executor, module.FakeStatsClient(),
+                 self.executor, module.FakeStatsClient(),
                  client)
         if not g:
             raise Exception('init did not return grid object')
@@ -300,7 +300,7 @@ class grid_test(AsyncTestCase):
         # init
         client = MagicMock(spec=ClientCredentialsAuth)
         g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.io_loop, self.executor, module.FakeStatsClient(),
+                 self.executor, module.FakeStatsClient(),
                  client)
         if not g:
             raise Exception('init did not return grid object')
@@ -348,7 +348,7 @@ class grid_test(AsyncTestCase):
         # init
         client = MagicMock(spec=RestClient)
         g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.io_loop, self.executor, module.FakeStatsClient(),
+                 self.executor, module.FakeStatsClient(),
                  client)
         if not g:
             raise Exception('init did not return grid object')

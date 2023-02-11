@@ -30,7 +30,6 @@ class schedule(module.module):
         except Exception:
             logger.warning('Failed to get gridftp proxy')
 
-        # find scheduled tasks, which register with the ioloop
-        # and will run at built-in delays
+        # find scheduled tasks, which will run at built-in delays
         task_names = iceprod.server.listmodules('iceprod.server.scheduled_tasks')
         self.tasks = [iceprod.server.run_module(n,self) for n in task_names]
