@@ -15,6 +15,7 @@ import random
 import logging
 from collections import defaultdict
 import functools
+from urllib.parse import urlencode
 
 from iceprod.core.jsonUtil import json_encode
 
@@ -176,6 +177,7 @@ class website(module.module):
             logger.error('website startup error',exc_info=True)
             raise
 
+
 def authenticated(method):
     """Decorate methods with this to require that the user be logged in.
 
@@ -188,9 +190,7 @@ def authenticated(method):
     you once you're logged in.
     """
     @functools.wraps(method)
-    def wrapper(  # type: ignore
-        self: RequestHandler, *args, **kwargs
-    ) -> Optional[Awaitable[None]]:
+    def wrapper(self, *args, **kwargs):
         if not self.current_user:
             if self.request.method in ("GET", "HEAD"):
                 url = self.get_login_url()
@@ -199,10 +199,10 @@ def authenticated(method):
                     url += "?" + urlencode(dict(next=next_url))
                 self.redirect(url)
                 return None
-            raise HTTPError(403)
+            raise tornado.web.HTTPError(403, reason='auth failed')
         return method(self, *args, **kwargs)
-
     return wrapper
+
 
 class PublicHandler(KeycloakUsernameMixin, OpenIDWebHandlerMixin, RestHandler):
     """Default Handler"""
