@@ -214,8 +214,10 @@ class OpenIDWebHandlerMixin2:
         """Get the current user, and set auth-related attributes."""
         try:
             access_token = self.get_secure_cookie('access_token')
+            if not access_token:
+                return None
             refresh_token = self.get_secure_cookie('refresh_token')
-            data = self.auth.validate(access_token.encode('utf8'))
+            data = self.auth.validate(access_token)
             self.auth_data = data
             self.auth_key = access_token
             self.auth_refresh_token = refresh_token
