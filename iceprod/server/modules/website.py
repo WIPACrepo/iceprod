@@ -208,28 +208,7 @@ def authenticated(method):
     return wrapper
 
 
-class OpenIDWebHandlerMixin2:
-    """Load current user from `OpenIDLoginHandler` cookies."""
-    def get_current_user(self):
-        """Get the current user, and set auth-related attributes."""
-        try:
-            access_token = self.get_secure_cookie('access_token')
-            if not access_token:
-                return None
-            refresh_token = self.get_secure_cookie('refresh_token')
-            data = self.auth.validate(access_token)
-            self.auth_data = data
-            self.auth_key = access_token
-            self.auth_refresh_token = refresh_token
-            return data['sub']
-        # Auth Failed
-        except Exception:
-            logger.info('failed auth', exc_info=True)
-
-        return None
-
-
-class PublicHandler(KeycloakUsernameMixin, OpenIDWebHandlerMixin2, RestHandler):
+class PublicHandler(KeycloakUsernameMixin, OpenIDWebHandlerMixin, RestHandler):
     """Default Handler"""
     def initialize(self, cfg=None, modules=None, statsd=None, rest_api=None, **kwargs):
         """
