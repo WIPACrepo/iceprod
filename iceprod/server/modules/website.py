@@ -381,7 +381,7 @@ class DatasetBrowse(PublicHandler):
             url += '?'+('&'.join(args))
 
         ret = await self.rest_client.request('GET', url)
-        datasets = sorted(ret.values(), key=lambda x:x['dataset'], reverse=True)
+        datasets = sorted(ret.values(), key=lambda x:x.get('dataset',0), reverse=True)
         self.render('dataset_browse.html',datasets=datasets,
                     filter_options=filter_options,
                     filter_results=filter_results)
