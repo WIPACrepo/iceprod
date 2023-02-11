@@ -135,6 +135,9 @@ class website(module.module):
                 cookie_secret = ''.join(hex(random.randint(0,15))[-1] for _ in range(64))
                 self.cfg['webserver']['cookie_secret'] = cookie_secret
 
+            full_url = self.cfg['webserver'].get('full_url', '')
+            login_url = full_url+'/login'
+
             routes = [
                 (r"/", Default, handler_args),
                 (r"/submit", Submit, handler_args),
@@ -157,7 +160,7 @@ class website(module.module):
                 static_path=static_path,
                 template_path=template_path,
                 cookie_secret=cookie_secret,
-                login_url='/login',
+                login_url=login_url,
                 debug=handler_args['debug'],
             )
             for r in routes:
