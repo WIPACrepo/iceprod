@@ -14,6 +14,7 @@ import os
 import random
 import logging
 from collections import defaultdict
+import functools
 
 from iceprod.core.jsonUtil import json_encode
 
@@ -175,6 +176,33 @@ class website(module.module):
             logger.error('website startup error',exc_info=True)
             raise
 
+def authenticated(method):
+    """Decorate methods with this to require that the user be logged in.
+
+    If the user is not logged in, they will be redirected to the configured
+    `login url <RequestHandler.get_login_url>`.
+
+    If you configure a login url with a query parameter, Tornado will
+    assume you know what you're doing and use it as-is.  If not, it
+    will add a `next` parameter so the login page knows where to send
+    you once you're logged in.
+    """
+    @functools.wraps(method)
+    def wrapper(  # type: ignore
+        self: RequestHandler, *args, **kwargs
+    ) -> Optional[Awaitable[None]]:
+        if not self.current_user:
+            if self.request.method in ("GET", "HEAD"):
+                url = self.get_login_url()
+                if "?" not in url:
+                    next_url = self.request.uri
+                    url += "?" + urlencode(dict(next=next_url))
+                self.redirect(url)
+                return None
+            raise HTTPError(403)
+        return method(self, *args, **kwargs)
+
+    return wrapper
 
 class PublicHandler(KeycloakUsernameMixin, OpenIDWebHandlerMixin, RestHandler):
     """Default Handler"""
@@ -248,7 +276,7 @@ class Default(PublicHandler):
 class Submit(PublicHandler):
     """Handle /submit urls"""
     @catch_error
-    @tornado.web.authenticated
+    @authenticated
     async def get(self):
         logger.info('here')
         self.statsd.incr('submit')
@@ -281,7 +309,7 @@ class Submit(PublicHandler):
 class Config(PublicHandler):
     """Handle /config urls"""
     @catch_error
-    @tornado.web.authenticated
+    @authenticated
     async def get(self):
         self.statsd.incr('config')
         dataset_id = self.get_argument('dataset_id',default=None)
@@ -308,7 +336,7 @@ class Config(PublicHandler):
 class DatasetBrowse(PublicHandler):
     """Handle /dataset urls"""
     @catch_error
-    @tornado.web.authenticated
+    @authenticated
     async def get(self):
         self.statsd.incr('dataset_browse')
         filter_options = {'status':['processing','suspended','errors','complete','truncated']}
@@ -335,7 +363,7 @@ class DatasetBrowse(PublicHandler):
 class Dataset(PublicHandler):
     """Handle /dataset urls"""
     @catch_error
-    @tornado.web.authenticated
+    @authenticated
     async def get(self, dataset_id):
         self.statsd.incr('dataset')
 
@@ -387,7 +415,7 @@ class Dataset(PublicHandler):
 class TaskBrowse(PublicHandler):
     """Handle /task urls"""
     @catch_error
-    @tornado.web.authenticated
+    @authenticated
     async def get(self, dataset_id):
         self.statsd.incr('task_browse')
         status = self.get_argument('status',default=None)
@@ -409,7 +437,7 @@ class TaskBrowse(PublicHandler):
 class Task(PublicHandler):
     """Handle /task urls"""
     @catch_error
-    @tornado.web.authenticated
+    @authenticated
     async def get(self, dataset_id, task_id):
         self.statsd.incr('task')
         status = self.get_argument('status', default=None)
@@ -444,7 +472,7 @@ class Task(PublicHandler):
 class JobBrowse(PublicHandler):
     """Handle /job urls"""
     @catch_error
-    @tornado.web.authenticated
+    @authenticated
     async def get(self, dataset_id):
         self.statsd.incr('job')
         status = self.get_argument('status',default=None)
@@ -464,7 +492,7 @@ class JobBrowse(PublicHandler):
 class Job(PublicHandler):
     """Handle /job urls"""
     @catch_error
-    @tornado.web.authenticated
+    @authenticated
     async def get(self, dataset_id, job_id):
         self.statsd.incr('job')
         status = self.get_argument('status',default=None)
@@ -496,7 +524,7 @@ class Documentation(PublicHandler):
 
 class Log(PublicHandler):
     @catch_error
-    @tornado.web.authenticated
+    @authenticated
     async def get(self, dataset_id, log_id):
         self.statsd.incr('log')
         ret = await self.rest_client.request('GET','/datasets/{}/logs/{}'.format(dataset_id, log_id))
@@ -529,7 +557,7 @@ class Other(PublicHandler):
 class Profile(PublicHandler):
     """Handle user profile page"""
     @catch_error
-    @tornado.web.authenticated
+    @authenticated
     async def get(self):
         self.statsd.incr('profile')
         token = self.auth_key
