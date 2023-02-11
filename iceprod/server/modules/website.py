@@ -524,7 +524,10 @@ class Job(PublicHandler):
 
         dataset = await self.rest_client.request('GET', '/datasets/{}'.format(dataset_id))
         job = await self.rest_client.request('GET', '/datasets/{}/jobs/{}'.format(dataset_id,job_id))
-        tasks = await self.rest_client.request('GET','/datasets/{}/tasks?job_id={}&status={}'.format(dataset_id,job_id,status))
+        args = {'job_id': job_id}
+        if status:
+            args['status'] = status
+        tasks = await self.rest_client.request('GET', f'/datasets/{dataset_id}/tasks', args)
         job['tasks'] = list(tasks.values())
         job['tasks'].sort(key=lambda x:x['task_index'])
         self.render('job_detail.html', dataset=dataset, job=job, passkey=passkey)
