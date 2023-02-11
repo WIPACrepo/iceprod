@@ -193,18 +193,41 @@ def authenticated(method):
     def wrapper(self, *args, **kwargs):
         if not self.current_user:
             if self.request.method in ("GET", "HEAD"):
-                url = self.get_login_url()
-                if "?" not in url:
-                    next_url = self.request.uri
-                    url += "?" + urlencode(dict(next=next_url))
-                self.redirect(url)
-                return None
+                try:
+                    url = self.get_login_url()
+                    if "?" not in url:
+                        next_url = self.request.uri
+                        url += "?" + urlencode(dict(next=next_url))
+                    self.redirect(url)
+                    return None
+                except Exception:
+                    logger.warning('failed to make redirect', exc_info=True)
+                    raise tornado.web.HTTPError(403, reason='auth failed')
             raise tornado.web.HTTPError(403, reason='auth failed')
         return method(self, *args, **kwargs)
     return wrapper
 
 
-class PublicHandler(KeycloakUsernameMixin, OpenIDWebHandlerMixin, RestHandler):
+class OpenIDWebHandlerMixin2:
+    """Load current user from `OpenIDLoginHandler` cookies."""
+    def get_current_user(self):
+        """Get the current user, and set auth-related attributes."""
+        try:
+            access_token = self.get_secure_cookie('access_token')
+            refresh_token = self.get_secure_cookie('refresh_token')
+            data = self.auth.validate(access_token.encode('utf8'))
+            self.auth_data = data
+            self.auth_key = access_token
+            self.auth_refresh_token = refresh_token
+            return data['sub']
+        # Auth Failed
+        except Exception:
+            logger.info('failed auth', exc_info=True)
+
+        return None
+
+
+class PublicHandler(KeycloakUsernameMixin, OpenIDWebHandlerMixin2, RestHandler):
     """Default Handler"""
     def initialize(self, cfg=None, modules=None, statsd=None, rest_api=None, **kwargs):
         """
