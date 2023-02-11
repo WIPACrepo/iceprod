@@ -377,7 +377,7 @@ class Dataset(PublicHandler):
             try:
                 d_num = int(dataset_id)
                 if d_num < 10000000:
-                    all_datasets = await self.rest_client.request('GET','/datasets')
+                    all_datasets = await self.rest_client.request('GET', '/datasets', {'keys': 'dataset_id|dataset'})
                     for d in all_datasets.values():
                         if d['dataset'] == d_num:
                             dataset_id = d['dataset_id']
