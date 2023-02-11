@@ -411,9 +411,6 @@ class Dataset(PublicHandler):
             raise tornado.web.HTTPError(404, reason='Dataset not found')
         dataset_num = dataset['dataset']
 
-        ret = await self.rest_client.request('POST','/create_token')
-        passkey = ret['result']
-
         jobs = await self.rest_client.request('GET','/datasets/{}/job_counts/status'.format(dataset_id))
         tasks = await self.rest_client.request('GET','/datasets/{}/task_counts/status'.format(dataset_id))
         task_info = await self.rest_client.request('GET','/datasets/{}/task_counts/name_status'.format(dataset_id))
@@ -436,7 +433,7 @@ class Dataset(PublicHandler):
             else:
                 task_info[t]['type'] = 'UNK'
         self.render('dataset_detail.html',dataset_id=dataset_id,dataset_num=dataset_num,
-                    dataset=dataset,jobs=jobs,tasks=tasks,task_info=task_info,task_stats=task_stats,passkey=passkey)
+                    dataset=dataset,jobs=jobs,tasks=tasks,task_info=task_info,task_stats=task_stats)
 
 
 class TaskBrowse(PublicHandler):
