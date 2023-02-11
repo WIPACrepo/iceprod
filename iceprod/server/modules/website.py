@@ -411,6 +411,8 @@ class Dataset(PublicHandler):
             raise tornado.web.HTTPError(404, reason='Dataset not found')
         dataset_num = dataset['dataset']
 
+        passkey = self.auth_key
+
         jobs = await self.rest_client.request('GET','/datasets/{}/job_counts/status'.format(dataset_id))
         tasks = await self.rest_client.request('GET','/datasets/{}/task_counts/status'.format(dataset_id))
         task_info = await self.rest_client.request('GET','/datasets/{}/task_counts/name_status'.format(dataset_id))
@@ -433,7 +435,7 @@ class Dataset(PublicHandler):
             else:
                 task_info[t]['type'] = 'UNK'
         self.render('dataset_detail.html',dataset_id=dataset_id,dataset_num=dataset_num,
-                    dataset=dataset,jobs=jobs,tasks=tasks,task_info=task_info,task_stats=task_stats)
+                    dataset=dataset,jobs=jobs,tasks=tasks,task_info=task_info,task_stats=task_stats,passkey=passkey)
 
 
 class TaskBrowse(PublicHandler):
@@ -450,8 +452,7 @@ class TaskBrowse(PublicHandler):
                 if 'job_index' not in tasks[t]:
                     job = await self.rest_client.request('GET', '/datasets/{}/jobs/{}'.format(dataset_id, tasks[t]['job_id']))
                     tasks[t]['job_index'] = job['job_index']
-            ret = await self.rest_client.request('POST','/create_token')
-            passkey = ret['result']
+            passkey = self.auth_key
             self.render('task_browse.html',tasks=tasks, passkey=passkey)
         else:
             status = await self.rest_client.request('GET','/datasets/{}/task_counts/status'.format(dataset_id))
@@ -466,8 +467,7 @@ class Task(PublicHandler):
         self.statsd.incr('task')
         status = self.get_argument('status', default=None)
 
-        ret = await self.rest_client.request('POST','/create_token')
-        passkey = ret['result']
+        passkey = self.auth_key
 
         dataset = await self.rest_client.request('GET', '/datasets/{}'.format(dataset_id))
         task_details = await self.rest_client.request('GET','/datasets/{}/tasks/{}?status={}'.format(dataset_id, task_id, status))
@@ -501,8 +501,7 @@ class JobBrowse(PublicHandler):
         self.statsd.incr('job')
         status = self.get_argument('status',default=None)
 
-        ret = await self.rest_client.request('POST','/create_token')
-        passkey = ret['result']
+        passkey = self.auth_key
 
         jobs = await self.rest_client.request('GET', '/datasets/{}/jobs'.format(dataset_id))
         if status:
@@ -521,8 +520,7 @@ class Job(PublicHandler):
         self.statsd.incr('job')
         status = self.get_argument('status',default=None)
 
-        ret = await self.rest_client.request('POST','/create_token')
-        passkey = ret['result']
+        passkey = self.auth_key
 
         dataset = await self.rest_client.request('GET', '/datasets/{}'.format(dataset_id))
         job = await self.rest_client.request('GET', '/datasets/{}/jobs/{}'.format(dataset_id,job_id))
