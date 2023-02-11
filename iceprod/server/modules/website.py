@@ -14,6 +14,8 @@ import os
 import random
 import logging
 from collections import defaultdict
+import functools
+from urllib.parse import urlencode
 
 from iceprod.core.jsonUtil import json_encode
 
@@ -135,6 +137,9 @@ class website(module.module):
                 cookie_secret = ''.join(hex(random.randint(0,15))[-1] for _ in range(64))
                 self.cfg['webserver']['cookie_secret'] = cookie_secret
 
+            full_url = self.cfg['webserver'].get('full_url', '')
+            login_url = full_url+'/login'
+
             routes = [
                 (r"/", Default, handler_args),
                 (r"/submit", Submit, handler_args),
@@ -157,7 +162,7 @@ class website(module.module):
                 static_path=static_path,
                 template_path=template_path,
                 cookie_secret=cookie_secret,
-                login_url='/login',
+                login_url=login_url,
                 debug=handler_args['debug'],
             )
             for r in routes:
@@ -171,6 +176,36 @@ class website(module.module):
         except Exception:
             logger.error('website startup error',exc_info=True)
             raise
+
+
+def authenticated(method):
+    """Decorate methods with this to require that the user be logged in.
+
+    If the user is not logged in, they will be redirected to the configured
+    `login url <RequestHandler.get_login_url>`.
+
+    If you configure a login url with a query parameter, Tornado will
+    assume you know what you're doing and use it as-is.  If not, it
+    will add a `next` parameter so the login page knows where to send
+    you once you're logged in.
+    """
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        if not self.current_user:
+            if self.request.method in ("GET", "HEAD"):
+                try:
+                    url = self.get_login_url()
+                    if "?" not in url:
+                        next_url = self.request.uri
+                        url += "?" + urlencode(dict(next=next_url))
+                    self.redirect(url)
+                    return None
+                except Exception:
+                    logger.warning('failed to make redirect', exc_info=True)
+                    raise tornado.web.HTTPError(403, reason='auth failed')
+            raise tornado.web.HTTPError(403, reason='auth failed')
+        return method(self, *args, **kwargs)
+    return wrapper
 
 
 class PublicHandler(KeycloakUsernameMixin, OpenIDWebHandlerMixin, RestHandler):
@@ -245,7 +280,7 @@ class Default(PublicHandler):
 class Submit(PublicHandler):
     """Handle /submit urls"""
     @catch_error
-    @tornado.web.authenticated
+    @authenticated
     async def get(self):
         logger.info('here')
         self.statsd.incr('submit')
@@ -278,7 +313,7 @@ class Submit(PublicHandler):
 class Config(PublicHandler):
     """Handle /config urls"""
     @catch_error
-    @tornado.web.authenticated
+    @authenticated
     async def get(self):
         self.statsd.incr('config')
         dataset_id = self.get_argument('dataset_id',default=None)
@@ -305,25 +340,27 @@ class Config(PublicHandler):
 class DatasetBrowse(PublicHandler):
     """Handle /dataset urls"""
     @catch_error
-    @tornado.web.authenticated
+    @authenticated
     async def get(self):
         self.statsd.incr('dataset_browse')
         filter_options = {'status':['processing','suspended','errors','complete','truncated']}
         filter_results = {n:self.get_arguments(n) for n in filter_options}
 
-        args = []
+        args = {'keys': 'dataset_id|dataset|status|description'}
         for name in filter_results:
             val = filter_results[name]
+            if not val:
+                continue
             if any(v not in filter_options[name] for v in val):
                 raise tornado.web.HTTPError(400, reason='Bad filter '+name+' value')
-            args.append(name+'='+('|'.join(val)))
+            args[name] = '|'.join(val)
 
         url = '/datasets'
-        if args:
-            url += '?'+('&'.join(args))
 
-        ret = await self.rest_client.request('GET', url)
-        datasets = sorted(ret.values(), key=lambda x:x['dataset'], reverse=True)
+        ret = await self.rest_client.request('GET', url, args)
+        datasets = sorted(ret.values(), key=lambda x:x.get('dataset',0), reverse=True)
+        logger.debug('datasets: %r', datasets)
+        datasets = filter(lambda x: 'dataset' in x, datasets)
         self.render('dataset_browse.html',datasets=datasets,
                     filter_options=filter_options,
                     filter_results=filter_results)
@@ -332,7 +369,7 @@ class DatasetBrowse(PublicHandler):
 class Dataset(PublicHandler):
     """Handle /dataset urls"""
     @catch_error
-    @tornado.web.authenticated
+    @authenticated
     async def get(self, dataset_id):
         self.statsd.incr('dataset')
 
@@ -353,8 +390,7 @@ class Dataset(PublicHandler):
             raise tornado.web.HTTPError(404, reason='Dataset not found')
         dataset_num = dataset['dataset']
 
-        ret = await self.rest_client.request('POST','/create_token')
-        passkey = ret['result']
+        passkey = self.auth_key
 
         jobs = await self.rest_client.request('GET','/datasets/{}/job_counts/status'.format(dataset_id))
         tasks = await self.rest_client.request('GET','/datasets/{}/task_counts/status'.format(dataset_id))
@@ -384,7 +420,7 @@ class Dataset(PublicHandler):
 class TaskBrowse(PublicHandler):
     """Handle /task urls"""
     @catch_error
-    @tornado.web.authenticated
+    @authenticated
     async def get(self, dataset_id):
         self.statsd.incr('task_browse')
         status = self.get_argument('status',default=None)
@@ -395,8 +431,7 @@ class TaskBrowse(PublicHandler):
                 if 'job_index' not in tasks[t]:
                     job = await self.rest_client.request('GET', '/datasets/{}/jobs/{}'.format(dataset_id, tasks[t]['job_id']))
                     tasks[t]['job_index'] = job['job_index']
-            ret = await self.rest_client.request('POST','/create_token')
-            passkey = ret['result']
+            passkey = self.auth_key
             self.render('task_browse.html',tasks=tasks, passkey=passkey)
         else:
             status = await self.rest_client.request('GET','/datasets/{}/task_counts/status'.format(dataset_id))
@@ -406,13 +441,12 @@ class TaskBrowse(PublicHandler):
 class Task(PublicHandler):
     """Handle /task urls"""
     @catch_error
-    @tornado.web.authenticated
+    @authenticated
     async def get(self, dataset_id, task_id):
         self.statsd.incr('task')
         status = self.get_argument('status', default=None)
 
-        ret = await self.rest_client.request('POST','/create_token')
-        passkey = ret['result']
+        passkey = self.auth_key
 
         dataset = await self.rest_client.request('GET', '/datasets/{}'.format(dataset_id))
         task_details = await self.rest_client.request('GET','/datasets/{}/tasks/{}?status={}'.format(dataset_id, task_id, status))
@@ -441,13 +475,12 @@ class Task(PublicHandler):
 class JobBrowse(PublicHandler):
     """Handle /job urls"""
     @catch_error
-    @tornado.web.authenticated
+    @authenticated
     async def get(self, dataset_id):
         self.statsd.incr('job')
         status = self.get_argument('status',default=None)
 
-        ret = await self.rest_client.request('POST','/create_token')
-        passkey = ret['result']
+        passkey = self.auth_key
 
         jobs = await self.rest_client.request('GET', '/datasets/{}/jobs'.format(dataset_id))
         if status:
@@ -461,17 +494,19 @@ class JobBrowse(PublicHandler):
 class Job(PublicHandler):
     """Handle /job urls"""
     @catch_error
-    @tornado.web.authenticated
+    @authenticated
     async def get(self, dataset_id, job_id):
         self.statsd.incr('job')
         status = self.get_argument('status',default=None)
 
-        ret = await self.rest_client.request('POST','/create_token')
-        passkey = ret['result']
+        passkey = self.auth_key
 
         dataset = await self.rest_client.request('GET', '/datasets/{}'.format(dataset_id))
         job = await self.rest_client.request('GET', '/datasets/{}/jobs/{}'.format(dataset_id,job_id))
-        tasks = await self.rest_client.request('GET','/datasets/{}/tasks?job_id={}&status={}'.format(dataset_id,job_id,status))
+        args = {'job_id': job_id}
+        if status:
+            args['status'] = status
+        tasks = await self.rest_client.request('GET', f'/datasets/{dataset_id}/tasks', args)
         job['tasks'] = list(tasks.values())
         job['tasks'].sort(key=lambda x:x['task_index'])
         self.render('job_detail.html', dataset=dataset, job=job, passkey=passkey)
@@ -493,7 +528,7 @@ class Documentation(PublicHandler):
 
 class Log(PublicHandler):
     @catch_error
-    @tornado.web.authenticated
+    @authenticated
     async def get(self, dataset_id, log_id):
         self.statsd.incr('log')
         ret = await self.rest_client.request('GET','/datasets/{}/logs/{}'.format(dataset_id, log_id))
@@ -526,7 +561,7 @@ class Other(PublicHandler):
 class Profile(PublicHandler):
     """Handle user profile page"""
     @catch_error
-    @tornado.web.authenticated
+    @authenticated
     async def get(self):
         self.statsd.incr('profile')
         token = self.auth_key
