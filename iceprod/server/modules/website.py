@@ -367,20 +367,18 @@ class DatasetBrowse(PublicHandler):
         filter_options = {'status':['processing','suspended','errors','complete','truncated']}
         filter_results = {n:self.get_arguments(n) for n in filter_options}
 
-        args = []
+        args = {'keys': 'dataset_id|dataset|status|description'}
         for name in filter_results:
             val = filter_results[name]
             if not val:
                 continue
             if any(v not in filter_options[name] for v in val):
                 raise tornado.web.HTTPError(400, reason='Bad filter '+name+' value')
-            args.append(name+'='+('|'.join(val)))
+            args[name] = '|'.join(val)
 
         url = '/datasets'
-        if args:
-            url += '?'+('&'.join(args))
 
-        ret = await self.rest_client.request('GET', url)
+        ret = await self.rest_client.request('GET', url, args)
         datasets = sorted(ret.values(), key=lambda x:x.get('dataset',0), reverse=True)
         logger.debug('datasets: %r', datasets)
         datasets = filter(lambda x: 'dataset' in x, datasets)
