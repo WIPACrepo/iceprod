@@ -370,6 +370,8 @@ class DatasetBrowse(PublicHandler):
         args = []
         for name in filter_results:
             val = filter_results[name]
+            if not val:
+                continue
             if any(v not in filter_options[name] for v in val):
                 raise tornado.web.HTTPError(400, reason='Bad filter '+name+' value')
             args.append(name+'='+('|'.join(val)))
