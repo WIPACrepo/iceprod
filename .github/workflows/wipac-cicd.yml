@@ -111,22 +111,15 @@ jobs:
       uses: docker/metadata-action@v3
       with:
         images: |
-          wipac/iceprod
           ghcr.io/WIPACRepo/iceprod
         tags: |
-            type=ref,event=branch
-            type=semver,pattern={{major}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}.{{minor}}.{{patch}}
-    - name: Login to DockerHub
-      uses: docker/login-action@v1
-      if: ${{ github.event_name != 'pull_request' }}
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
+          type=ref,event=branch
+          type=semver,pattern={{major}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}.{{minor}}.{{patch}}
     - name: Login to GitHub Container Registry
       uses: docker/login-action@v1
-      if: ${{ github.event_name != 'pull_request' }}
+      if: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' }}
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
@@ -135,6 +128,6 @@ jobs:
       uses: docker/build-push-action@v2
       with:
         context: .
-        push: ${{ github.event_name != 'pull_request' }}
+        push: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' }}
         tags: ${{ steps.docker_meta.outputs.tags }}
         labels: ${{ steps.docker_meta.outputs.labels }}
