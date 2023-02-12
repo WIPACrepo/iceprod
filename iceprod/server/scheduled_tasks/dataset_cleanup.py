@@ -89,7 +89,6 @@ def main():
     parser.add_argument('--debug', default=False, action='store_true', help='debug enabled')
 
     args = parser.parse_args()
-    args = vars(args)
 
     logformat = '%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
     logging.basicConfig(format=logformat, level=getattr(logging, args.log_level.upper()))
