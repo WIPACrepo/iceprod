@@ -6,6 +6,7 @@ import asyncio
 import logging
 
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
+from iceprod.roles_groups import GROUP_PRIORITIES
 
 logger = logging.getLogger('priority')
 
@@ -74,13 +75,6 @@ class Priority:
                 user['priority'] = 0.5
             self.user_cache[user['username']] = user
 
-    async def _populate_group_cache(self):
-        ret = await self.rest_client.request('GET', '/groups')
-        for group in ret['results']:
-            if 'priority' not in group:
-                group['priority'] = 0.5
-            self.group_cache[group['name']] = group
-
     async def _get_dataset(self, dataset_id):
         if not self.dataset_cache:
             await self._populate_dataset_cache()
@@ -110,27 +104,7 @@ class Priority:
         return self.user_cache[user]['priority']
 
     async def _get_group_prio(self, group):
-        if not self.group_cache:
-            await self._populate_group_cache()
-        if group not in self.group_cache or 'priority' not in self.group_cache[group]:
-            return 0.5
-        return self.group_cache[group]['priority']
-
-    async def _get_max_user_prio_group(self, group):
-        if not self.user_cache:
-            await self._populate_user_cache()
-        try:
-            return max(u['priority'] for u in self.user_cache.values() if 'priority' in u and group in u.get('groups', []))
-        except ValueError:
-            return 1.
-
-    async def _get_max_group_prio(self):
-        if not self.group_cache:
-            await self._populate_group_cache()
-        try:
-            return max(g['priority'] for g in self.group_cache.values() if 'priority' in g)
-        except ValueError:
-            return 1
+        return GROUP_PRIORITIES.get(group, 0.5)
 
     async def _get_num_tasks(self, dataset_id=None):
         if not self.dataset_cache:
@@ -169,15 +143,15 @@ class Priority:
         max_dataset_prio_group = await self._get_max_dataset_prio_group(group)
         logger.debug(f'{dataset_id} max_dataset_prio_group: {max_dataset_prio_group}')
 
-        user_prio = await self._get_user_prio(user)
-        logger.debug(f'{dataset_id} user_prio: {user_prio}')
-        max_user_prio = await self._get_max_user_prio_group(group)
-        logger.debug(f'{dataset_id} max_user_prio: {max_user_prio}')
-
-        group_prio = await self._get_group_prio(group)
-        logger.debug(f'{dataset_id} group_prio: {group_prio}')
-        max_group_prio = await self._get_max_group_prio()
-        logger.debug(f'{dataset_id} max_group_prio: {max_group_prio}')
+        if group == 'users':
+            user_prio = await self._get_user_prio(user)
+            logger.debug(f'{dataset_id} user_prio: {user_prio}')
+            group_prio = await self._get_group_prio(group)
+            logger.debug(f'{dataset_id} group_prio: {group_prio}')
+        else:
+            user_prio = 1.0
+            group_prio = await self._get_group_prio(group)
+            logger.debug(f'{dataset_id} group_prio: {group_prio}')
 
         num_all_tasks = await self._get_num_tasks()
         logger.debug(f'{dataset_id} num_all_tasks: {num_all_tasks}')
@@ -196,12 +170,10 @@ class Priority:
         elif max_dataset_prio_group > 0:
             priority *= dataset_prio / max_dataset_prio_group
             logger.info(f'{dataset_id} after dataset group adjustment: {priority}')
-        if max_user_prio > 0:
-            priority *= user_prio / max_user_prio
-            logger.info(f'{dataset_id} after user adjustment: {priority}')
-        if max_group_prio > 0:
-            priority *= group_prio / max_group_prio
-            logger.info(f'{dataset_id} after group adjustment: {priority}')
+        priority *= user_prio
+        logger.info(f'{dataset_id} after user adjustment: {priority}')
+        priority *= group_prio
+        logger.info(f'{dataset_id} after group adjustment: {priority}')
 
         # bias against large datasets
         factor = (10000. / num_dataset_tasks)**.15 if num_dataset_tasks > 0 else 1.

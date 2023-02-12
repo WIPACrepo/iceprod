@@ -169,6 +169,13 @@ class MultiDatasetHandler(APIBase):
             write_users=[data['username']],
         )
 
+        # make sure user prio is set
+        try:
+            await self.add_user(self.current_user)
+        except pymongo.errors.DuplicateKeyError:
+            # ignore already added users
+            pass
+
         # return success
         self.set_status(201)
         self.set_header('Location', f'/datasets/{dataset_id}')

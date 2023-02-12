@@ -1,28 +1,33 @@
 import logging
 from functools import wraps
+import uuid
 
 import pymongo
 from rest_tools.server import catch_error, token_attribute_role_mapping_auth
 from tornado.web import HTTPError
 
+from iceprod.roles_groups import ROLES, GROUPS
+
 logger = logging.getLogger('rest-auth')
 
 
-ROLES = {
-    'admin': ['groups=/tokens/IceProdAdmins'],
-    'user': ['groups=/institutions/IceCube.*'],
-    'system': ['resource_access.iceprod.roles=iceprod-system'],
-}
-
-GROUPS = {
-    'admin': ['groups=/tokens/IceProdAdmins'],
-    'simprod': ['groups=/posix/simprod-submit'],
-    'filtering': ['groups=/posix/i3filter'],
-    'users': ['groups=/institutions/IceCube.*'],
-}
-
-
 class AttrAuthMixin:
+    async def add_user(self, username):
+        """
+        Add a user to the auth database.
+
+        Args:
+            username (str): username
+        """
+        user_id = uuid.uuid1().hex
+        data = {
+            'user_id': user_id,
+            'username': username,
+            'priority': 0.5,
+        }
+        await self.auth_db.users.insert_one(data)
+        return user_id
+
     async def set_attr_auth(self, arg, val, read_groups=None, write_groups=None,
                             read_users=None, write_users=None):
         """
