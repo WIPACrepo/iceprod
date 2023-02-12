@@ -88,7 +88,7 @@ async def test_rest_auth_users_from_dataset(server):
         'tasks_submitted': 4,
         'group': 'users',
     }
-    ret = await client.request('POST', '/datasets', data)
+    await client.request('POST', '/datasets', data)
 
     client = server(roles=['admin'])
     ret = await client.request('GET', '/users')

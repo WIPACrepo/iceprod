@@ -173,6 +173,7 @@ class MultiDatasetHandler(APIBase):
         try:
             await self.add_user(self.current_user)
         except pymongo.errors.DuplicateKeyError:
+            # ignore already added users
             pass
 
         # return success
