@@ -1,10 +1,12 @@
 import logging
 import json
 
+import pymongo.errors
 import tornado.web
 
 from ..base_handler import APIBase
-from ..auth import authorization, ROLES, GROUPS
+from ..auth import authorization
+from iceprod.roles_groups import ROLES, GROUP_PRIORITIES
 
 logger = logging.getLogger('rest.auth')
 
@@ -23,6 +25,9 @@ def setup(handler_cfg):
         'routes': [
             ('/roles', MultiRoleHandler, handler_cfg),
             ('/groups', MultiGroupHandler, handler_cfg),
+            ('/users', MultiUserHandler, handler_cfg),
+            (r'/users/(?P<username>\w+)', UserHandler, handler_cfg),
+            (r'/users/(?P<username>\w+)/priority', UserPriorityHandler, handler_cfg),
             ('/auths', AuthHandler, handler_cfg),
         ],
         'database': 'auth',
@@ -64,7 +69,116 @@ class MultiGroupHandler(APIBase):
         Returns:
             dict: {'results': list of groups}
         """
-        self.write({'results': list(GROUPS)})
+        ret = []
+        for name, priority in GROUP_PRIORITIES.items():
+            ret.append({
+                'name': name,
+                'priority': priority,
+            })
+        self.write({'results': ret})
+
+
+class MultiUserHandler(APIBase):
+    """
+    Handle multi-user requests.
+    """
+    @authorization(roles=['admin', 'system'])
+    async def get(self):
+        """
+        Get a list of users.
+
+        Returns:
+            dict: {'results': list of users}
+        """
+        ret = await self.db.users.find(projection={'_id': False}).to_list(length=10000)
+        self.write({'results': ret})
+        self.finish()
+
+
+class UserHandler(APIBase):
+    """
+    Handle individual user requests.
+    """
+    @authorization(roles=['admin', 'system'])
+    async def get(self, username):
+        """
+        Get a user.
+
+        Args:
+            username (str): the user to get
+        Returns:
+            dict: user info
+        """
+        ret = await self.db.users.find_one({'username': username}, projection={'_id':False})
+        if not ret:
+            self.send_error(404, reason="User not found")
+        else:
+            self.write(ret)
+            self.finish()
+
+    @authorization(roles=['admin'])
+    async def put(self, username):
+        """
+        Add a User.
+
+        Args:
+            username (str): the user to delete
+        Returns:
+            dict: empty dict
+        """
+        try:
+            await self.add_user(username)
+        except pymongo.errors.DuplicateKeyError:
+            raise tornado.web.HTTPError(409, reason='duplicate username')
+        self.write({})
+        self.finish()
+
+    @authorization(roles=['admin'])
+    async def delete(self, username):
+        """
+        Delete a user.
+
+        Args:
+            username (str): the user to delete
+        Returns:
+            dict: empty dict
+        """
+        await self.db.users.delete_one({'username': username})
+        self.write({})
+        self.finish()
+
+
+class UserPriorityHandler(APIBase):
+    """
+    Handle individual user requests.
+    """
+    @authorization(roles=['admin'])
+    async def put(self, username):
+        """
+        Add a User.
+
+        Args:
+            username (str): the user to modify
+        Body Args:
+            priority (float): the new priority
+        Returns:
+            dict: empty dict
+        """
+        data = json.loads(self.request.body)
+        if 'priority' not in data:
+            raise tornado.web.HTTPError(400, reason='missing priority in body')
+        try:
+            priority = float(data['priority'])
+            if not 0 <= priority <= 1:
+                raise ValueError()
+        except Exception:
+            raise tornado.web.HTTPError(400, reason='bad priority: should be between 0 and 1')
+
+        ret = await self.db.users.update_one({'username': username}, {'$set': {'priority': priority}})
+        if ret.matched_count < 1:
+            raise tornado.web.HTTPError(400, reason='bad username')
+        self.write({})
+        self.finish()
 
 
 class AuthHandler(APIBase):

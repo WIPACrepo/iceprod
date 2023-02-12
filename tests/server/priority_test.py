@@ -27,7 +27,7 @@ def prio_setup():
             'jobs_submitted': 10,
             'tasks_submitted': 20,
             'priority': 1,
-            'group': 'g_a',
+            'group': 'users',
             'username': 'u_a',
             'tasks': {
                 't0': {'task_id': 't0', 'task_index': 0, 'job_index': 0},
@@ -39,7 +39,7 @@ def prio_setup():
             'jobs_submitted': 10,
             'tasks_submitted': 20,
             'priority': 1,
-            'group': 'g_a',
+            'group': 'users',
             'username': 'u_b',
             'tasks': {
                 't2': {'task_id': 't2', 'task_index': 0, 'job_index': 0},
@@ -51,7 +51,7 @@ def prio_setup():
             'jobs_submitted': 1000,
             'tasks_submitted': 20000,
             'priority': 1,
-            'group': 'g_a',
+            'group': 'simprod',
             'username': 'u_a',
             'tasks': {
                 't4': {'task_id': 't4', 'task_index': 0, 'job_index': 400},
@@ -63,14 +63,10 @@ def prio_setup():
         'u_a': {'username': 'u_a', 'priority': 1.},
         'u_b': {'username': 'u_b', 'priority': .5},
     }
-    groups = {
-        'g_a': {'name':'g_a', 'priority': 1.},
-    }
 
     p = priority.Priority(None)
     p.dataset_cache = datasets
     p.user_cache = users
-    p.group_cache = groups
     return p
 
 class priority_test(AsyncTestCase):
