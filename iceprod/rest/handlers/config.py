@@ -17,7 +17,7 @@ def setup(handler_cfg):
         handler_cfg (dict): args to pass to the route
 
     Returns:
-        dict: routes, indexes
+        dict: routes, database, indexes
     """
     return {
         'routes': [
