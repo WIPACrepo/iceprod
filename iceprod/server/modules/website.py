@@ -30,6 +30,7 @@ from rest_tools.server import (catch_error, RestServer, RestHandlerSetup, RestHa
 from rest_tools import telemetry as wtt
 
 import iceprod
+from iceprod.roles_groups import GROUPS
 from iceprod.server import get_pkgdata_filename
 from iceprod.server import module
 import iceprod.core.functions
@@ -285,8 +286,7 @@ class Submit(PublicHandler):
         logger.info('here')
         self.statsd.incr('submit')
         token = self.auth_key
-        ret = await self.rest_client.request('GET', '/groups')
-        groups = list(ret['results'].keys())
+        groups = list(GROUPS)
         default_config = {
             "categories": [],
             "dataset": 0,
