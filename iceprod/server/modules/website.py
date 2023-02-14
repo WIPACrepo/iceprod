@@ -286,7 +286,7 @@ class Submit(PublicHandler):
         self.statsd.incr('submit')
         token = self.auth_key
         ret = await self.rest_client.request('GET', '/groups')
-        groups = ret['results']
+        groups = list(ret['results'].keys())
         default_config = {
             "categories": [],
             "dataset": 0,
