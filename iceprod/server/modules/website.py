@@ -285,9 +285,8 @@ class Submit(PublicHandler):
         logger.info('here')
         self.statsd.incr('submit')
         token = self.auth_key
-        groups = []
-        if self.auth_data and 'groups' in self.auth_data:
-            groups = self.auth_data['groups']
+        ret = await self.rest_client.request('GET', '/groups')
+        groups = ret['results']
         default_config = {
             "categories": [],
             "dataset": 0,
