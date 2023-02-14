@@ -10,11 +10,11 @@ attrs==22.2.0
     # via pytest
 beautifulsoup4==4.11.2
     # via iceprod (setup.py)
-boto3==1.26.70
+boto3==1.26.71
     # via
     #   iceprod (setup.py)
     #   moto
-botocore==1.29.70
+botocore==1.29.71
     # via
     #   boto3
     #   moto
@@ -197,7 +197,7 @@ urllib3==1.26.14
     #   botocore
     #   requests
     #   responses
-werkzeug==2.2.2
+werkzeug==2.2.3
     # via moto
 wipac-dev-tools==1.6.10
     # via
