@@ -54,7 +54,7 @@ import argparse
 import logging
 import asyncio
 
-from rest_tools.client import RestClient
+from rest_tools.client import SavedDeviceGrantAuth
 
 
 logger = logging.getLogger('basic_submit')
@@ -155,7 +155,7 @@ async def run(rpc, rpc_materialization, args):
         'jobs_submitted': len(jobfiles),
         'tasks_submitted': len(jobfiles),
         'tasks_per_job': 1,
-        'group': 'users',
+        'group': args['group'],
         'status': 'suspended',
     }
     try:
@@ -254,6 +254,8 @@ def main():
     parser.add_argument('args', help='arguments to script')
     parser.add_argument('files', help='filename with input and output files (one line per job)')
     parser.add_argument('--description', default='', help='general description for dataset')
+    parser.add_argument('--group', default='users', choices=['users', 'simprod', 'filtering'],
+                        help='group to run under (default: users)')
     parser.add_argument('--env_shell', default='', help='environment shell (icetray env_shell.sh syntax)')
     parser.add_argument('--request_memory', type=float, default=1.0,
                         help='request memory in GB (default: 1 GB)')
@@ -261,8 +263,6 @@ def main():
                         help='request CPUs (default: 1)')
     parser.add_argument('--request_gpus', type=int, default=0,
                         help='request GPUs (default: 0)')
-    parser.add_argument('--token', default=None,
-                        help='IceProd user token (https://iceprod2.icecube.wisc.edu/profile)')
     parser.add_argument('--log_level', default='warning', help='log level (defaut: WARN)')
 
     args = parser.parse_args()
@@ -270,11 +270,13 @@ def main():
 
     logging.basicConfig(level=getattr(logging, args['log_level'].upper()))
 
-    token = args.pop('token', None)
-    if not token:
-        raise Exception('IceProd user token is required')
-    rpc = RestClient('https://iceprod2-api.icecube.wisc.edu', token)
-    rpc_materialization = RestClient('https://materialization.iceprod.icecube.aq', token)
+    rpc_kwargs = {
+        'token_url': 'https://keycloak.icecube.wisc.edu/auth/realms/IceCube',
+        'filename': os.path.abspath(os.path.expandvars('$HOME/.iceprod-auth')),
+        'client_id': 'iceprod-public',
+    }
+    rpc = SavedDeviceGrantAuth('https://iceprod2-api.icecube.wisc.edu', **rpc_kwargs)
+    rpc_materialization = SavedDeviceGrantAuth('https://materialization.iceprod.icecube.aq', **rpc_kwargs)
 
     asyncio.run(run(rpc, rpc_materialization, args))
 
