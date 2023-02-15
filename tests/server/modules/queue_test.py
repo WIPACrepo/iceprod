@@ -31,7 +31,7 @@ import iceprod.core.logger
 from iceprod.server import module
 from iceprod.server.modules.queue import queue
 
-from ..module_test import module_test, TestExecutor
+from ..module_test import module_test, Executor
 
 class queue_test(module_test):
     def setUp(self):
@@ -59,7 +59,7 @@ class queue_test(module_test):
                         },
                         'site_id':'abcd',
                        }
-            self.executor = TestExecutor()
+            self.executor = Executor()
             self.modules = services_mock()
             
             self.queue = queue(self.cfg, self.executor, self.modules)

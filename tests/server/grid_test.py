@@ -38,7 +38,7 @@ from iceprod.server.grid import BaseGrid
 from iceprod.core.resources import Resources
 from rest_tools.client import RestClient, ClientCredentialsAuth
 
-from .module_test import module_test, TestExecutor
+from .module_test import module_test, Executor
 
 class grid_test(AsyncTestCase):
     def setUp(self):
@@ -51,7 +51,7 @@ class grid_test(AsyncTestCase):
             shutil.rmtree(self.test_dir)
         self.addCleanup(clean_dir)
 
-        self.executor = TestExecutor()
+        self.executor = Executor()
 
         # override self.db_handle
         self.services = services_mock()
