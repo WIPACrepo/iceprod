@@ -4,9 +4,9 @@
 #
 #    pip-compile --output-file=requirements.txt
 #
-boto3==1.26.71
+boto3==1.26.72
     # via iceprod (setup.py)
-botocore==1.29.71
+botocore==1.29.72
     # via
     #   boto3
     #   s3transfer
@@ -104,5 +104,5 @@ wipac-dev-tools==1.6.10
     # via
     #   iceprod (setup.py)
     #   wipac-rest-tools
-wipac-rest-tools==1.4.9
+wipac-rest-tools==1.4.10
     # via iceprod (setup.py)
