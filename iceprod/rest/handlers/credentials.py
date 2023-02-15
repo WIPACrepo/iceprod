@@ -2,6 +2,7 @@ from datetime import datetime
 import logging
 
 import jwt
+import pymongo
 import tornado.web
 
 from ..base_handler import APIBase
@@ -51,8 +52,8 @@ def get_expiration(token):
 
 class BaseCredentialsHandler(APIBase):
     async def create(self, db, base_data):
-        url = self.get_json_body_argument('url', type=str)
-        credential_type = self.get_json_body_argument('type', type=str, choices=['s3', 'oauth'])
+        url = self.get_json_body_argument('url', type=str, strict_type=True)
+        credential_type = self.get_json_body_argument('type', type=str, choices=['s3', 'oauth'], strict_type=True)
 
         base_data['url'] = url
         data = base_data.copy()
@@ -62,17 +63,17 @@ class BaseCredentialsHandler(APIBase):
         })
 
         if credential_type == 's3':
-            buckets = self.get_json_body_argument('buckets', default=[], type=list)
-            access_key = self.get_json_body_argument('access_key', type=str)
-            secret_key = self.get_json_body_argument('secret_key', type=str)
+            buckets = self.get_json_body_argument('buckets', default=[], type=list, strict_type=True)
+            access_key = self.get_json_body_argument('access_key', type=str, strict_type=True)
+            secret_key = self.get_json_body_argument('secret_key', type=str, strict_type=True)
             data['buckets'] = buckets
             data['access_key'] = access_key
             data['secret_key'] = secret_key
 
         elif credential_type == 'oauth':
-            access_token = self.get_json_body_argument('access_token', default='', type=str)
-            refresh_token = self.get_json_body_argument('refresh_token', default='', type=str)
-            exp = self.get_json_body_argument('expire_date', default='', type=str)
+            access_token = self.get_json_body_argument('access_token', default='', type=str, strict_type=True)
+            refresh_token = self.get_json_body_argument('refresh_token', default='', type=str, strict_type=True)
+            exp = self.get_json_body_argument('expire_date', default='', type=str, strict_type=True)
             if (not access_token) and not refresh_token:
                 raise tornado.web.HTTPError(400, reason='must specify either access or refresh tokens')
             if not exp:

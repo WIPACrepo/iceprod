@@ -67,9 +67,7 @@ async def server(monkeypatch, port):
         def __init__(self, base_url, token, timeout=None):
             self.base_url = base_url
             self.timeout = timeout
-            self.cookies = httpx.Cookies()
             self.token_cookie = create_signed_value(cookie_secret, 'access_token', token)
-            #self.cookies.set('access_token', self.token_cookie, domain=None)
             logging.debug('Request cookie_secret: %r', cfg['webserver']['cookie_secret'].encode())
 
         async def request(self, method, path, args=None):
