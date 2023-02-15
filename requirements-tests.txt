@@ -184,9 +184,9 @@ tornado==6.2
     #   wipac-rest-tools
 types-cryptography==3.3.23.2
     # via pyjwt
-types-toml==0.10.8.3
+types-toml==0.10.8.4
     # via responses
-typing-extensions==4.4.0
+typing-extensions==4.5.0
     # via
     #   qrcode
     #   wipac-dev-tools
