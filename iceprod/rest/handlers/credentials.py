@@ -29,7 +29,7 @@ def setup(handler_cfg):
         'indexes': {
             'group_creds': {
                 'group_index': {'keys': [('groupname', pymongo.DESCENDING), ('url', pymongo.DESCENDING)], 'unique': True},
-            }
+            },
             'user_creds': {
                 'username_index': {'keys': [('username', pymongo.DESCENDING), ('url', pymongo.DESCENDING)], 'unique': True},
             }

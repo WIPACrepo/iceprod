@@ -227,7 +227,7 @@ async def run(rpc, rpc_materialization, args):
         except Exception:
             logger.warning(f'failed to set dataset {dataset_id} to processing', exc_info=True)
             fail('Failed to set dataset to processing')
-    except Exception as e:
+    except Exception:
         rpc_args = {
             'status': 'failed'
         }
