@@ -91,15 +91,11 @@ class BaseCredentialsHandler(APIBase):
         else:
             raise tornado.web.HTTPError(400, 'bad credential type')
 
-        ret = await db.update_one(
+        await db.update_one(
             base_data,
             {'$set': data},
             upsert=True,
         )
-        if ret.matched_count == 0:
-            logger.debug('inserted new credential for %r', base_data)
-        else:
-            logger.debug('updated credential for %r', base_data)
 
 
 class GroupCredentialsHandler(BaseCredentialsHandler):
