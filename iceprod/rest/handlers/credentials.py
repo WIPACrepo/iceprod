@@ -91,11 +91,15 @@ class BaseCredentialsHandler(APIBase):
         else:
             raise tornado.web.HTTPError(400, 'bad credential type')
 
-        await db.update_one(
+        ret = await db.update_one(
             base_data,
             {'$set': data},
             upsert=True,
         )
+        if ret.matched_count == 0:
+            logger.debug('inserted new credential for %r', base_data)
+        else:
+            logger.debug('updated credential for %r', base_data)
 
 
 class GroupCredentialsHandler(BaseCredentialsHandler):
@@ -116,7 +120,7 @@ class GroupCredentialsHandler(BaseCredentialsHandler):
             raise tornado.web.HTTPError(403, 'unauthorized')
 
         ret = {}
-        async for row in self.db.user_creds.find({'groupname': groupname}, {'_id': False}):
+        async for row in self.db.group_creds.find({'groupname': groupname}, {'_id': False}):
             ret[row['url']] = row
         self.write(ret)
 
@@ -144,7 +148,7 @@ class GroupCredentialsHandler(BaseCredentialsHandler):
         if self.auth_roles == ['user'] and groupname not in self.auth_groups:
             raise tornado.web.HTTPError(403, 'unauthorized')
 
-        await self.create(self.db.user_creds, {'groupname': groupname})
+        await self.create(self.db.group_creds, {'groupname': groupname})
         self.write({})
 
     @authorization(roles=['admin', 'system', 'user'])
@@ -167,7 +171,7 @@ class GroupCredentialsHandler(BaseCredentialsHandler):
         if url:
             args['url'] = url
 
-        await self.db.user_creds.deleteMany(args)
+        await self.db.group_creds.delete_many(args)
         self.write({})
 
 
@@ -240,5 +244,5 @@ class UserCredentialsHandler(BaseCredentialsHandler):
         if url:
             args['url'] = url
 
-        await self.db.user_creds.deleteMany(args)
+        await self.db.user_creds.delete_many(args)
         self.write({})
