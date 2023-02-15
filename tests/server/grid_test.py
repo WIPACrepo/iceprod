@@ -38,7 +38,7 @@ from iceprod.server.grid import BaseGrid
 from iceprod.core.resources import Resources
 from rest_tools.client import RestClient, ClientCredentialsAuth
 
-from .module_test import module_test, Executor
+from .module_test import Executor
 
 class grid_test(AsyncTestCase):
     def setUp(self):
