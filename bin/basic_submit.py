@@ -182,15 +182,15 @@ async def run(rpc, rpc_materialization, args):
             fail('Creation of jobs failed')
         materialization_id = ret['result']
 
-        logger.info(f'waiting for materialization request {materialization_id}')
+        logger.info(f'waiting for materialization request')
         while True:
             await asyncio.sleep(10)
-            ret = await rpc_materialization.request('GET', f'/status/{materialization_id}')
+            ret = await rpc_materialization.request('GET', f'/request/{dataset_id}/status')
             if ret['status'] == 'complete':
-                logger.info(f'materialization request {materialization_id} complete')
+                logger.info(f'materialization request complete')
                 break
             elif ret['status'] == 'error':
-                logger.warning(f'materialization request {materialization_id} failed')
+                logger.warning(f'materialization request failed')
                 fail('Creation of jobs failed')
             print('.', end='', flush=True)
 
@@ -227,7 +227,7 @@ async def run(rpc, rpc_materialization, args):
         except Exception:
             logger.warning(f'failed to set dataset {dataset_id} to processing', exc_info=True)
             fail('Failed to set dataset to processing')
-    except Exception:
+    except Exception as e:
         rpc_args = {
             'status': 'failed'
         }
@@ -235,7 +235,8 @@ async def run(rpc, rpc_materialization, args):
             await rpc.request('PUT', f'/datasets/{dataset_id}/status', rpc_args)
         except Exception:
             pass
-        pass
+        logger.warning(f'failed to start dataset', exc_info=True)
+        fail('failed to start dataset')
 
     # get dataset num
     try:
