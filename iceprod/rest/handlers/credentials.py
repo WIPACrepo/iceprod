@@ -63,7 +63,7 @@ class BaseCredentialsHandler(APIBase):
         })
 
         if credential_type == 's3':
-            buckets = self.get_json_body_argument('buckets', default=[], type=list, strict_type=True)
+            buckets = self.get_json_body_argument('buckets', type=list, strict_type=True)
             access_key = self.get_json_body_argument('access_key', type=str, strict_type=True)
             secret_key = self.get_json_body_argument('secret_key', type=str, strict_type=True)
             data['buckets'] = buckets

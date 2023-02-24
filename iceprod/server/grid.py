@@ -11,18 +11,24 @@ import time
 from copy import deepcopy
 from datetime import datetime,timedelta
 from collections import Counter, defaultdict
+import hashlib
 import socket
 import asyncio
+from urllib.parse import urlparse
 
+from asyncache import cached
+from cachetools import TTLCache
 from cachetools.func import ttl_cache
 from tornado.concurrent import run_on_executor
 
 import iceprod
 import iceprod.core.exe
+from iceprod.core.defaults import add_default_options
 from iceprod.core import dataclasses
 from iceprod.core import functions
 from iceprod.core import serialization
 from iceprod.core.resources import Resources, group_hasher
+from iceprod.s3 import S3
 from iceprod.server import get_pkg_binary
 
 
@@ -61,6 +67,15 @@ class BaseGrid(object):
         self.site = None
         if 'site' in self.queue_cfg:
             self.site = self.queue_cfg['site']
+
+        self.credentials_dir = os.path.expanduser(os.path.expandvars(
+            self.cfg['queue']['credentials_dir']))
+        if not os.path.exists(self.credentials_dir):
+            try:
+                os.makedirs(self.credentials_dir)
+            except Exception:
+                logger.warning('error making credentials dir %s', self.credentials_dir,
+                               exc_info=True)
 
         self.submit_dir = os.path.expanduser(os.path.expandvars(
             self.cfg['queue']['submit_dir']))
@@ -377,6 +392,124 @@ class BaseGrid(object):
     def get_token(self):
         return self.rest_client.make_access_token()
 
+    @cached(TTLCache(1024, 60))
+    async def get_user_credentials(self, username):
+        ret = await self.rest_client.request('GET', f'/users/{username}/credentials')
+        return ret
+
+    @cached(TTLCache(1024, 60))
+    async def get_group_credentials(self, group):
+        ret = await self.rest_client.request('GET', f'/groups/{group}/credentials')
+        return ret
+
+    async def customize_task_config(self, task_cfg, job_cfg=None, dataset=None):
+        """Transforms for the task config"""
+
+        # first expand site temp urls
+        def expand_remote(cfg):
+            new_data = []
+            for d in cfg.get('data', []):
+                if not d['remote']:
+                    try:
+                        remote_base = d.storage_location(job_cfg)
+                        d['remote'] = os.path.join(remote_base, d['local'])
+                    except Exception:
+                        pass
+                    new_data.append(d)
+            cfg['data'] = new_data
+        expand_remote(task_cfg)
+        for tray in task_cfg['trays']:
+            expand_remote(tray)
+            for module in tray['modules']:
+                expand_remote(module)
+
+        # now apply S3 and token credentials
+        creds = self.cfg.get('creds', {})
+        if dataset['group'] == 'users':
+            ret = await self.get_user_credentials(dataset['username'])
+        else:
+            ret = await self.get_group_credentials(dataset['group'])
+        creds.update(ret)
+
+        s3_creds = {url: creds.pop(url) for url in list(creds) if creds[url]['type'] == 's3'}
+        if s3_creds:
+            # if we have any s3 credentials, try presigning urls
+            try:
+                queued_time = timedelta(seconds=self.queue_cfg['max_task_queued_time'])
+            except Exception:
+                queued_time = timedelta(seconds=86400*2)
+            try:
+                processing_time = timedelta(seconds=self.queue_cfg['max_task_processing_time'])
+            except Exception:
+                processing_time = timedelta(seconds=86400*2)
+            expiration = queued_time + processing_time
+
+            def presign_s3(cfg):
+                new_data = []
+                for d in cfg.get('data', []):
+                    for url in s3_creds:
+                        if d['remote'].startswith(url):
+                            path = d['remote'][len(url):].lstrip('/')
+                            bucket = None
+                            if '/' in path:
+                                bucket, key = path.split('/', 1)
+                            if (not bucket) or bucket not in s3_creds[url]['buckets']:
+                                key = path
+                                bucket = urlparse(url).hostname.split('.', 1)[0]
+                                if bucket not in s3_creds[url]['buckets']:
+                                    raise RuntimeError('bad s3 bucket')
+
+                            s = S3(url, s3_creds[url]['access_key'], s3_creds[url]['secret_key'], bucket=bucket)
+                            if d['movement'] == 'input':
+                                d['remote'] = s.get_presigned(key, expiration=expiration)
+                                new_data.append(d)
+                            elif d['movement'] == 'output':
+                                d['remote'] = s.put_presigned(key, expiration=expiration)
+                            elif d['movement'] == 'both':
+                                d['remote'] = s.get_presigned(key, expiration=expiration)
+                                new_data.append(d.copy())
+                                d['remote'] = s.put_presigned(key, expiration=expiration)
+                            else:
+                                raise RuntimeError('unknown s3 data movement')
+                            new_data.append(d)
+                            break
+                    else:
+                        new_data.append(d)
+                cfg['data'] = new_data
+
+            presign_s3(task_cfg)
+            for tray in task_cfg['trays']:
+                presign_s3(tray)
+                for module in tray['modules']:
+                    presign_s3(module)
+
+        oauth_creds = {url: creds.pop(url) for url in list(creds) if creds[url]['type'] == 'oauth'}
+        if oauth_creds:
+            # if we have token-based credentials, add them to the config
+            cred_keys = set()
+
+            def get_creds(cfg):
+                for d in cfg.get('data', []):
+                    for url in oauth_creds:
+                        if d['remote'].startswith(url):
+                            cred_keys.add(url)
+                            break
+
+            get_creds(task_cfg)
+            for tray in task_cfg['trays']:
+                get_creds(tray)
+                for module in tray['modules']:
+                    get_creds(module)
+
+            file_creds = {}
+            for url in cred_keys:
+                f = os.path.join(self.credentials_dir, hashlib.sha1(creds[url]['access_token'].encode('utf-8')).hexdigest())
+                if not os.path.exists(f):
+                    with open(f, 'w') as f:
+                        f.write(creds[url]['access_token'])
+                file_creds[url] = f
+            job_cfg['options']['credentials'] = file_creds
+
     async def setup_submit_directory(self,task):
         """Set up submit directory"""
         # create directory for task
@@ -422,21 +555,11 @@ class BaseGrid(object):
             logger.error('Error generating submit file',exc_info=True)
             raise
 
-    def write_cfg(self, task):
-        """Write the config file for a task-like object"""
-        filename = os.path.join(task['submit_dir'],'task.cfg')
-
+    def create_config(self, task):
         if 'config' in task and task['config']:
             config = serialization.dict_to_dataclasses(task['config'])
         else:
             config = dataclasses.Job()
-        filelist = [filename]
-
-        if 'reqs' in task:
-            # add resources
-            config['options']['resources'] = {}
-            for r in task['reqs']:
-                config['options']['resources'][r] = task['reqs'][r]
 
         # add server options
         config['options']['task_id'] = task['task_id']
@@ -461,6 +584,24 @@ class BaseGrid(object):
         if ('download' in self.cfg and 'http_password' in self.cfg['download']
                 and self.cfg['download']['http_password']):
             config['options']['password'] = self.cfg['download']['http_password']
+
+        add_default_options(config['options'])
+
+        return config
+
+    def write_cfg(self, task):
+        """Write the config file for a task-like object"""
+        filename = os.path.join(task['submit_dir'],'task.cfg')
+        filelist = [filename]
+
+        config = self.create_config(task)
+        if creds := config['options'].get('credentials', {}):
+            cred_dir = os.path.join(task['submit_dir'], 'iceprod_credentials')
+            os.mkdir(cred_dir)
+            for src in creds.values():
+                dest = os.path.join(cred_dir, os.path.basename(src))
+                os.symlink(src, dest)
+            filelist.append('iceprod_credentials')
         if 'system' in self.cfg and 'remote_cacert' in self.cfg['system']:
             config['options']['ssl'] = {}
             config['options']['ssl']['cacert'] = os.path.basename(self.cfg['system']['remote_cacert'])
@@ -510,8 +651,14 @@ class BaseGrid(object):
         if 'upload_checksum' in self.cfg['queue']:
             config['options']['upload_checksum'] = self.cfg['queue']['upload_checksum']
 
+        if 'reqs' in task:
+            # add resources
+            config['options']['resources'] = {}
+            for r in task['reqs']:
+                config['options']['resources'][r] = task['reqs'][r]
+
         # write to file
-        serialization.serialize_json.dump(config,filename)
+        serialization.serialize_json.dump(config, filename)
 
         c = iceprod.core.exe.Config(config)
         config = c.parseObject(config, {})

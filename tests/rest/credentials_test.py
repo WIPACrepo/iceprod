@@ -40,17 +40,19 @@ async def test_rest_credentials_groups_s3(server):
     data['groupname'] = GROUP
     assert ret == {data['url']: data}
 
+    # test bucket in url
     data2 = {
-        'url': 'http://bar',
+        'url': 'http://bucket.bar',
         'type': 's3',
         'access_key': 'XXXX',
         'secret_key': 'YYYY',
-        'buckets': ['bar'],
+        'buckets': ['bucket'],
     }
     await client.request('POST', f'/groups/{GROUP}/credentials', data2)
 
     ret = await client.request('GET', f'/groups/{GROUP}/credentials')
     data2['groupname'] = GROUP
+    data2['buckets'] = []
     assert ret == {data['url']: data, data2['url']: data2}
 
     # now overwrite
@@ -77,6 +79,50 @@ async def test_rest_credentials_groups_s3(server):
 
     ret = await client.request('GET', f'/groups/{GROUP}/credentials')
     assert ret == {}
+    
+async def test_rest_credentials_groups_s3_bad(server):
+    client = server(roles=['system'])
+
+    data = {
+        'url': 'http://foo',
+        'type': 's3',
+        'access_key': 'XXXX',
+        'secret_key': 'YYYY',
+        'buckets': [],
+    }
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('POST', f'/groups/{GROUP}/credentials', data)
+    assert exc_info.value.response.status_code == 400
+
+    data = {
+        'url': 'http://foo',
+        'type': 's3',
+        'access_key': 'XXXX',
+        'secret_key': 'YYYY',
+    }
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('POST', f'/groups/{GROUP}/credentials', data)
+    assert exc_info.value.response.status_code == 400
+
+    data = {
+        'url': 'http://foo',
+        'type': 's3',
+        'secret_key': 'YYYY',
+        'buckets': ['bar'],
+    }
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('POST', f'/groups/{GROUP}/credentials', data)
+    assert exc_info.value.response.status_code == 400
+
+    data = {
+        'url': 'http://foo',
+        'type': 's3',
+        'access_key': 'XXXX',
+        'buckets': ['bar'],
+    }
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('POST', f'/groups/{GROUP}/credentials', data)
+    assert exc_info.value.response.status_code == 400
 
 
 async def test_rest_credentials_groups_oauth(server):

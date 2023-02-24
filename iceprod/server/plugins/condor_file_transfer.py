@@ -15,8 +15,10 @@ class condor_file_transfer(condor_direct):
     batch_site = 'CondorFileTransfer'
     batch_resources = {}
 
-    async def customize_task_config(self, task_cfg):
-        """Do all file transfers via condor, so move files to batchsys"""
+    async def customize_task_config(self, task_cfg, **kwargs):
+        """Do OSDF file transfers via condor, so move files to batchsys"""
+        await super().customize_task_config(task_cfg, **kwargs)
+
         in_files = []
         out_files = []
 

@@ -325,6 +325,19 @@ async def downloadResource(env, resource, remote_base=None,
             download_options['password'] = env['options']['password']
         if 'options' in env and 'ssl' in env['options'] and env['options']['ssl']:
             download_options.update(env['options']['ssl'])
+        if 'options' in env and 'credentials' in env['options']:
+            for base_url in env['options']['credentials']:
+                if resource['remote'].startswith(base_url):
+                    logger.info('using credential for %s', base_url)
+                    cred_file = os.path.join(env['options']['credentials_dir'], env['options']['credentials'][base_url])
+                    try:
+                        with open(cred_file) as f:
+                            token = f.read()
+                    except Exception:
+                        logger.critical('failed to load credential at %s', cred_file)
+                        raise Exception('failed to download {} to {}'.format(url, local))
+                    download_options['token'] = token
+                    break
         failed = False
         try:
             start_time = time.time()
@@ -451,6 +464,19 @@ async def uploadData(env, data, logger=None):
         upload_options['password'] = env['options']['password']
     if 'options' in env and 'ssl' in env['options'] and env['options']['ssl']:
         upload_options.update(env['options']['ssl'])
+    if 'options' in env and 'credentials' in env['options']:
+        for base_url in env['options']['credentials']:
+            if data['remote'].startswith(base_url):
+                logger.info('using credential for %s', base_url)
+                cred_file = os.path.join(env['options']['credentials_dir'], env['options']['credentials'][base_url])
+                try:
+                    with open(cred_file) as f:
+                        token = f.read()
+                except Exception:
+                    logger.critical('failed to load credential at %s', cred_file)
+                    raise Exception('failed to upload {} to {}'.format(url, local))
+                upload_options['token'] = token
+                break
     do_checksum = True
     if 'options' in env and 'upload_checksum' in env['options']:
         do_checksum = env['options']['upload_checksum']

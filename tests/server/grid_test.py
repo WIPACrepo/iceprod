@@ -62,9 +62,11 @@ class grid_test(AsyncTestCase):
         name = 'grid1'
         gridspec = site+'.'+name
         submit_dir = os.path.join(self.test_dir,'submit_dir')
+        credentials_dir = os.path.join(self.test_dir,'credentials_dir')
         cfg = {'site_id':site,
                'queue':{'max_resets':5,
                         'submit_dir':submit_dir,
+                        'credentials_dir':credentials_dir,
                         name:{'test':1}},
                'db':{'address':None,'ssl':False}}
 
@@ -97,8 +99,10 @@ class grid_test(AsyncTestCase):
         name = 'grid1'
         gridspec = site+'.'+name
         submit_dir = os.path.join(self.test_dir,'submit_dir')
+        credentials_dir = os.path.join(self.test_dir,'credentials_dir')
         cfg = {'queue':{'max_resets':5,
                         'submit_dir':submit_dir,
+                        'credentials_dir':credentials_dir,
                         name:{'test':1,'monitor_address':'localhost'}},
                'db':{'address':None,'ssl':False}}
 
@@ -164,9 +168,11 @@ class grid_test(AsyncTestCase):
         name = 'grid1'
         gridspec = site+'.'+name
         submit_dir = os.path.join(self.test_dir,'submit_dir')
+        credentials_dir = os.path.join(self.test_dir,'credentials_dir')
         cfg = {'site_id':site,
                'queue':{'max_resets':5,
                         'submit_dir':submit_dir,
+                        'credentials_dir':credentials_dir,
                         name:{'tasks_on_queue':[1,5,2],
                               'monitor_address':'localhost'}},
                'db':{'address':None,'ssl':False}}
@@ -217,9 +223,11 @@ class grid_test(AsyncTestCase):
         name = 'grid1'
         gridspec = site+'.'+name
         submit_dir = os.path.join(self.test_dir,'submit_dir')
+        credentials_dir = os.path.join(self.test_dir,'credentials_dir')
         cfg = {'site_id':site,
                'queue':{'max_resets':5,
                         'submit_dir':submit_dir,
+                        'credentials_dir':credentials_dir,
                         name:{'queueing_factor_priority':1,
                               'queueing_factor_dataset':1,
                               'queueing_factor_tasks':1,
@@ -284,9 +292,11 @@ class grid_test(AsyncTestCase):
         name = 'grid1'
         gridspec = site+'.'+name
         submit_dir = os.path.join(self.test_dir,'submit_dir')
+        credentials_dir = os.path.join(self.test_dir,'credentials_dir')
         cfg = {'site_id':site,
                'queue':{'max_resets':5,
                         'submit_dir':submit_dir,
+                        'credentials_dir':credentials_dir,
                         name:{'tasks_on_queue':[1,5,2],
                               'max_task_queued_time':1000,
                               'max_task_processing_time':1000,
@@ -332,9 +342,11 @@ class grid_test(AsyncTestCase):
         name = 'grid1'
         gridspec = site+'.'+name
         submit_dir = os.path.join(self.test_dir,'submit_dir')
+        credentials_dir = os.path.join(self.test_dir,'credentials_dir')
         cfg = {'site_id':site,
                'queue':{'max_resets':5,
                         'submit_dir':submit_dir,
+                        'credentials_dir':credentials_dir,
                         name:{'tasks_on_queue':[1,5,2],
                               'max_task_queued_time':1000,
                               'max_task_processing_time':1000,

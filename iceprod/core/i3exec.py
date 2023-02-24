@@ -38,6 +38,7 @@ import iceprod
 from iceprod.core import constants
 import iceprod.core.dataclasses
 import iceprod.core.serialization
+from iceprod.core.defaults import add_default_options
 import iceprod.core.exe
 from iceprod.core.exe_json import ServerComms
 import iceprod.core.pilot
@@ -225,28 +226,11 @@ async def runner(config, rpc=None, debug=False, offline=False,
             logger.warning('failed to set a new log level', exc_info=True)
 
     # make sure some basic options are set
-    if 'dataset' not in config['options']:
-        config['options']['dataset'] = 0
-    if 'job' not in config['options']:
-        config['options']['job'] = 0
-    if 'jobs_submitted' not in config['options']:
-        config['options']['jobs_submitted'] = 1
-    if 'resource_url' not in config['options']:
-        config['options']['resource_url'] = 'http://prod-exe.icecube.wisc.edu/'
+    add_default_options(config['options'])
     if 'offline' not in config['options']:
         config['options']['offline'] = offline
     if 'offline_transfer' not in config['options']:
         config['options']['offline_transfer'] = offline_transfer
-    if 'data_url' not in config['options']:
-        config['options']['data_url'] = 'gsiftp://gridftp.icecube.wisc.edu/'
-    if 'svn_repository' not in config['options']:
-        config['options']['svn_repository'] = 'http://code.icecube.wisc.edu/svn/'
-    if 'site_temp' not in config['options']:
-        config['options']['site_temp'] = 'gsiftp://gridftp-scratch.icecube.wisc.edu/local/simprod/'
-    if 'dataset_temp' not in config['options']:
-        config['options']['dataset_temp'] = os.path.join(config['options']['site_temp'],'$(dataset)')
-    if 'job_temp' not in config['options']:
-        config['options']['job_temp'] = os.path.join(config['options']['dataset_temp'],'$(job)')
     if 'subprocess_dir' not in config['options']:
         config['options']['subprocess_dir'] = os.getcwd()
     if 'task_temp' not in config['options']:
@@ -255,6 +239,8 @@ async def runner(config, rpc=None, debug=False, offline=False,
         config['options']['tray_temp'] = 'file:'+os.path.join(config['options']['subprocess_dir'],'tray_temp')
     if 'local_temp' not in config['options']:
         config['options']['local_temp'] = os.path.join(config['options']['subprocess_dir'],'local_temp')
+    if 'credentials_dir' not in config['options']:
+        config['options']['credentials_dir'] = os.path.join(os.getcwd(), 'iceprod_credentials')
     if 'stillrunninginterval' not in config['options']:
         config['options']['stillrunninginterval'] = 60
     if 'upload' not in config['options']:

@@ -11,6 +11,7 @@
     "queue":{
         "max_resets":10,
         "task_buffer":10,
+        "credentials_dir":"$PWD/credentials",
         "submit_dir":"$PWD/submit",
         "submit_pilots":true,
         "*":{
