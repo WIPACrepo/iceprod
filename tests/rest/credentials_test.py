@@ -52,7 +52,6 @@ async def test_rest_credentials_groups_s3(server):
 
     ret = await client.request('GET', f'/groups/{GROUP}/credentials')
     data2['groupname'] = GROUP
-    data2['buckets'] = []
     assert ret == {data['url']: data, data2['url']: data2}
 
     # now overwrite
