@@ -414,6 +414,7 @@ class BaseGrid(object):
                         remote_base = d.storage_location(job_cfg)
                         d['remote'] = os.path.join(remote_base, d['local'])
                     except Exception:
+                        # ignore failed expansions, as these are likely local temp paths
                         pass
                     new_data.append(d)
             cfg['data'] = new_data
