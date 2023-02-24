@@ -6,16 +6,19 @@
 #
 alabaster==0.7.13
     # via sphinx
+asyncache==0.3.1
+    # via iceprod (setup.py)
 babel==2.11.0
     # via sphinx
-boto3==1.26.72
+boto3==1.26.79
     # via iceprod (setup.py)
-botocore==1.29.72
+botocore==1.29.79
     # via
     #   boto3
     #   s3transfer
 cachetools==5.3.0
     # via
+    #   asyncache
     #   iceprod (setup.py)
     #   wipac-rest-tools
 certifi==2022.12.7
@@ -135,9 +138,9 @@ urllib3==1.26.14
     # via
     #   botocore
     #   requests
-wipac-dev-tools==1.6.10
+wipac-dev-tools==1.6.12
     # via
     #   iceprod (setup.py)
     #   wipac-rest-tools
-wipac-rest-tools==1.4.10
+wipac-rest-tools==1.4.12
     # via iceprod (setup.py)
