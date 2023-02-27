@@ -404,6 +404,7 @@ class BaseGrid(object):
 
     async def customize_task_config(self, task_cfg, job_cfg=None, dataset=None):
         """Transforms for the task config"""
+        logger.info('customize_task_config for %s', job_cfg.get('options', {}).get('task_id', 'unknown'))
 
         # first expand site temp urls
         def expand_remote(cfg):
@@ -412,17 +413,19 @@ class BaseGrid(object):
                 if not d['remote']:
                     try:
                         remote_base = d.storage_location(job_cfg)
+                        logger.info('expanding remote for %r', d['local'])
                         d['remote'] = os.path.join(remote_base, d['local'])
                     except Exception:
                         # ignore failed expansions, as these are likely local temp paths
                         pass
-                    new_data.append(d)
+                new_data.append(d)
             cfg['data'] = new_data
         expand_remote(task_cfg)
         for tray in task_cfg['trays']:
             expand_remote(tray)
             for module in tray['modules']:
                 expand_remote(module)
+        logger.info('task_cfg: %r', task_cfg)
 
         # now apply S3 and token credentials
         creds = self.cfg.get('creds', {})
@@ -435,6 +438,7 @@ class BaseGrid(object):
         s3_creds = {url: creds.pop(url) for url in list(creds) if creds[url]['type'] == 's3'}
         if s3_creds:
             # if we have any s3 credentials, try presigning urls
+            logger.info('testing job for s3 credentials')
             try:
                 queued_time = timedelta(seconds=self.queue_cfg['max_task_queued_time'])
             except Exception:
@@ -443,13 +447,14 @@ class BaseGrid(object):
                 processing_time = timedelta(seconds=self.queue_cfg['max_task_processing_time'])
             except Exception:
                 processing_time = timedelta(seconds=86400*2)
-            expiration = queued_time + processing_time
+            expiration = (queued_time + processing_time).seconds
 
             def presign_s3(cfg):
                 new_data = []
                 for d in cfg.get('data', []):
                     for url in s3_creds:
                         if d['remote'].startswith(url):
+                            logger.info('found data for cred: %s', url)
                             path = d['remote'][len(url):].lstrip('/')
                             bucket = None
                             if '/' in path:
@@ -467,8 +472,10 @@ class BaseGrid(object):
                             elif d['movement'] == 'output':
                                 d['remote'] = s.put_presigned(key, expiration=expiration)
                             elif d['movement'] == 'both':
+                                d['movement'] = 'input'
                                 d['remote'] = s.get_presigned(key, expiration=expiration)
                                 new_data.append(d.copy())
+                                d['movement'] = 'output'
                                 d['remote'] = s.put_presigned(key, expiration=expiration)
                             else:
                                 raise RuntimeError('unknown s3 data movement')
@@ -487,12 +494,14 @@ class BaseGrid(object):
         oauth_creds = {url: creds.pop(url) for url in list(creds) if creds[url]['type'] == 'oauth'}
         if oauth_creds:
             # if we have token-based credentials, add them to the config
+            logger.info('testing job for oauth credentials')
             cred_keys = set()
 
             def get_creds(cfg):
                 for d in cfg.get('data', []):
                     for url in oauth_creds:
                         if d['remote'].startswith(url):
+                            logger.info('found data for cred: %s', url)
                             cred_keys.add(url)
                             break
 
@@ -504,10 +513,10 @@ class BaseGrid(object):
 
             file_creds = {}
             for url in cred_keys:
-                f = os.path.join(self.credentials_dir, hashlib.sha1(creds[url]['access_token'].encode('utf-8')).hexdigest())
+                f = os.path.join(self.credentials_dir, hashlib.sha1(oauth_creds[url]['access_token'].encode('utf-8')).hexdigest())
                 if not os.path.exists(f):
                     with open(f, 'w') as f:
-                        f.write(creds[url]['access_token'])
+                        f.write(oauth_creds[url]['access_token'])
                 file_creds[url] = f
             job_cfg['options']['credentials'] = file_creds
 
