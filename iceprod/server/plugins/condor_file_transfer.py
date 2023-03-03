@@ -15,8 +15,10 @@ class condor_file_transfer(condor_direct):
     batch_site = 'CondorFileTransfer'
     batch_resources = {}
 
-    async def customize_task_config(self, task_cfg):
-        """Do all file transfers via condor, so move files to batchsys"""
+    async def customize_task_config(self, task_cfg, **kwargs):
+        """Do OSDF file transfers via condor, so move files to batchsys"""
+        await super().customize_task_config(task_cfg, **kwargs)
+
         in_files = []
         out_files = []
 
@@ -43,19 +45,20 @@ class condor_file_transfer(condor_direct):
             for module in tray['modules']:
                 process_data(module)
 
-        # batchsys config can be None in config!
-        batchsys = task_cfg.get('batchsys', None)
-        if not batchsys:
-            batchsys = {}
-        batchsys_condor = batchsys.get('condor', {})
-        reqs = batchsys_condor.get('requirements','')
-        if reqs:
-            reqs += ' && regexp("osdf",HasFileTransferPluginMethods)'
-        else:
-            reqs = 'regexp("osdf",HasFileTransferPluginMethods)'
-        batchsys_condor['requirements'] = reqs
-        batchsys_condor['transfer_input_files'] = ','.join(in_files)
-        batchsys_condor['transfer_output_files'] = ','.join(v.split('=',1)[0].strip() for v in out_files)
-        batchsys_condor['transfer_output_remaps'] = ','.join(out_files)
-        batchsys['condor'] = batchsys_condor
-        task_cfg['batchsys'] = batchsys
+        if in_files or out_files:
+            # batchsys config can be None in config!
+            batchsys = task_cfg.get('batchsys', None)
+            if not batchsys:
+                batchsys = {}
+            batchsys_condor = batchsys.get('condor', {})
+            reqs = batchsys_condor.get('requirements','')
+            if reqs:
+                reqs += ' && regexp("osdf",HasFileTransferPluginMethods)'
+            else:
+                reqs = 'regexp("osdf",HasFileTransferPluginMethods)'
+            batchsys_condor['requirements'] = reqs
+            batchsys_condor['transfer_input_files'] = ','.join(in_files)
+            batchsys_condor['transfer_output_files'] = ','.join(v.split('=',1)[0].strip() for v in out_files)
+            batchsys_condor['transfer_output_remaps'] = ','.join(out_files)
+            batchsys['condor'] = batchsys_condor
+            task_cfg['batchsys'] = batchsys

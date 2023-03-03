@@ -1,6 +1,6 @@
 import logging
 
-from rest_tools.client import ClientCredentialsAuth, DeviceGrantAuth
+from rest_tools.client import ClientCredentialsAuth, SavedDeviceGrantAuth
 from wipac_dev_tools import from_environment
 
 
@@ -39,8 +39,11 @@ def create_rest_client(args):
         )
     else:
         logging.debug('Using user credentials to authenticate')
-        return DeviceGrantAuth(
+        if args.oauth_client_id == 'iceprod':
+            args.oauth_client_id = 'iceprod-public'
+        return SavedDeviceGrantAuth(
             address=args.rest_url,
+            filename='.iceprod-auth',
             token_url=args.oauth_url,
             client_id=args.oauth_client_id,
         )

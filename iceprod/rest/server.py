@@ -45,12 +45,20 @@ class Server:
             'S3_ACCESS_KEY': '',
             'S3_SECRET_KEY': '',
             'MAX_BODY_SIZE': 10**9,
+            'ROUTE_STATS_WINDOW_SIZE': 1000,
+            'ROUTE_STATS_WINDOW_TIME': 3600,
+            'ROUTE_STATS_TIMEOUT': 60,
             'CI_TESTING': '',
         }
         config = from_environment(default_config)
 
         rest_config = {
             'debug': config['DEBUG'],
+            'route_stats': {
+                'window_size': config['ROUTE_STATS_WINDOW_SIZE'],
+                'window_time': config['ROUTE_STATS_WINDOW_TIME'],
+                'timeout': config['ROUTE_STATS_TIMEOUT'],
+            }
         }
         if config['OPENID_URL']:
             logging.info(f'enabling auth via {config["OPENID_URL"]} for aud "{config["OPENID_AUDIENCE"]}"')

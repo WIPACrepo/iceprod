@@ -26,7 +26,7 @@ except:
     import pickle
 
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 
 import tornado.gen
 from tornado.concurrent import Future
@@ -35,10 +35,12 @@ from tornado.testing import AsyncTestCase
 import iceprod.server
 from iceprod.server import module
 from iceprod.server.grid import BaseGrid
+from iceprod.core import dataclasses
+from iceprod.core.exe import Config
 from iceprod.core.resources import Resources
 from rest_tools.client import RestClient, ClientCredentialsAuth
 
-from .module_test import module_test, TestExecutor
+from .module_test import Executor
 
 class grid_test(AsyncTestCase):
     def setUp(self):
@@ -51,7 +53,7 @@ class grid_test(AsyncTestCase):
             shutil.rmtree(self.test_dir)
         self.addCleanup(clean_dir)
 
-        self.executor = TestExecutor()
+        self.executor = Executor()
 
         # override self.db_handle
         self.services = services_mock()
@@ -62,9 +64,11 @@ class grid_test(AsyncTestCase):
         name = 'grid1'
         gridspec = site+'.'+name
         submit_dir = os.path.join(self.test_dir,'submit_dir')
+        credentials_dir = os.path.join(self.test_dir,'credentials_dir')
         cfg = {'site_id':site,
                'queue':{'max_resets':5,
                         'submit_dir':submit_dir,
+                        'credentials_dir':credentials_dir,
                         name:{'test':1}},
                'db':{'address':None,'ssl':False}}
 
@@ -97,8 +101,10 @@ class grid_test(AsyncTestCase):
         name = 'grid1'
         gridspec = site+'.'+name
         submit_dir = os.path.join(self.test_dir,'submit_dir')
+        credentials_dir = os.path.join(self.test_dir,'credentials_dir')
         cfg = {'queue':{'max_resets':5,
                         'submit_dir':submit_dir,
+                        'credentials_dir':credentials_dir,
                         name:{'test':1,'monitor_address':'localhost'}},
                'db':{'address':None,'ssl':False}}
 
@@ -164,9 +170,11 @@ class grid_test(AsyncTestCase):
         name = 'grid1'
         gridspec = site+'.'+name
         submit_dir = os.path.join(self.test_dir,'submit_dir')
+        credentials_dir = os.path.join(self.test_dir,'credentials_dir')
         cfg = {'site_id':site,
                'queue':{'max_resets':5,
                         'submit_dir':submit_dir,
+                        'credentials_dir':credentials_dir,
                         name:{'tasks_on_queue':[1,5,2],
                               'monitor_address':'localhost'}},
                'db':{'address':None,'ssl':False}}
@@ -217,9 +225,11 @@ class grid_test(AsyncTestCase):
         name = 'grid1'
         gridspec = site+'.'+name
         submit_dir = os.path.join(self.test_dir,'submit_dir')
+        credentials_dir = os.path.join(self.test_dir,'credentials_dir')
         cfg = {'site_id':site,
                'queue':{'max_resets':5,
                         'submit_dir':submit_dir,
+                        'credentials_dir':credentials_dir,
                         name:{'queueing_factor_priority':1,
                               'queueing_factor_dataset':1,
                               'queueing_factor_tasks':1,
@@ -284,9 +294,11 @@ class grid_test(AsyncTestCase):
         name = 'grid1'
         gridspec = site+'.'+name
         submit_dir = os.path.join(self.test_dir,'submit_dir')
+        credentials_dir = os.path.join(self.test_dir,'credentials_dir')
         cfg = {'site_id':site,
                'queue':{'max_resets':5,
                         'submit_dir':submit_dir,
+                        'credentials_dir':credentials_dir,
                         name:{'tasks_on_queue':[1,5,2],
                               'max_task_queued_time':1000,
                               'max_task_processing_time':1000,
@@ -326,15 +338,106 @@ class grid_test(AsyncTestCase):
         self.assertTrue(write_cfg.called)
 
     @unittest_reporter
+    async def test_024_customize_task_config(self):
+        site = 'thesite'
+        self.check_run_stop = False
+        name = 'grid1'
+        gridspec = site+'.'+name
+        submit_dir = os.path.join(self.test_dir,'submit_dir')
+        credentials_dir = os.path.join(self.test_dir,'credentials_dir')
+        cfg = {'site_id':site,
+               'queue':{'max_resets':5,
+                        'submit_dir':submit_dir,
+                        'credentials_dir':credentials_dir,
+                        'site_temp': 'http://test.test/bucket',
+                        name:{'tasks_on_queue':[1,5,2],
+                              'max_task_queued_time':1000,
+                              'max_task_processing_time':1000,
+                              'max_task_reset_time':300,
+                              'ping_interval':60,
+                              'monitor_address':'localhost'
+                             }
+                       },
+               'creds':{'http://test.test':{'url':'http://test.test','type':'s3',
+                                            'access_key':'XXXX','secret_key':'YYYYYYY',
+                                            'buckets':['bucket'],
+                                           }
+                       },
+              }
+
+        # init
+        client = MagicMock(spec=RestClient)
+        g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
+                 self.executor, module.FakeStatsClient(),
+                 client)
+        if not g:
+            raise Exception('init did not return grid object')
+
+        g.get_user_credentials = AsyncMock(return_value={})
+        g.get_group_credentials = AsyncMock(return_value={})
+
+        logger.info('test: add job temp file using s3 site temp')
+        task = {'task_id':'1','name':'0','debug':0,'dataset_id':'d1',
+                'dataset':1,'job':0,'jobs_submitted':1}
+        job_cfg = g.create_config(task)
+        task_cfg = dataclasses.Task()
+        task_cfg['data'].append(dataclasses.Data(local='file.txt', type='job_temp', movement='both'))
+        job_cfg['tasks'].append(task_cfg)
+        parser = Config(job_cfg)
+        job_cfg = parser.parseObject(job_cfg, {})
+        dataset = {'debug':0,'dataset_id':'d1','jobs_submitted':1,
+                   'tasks_submitted':1,'tasks_per_job':1,
+                   'username':'foo','group':'users'}
+        await g.customize_task_config(task_cfg, job_cfg, dataset)
+
+        g.get_user_credentials.assert_awaited_once()
+        g.get_group_credentials.assert_not_awaited()
+        assert len(task_cfg['data']) == 2
+        assert task_cfg['data'][0]['remote'].startswith('http://test.test/bucket')
+        assert 'Signature' in task_cfg['data'][0]['remote']
+        assert 'Expires' in task_cfg['data'][0]['remote']
+        assert task_cfg['data'][0]['movement'] == 'input'
+        assert task_cfg['data'][1]['remote'].startswith('http://test.test/bucket')
+        assert 'Signature' in task_cfg['data'][1]['remote']
+        assert 'Expires' in task_cfg['data'][1]['remote']
+        assert task_cfg['data'][1]['movement'] == 'output'
+
+        logger.info('test: add group cred with token')
+        g.get_group_credentials = AsyncMock(return_value={
+                'http://test.test2':{'url':'http://test.test2','type':'oauth',
+                                     'access_token':'XXXX',
+                                    }})
+        task = {'task_id':'1','name':'0','debug':0,'dataset_id':'d1',
+                'dataset':1,'job':0,'jobs_submitted':1}
+        job_cfg = g.create_config(task)
+        task_cfg = dataclasses.Task()
+        task_cfg['data'].append(dataclasses.Data(local='file.txt', remote='http://test.test2/foo/bar/file.txt',
+                                                 type='permanent', movement='both'))
+        job_cfg['tasks'].append(task_cfg)
+        parser = Config(job_cfg)
+        job_cfg = parser.parseObject(job_cfg, {})
+        dataset = {'debug':0,'dataset_id':'d1','jobs_submitted':1,
+                   'tasks_submitted':1,'tasks_per_job':1,
+                   'username':'foo','group':'simprod'}
+        await g.customize_task_config(task_cfg, job_cfg, dataset)
+
+        g.get_group_credentials.assert_awaited_once()
+        assert len(task_cfg['data']) == 1
+        assert task_cfg['data'][0]['remote'].startswith('http://test.test2')
+        assert 'http://test.test2' in job_cfg['options']['credentials']
+
+    @unittest_reporter
     def test_026_write_cfg(self):
         site = 'thesite'
         self.check_run_stop = False
         name = 'grid1'
         gridspec = site+'.'+name
         submit_dir = os.path.join(self.test_dir,'submit_dir')
+        credentials_dir = os.path.join(self.test_dir,'credentials_dir')
         cfg = {'site_id':site,
                'queue':{'max_resets':5,
                         'submit_dir':submit_dir,
+                        'credentials_dir':credentials_dir,
                         name:{'tasks_on_queue':[1,5,2],
                               'max_task_queued_time':1000,
                               'max_task_processing_time':1000,

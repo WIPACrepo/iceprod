@@ -299,6 +299,8 @@ def _http_helper(options={}, sync=True):
                 s.cert = options['sslcert']
         if 'cacert' in options:
             s.verify = options['cacert']
+        if 'token' in options:
+            s.headers.update({'Authorization': f'bearer {options["token"]}'})
         yield s
 
 

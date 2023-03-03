@@ -28,7 +28,7 @@ from tornado.testing import AsyncTestCase
 from iceprod.server import module
 
 
-class TestExecutor(object):
+class Executor(object):
     def __init__(self, *args, **kwargs):
         pass
     def submit(self, fn, *args, **kwargs):

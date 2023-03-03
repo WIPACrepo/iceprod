@@ -667,6 +667,44 @@ class exe_test(DownloadTestCase):
             raise Exception('downloadResource wrote to the '
                             'expected filename of %s'%r['local'])
 
+    @patch('iceprod.core.exe.functions.download')
+    @unittest_reporter(name='downloadData - oauth creds')
+    async def test_018_downloadData(self, download):
+        # create an environment
+        token_file = os.path.join(self.test_dir, 'token')
+        with open(token_file, 'w') as f:
+            f.write('XXX')
+        options = {'data_url': 'http://blah/downloads',
+                   'data_directory': self.test_dir,
+                   'credentials_dir': self.test_dir,
+                   'credentials': {'http://blah': 'token'}}
+        env = {'options':options}
+
+        # create a resource object
+        r = iceprod.core.dataclasses.Data()
+        r['remote'] = 'http://blah//downloads/stuff'
+        r['local'] = 'localstuff'
+        r['type'] = 'permanent'
+        r['movement'] = 'input'
+
+        # create the downloaded file
+        async def create(*args,**kwargs):
+            assert kwargs['options']['token'] == 'XXX'
+            path = os.path.join(self.test_dir, r['local'])
+            self.mk_files(path, 'the data')
+            return path
+        download.side_effect = create
+
+        # try downloading the resource
+        await iceprod.core.exe.downloadData(env,r)
+        # check for record of file in env
+        if r['local'] not in env['files']:
+            raise Exception('downloadResource did not add the file '
+                            '%s to the env'%r['local'])
+        if not os.path.isfile(os.path.join(self.test_dir,r['local'])):
+            raise Exception('downloadResource did not write to the '
+                            'expected filename of %s'%r['local'])
+
     @patch('iceprod.core.exe.functions.upload')
     @unittest_reporter(name='uploadData')
     async def test_020_uploadData(self, upload):
@@ -902,6 +940,41 @@ class exe_test(DownloadTestCase):
         # test that no file means no upload
         await iceprod.core.exe.uploadData(env,r)
         upload.assert_not_called()
+
+    @patch('iceprod.core.exe.functions.upload')
+    @unittest_reporter(name='uploadData - oauth creds')
+    async def test_028_uploadData(self, upload):
+        # create an environment
+        token_file = os.path.join(self.test_dir, 'token')
+        with open(token_file, 'w') as f:
+            f.write('XXX')
+        options = {'data_url': 'http://blah/downloads',
+                   'data_directory': self.test_dir,
+                   'credentials_dir': self.test_dir,
+                   'credentials': {'http://blah': 'token'}}
+        env = {'options':options}
+
+        # create a resource object
+        r = iceprod.core.dataclasses.Data()
+        r['remote'] = 'http://blah/downloads/stuff'
+        r['local'] = 'localstuff'
+        r['type'] = 'permanent'
+        r['movement'] = 'both'
+
+        # create the downloaded file
+        path = os.path.join(self.test_dir, r['local'])
+        self.mk_files(path, 'the data')
+
+        async def up(*args,**kwargs):
+            assert kwargs['options']['token'] == 'XXX'
+        upload.side_effect = up
+
+        # try uploading the data
+        await iceprod.core.exe.uploadData(env,r)
+        self.assertTrue(upload.called)
+        self.assertEqual(upload.call_args[0][0],
+            os.path.join(options['data_directory'],r['local']))
+        self.assertEqual(upload.call_args[0][1], r['remote'])
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='setupClass')

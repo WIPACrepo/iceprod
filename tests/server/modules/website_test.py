@@ -8,6 +8,7 @@ import httpx
 import pytest
 import pytest_asyncio
 from rest_tools.utils import Auth
+from rest_tools.client import RestClient
 import requests.exceptions
 from tornado.web import create_signed_value
 
@@ -18,16 +19,18 @@ from ...util import services_mock
 
 
 @pytest_asyncio.fixture
-async def server(monkeypatch, port):
+async def server(monkeypatch, port, requests_mock):
     monkeypatch.setenv('CI_TESTING', '1')
 
     # set hostname
     hostname = b'localhost'
+    address = f'http://localhost:{port}'
 
     cfg = {
         'webserver': {
             'port': port,
             'cookie_secret': secrets.token_hex(16),
+            'full_url': address,
         },
         'db': {'name': 'test'},
         'site_id': 'abc',
@@ -44,6 +47,7 @@ async def server(monkeypatch, port):
     modules = services_mock()
 
     s = website.website(cfg, executor, modules)
+    s.rest_client = RestClient('http://iceprod.test', 'bar')
     s.start()
 
     auth = Auth('secret')
@@ -63,21 +67,29 @@ async def server(monkeypatch, port):
                 d[key] = []
             d[key].append(value)
 
+    requests_mock.register_uri('GET', re.compile('localhost'), real_http=True)
+
     class Request:
-        def __init__(self, base_url, token, timeout=None):
-            self.base_url = base_url
+        def __init__(self, token_data, token, timeout=None):
             self.timeout = timeout
-            self.cookies = httpx.Cookies()
-            self.token_cookie = create_signed_value(cookie_secret, 'access_token', token)
-            #self.cookies.set('access_token', self.token_cookie, domain=None)
+            requests_mock.get('http://iceprod.test/users/username/credentials', status_code=200, json={
+                address: {
+                    'url': address,
+                    'type': 'oauth',
+                    'access_token': token,
+                }
+            })
+            requests_mock.get('http://iceprod.test/groups/simprod/credentials', status_code=200, json={})
+            
+            self.token_cookie = create_signed_value(cookie_secret, 'iceprod_username', token_data['preferred_username'])
             logging.debug('Request cookie_secret: %r', cfg['webserver']['cookie_secret'].encode())
 
         async def request(self, method, path, args=None):
             async with httpx.AsyncClient(timeout=self.timeout) as client:
-                kwargs = {'headers': {'Cookie': b'access_token='+self.token_cookie}}
+                kwargs = {'headers': {'Cookie': b'iceprod_username='+self.token_cookie}}
                 if args:
                     kwargs['params'] = args
-                ret = await client.request(method, self.base_url+path, **kwargs)
+                ret = await client.request(method, address+path, **kwargs)
                 ret.raise_for_status()
                 return ret.text
 
@@ -87,8 +99,8 @@ async def server(monkeypatch, port):
             _add_to_data(data, ROLES[r])
         for g in groups:
             _add_to_data(data, GROUPS[g])
-        token = auth.create_token('username', expiration=exp, payload=data).encode()
-        return Request(f'http://localhost:{port}', token, timeout=timeout)
+        token = auth.create_token('username', expiration=exp, payload=data)
+        return Request(data, token, timeout=timeout)
 
     try:
         yield client
@@ -100,12 +112,13 @@ async def test_website_root(server):
     client = server()
     await client.request('GET', '/')
 
-async def test_website_submit(server):
-    client = server(roles=['user'], groups=['users', 'simprod'])
+async def test_website_submit(server, requests_mock):
+    client = server(username='username', roles=['user'], groups=['users', 'simprod'])
+
     ret = await client.request('GET', '/submit')
 
 async def test_website_config(server, requests_mock):
-    client = server(roles=['user'], groups=['users', 'simprod'])
+    client = server(username='username', roles=['user'], groups=['users', 'simprod'])
 
     requests_mock.register_uri('GET', re.compile('localhost'), real_http=True)
     requests_mock.get('http://iceprod.test/datasets/123', status_code=200, json={})
@@ -113,6 +126,11 @@ async def test_website_config(server, requests_mock):
 
     ret = await client.request('GET', '/config', {'dataset_id': '123'})
 
+
+async def test_website_profile(server, requests_mock):
+    client = server(username='username', roles=['user'], groups=['users', 'simprod'])
+
+    ret = await client.request('GET', '/profile')
     
 
 

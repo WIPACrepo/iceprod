@@ -46,10 +46,12 @@ class condor_test(grid_test.grid_test):
         name = 'grid1'
         gridspec = site+'.'+name
         submit_dir = os.path.join(self.test_dir,'submit_dir')
+        credentials_dir = os.path.join(self.test_dir,'credentials_dir')
         os.mkdir(submit_dir)
         cfg = {'site_id':site,
                'queue':{'max_resets':5,
                         'submit_dir':submit_dir,
+                        'credentials_dir':credentials_dir,
                         name:{'batchopts':{},
                               }},
                'download':{'http_username':None,'http_password':None},
@@ -157,10 +159,12 @@ class condor_test(grid_test.grid_test):
         name = 'grid1'
         gridspec = site+'.'+name
         submit_dir = os.path.join(self.test_dir,'submit_dir')
+        credentials_dir = os.path.join(self.test_dir,'credentials_dir')
         os.mkdir(submit_dir)
         cfg = {'site_id':site,
                'queue':{'max_resets':5,
                         'submit_dir':submit_dir,
+                        'credentials_dir':credentials_dir,
                         name:{'batchopts':{},
                               }},
                'download':{'http_username':None,'http_password':None},
@@ -214,10 +218,12 @@ class condor_test(grid_test.grid_test):
         name = 'grid1'
         gridspec = site+'.'+name
         submit_dir = os.path.join(self.test_dir,'submit_dir')
+        credentials_dir = os.path.join(self.test_dir,'credentials_dir')
         os.mkdir(submit_dir)
         cfg = {'site_id':site,
                'queue':{'max_resets':5,
                         'submit_dir':submit_dir,
+                        'credentials_dir':credentials_dir,
                         name:{'batchopts':{},
                               'monitor_address':None,
                               }},
@@ -344,10 +350,12 @@ class condor_test(grid_test.grid_test):
         name = 'grid1'
         gridspec = site+'.'+name
         submit_dir = os.path.join(self.test_dir,'submit_dir')
+        credentials_dir = os.path.join(self.test_dir,'credentials_dir')
         os.mkdir(submit_dir)
         cfg = {'site_id':site,
                'queue':{'max_resets':5,
                         'submit_dir':submit_dir,
+                        'credentials_dir':credentials_dir,
                         name:{'batchopts':{},
                               'monitor_address':None,
                               }},

@@ -599,8 +599,21 @@ class condor_direct(grid.BaseGrid):
                 dataset = await self.rest_client.request('GET', f'/datasets/{task["dataset_id"]}')
                 config = await self.rest_client.request('GET', f'/config/{task["dataset_id"]}')
                 dataset_cache[task['dataset_id']] = (dataset, config)
+
+            # update config with options, and parse it
+            config['dataset'] = dataset['dataset']
+            task.update({
+                'config': config,
+                'job': job['job_index'],
+                'dataset': dataset['dataset'],
+                'jobs_submitted': dataset['jobs_submitted'],
+                'tasks_submitted': dataset['tasks_submitted'],
+                'debug': dataset['debug'],
+            })
+            config = self.create_config(task)
             parser = Config(config)
             config = parser.parseObject(config, {})
+            task['config'] = config
 
             task_cfg = None
             for t in config['tasks']:
@@ -626,6 +639,7 @@ class condor_direct(grid.BaseGrid):
                     else:
                         reqs[k] = config_reqs[k]
             reqs = rounded_requirements(reqs)
+            task['requirements'] = reqs
 
             # get task files
             if 'task_files' in task_cfg and task_cfg['task_files']:
@@ -637,7 +651,7 @@ class condor_direct(grid.BaseGrid):
                 task_cfg['task_files'] = False
 
             # task config customizations
-            await self.customize_task_config(task_cfg)
+            await self.customize_task_config(task_cfg, job_cfg=task['config'], dataset=dataset)
 
             # create pilot
             if 'time' in resources:
@@ -670,16 +684,6 @@ class condor_direct(grid.BaseGrid):
             pilot['pilot_id'] = ret['result']
             task['pilot'] = pilot
 
-            config['dataset'] = dataset['dataset']
-            task.update({
-                'config': config,
-                'job': job['job_index'],
-                'dataset': dataset['dataset'],
-                'jobs_submitted': dataset['jobs_submitted'],
-                'tasks_submitted': dataset['tasks_submitted'],
-                'debug': dataset['debug'],
-                'requirements': reqs,
-            })
             await self.setup_submit_directory(task)
             task['pilot']['submit_dir'] = task['submit_dir']
 
