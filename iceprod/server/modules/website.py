@@ -16,17 +16,17 @@ import logging
 from collections import defaultdict
 import functools
 from urllib.parse import urlencode
+import re
 
 from iceprod.core.jsonUtil import json_encode
 
 import tornado.web
 import tornado.httpserver
 import tornado.gen
-
+import jwt
 import tornado.concurrent
 from rest_tools.client import RestClient
-from rest_tools.server import (catch_error, RestServer, RestHandlerSetup, RestHandler,
-                               OpenIDLoginHandler, OpenIDWebHandlerMixin, KeycloakUsernameMixin)
+from rest_tools.server import catch_error, RestServer, RestHandlerSetup, RestHandler, OpenIDLoginHandler
 from rest_tools import telemetry as wtt
 
 import iceprod
@@ -128,6 +128,7 @@ class website(module.module):
                 'modules': self.modules,
                 'statsd': self.statsd,
                 'rest_api': rest_address,
+                'module_rest_client': self.rest_client,
             })
             if 'debug' in self.cfg['webserver'] and self.cfg['webserver']['debug']:
                 handler_args['debug'] = True
@@ -139,6 +140,7 @@ class website(module.module):
                 self.cfg['webserver']['cookie_secret'] = cookie_secret
 
             full_url = self.cfg['webserver'].get('full_url', '')
+            handler_args['full_url'] = full_url
             login_url = full_url+'/login'
 
             routes = [
@@ -155,7 +157,7 @@ class website(module.module):
                 (r"/docs/(.*)", Documentation, handler_args),
                 (r"/dataset/(\w+)/log/(\w+)", Log, handler_args),
                 (r'/profile', Profile, handler_args),
-                (r"/login", OpenIDLoginHandler, login_handler_args),
+                (r"/login", Login, login_handler_args),
                 (r"/logout", Logout, handler_args),
                 (r"/.*", Other, handler_args),
             ]
@@ -190,9 +192,10 @@ def authenticated(method):
     will add a `next` parameter so the login page knows where to send
     you once you're logged in.
     """
+    @catch_error
     @functools.wraps(method)
-    def wrapper(self, *args, **kwargs):
-        if not self.current_user:
+    async def wrapper(self, *args, **kwargs):
+        if not await self.get_current_user_async():
             if self.request.method in ("GET", "HEAD"):
                 try:
                     url = self.get_login_url()
@@ -205,13 +208,136 @@ def authenticated(method):
                     logger.warning('failed to make redirect', exc_info=True)
                     raise tornado.web.HTTPError(403, reason='auth failed')
             raise tornado.web.HTTPError(403, reason='auth failed')
-        return method(self, *args, **kwargs)
+        return await method(self, *args, **kwargs)
     return wrapper
 
 
-class PublicHandler(KeycloakUsernameMixin, OpenIDWebHandlerMixin, RestHandler):
+def eval_expression(token, e):
+    """from rest_tools.server.decorators.token_attribute_role_mapping_auth"""
+    name, val = e.split('=',1)
+    if name == 'scope':
+        # special handling to split into string
+        token_val = token.get('scope','').split()
+    else:
+        prefix = name.split('.')[:-1]
+        while prefix:
+            token = token.get(prefix[0], {})
+            prefix = prefix[1:]
+        token_val = token.get(name.split('.')[-1], None)
+
+    logger.debug('token_val = %r', token_val)
+    if token_val is None:
+        return []
+
+    prog = re.compile(val)
+    if isinstance(token_val, list):
+        ret = (prog.fullmatch(v) for v in token_val)
+    else:
+        ret = [prog.fullmatch(token_val)]
+    return [r for r in ret if r]
+
+
+class TokenStorageMixin:
+    """
+    Store/load current user's `OpenIDLoginHandler` tokens in iceprod credentials API.
+    """
+    def get_current_user(self):
+        return None
+
+    async def get_current_user_async(self):
+        """Get the current user, and set auth-related attributes."""
+        try:
+            username = self.get_secure_cookie('iceprod_username')
+            if not username:
+                return None
+            if isinstance(username, bytes):
+                username = username.decode('utf-8')
+            creds = await self.module_rest_client.request('GET', f'/users/{username}/credentials')
+            cred = creds[self.full_url]
+            access_token = cred['access_token']
+            try:
+                data = self.auth.validate(access_token)
+            except jwt.ExpiredSignatureError:
+                logger.debug('user access_token expired')
+                return None
+            self.auth_data = data
+
+            # lookup groups
+            auth_groups = set()
+            try:
+                for name in GROUPS:
+                    for expression in GROUPS[name]:
+                        ret = eval_expression(data, expression)
+                        auth_groups.update(match.expand(name) for match in ret)
+            except Exception:
+                logger.info('cannot determine groups', exc_info=True)
+            self.auth_groups = sorted(auth_groups)
+
+            self.auth_access_token = access_token
+            self.auth_refresh_token = cred.get('refresh_token', '')
+            return username
+
+        except Exception:
+            logger.debug('failed auth', exc_info=True)
+        return None
+
+    def store_tokens(
+        self,
+        access_token,
+        access_token_exp,
+        refresh_token=None,
+        refresh_token_exp=None,
+        user_info=None,
+        user_info_exp=None,
+    ):
+        """
+        Store jwt tokens and user info from OpenID-compliant auth source.
+
+        Args:
+            access_token (str): jwt access token
+            access_token_exp (int): access token expiration in seconds
+            refresh_token (str): jwt refresh token
+            refresh_token_exp (int): refresh token expiration in seconds
+            user_info (dict): user info (from id token or user info lookup)
+            user_info_exp (int): user info expiration in seconds
+        """
+        if user_info:
+            username = user_info['username']
+        else:
+            data = self.auth.validate(access_token)
+            username = data.get('preferred_username')
+            if not username:
+                username = data.get('upn')
+            if not username:
+                raise tornado.web.HTTPError(400, reason='no username in token')
+        args = {
+            'url': self.full_url,
+            'type': 'oauth',
+            'access_token': access_token,
+        }
+        if refresh_token:
+            args['refresh_token'] = refresh_token
+
+        self.module_rest_client.request_seq('POST', f'/users/{username}/credentials', args)
+
+        self.set_secure_cookie('iceprod_username', username, expires_days=30)
+
+    def clear_tokens(self):
+        """
+        Clear token data, usually on logout.
+        """
+        self.clear_cookie('iceprod_username')
+
+
+class Login(TokenStorageMixin, OpenIDLoginHandler):
+    def initialize(self, module_rest_client=None, **kwargs):
+        super().initialize(**kwargs)
+        self.module_rest_client = module_rest_client
+
+
+class PublicHandler(TokenStorageMixin, RestHandler):
     """Default Handler"""
-    def initialize(self, cfg=None, modules=None, statsd=None, rest_api=None, **kwargs):
+    def initialize(self, cfg=None, modules=None, statsd=None, rest_api=None, module_rest_client=None, full_url=None, **kwargs):
         """
         Get some params from the website module
 
@@ -225,7 +351,9 @@ class PublicHandler(KeycloakUsernameMixin, OpenIDWebHandlerMixin, RestHandler):
         self.modules = modules
         self.statsd = statsd
         self.rest_api = rest_api
+        self.module_rest_client = module_rest_client
         self.rest_client = None
+        self.full_url = full_url
 
     def get_template_namespace(self):
         namespace = super().get_template_namespace()
@@ -244,13 +372,15 @@ class PublicHandler(KeycloakUsernameMixin, OpenIDWebHandlerMixin, RestHandler):
         namespace['json_encode'] = json_encode
         return namespace
 
-    def get_current_user(self):
-        ret = super().get_current_user()
+    async def get_current_user_async(self):
+        ret = await super().get_current_user_async()
         try:
             if ret:
-                self.rest_client = RestClient(self.rest_api, self.auth_key, timeout=50, retries=1)
+                self.rest_client = RestClient(self.rest_api, self.auth_access_token, timeout=50, retries=1)
         except Exception:
             pass
+
+        self.current_user = ret
         return ret
 
     @wtt.evented(all_args=True)
@@ -280,13 +410,12 @@ class Default(PublicHandler):
 
 class Submit(PublicHandler):
     """Handle /submit urls"""
-    @catch_error
     @authenticated
     async def get(self):
         logger.info('here')
         self.statsd.incr('submit')
-        token = self.auth_key
-        groups = list(GROUPS)
+        token = self.auth_access_token
+        groups = self.auth_groups
         default_config = {
             "categories": [],
             "dataset": 0,
@@ -311,7 +440,6 @@ class Submit(PublicHandler):
 
 class Config(PublicHandler):
     """Handle /config urls"""
-    @catch_error
     @authenticated
     async def get(self):
         self.statsd.incr('config')
@@ -322,7 +450,7 @@ class Config(PublicHandler):
         dataset = await self.rest_client.request('GET','/datasets/{}'.format(dataset_id))
         edit = self.get_argument('edit',default=False)
         if edit:
-            passkey = self.auth_key
+            passkey = self.auth_access_token
         else:
             passkey = None
         config = await self.rest_client.request('GET','/config/{}'.format(dataset_id))
@@ -338,7 +466,6 @@ class Config(PublicHandler):
 
 class DatasetBrowse(PublicHandler):
     """Handle /dataset urls"""
-    @catch_error
     @authenticated
     async def get(self):
         self.statsd.incr('dataset_browse')
@@ -367,7 +494,6 @@ class DatasetBrowse(PublicHandler):
 
 class Dataset(PublicHandler):
     """Handle /dataset urls"""
-    @catch_error
     @authenticated
     async def get(self, dataset_id):
         self.statsd.incr('dataset')
@@ -389,7 +515,7 @@ class Dataset(PublicHandler):
             raise tornado.web.HTTPError(404, reason='Dataset not found')
         dataset_num = dataset['dataset']
 
-        passkey = self.auth_key
+        passkey = self.auth_access_token
 
         jobs = await self.rest_client.request('GET','/datasets/{}/job_counts/status'.format(dataset_id))
         tasks = await self.rest_client.request('GET','/datasets/{}/task_counts/status'.format(dataset_id))
@@ -418,7 +544,6 @@ class Dataset(PublicHandler):
 
 class TaskBrowse(PublicHandler):
     """Handle /task urls"""
-    @catch_error
     @authenticated
     async def get(self, dataset_id):
         self.statsd.incr('task_browse')
@@ -430,7 +555,7 @@ class TaskBrowse(PublicHandler):
                 if 'job_index' not in tasks[t]:
                     job = await self.rest_client.request('GET', '/datasets/{}/jobs/{}'.format(dataset_id, tasks[t]['job_id']))
                     tasks[t]['job_index'] = job['job_index']
-            passkey = self.auth_key
+            passkey = self.auth_access_token
             self.render('task_browse.html',tasks=tasks, passkey=passkey)
         else:
             status = await self.rest_client.request('GET','/datasets/{}/task_counts/status'.format(dataset_id))
@@ -439,13 +564,12 @@ class TaskBrowse(PublicHandler):
 
 class Task(PublicHandler):
     """Handle /task urls"""
-    @catch_error
     @authenticated
     async def get(self, dataset_id, task_id):
         self.statsd.incr('task')
         status = self.get_argument('status', default=None)
 
-        passkey = self.auth_key
+        passkey = self.auth_access_token
 
         dataset = await self.rest_client.request('GET', '/datasets/{}'.format(dataset_id))
         task_details = await self.rest_client.request('GET','/datasets/{}/tasks/{}?status={}'.format(dataset_id, task_id, status))
@@ -473,13 +597,12 @@ class Task(PublicHandler):
 
 class JobBrowse(PublicHandler):
     """Handle /job urls"""
-    @catch_error
     @authenticated
     async def get(self, dataset_id):
         self.statsd.incr('job')
         status = self.get_argument('status',default=None)
 
-        passkey = self.auth_key
+        passkey = self.auth_access_token
 
         jobs = await self.rest_client.request('GET', '/datasets/{}/jobs'.format(dataset_id))
         if status:
@@ -492,13 +615,12 @@ class JobBrowse(PublicHandler):
 
 class Job(PublicHandler):
     """Handle /job urls"""
-    @catch_error
     @authenticated
     async def get(self, dataset_id, job_id):
         self.statsd.incr('job')
         status = self.get_argument('status',default=None)
 
-        passkey = self.auth_key
+        passkey = self.auth_access_token
 
         dataset = await self.rest_client.request('GET', '/datasets/{}'.format(dataset_id))
         job = await self.rest_client.request('GET', '/datasets/{}/jobs/{}'.format(dataset_id,job_id))
@@ -526,7 +648,6 @@ class Documentation(PublicHandler):
 
 
 class Log(PublicHandler):
-    @catch_error
     @authenticated
     async def get(self, dataset_id, log_id):
         self.statsd.incr('log')
@@ -559,26 +680,70 @@ class Other(PublicHandler):
 
 class Profile(PublicHandler):
     """Handle user profile page"""
-    @catch_error
     @authenticated
     async def get(self):
         self.statsd.incr('profile')
-        token = self.auth_key
-        groups = []
-        logger.info('user_data: %r', self.auth_data)
-        logger.info('token: %r', token)
-        if self.auth_data and 'groups' in self.auth_data:
-            groups = self.auth_data['groups']
-        self.render('profile.html', username=self.current_user, groups=groups,
-                    token=token)
+        username = self.current_user
+        groups = self.auth_groups
+        group_creds = {}
+        for g in groups:
+            if g != 'users':
+                ret = await self.rest_client.request('GET', f'/groups/{g}/credentials')
+                group_creds[g] = ret
+        user_creds = await self.rest_client.request('GET', f'/users/{username}/credentials')
+        self.render('profile.html', username=username, groups=groups,
+                    group_creds=group_creds, user_creds=user_creds)
+
+    @authenticated
+    async def post(self):
+        username = self.current_user
+
+        if self.get_argument('add_icecube_token', ''):
+            args = {
+                'url': 'https://data.icecube.aq',
+                'type': 'oauth',
+                'access_token': self.auth_access_token,
+            }
+            if self.auth_refresh_token:
+                args['refresh_token'] = self.auth_refresh_token
+            await self.rest_client.request('POST', f'/users/{username}/credentials', args)
+
+        else:
+            type_ = self.get_argument('type')
+            args = {
+                'url': self.get_argument('url'),
+                'type': type_,
+            }
+            if type_ == 's3':
+                args['buckets'] = [x for x in self.get_argument('buckets').split('\n') if x]
+                args['access_key'] = self.get_argument('access_key')
+                args['secret_key'] = self.get_argument('secret_key')
+            elif type_ == 'oauth':
+                if acc := self.get_argument('refresh_token', ''):
+                    args['refresh_token'] = acc
+                if ref := self.get_argument('refresh_token', ''):
+                    args['refresh_token'] = ref
+                if not (acc or ref):
+                    raise tornado.web.HTTPError(400, reason='need access or refresh token')
+            else:
+                raise tornado.web.HTTPError(400, reason='bad cred type')
+
+            if self.get_argument('add_user_cred', ''):
+                await self.rest_client.request('POST', f'/users/{username}/credentials', args)
+            elif self.get_argument('add_group_cred', ''):
+                groupname = self.get_argument('group')
+                if groupname not in self.auth_groups or groupname == 'users':
+                    raise tornado.web.HTTPError(400, reason='bad group name')
+                await self.rest_client.request('POST', f'/groups/{groupname}/credentials', args)
+
+        # now show the profile page
+        await self.get()
 
 
 class Logout(PublicHandler):
     @catch_error
     async def get(self):
         self.statsd.incr('logout')
-        self.clear_cookie("access_token")
-        self.clear_cookie("refresh_token")
-        self.clear_cookie("identity")
+        self.clear_tokens()
         self.current_user = None
         self.render('logout.html', status=None)

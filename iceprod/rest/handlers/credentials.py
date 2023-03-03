@@ -139,6 +139,7 @@ class GroupCredentialsHandler(BaseCredentialsHandler):
         OAuth body args:
             access_token (str): access token
             refresh_token (str): refresh token
+            expire_date (str): access token expiration, ISO date time in UTC (optional)
 
         Args:
             groupname (str): group name
@@ -212,6 +213,7 @@ class UserCredentialsHandler(BaseCredentialsHandler):
         OAuth body args:
             access_token (str): access token
             refresh_token (str): refresh token
+            expire_date (str): access token expiration, ISO date time in UTC (optional)
 
         Args:
             username (str): username
