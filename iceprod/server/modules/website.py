@@ -301,15 +301,13 @@ class TokenStorageMixin:
             user_info (dict): user info (from id token or user info lookup)
             user_info_exp (int): user info expiration in seconds
         """
-        if user_info:
-            username = user_info['username']
-        else:
-            data = self.auth.validate(access_token)
-            username = data.get('preferred_username')
-            if not username:
-                username = data.get('upn')
-            if not username:
-                raise tornado.web.HTTPError(400, reason='no username in token')
+        if not user_info:
+            user_info = self.auth.validate(access_token)
+        username = user_info.get('preferred_username')
+        if not username:
+            username = user_info.get('upn')
+        if not username:
+            raise tornado.web.HTTPError(400, reason='no username in token')
         args = {
             'url': self.full_url,
             'type': 'oauth',
