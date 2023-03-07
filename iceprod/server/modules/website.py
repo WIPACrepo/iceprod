@@ -328,7 +328,7 @@ class TokenStorageMixin:
 
 
 class Login(TokenStorageMixin, OpenIDLoginHandler):
-    def initialize(self, module_rest_client=None, full_url=None **kwargs):
+    def initialize(self, module_rest_client=None, full_url=None, **kwargs):
         super().initialize(**kwargs)
         self.module_rest_client = module_rest_client
         self.full_url = full_url
