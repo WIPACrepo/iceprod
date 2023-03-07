@@ -17,6 +17,7 @@ from collections import defaultdict
 import functools
 from urllib.parse import urlencode
 import re
+from datetime import datetime, timedelta
 
 from iceprod.core.jsonUtil import json_encode
 
@@ -705,6 +706,7 @@ class Profile(PublicHandler):
             }
             if self.auth_refresh_token:
                 args['refresh_token'] = self.auth_refresh_token
+                args['expiration'] = (datetime.utcnow() + timedelta(days=30)).isoformat()
             await self.rest_client.request('POST', f'/users/{username}/credentials', args)
 
         else:
