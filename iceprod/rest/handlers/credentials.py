@@ -79,13 +79,17 @@ class BaseCredentialsHandler(APIBase):
             if (not access_token) and not refresh_token:
                 raise tornado.web.HTTPError(400, reason='must specify either access or refresh tokens')
             if not exp:
-                try:
-                    if refresh_token:
+                if refresh_token:
+                    try:
                         exp = get_expiration(refresh_token)
-                    elif access_token:
+                    except Exception:
+                        logger.warning('refresh get_expiration failed: %r', refresh_token, exc_info=True)
+                elif access_token:
+                    try:
                         exp = get_expiration(access_token)
-                except Exception:
-                    logger.warning('get_expiration failed', exc_info=True)
+                    except Exception:
+                        logger.warning('get_expiration failed', exc_info=True)
+                if not exp:
                     raise tornado.web.HTTPError(400, 'cannot automatically determine expire_date; must be given')
             data['access_token'] = access_token
             data['refresh_token'] = refresh_token
