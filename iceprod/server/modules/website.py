@@ -116,6 +116,11 @@ class website(module.module):
                     'openid_url': self.cfg['rest_api']['oauth_url'],
                 }
             handler_args = RestHandlerSetup(rest_cfg)
+            handler_args['module_rest_client'] = self.rest_client
+
+            full_url = self.cfg['webserver'].get('full_url', '')
+            handler_args['full_url'] = full_url
+            login_url = full_url+'/login'
 
             login_handler_args = handler_args.copy()
             if not os.environ.get('CI_TESTING', None):
@@ -128,7 +133,6 @@ class website(module.module):
                 'modules': self.modules,
                 'statsd': self.statsd,
                 'rest_api': rest_address,
-                'module_rest_client': self.rest_client,
             })
             if 'debug' in self.cfg['webserver'] and self.cfg['webserver']['debug']:
                 handler_args['debug'] = True
@@ -138,10 +142,6 @@ class website(module.module):
             else:
                 cookie_secret = ''.join(hex(random.randint(0,15))[-1] for _ in range(64))
                 self.cfg['webserver']['cookie_secret'] = cookie_secret
-
-            full_url = self.cfg['webserver'].get('full_url', '')
-            handler_args['full_url'] = full_url
-            login_url = full_url+'/login'
 
             routes = [
                 (r"/", Default, handler_args),
@@ -328,9 +328,10 @@ class TokenStorageMixin:
 
 
 class Login(TokenStorageMixin, OpenIDLoginHandler):
-    def initialize(self, module_rest_client=None, **kwargs):
+    def initialize(self, module_rest_client=None, full_url=None **kwargs):
         super().initialize(**kwargs)
         self.module_rest_client = module_rest_client
+        self.full_url = full_url
 
 
 class PublicHandler(TokenStorageMixin, RestHandler):
