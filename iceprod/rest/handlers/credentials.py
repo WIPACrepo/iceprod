@@ -85,6 +85,7 @@ class BaseCredentialsHandler(APIBase):
                     elif access_token:
                         exp = get_expiration(access_token)
                 except Exception:
+                    logger.warning('get_expiration failed', exc_info=True)
                     raise tornado.web.HTTPError(400, 'cannot automatically determine expire_date; must be given')
             data['access_token'] = access_token
             data['refresh_token'] = refresh_token
