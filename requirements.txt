@@ -6,9 +6,9 @@
 #
 asyncache==0.3.1
     # via iceprod (setup.py)
-boto3==1.26.85
+boto3==1.26.95
     # via iceprod (setup.py)
-botocore==1.29.85
+botocore==1.29.95
     # via
     #   boto3
     #   s3transfer
@@ -99,13 +99,13 @@ typing-extensions==4.5.0
     #   wipac-dev-tools
 unidecode==1.3.6
     # via iceprod (setup.py)
-urllib3==1.26.14
+urllib3==1.26.15
     # via
     #   botocore
     #   requests
-wipac-dev-tools==1.6.12
+wipac-dev-tools==1.6.13
     # via
     #   iceprod (setup.py)
     #   wipac-rest-tools
-wipac-rest-tools==1.4.14
+wipac-rest-tools==1.4.16
     # via iceprod (setup.py)
