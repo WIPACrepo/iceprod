@@ -746,9 +746,6 @@ class condor_direct(grid.BaseGrid):
     async def upload_output(self, task):
         pass
 
-    async def customize_task_config(self, task_cfg):
-        pass
-
     async def generate_submit_file(self, task, cfg=None, passkey=None,
                                    filelist=None):
         """Generate queueing system submit file for task in dir."""
