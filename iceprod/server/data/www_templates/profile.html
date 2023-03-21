@@ -25,6 +25,21 @@ div.section>:not(h4) {
 div.section>h4 {
     margin: .5em 0;
 }
+div.section>h3 {
+    margin: .5em 0;
+}
+p, .form_group {
+    margin: .25em 0;
+}
+.indent {
+    margin-left: .25em;
+}
+.inline {
+    display: inline-block;
+}
+form button {
+    margin: .25em 0;
+}
 </style>
 {% end %}
 
@@ -41,7 +56,7 @@ div.section>h4 {
 <div class="section">
     <h3>Data Movement Credentials</h3>
     <h4>User Credentials</h4>
-    <div class="action">
+    <div class="indent">
     {% for url in user_creds %}
       <div class="cred">
         <p>URL: {{ url }}</p>
@@ -55,29 +70,29 @@ div.section>h4 {
       <button onclick="$('#add_user_cred_form').show()">Add New User Credentials</button>
       <form method="post" id="add_user_cred_form" style="display: none">
         {% module xsrf_form_html() %}
-        <div>
+        <div class="form_group">
           <label for="userurl">URL:</label>
           <input type="text" name="url" id="userurl" />
         </div>
-        <div>Type:
-          <div class="action">
+        <div class="form_group">Type:
+          <div class="indent inline">
             <label for="usertypes3">S3:</label>
             <input type="radio" name="type" id="usertypes3" value="s3" onclick="$('#useroauth').hide();$('#users3').show()" />
           </div>
-          <div class="action">
+          <div class="indent inline">
             <label for="usertypeoauth">OAuth:</label>
             <input type="radio" name="type" id="usertypeoauth" value="oauth" onclick="$('#useroauth').show();$('#users3').hide()" />
           </div>
         </div>
-        <div id="users3" style="display: none">
+        <div id="users3" class="form_group" style="display: none">
           <label for="userbuckets">Bucket Names (one per line)</label><br>
-          <textarea name="buckets" id="userbuckets"></textarea>
+          <textarea name="buckets" id="userbuckets"></textarea><br>
           <label for="useraccesskey">Access Key</label><br>
           <textarea name="access_key" id="useraccesskey"></textarea><br>
           <label for="usersecretkey">Secret Key</label><br>
           <textarea name="secret_key" id="usersecretkey"></textarea>
         </div>
-        <div id="useroauth" style="display: none">
+        <div id="useroauth" class="form_group" style="display: none">
           <p>Must enter either an access or refresh token (or both)</p>
           <label for="useraccesstoken">Access Token</label><br>
           <textarea name="access_token" id="useraccesstoken"></textarea><br>
@@ -91,7 +106,7 @@ div.section>h4 {
     <h4>Group Credentials</h4>
     {% for g in group_creds %}
       <p>GROUP: {{ g }}</p>
-      <div class="action">
+      <div class="indent">
       {% for url in group_creds[g] %}
         <div class="cred">
           <p>URL: {{ url }}</p>
@@ -102,29 +117,29 @@ div.section>h4 {
         <form method="post" id="add_group_{{ g }}_cred_form" style="display: none">
           {% module xsrf_form_html() %}
           <input type="hidden" name="groupname" value="{{ g }}" />
-          <div>
+          <div class="form_group">
             <label for="group_{{ g }}_url">URL:</label>
             <input type="text" name="url" id="group_{{ g }}_url" />
           </div>
-          <div>Type:
-            <div class="action">
+          <div class="form_group">Type:
+            <div class="indent inline">
               <label for="group_{{ g }}_types3">S3:</label>
               <input type="radio" name="type" id="group_{{ g }}_types3" value="s3" onclick="$('#group_{{ g }}_oauth').hide();$('#group_{{ g }}_s3').show()" />
             </div>
-            <div class="action">
+            <div class="indent inline">
               <label for="group_{{ g }}_typeoauth">OAuth:</label>
               <input type="radio" name="type" id="group_{{ g }}_typeoauth" value="oauth" onclick="$('#group_{{ g }}_oauth').show();$('#group_{{ g }}_s3').hide()" />
             </div>
           </div>
-          <div id="group_{{ g }}_s3" style="display: none">
+          <div id="group_{{ g }}_s3" class="form_group" style="display: none">
             <label for="group_{{ g }}_buckets">Bucket Names (one per line)</label><br>
-            <textarea name="buckets" id="group_{{ g }}_buckets"></textarea>
+            <textarea name="buckets" id="group_{{ g }}_buckets"></textarea><br>
             <label for="group_{{ g }}_accesskey">Access Key</label><br>
             <textarea name="access_key" id="group_{{ g }}_accesskey"></textarea><br>
             <label for="group_{{ g }}_secretkey">Secret Key</label><br>
             <textarea name="secret_key" id="group_{{ g }}_secretkey"></textarea>
           </div>
-          <div id="group_{{ g }}_oauth" style="display: none">
+          <div id="group_{{ g }}_oauth" class="form_group" style="display: none">
             <p>Must enter either an access or refresh token (or both)</p>
             <label for="group_{{ g }}_accesstoken">Access Token</label><br>
             <textarea name="access_token" id="group_{{ g }}_accesstoken"></textarea><br>
