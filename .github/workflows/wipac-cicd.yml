@@ -95,7 +95,7 @@ jobs:
 
   release:
     if: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' }}
-    needs: [flake8, pip-install, py-tests]
+    needs: [flake8, py-setup, pip-install, py-tests]
     runs-on: ubuntu-latest
     concurrency: release
     steps:
@@ -113,7 +113,7 @@ jobs:
   docker:
     name: "Docker Image"
     if: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' }}
-    needs: [flake8, pip-install, py-tests]
+    needs: [flake8, py-setup, pip-install, py-tests]
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Project
