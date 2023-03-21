@@ -83,7 +83,7 @@ class BaseCredentialsHandler(APIBase):
                     try:
                         exp = get_expiration(refresh_token)
                     except Exception:
-                        logger.warning('refresh get_expiration failed: %r', refresh_token, exc_info=True)
+                        logger.warning('refresh get_expiration failed', exc_info=True)
                 if (not exp) and access_token:
                     try:
                         exp = get_expiration(access_token)
