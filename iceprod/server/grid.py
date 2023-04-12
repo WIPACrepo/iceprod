@@ -55,7 +55,7 @@ class BaseGrid(object):
     # use only these grid states when defining grid status
     GRID_STATES = ('queued','processing','completed','error','unknown')
 
-    def __init__(self, gridspec, queue_cfg, cfg, modules, executor, statsd, rest_client):
+    def __init__(self, gridspec, queue_cfg, cfg, modules, executor, statsd, rest_client, cred_client):
         self.gridspec = gridspec
         self.queue_cfg = queue_cfg
         self.cfg = cfg
@@ -63,6 +63,7 @@ class BaseGrid(object):
         self.executor = executor
         self.statsd = statsd
         self.rest_client = rest_client
+        self.cred_client = cred_client
 
         self.site = None
         if 'site' in self.queue_cfg:
