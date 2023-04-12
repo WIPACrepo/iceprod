@@ -26,7 +26,7 @@ import tornado.httpserver
 import tornado.gen
 import jwt
 import tornado.concurrent
-from rest_tools.client import RestClient, ClientCredentialsAuth
+from rest_tools.client import RestClient
 from rest_tools.server import catch_error, RestServer, RestHandlerSetup, RestHandler, OpenIDLoginHandler
 from rest_tools import telemetry as wtt
 

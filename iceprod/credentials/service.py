@@ -6,10 +6,7 @@ import time
 from cachetools.func import ttl_cache
 import httpx
 import jwt
-import pymongo
 from rest_tools.utils.auth import OpenIDAuth
-
-from ..server.util import nowstr, datetime2str
 
 logger = logging.getLogger('refresh_service')
 

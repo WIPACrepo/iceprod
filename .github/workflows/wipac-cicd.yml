@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ env.py_version }}
-      - uses: WIPACrepo/wipac-dev-flake8-action@v1
+      - uses: WIPACrepo/wipac-dev-flake8-action@v1.0
 
   py-setup:
     runs-on: ubuntu-latest
@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-      - uses: WIPACrepo/wipac-dev-py-setup-action@v1.10
+      - uses: WIPACrepo/wipac-dev-py-setup-action@v1.14
 
   py-versions:
     runs-on: ubuntu-latest
@@ -37,7 +37,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - id: versions
-        uses: WIPACrepo/wipac-dev-py-versions-action@v1
+        uses: WIPACrepo/wipac-dev-py-versions-action@v2.0
 
   pip-install:
     needs: [py-versions]

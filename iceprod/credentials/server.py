@@ -3,10 +3,8 @@ Credentials store and refresh.
 """
 import asyncio
 from datetime import datetime
-import json
 import logging
 import time
-import uuid
 
 import pymongo
 import pymongo.errors
@@ -18,7 +16,7 @@ from tornado.web import HTTPError
 from tornado.web import RequestHandler as TornadoRequestHandler
 from wipac_dev_tools import from_environment
 
-from iceprod.rest.auth import authorization, attr_auth
+from iceprod.rest.auth import authorization
 from iceprod.rest.base_handler import IceProdRestConfig, APIBase
 from iceprod.server.module import FakeStatsClient, StatsClientIgnoreErrors
 from iceprod.server.util import nowstr, datetime2str
@@ -135,7 +133,7 @@ class BaseCredentialsHandler(APIBase):
             {'$set': data},
         )
         if not ret:
-            raise HTTPError(404, 'credential not found') 
+            raise HTTPError(404, 'credential not found')
 
     async def search_creds(self, db, base_data):
         if url := self.get_argument('url', None):
@@ -221,7 +219,7 @@ class GroupCredentialsHandler(BaseCredentialsHandler):
             url (str): url of controlled resource
 
         Other body args will update a credential.
-        
+
         Args:
             groupname (str): group name
         """
@@ -310,7 +308,7 @@ class UserCredentialsHandler(BaseCredentialsHandler):
             url (str): url of controlled resource
 
         Other body args will update a credential.
-        
+
         Args:
             username (str): username
         """
