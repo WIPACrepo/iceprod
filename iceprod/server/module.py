@@ -113,6 +113,7 @@ class module(object):
         self.elasticsearch = FakeStatsClient()
         self.s3 = None
         self.rest_client = None
+        self.cred_client = None
         self.modules = modules
         self.service = {'start': self.start,
                         'stop': self.stop,
@@ -166,6 +167,12 @@ class module(object):
             try:
                 self.rest_client = ClientCredentialsAuth(
                     address=self.cfg['rest_api']['url'],
+                    token_url=self.cfg['rest_api']['oauth_url'],
+                    client_id=self.cfg['rest_api']['oauth_client_id'],
+                    client_secret=self.cfg['rest_api']['oauth_client_secret'],
+                )
+                self.cred_client = ClientCredentialsAuth(
+                    address=self.cfg['rest_api']['cred_url'],
                     token_url=self.cfg['rest_api']['oauth_url'],
                     client_id=self.cfg['rest_api']['oauth_client_id'],
                     client_secret=self.cfg['rest_api']['oauth_client_secret'],

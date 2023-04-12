@@ -26,7 +26,7 @@ import tornado.httpserver
 import tornado.gen
 import jwt
 import tornado.concurrent
-from rest_tools.client import RestClient
+from rest_tools.client import RestClient, ClientCredentialsAuth
 from rest_tools.server import catch_error, RestServer, RestHandlerSetup, RestHandler, OpenIDLoginHandler
 from rest_tools import telemetry as wtt
 
@@ -116,8 +116,12 @@ class website(module.module):
                     'audience': self.cfg['rest_api'].get('oauth_audience', 'iceprod'),
                     'openid_url': self.cfg['rest_api']['oauth_url'],
                 }
+
+                if 'cred_url' not in self.cfg['rest_api']:
+                    raise Exception('must set cred_url in cfg[rest_api]')
+
             handler_args = RestHandlerSetup(rest_cfg)
-            handler_args['module_rest_client'] = self.rest_client
+            handler_args['cred_rest_client'] = self.cred_rest_client
 
             full_url = self.cfg['webserver'].get('full_url', '')
             handler_args['full_url'] = full_url
@@ -253,7 +257,7 @@ class TokenStorageMixin:
                 return None
             if isinstance(username, bytes):
                 username = username.decode('utf-8')
-            creds = await self.module_rest_client.request('GET', f'/users/{username}/credentials')
+            creds = await self.cred_rest_client.request('GET', f'/users/{username}/credentials', {'url': self.full_url})
             cred = creds[self.full_url]
             access_token = cred['access_token']
             try:
@@ -317,7 +321,7 @@ class TokenStorageMixin:
         if refresh_token:
             args['refresh_token'] = refresh_token
 
-        self.module_rest_client.request_seq('POST', f'/users/{username}/credentials', args)
+        self.cred_rest_client.request_seq('POST', f'/users/{username}/credentials', args)
 
         self.set_secure_cookie('iceprod_username', username, expires_days=30)
 
@@ -329,15 +333,15 @@ class TokenStorageMixin:
 
 
 class Login(TokenStorageMixin, OpenIDLoginHandler):
-    def initialize(self, module_rest_client=None, full_url=None, **kwargs):
+    def initialize(self, cred_rest_client=None, full_url=None, **kwargs):
         super().initialize(**kwargs)
-        self.module_rest_client = module_rest_client
+        self.cred_rest_client = cred_rest_client
         self.full_url = full_url
 
 
 class PublicHandler(TokenStorageMixin, RestHandler):
     """Default Handler"""
-    def initialize(self, cfg=None, modules=None, statsd=None, rest_api=None, module_rest_client=None, full_url=None, **kwargs):
+    def initialize(self, cfg=None, modules=None, statsd=None, rest_api=None, cred_rest_client=None, full_url=None, **kwargs):
         """
         Get some params from the website module
 
@@ -351,7 +355,7 @@ class PublicHandler(TokenStorageMixin, RestHandler):
         self.modules = modules
         self.statsd = statsd
         self.rest_api = rest_api
-        self.module_rest_client = module_rest_client
+        self.cred_rest_client = cred_rest_client
         self.rest_client = None
         self.full_url = full_url
 
