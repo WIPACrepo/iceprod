@@ -63,7 +63,7 @@ class condor_test(grid_test.grid_test):
         client = MagicMock(spec=RestClient)
         g = condor(gridspec, cfg['queue'][name], cfg, self.services,
                  self.executor, module.FakeStatsClient(),
-                 client)
+                 client, client)
         if not g:
             raise Exception('init did not return grid object')
 
@@ -174,7 +174,7 @@ class condor_test(grid_test.grid_test):
         client = MagicMock(spec=RestClient)
         g = condor(gridspec, cfg['queue'][name], cfg, self.services,
                  self.executor, module.FakeStatsClient(),
-                 client)
+                 client, client)
         if not g:
             raise Exception('init did not return grid object')
 
@@ -234,7 +234,7 @@ class condor_test(grid_test.grid_test):
         client = MagicMock(spec=RestClient)
         g = condor(gridspec, cfg['queue'][name], cfg, self.services,
                  self.executor, module.FakeStatsClient(),
-                 client)
+                 client, client)
         if not g:
             raise Exception('init did not return grid object')
 
@@ -366,7 +366,7 @@ class condor_test(grid_test.grid_test):
         client = MagicMock(spec=RestClient)
         g = condor(gridspec, cfg['queue'][name], cfg, self.services,
                  self.executor, module.FakeStatsClient(),
-                 client)
+                 client, client)
         if not g:
             raise Exception('init did not return grid object')
 
