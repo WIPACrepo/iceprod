@@ -1,9 +1,6 @@
 import logging
-import os
-import re
-import socket
 import time
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import motor.motor_asyncio
 import pytest

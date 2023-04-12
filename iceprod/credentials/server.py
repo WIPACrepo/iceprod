@@ -127,7 +127,6 @@ class BaseCredentialsHandler(APIBase):
         if 'access_token' in data and 'expiration' not in data:
             data['expiration'] = get_expiration(data['access_token'])
 
-        logger.debug('patching %r with %r', base_data, data)
         ret = await db.find_one_and_update(
             base_data,
             {'$set': data},
@@ -514,6 +513,6 @@ class Server:
             try:
                 await self.refresh_service_task
             except asyncio.CancelledError:
-                pass
+                pass  # ignore cancellations
             finally:
                 self.refresh_service_task = None

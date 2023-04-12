@@ -1,12 +1,10 @@
 import time
 import json
-import logging
 from unittest.mock import MagicMock
 import motor.motor_asyncio
 import jwt
 
 import iceprod.credentials.service
-from iceprod.credentials.service import get_expiration, is_expired, RefreshService
 
 
 GROUP = 'simprod'
@@ -16,7 +14,7 @@ USER = 'username'
 def test_credentials_service_get_expiration():
     t = time.time()
     tok = jwt.encode({'exp': t}, 'secret')
-    e = get_expiration(tok)
+    e = iceprod.credentials.service.get_expiration(tok)
     assert t == e
 
 
@@ -25,19 +23,19 @@ def test_credentials_service_is_expired():
         'type': 'oauth',
         'expiration': time.time()
     }
-    assert is_expired(cred)
+    assert iceprod.credentials.service.is_expired(cred)
 
     cred = {
         'type': 'oauth',
         'expiration': time.time()+100
     }
-    assert not is_expired(cred)
+    assert not iceprod.credentials.service.is_expired(cred)
 
 
 async def test_credentials_service_refresh_empty(mongo_url, mongo_clear, respx_mock):
     db = motor.motor_asyncio.AsyncIOMotorClient(mongo_url)['creds']
     clients = '{}'
-    rs = RefreshService(db, clients, 1, 1, 60)
+    rs = iceprod.credentials.service.RefreshService(db, clients, 1, 1, 60)
 
     await rs._run_once()
 
@@ -45,7 +43,7 @@ async def test_credentials_service_refresh_empty(mongo_url, mongo_clear, respx_m
 async def test_credentials_service_refresh_not_exp(mongo_url, mongo_clear, respx_mock):
     db = motor.motor_asyncio.AsyncIOMotorClient(mongo_url)['creds']
     clients = '{}'
-    rs = RefreshService(db, clients, 1, 1, 60)
+    rs = iceprod.credentials.service.RefreshService(db, clients, 1, 1, 60)
 
     now = time.time()
 
@@ -73,7 +71,7 @@ async def test_credentials_service_refresh_group(mongo_url, mongo_clear, respx_m
     clients = json.dumps({
         'http://iceprod.test': ['client-id', 'client-secret']
     })
-    rs = RefreshService(db, clients, 1, 1, 60)
+    rs = iceprod.credentials.service.RefreshService(db, clients, 1, 1, 60)
 
     now = time.time()
 
@@ -110,7 +108,7 @@ async def test_credentials_service_refresh_user(mongo_url, mongo_clear, respx_mo
     clients = json.dumps({
         'http://iceprod.test': ['client-id', 'client-secret']
     })
-    rs = RefreshService(db, clients, 1, 1, 60)
+    rs = iceprod.credentials.service.RefreshService(db, clients, 1, 1, 60)
 
     now = time.time()
 
