@@ -121,7 +121,7 @@ class website(module.module):
                     raise Exception('must set cred_url in cfg[rest_api]')
 
             handler_args = RestHandlerSetup(rest_cfg)
-            handler_args['cred_rest_client'] = self.cred_rest_client
+            handler_args['cred_rest_client'] = self.cred_client
 
             full_url = self.cfg['webserver'].get('full_url', '')
             handler_args['full_url'] = full_url
