@@ -2,6 +2,11 @@
 
 <!--next-version-placeholder-->
 
+## v2.6.9 (2023-04-13)
+### Other
+* Py-versions syntax has changed ([#336](https://github.com/WIPACrepo/iceprod/issues/336)) ([`d9bed42`](https://github.com/WIPACrepo/iceprod/commit/d9bed42649ce6efa1bffb7dcf0a8f89fa657d71f))
+* Cred API and refresh service ([`e795d2b`](https://github.com/WIPACrepo/iceprod/commit/e795d2b4b5beea16a87119abfaa0fba541bd477c))
+
 ## v2.6.8 (2023-03-03)
 
 
