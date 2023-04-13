@@ -55,7 +55,7 @@ class BaseGrid(object):
     # use only these grid states when defining grid status
     GRID_STATES = ('queued','processing','completed','error','unknown')
 
-    def __init__(self, gridspec, queue_cfg, cfg, modules, executor, statsd, rest_client):
+    def __init__(self, gridspec, queue_cfg, cfg, modules, executor, statsd, rest_client, cred_client):
         self.gridspec = gridspec
         self.queue_cfg = queue_cfg
         self.cfg = cfg
@@ -63,6 +63,7 @@ class BaseGrid(object):
         self.executor = executor
         self.statsd = statsd
         self.rest_client = rest_client
+        self.cred_client = cred_client
 
         self.site = None
         if 'site' in self.queue_cfg:
@@ -390,16 +391,16 @@ class BaseGrid(object):
 
     @ttl_cache(ttl=600)
     def get_token(self):
-        return self.rest_client.make_access_token()
+        return self.cred_client.make_access_token()
 
     @cached(TTLCache(1024, 60))
     async def get_user_credentials(self, username):
-        ret = await self.rest_client.request('GET', f'/users/{username}/credentials')
+        ret = await self.cred_client.request('GET', f'/users/{username}/credentials')
         return ret
 
     @cached(TTLCache(1024, 60))
     async def get_group_credentials(self, group):
-        ret = await self.rest_client.request('GET', f'/groups/{group}/credentials')
+        ret = await self.cred_client.request('GET', f'/groups/{group}/credentials')
         return ret
 
     async def customize_task_config(self, task_cfg, job_cfg=None, dataset=None):

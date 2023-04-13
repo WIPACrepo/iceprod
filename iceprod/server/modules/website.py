@@ -17,6 +17,7 @@ from collections import defaultdict
 import functools
 from urllib.parse import urlencode
 import re
+from datetime import datetime, timedelta
 
 from iceprod.core.jsonUtil import json_encode
 
@@ -115,7 +116,18 @@ class website(module.module):
                     'audience': self.cfg['rest_api'].get('oauth_audience', 'iceprod'),
                     'openid_url': self.cfg['rest_api']['oauth_url'],
                 }
+
+                if 'cred_url' not in self.cfg['rest_api']:
+                    raise Exception('must set cred_url in cfg[rest_api]')
+                if not self.cred_client:
+                    raise Exception('credentials rest client not set up!')
+
             handler_args = RestHandlerSetup(rest_cfg)
+            handler_args['cred_rest_client'] = self.cred_client
+
+            full_url = self.cfg['webserver'].get('full_url', '')
+            handler_args['full_url'] = full_url
+            login_url = full_url+'/login'
 
             login_handler_args = handler_args.copy()
             if not os.environ.get('CI_TESTING', None):
@@ -128,7 +140,6 @@ class website(module.module):
                 'modules': self.modules,
                 'statsd': self.statsd,
                 'rest_api': rest_address,
-                'module_rest_client': self.rest_client,
             })
             if 'debug' in self.cfg['webserver'] and self.cfg['webserver']['debug']:
                 handler_args['debug'] = True
@@ -138,10 +149,6 @@ class website(module.module):
             else:
                 cookie_secret = ''.join(hex(random.randint(0,15))[-1] for _ in range(64))
                 self.cfg['webserver']['cookie_secret'] = cookie_secret
-
-            full_url = self.cfg['webserver'].get('full_url', '')
-            handler_args['full_url'] = full_url
-            login_url = full_url+'/login'
 
             routes = [
                 (r"/", Default, handler_args),
@@ -252,7 +259,7 @@ class TokenStorageMixin:
                 return None
             if isinstance(username, bytes):
                 username = username.decode('utf-8')
-            creds = await self.module_rest_client.request('GET', f'/users/{username}/credentials')
+            creds = await self.cred_rest_client.request('GET', f'/users/{username}/credentials', {'url': self.full_url})
             cred = creds[self.full_url]
             access_token = cred['access_token']
             try:
@@ -301,15 +308,13 @@ class TokenStorageMixin:
             user_info (dict): user info (from id token or user info lookup)
             user_info_exp (int): user info expiration in seconds
         """
-        if user_info:
-            username = user_info['username']
-        else:
-            data = self.auth.validate(access_token)
-            username = data.get('preferred_username')
-            if not username:
-                username = data.get('upn')
-            if not username:
-                raise tornado.web.HTTPError(400, reason='no username in token')
+        if not user_info:
+            user_info = self.auth.validate(access_token)
+        username = user_info.get('preferred_username')
+        if not username:
+            username = user_info.get('upn')
+        if not username:
+            raise tornado.web.HTTPError(400, reason='no username in token')
         args = {
             'url': self.full_url,
             'type': 'oauth',
@@ -318,7 +323,7 @@ class TokenStorageMixin:
         if refresh_token:
             args['refresh_token'] = refresh_token
 
-        self.module_rest_client.request_seq('POST', f'/users/{username}/credentials', args)
+        self.cred_rest_client.request_seq('POST', f'/users/{username}/credentials', args)
 
         self.set_secure_cookie('iceprod_username', username, expires_days=30)
 
@@ -330,14 +335,15 @@ class TokenStorageMixin:
 
 
 class Login(TokenStorageMixin, OpenIDLoginHandler):
-    def initialize(self, module_rest_client=None, **kwargs):
+    def initialize(self, cred_rest_client=None, full_url=None, **kwargs):
         super().initialize(**kwargs)
-        self.module_rest_client = module_rest_client
+        self.cred_rest_client = cred_rest_client
+        self.full_url = full_url
 
 
 class PublicHandler(TokenStorageMixin, RestHandler):
     """Default Handler"""
-    def initialize(self, cfg=None, modules=None, statsd=None, rest_api=None, module_rest_client=None, full_url=None, **kwargs):
+    def initialize(self, cfg=None, modules=None, statsd=None, rest_api=None, cred_rest_client=None, full_url=None, **kwargs):
         """
         Get some params from the website module
 
@@ -351,7 +357,7 @@ class PublicHandler(TokenStorageMixin, RestHandler):
         self.modules = modules
         self.statsd = statsd
         self.rest_api = rest_api
-        self.module_rest_client = module_rest_client
+        self.cred_rest_client = cred_rest_client
         self.rest_client = None
         self.full_url = full_url
 
@@ -706,6 +712,7 @@ class Profile(PublicHandler):
             }
             if self.auth_refresh_token:
                 args['refresh_token'] = self.auth_refresh_token
+                args['expiration'] = (datetime.utcnow() + timedelta(days=30)).isoformat()
             await self.rest_client.request('POST', f'/users/{username}/credentials', args)
 
         else:

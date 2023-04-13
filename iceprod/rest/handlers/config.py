@@ -52,7 +52,6 @@ class ConfigHandler(APIBase):
             {'dataset_id':dataset_id},
             projection={'_id':False, 'dataset_id':False}
         )
-        logger.info('get config: %r', ret)
         if not ret:
             self.send_error(404, reason="Config not found")
         else:

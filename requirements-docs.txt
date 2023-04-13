@@ -6,13 +6,15 @@
 #
 alabaster==0.7.13
     # via sphinx
+anyio==3.6.2
+    # via httpcore
 asyncache==0.3.1
     # via iceprod (setup.py)
 babel==2.12.1
     # via sphinx
-boto3==1.26.84
+boto3==1.26.113
     # via iceprod (setup.py)
-botocore==1.29.84
+botocore==1.29.113
     # via
     #   boto3
     #   s3transfer
@@ -23,13 +25,15 @@ cachetools==5.3.0
     #   wipac-rest-tools
 certifi==2022.12.7
     # via
+    #   httpcore
+    #   httpx
     #   iceprod (setup.py)
     #   requests
 cffi==1.15.1
     # via cryptography
-charset-normalizer==3.0.1
+charset-normalizer==3.1.0
     # via requests
-cryptography==39.0.2
+cryptography==40.0.1
     # via
     #   iceprod (setup.py)
     #   pyjwt
@@ -38,8 +42,17 @@ dnspython==2.3.0
     # via pymongo
 docutils==0.19
     # via sphinx
+h11==0.14.0
+    # via httpcore
+httpcore==0.17.0
+    # via httpx
+httpx==0.24.0
+    # via iceprod (setup.py)
 idna==3.4
-    # via requests
+    # via
+    #   anyio
+    #   httpx
+    #   requests
 imagesize==1.4.1
     # via sphinx
 jinja2==3.1.2
@@ -52,9 +65,9 @@ ldap3==2.9.1
     # via iceprod (setup.py)
 markupsafe==2.1.2
     # via jinja2
-motor==3.1.1
+motor==3.1.2
     # via iceprod (setup.py)
-packaging==23.0
+packaging==23.1
     # via sphinx
 psutil==5.9.4
     # via iceprod (setup.py)
@@ -62,7 +75,7 @@ pyasn1==0.4.8
     # via ldap3
 pycparser==2.21
     # via cffi
-pygments==2.14.0
+pygments==2.15.0
     # via sphinx
 pyjwt[crypto]==2.5.0
     # via wipac-rest-tools
@@ -70,7 +83,7 @@ pymongo==4.3.3
     # via
     #   iceprod (setup.py)
     #   motor
-pyopenssl==23.0.0
+pyopenssl==23.1.1
     # via iceprod (setup.py)
 pypng==0.20220715.0
     # via qrcode
@@ -102,6 +115,11 @@ setproctitle==1.3.2
     # via iceprod (setup.py)
 six==1.16.0
     # via python-dateutil
+sniffio==1.3.0
+    # via
+    #   anyio
+    #   httpcore
+    #   httpx
 snowballstemmer==2.2.0
     # via sphinx
 sphinx==6.1.3
@@ -132,13 +150,13 @@ typing-extensions==4.5.0
     #   wipac-dev-tools
 unidecode==1.3.6
     # via iceprod (setup.py)
-urllib3==1.26.14
+urllib3==1.26.15
     # via
     #   botocore
     #   requests
-wipac-dev-tools==1.6.12
+wipac-dev-tools==1.6.15
     # via
     #   iceprod (setup.py)
     #   wipac-rest-tools
-wipac-rest-tools==1.4.14
+wipac-rest-tools==1.4.18
     # via iceprod (setup.py)

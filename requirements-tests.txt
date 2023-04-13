@@ -8,15 +8,13 @@ anyio==3.6.2
     # via httpcore
 asyncache==0.3.1
     # via iceprod (setup.py)
-attrs==22.2.0
-    # via pytest
-beautifulsoup4==4.11.2
+beautifulsoup4==4.12.2
     # via iceprod (setup.py)
-boto3==1.26.84
+boto3==1.26.113
     # via
     #   iceprod (setup.py)
     #   moto
-botocore==1.29.84
+botocore==1.29.113
     # via
     #   boto3
     #   moto
@@ -34,13 +32,13 @@ certifi==2022.12.7
     #   requests
 cffi==1.15.1
     # via cryptography
-charset-normalizer==3.0.1
+charset-normalizer==3.1.0
     # via requests
-coverage[toml]==7.2.1
+coverage[toml]==7.2.3
     # via
     #   iceprod (setup.py)
     #   pytest-cov
-cryptography==39.0.2
+cryptography==40.0.1
     # via
     #   iceprod (setup.py)
     #   moto
@@ -48,7 +46,7 @@ cryptography==39.0.2
     #   pyopenssl
 dnspython==2.3.0
     # via pymongo
-exceptiongroup==1.1.0
+exceptiongroup==1.1.1
     # via pytest
 flake8==6.0.0
     # via iceprod (setup.py)
@@ -56,17 +54,17 @@ flexmock==0.11.3
     # via iceprod (setup.py)
 h11==0.14.0
     # via httpcore
-httpcore==0.16.3
+httpcore==0.17.0
     # via httpx
-httpx==0.23.3
+httpx==0.24.0
     # via
     #   iceprod (setup.py)
     #   respx
 idna==3.4
     # via
     #   anyio
+    #   httpx
     #   requests
-    #   rfc3986
 iniconfig==2.0.0
     # via pytest
 jinja2==3.1.2
@@ -85,11 +83,11 @@ mccabe==0.7.0
     # via flake8
 mock==5.0.1
     # via iceprod (setup.py)
-moto==4.1.3
+moto==4.1.7
     # via iceprod (setup.py)
-motor==3.1.1
+motor==3.1.2
     # via iceprod (setup.py)
-packaging==23.0
+packaging==23.1
     # via pytest
 pluggy==1.0.0
     # via pytest
@@ -109,17 +107,17 @@ pymongo==4.3.3
     # via
     #   iceprod (setup.py)
     #   motor
-pyopenssl==23.0.0
+pyopenssl==23.1.1
     # via iceprod (setup.py)
 pypng==0.20220715.0
     # via qrcode
-pytest==7.2.2
+pytest==7.3.0
     # via
     #   iceprod (setup.py)
     #   pytest-asyncio
     #   pytest-cov
     #   pytest-mock
-pytest-asyncio==0.20.3
+pytest-asyncio==0.21.0
     # via iceprod (setup.py)
 pytest-cov==4.0.0
     # via iceprod (setup.py)
@@ -131,7 +129,9 @@ python-dateutil==2.8.2
     #   iceprod (setup.py)
     #   moto
 pyyaml==6.0
-    # via iceprod (setup.py)
+    # via
+    #   iceprod (setup.py)
+    #   responses
 qrcode==7.4.2
     # via wipac-rest-tools
 requests==2.28.2
@@ -152,12 +152,10 @@ requests-mock==1.10.0
     # via iceprod (setup.py)
 requests-toolbelt==0.10.1
     # via iceprod (setup.py)
-responses==0.22.0
+responses==0.23.1
     # via moto
 respx==0.20.1
     # via iceprod (setup.py)
-rfc3986[idna2008]==1.5.0
-    # via httpx
 s3transfer==0.6.0
     # via boto3
 setproctitle==1.3.2
@@ -175,8 +173,6 @@ soupsieve==2.4
     # via beautifulsoup4
 statsd==4.0.1
     # via iceprod (setup.py)
-toml==0.10.2
-    # via responses
 tomli==2.0.1
     # via
     #   coverage
@@ -187,7 +183,7 @@ tornado==6.2
     #   wipac-rest-tools
 types-cryptography==3.3.23.2
     # via pyjwt
-types-toml==0.10.8.5
+types-pyyaml==6.0.12.9
     # via responses
 typing-extensions==4.5.0
     # via
@@ -195,18 +191,18 @@ typing-extensions==4.5.0
     #   wipac-dev-tools
 unidecode==1.3.6
     # via iceprod (setup.py)
-urllib3==1.26.14
+urllib3==1.26.15
     # via
     #   botocore
     #   requests
     #   responses
 werkzeug==2.2.3
     # via moto
-wipac-dev-tools==1.6.12
+wipac-dev-tools==1.6.15
     # via
     #   iceprod (setup.py)
     #   wipac-rest-tools
-wipac-rest-tools==1.4.14
+wipac-rest-tools==1.4.18
     # via iceprod (setup.py)
 xmltodict==0.13.0
     # via moto

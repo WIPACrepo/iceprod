@@ -8,7 +8,7 @@ DEFAULT_OPTIONS = {
     'svn_repository': 'http://code.icecube.wisc.edu/svn/',
     'site_temp': 'gsiftp://gridftp-scratch.icecube.wisc.edu/local/simprod/',
     'dataset_temp': '$(site_temp)/$(dataset)',
-    'job_temp': '$(site_temp)/$(job)',
+    'job_temp': '$(site_temp)/$(dataset)/$(job)',
 }
 
 

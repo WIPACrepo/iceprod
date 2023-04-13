@@ -3,6 +3,7 @@ import binascii
 import logging
 import re
 import secrets
+from unittest.mock import MagicMock, AsyncMock
 
 import httpx
 import pytest
@@ -40,6 +41,7 @@ async def server(monkeypatch, port, requests_mock):
         },
         'rest_api': {
             'url': 'http://iceprod.test',
+            'cred_url': 'http://iceprod.test',
             'auth_key': 'bar'
         },
     }
@@ -48,6 +50,8 @@ async def server(monkeypatch, port, requests_mock):
 
     s = website.website(cfg, executor, modules)
     s.rest_client = RestClient('http://iceprod.test', 'bar')
+    s.cred_client = MagicMock()
+    s.cred_client.request = AsyncMock()
     s.start()
 
     auth = Auth('secret')
@@ -72,15 +76,17 @@ async def server(monkeypatch, port, requests_mock):
     class Request:
         def __init__(self, token_data, token, timeout=None):
             self.timeout = timeout
-            requests_mock.get('http://iceprod.test/users/username/credentials', status_code=200, json={
+            ret = {
                 address: {
                     'url': address,
                     'type': 'oauth',
                     'access_token': token,
                 }
-            })
+            }
+            requests_mock.get('http://iceprod.test/users/username/credentials', status_code=200, json=ret)
+            s.cred_client.request.return_value = ret
             requests_mock.get('http://iceprod.test/groups/simprod/credentials', status_code=200, json={})
-            
+
             self.token_cookie = create_signed_value(cookie_secret, 'iceprod_username', token_data['preferred_username'])
             logging.debug('Request cookie_secret: %r', cfg['webserver']['cookie_secret'].encode())
 
@@ -130,8 +136,9 @@ async def test_website_config(server, requests_mock):
 async def test_website_profile(server, requests_mock):
     client = server(username='username', roles=['user'], groups=['users', 'simprod'])
 
+    requests_mock.register_uri('GET', re.compile('localhost'), real_http=True)
     ret = await client.request('GET', '/profile')
-    
+
 
 
 

@@ -111,7 +111,7 @@ class queue(module.module):
             # try instantiating the plugin
             args = (self.cfg['site_id']+'.'+p_name, p_cfg, self.cfg,
                     self.modules, self.executor, self.statsd,
-                    self.rest_client)
+                    self.rest_client, self.cred_client)
             try:
                 self.plugins.append(iceprod.server.run_module(p,*args))
             except Exception:
