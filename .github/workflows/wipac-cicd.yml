@@ -45,7 +45,8 @@ jobs:
     strategy:
       max-parallel: 4
       fail-fast: false
-      matrix: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
+      matrix:
+        version: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
