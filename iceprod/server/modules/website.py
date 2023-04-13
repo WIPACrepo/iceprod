@@ -119,6 +119,8 @@ class website(module.module):
 
                 if 'cred_url' not in self.cfg['rest_api']:
                     raise Exception('must set cred_url in cfg[rest_api]')
+                if not self.cred_client:
+                    raise Exception('credentials rest client not set up!')
 
             handler_args = RestHandlerSetup(rest_cfg)
             handler_args['cred_rest_client'] = self.cred_client

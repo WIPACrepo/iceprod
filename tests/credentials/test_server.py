@@ -2,7 +2,6 @@ import logging
 import time
 from unittest.mock import AsyncMock
 
-import motor.motor_asyncio
 import pytest
 import pytest_asyncio
 from rest_tools.client import RestClient
