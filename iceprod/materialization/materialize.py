@@ -261,8 +261,6 @@ if __name__ == '__main__':
     parser.add_argument('--debug',action='store_true')
     parser.add_argument('--dryrun',action='store_true',help='do not modify database, just log changes')
     args = parser.parse_args()
-    if not args.rest_token:
-        raise Exception('no token for rest api')
     logging.basicConfig(level=(logging.DEBUG if args.debug else logging.INFO))
 
     rest_client = create_rest_client(args)

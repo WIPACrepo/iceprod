@@ -514,11 +514,11 @@ class BaseGrid(object):
 
             file_creds = {}
             for url in cred_keys:
-                f = os.path.join(self.credentials_dir, hashlib.sha1(oauth_creds[url]['access_token'].encode('utf-8')).hexdigest())
-                if not os.path.exists(f):
-                    with open(f, 'w') as f:
+                path = os.path.join(self.credentials_dir, hashlib.sha1(oauth_creds[url]['access_token'].encode('utf-8')).hexdigest())
+                if not os.path.exists(path):
+                    with open(path, 'w') as f:
                         f.write(oauth_creds[url]['access_token'])
-                file_creds[url] = f
+                file_creds[url] = path
             job_cfg['options']['credentials'] = file_creds
 
     async def setup_submit_directory(self,task):
