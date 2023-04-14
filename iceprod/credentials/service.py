@@ -87,7 +87,7 @@ class RefreshService:
         new_cred = {}
         try:
             async with httpx.AsyncClient() as client:
-                r = await client.post(auth.token_url, json=args)
+                r = await client.post(auth.token_url, data=args)
             r.raise_for_status()
             req = r.json()
         except httpx.HTTPError as exc:
