@@ -694,9 +694,9 @@ class Profile(PublicHandler):
         group_creds = {}
         for g in groups:
             if g != 'users':
-                ret = await self.rest_client.request('GET', f'/groups/{g}/credentials')
+                ret = await self.cred_rest_client.request('GET', f'/groups/{g}/credentials')
                 group_creds[g] = ret
-        user_creds = await self.rest_client.request('GET', f'/users/{username}/credentials')
+        user_creds = await self.cred_rest_client.request('GET', f'/users/{username}/credentials')
         self.render('profile.html', username=username, groups=groups,
                     group_creds=group_creds, user_creds=user_creds)
 
@@ -713,7 +713,7 @@ class Profile(PublicHandler):
             if self.auth_refresh_token:
                 args['refresh_token'] = self.auth_refresh_token
                 args['expiration'] = (datetime.utcnow() + timedelta(days=30)).isoformat()
-            await self.rest_client.request('POST', f'/users/{username}/credentials', args)
+            await self.cred_rest_client.request('POST', f'/users/{username}/credentials', args)
 
         else:
             type_ = self.get_argument('type')
@@ -736,12 +736,12 @@ class Profile(PublicHandler):
                 raise tornado.web.HTTPError(400, reason='bad cred type')
 
             if self.get_argument('add_user_cred', ''):
-                await self.rest_client.request('POST', f'/users/{username}/credentials', args)
+                await self.cred_rest_client.request('POST', f'/users/{username}/credentials', args)
             elif self.get_argument('add_group_cred', ''):
                 groupname = self.get_argument('group')
                 if groupname not in self.auth_groups or groupname == 'users':
                     raise tornado.web.HTTPError(400, reason='bad group name')
-                await self.rest_client.request('POST', f'/groups/{groupname}/credentials', args)
+                await self.cred_rest_client.request('POST', f'/groups/{groupname}/credentials', args)
 
         # now show the profile page
         await self.get()
