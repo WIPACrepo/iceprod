@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v2.6.10 (2023-04-14)
+### Other
+* Fix credentials refresh post body ([#337](https://github.com/WIPACrepo/iceprod/issues/337)) ([`9a4f203`](https://github.com/WIPACrepo/iceprod/commit/9a4f203627e034142d441aa2b1bdac9ae5d84c53))
+
 ## v2.6.9 (2023-04-13)
 ### Other
 * Py-versions syntax has changed ([#336](https://github.com/WIPACrepo/iceprod/issues/336)) ([`d9bed42`](https://github.com/WIPACrepo/iceprod/commit/d9bed42649ce6efa1bffb7dcf0a8f89fa657d71f))
