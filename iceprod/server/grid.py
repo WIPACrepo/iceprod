@@ -46,6 +46,9 @@ def get_host():
 get_host.history = None  # noqa: E305
 
 
+CRED_SUBMIT_DIR = 'iceprod_credentials'
+
+
 class BaseGrid(object):
     """
     Interface for a generic job distribution system.
@@ -514,11 +517,12 @@ class BaseGrid(object):
 
             file_creds = {}
             for url in cred_keys:
-                path = os.path.join(self.credentials_dir, hashlib.sha1(oauth_creds[url]['access_token'].encode('utf-8')).hexdigest())
+                cred_name = hashlib.sha1(oauth_creds[url]['access_token'].encode('utf-8')).hexdigest()
+                path = os.path.join(self.credentials_dir, cred_name)
                 if not os.path.exists(path):
                     with open(path, 'w') as f:
                         f.write(oauth_creds[url]['access_token'])
-                file_creds[url] = path
+                file_creds[url] = os.path.join(CRED_SUBMIT_DIR, cred_name)
             job_cfg['options']['credentials'] = file_creds
 
     async def setup_submit_directory(self,task):
@@ -607,7 +611,7 @@ class BaseGrid(object):
 
         config = self.create_config(task)
         if creds := config['options'].get('credentials', {}):
-            cred_dir = os.path.join(task['submit_dir'], 'credentials')
+            cred_dir = os.path.join(task['submit_dir'], CRED_SUBMIT_DIR)
             os.mkdir(cred_dir)
             for src in creds.values():
                 dest = os.path.join(cred_dir, os.path.basename(src))
