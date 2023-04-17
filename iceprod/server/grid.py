@@ -607,12 +607,12 @@ class BaseGrid(object):
 
         config = self.create_config(task)
         if creds := config['options'].get('credentials', {}):
-            cred_dir = os.path.join(task['submit_dir'], 'iceprod_credentials')
+            cred_dir = os.path.join(task['submit_dir'], 'credentials')
             os.mkdir(cred_dir)
             for src in creds.values():
                 dest = os.path.join(cred_dir, os.path.basename(src))
                 os.symlink(src, dest)
-            filelist.append('iceprod_credentials')
+            filelist.append(cred_dir)
         if 'system' in self.cfg and 'remote_cacert' in self.cfg['system']:
             config['options']['ssl'] = {}
             config['options']['ssl']['cacert'] = os.path.basename(self.cfg['system']['remote_cacert'])
