@@ -12,9 +12,9 @@ asyncache==0.3.1
     # via iceprod (setup.py)
 babel==2.12.1
     # via sphinx
-boto3==1.26.114
+boto3==1.26.115
     # via iceprod (setup.py)
-botocore==1.29.114
+botocore==1.29.115
     # via
     #   boto3
     #   s3transfer
@@ -69,7 +69,7 @@ motor==3.1.2
     # via iceprod (setup.py)
 packaging==23.1
     # via sphinx
-psutil==5.9.4
+psutil==5.9.5
     # via iceprod (setup.py)
 pyasn1==0.4.8
     # via ldap3
