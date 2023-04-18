@@ -75,7 +75,7 @@ pyasn1==0.4.8
     # via ldap3
 pycparser==2.21
     # via cffi
-pygments==2.15.0
+pygments==2.15.1
     # via sphinx
 pyjwt[crypto]==2.5.0
     # via wipac-rest-tools
