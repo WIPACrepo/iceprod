@@ -33,8 +33,8 @@
                   <li{% if section == 'profile' %} class="current"{% end %}><a href="/profile">Profile</a></li>
                 {% end %}
                 <li>
-                    {% if (not current_user) %} <a href='/login'>Login </a>
-                    {% else %} <a href='/logout'>Logout </a> 
+                    {% if (not current_user) %} <a href='/login?next={{ url_escape(request.uri) }}'>Login</a>
+                    {% else %} <a href='/logout'>Logout</a>
                     {% end %}
                 </li>
                 </ul>
