@@ -403,24 +403,33 @@ async def upload(local, url, checksum=True, options={}):
 
         def _d():
             with _http_helper(options) as s:
-                with open(local, 'rb') as f:
-                    m = MultipartEncoder(
-                        fields={'field0': ('filename', f, 'text/plain')}
-                    )
-                    r = s.post(url, timeout=300, data=m,
-                               headers={'Content-Type': m.content_type})
+                try:
+                    with open(local, 'rb') as f:
+                        r = s.put(url, timeout=300, data=f)
                     r.raise_for_status()
-                    if checksum:  # get checksum
-                        r = s.get(url, stream=True, timeout=300)
-                        try:
-                            with open(local+'.tmp', 'wb') as f:
-                                for chunk in r.iter_content(65536):
-                                    f.write(chunk)
+                except requests.exceptions.HTTPError as e:
+                    if e.response.status_code != 405:
+                        raise
+                    else:
+                        logging.warning('WebDav PUT not allowed, trying multipart upload')
+                        with open(local, 'rb') as f:
+                            m = MultipartEncoder(
+                                fields={'field0': ('filename', f, 'text/plain')}
+                            )
+                            r = s.post(url, timeout=300, data=m,
+                                       headers={'Content-Type': m.content_type})
                             r.raise_for_status()
-                            if sha512sum(local+'.tmp') != chksum:
-                                raise Exception('http checksum error')
-                        finally:
-                            removedirs(local+'.tmp')
+                if checksum:  # get checksum
+                    r = s.get(url, stream=True, timeout=300)
+                    try:
+                        with open(local+'.tmp', 'wb') as f:
+                            for chunk in r.iter_content(65536):
+                                f.write(chunk)
+                        r.raise_for_status()
+                        if sha512sum(local+'.tmp') != chksum:
+                            raise Exception('http checksum error')
+                    finally:
+                        removedirs(local+'.tmp')
         await asyncio.get_event_loop().run_in_executor(None, _d)
     elif url.startswith('file:'):
         # use copy command

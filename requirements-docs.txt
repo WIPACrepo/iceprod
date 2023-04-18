@@ -12,9 +12,9 @@ asyncache==0.3.1
     # via iceprod (setup.py)
 babel==2.12.1
     # via sphinx
-boto3==1.26.113
+boto3==1.26.115
     # via iceprod (setup.py)
-botocore==1.29.113
+botocore==1.29.115
     # via
     #   boto3
     #   s3transfer
@@ -69,13 +69,13 @@ motor==3.1.2
     # via iceprod (setup.py)
 packaging==23.1
     # via sphinx
-psutil==5.9.4
+psutil==5.9.5
     # via iceprod (setup.py)
 pyasn1==0.4.8
     # via ldap3
 pycparser==2.21
     # via cffi
-pygments==2.15.0
+pygments==2.15.1
     # via sphinx
 pyjwt[crypto]==2.5.0
     # via wipac-rest-tools
@@ -138,7 +138,7 @@ sphinxcontrib-serializinghtml==1.1.5
     # via sphinx
 statsd==4.0.1
     # via iceprod (setup.py)
-tornado==6.2
+tornado==6.3
     # via
     #   iceprod (setup.py)
     #   wipac-rest-tools

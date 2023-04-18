@@ -46,6 +46,9 @@ def get_host():
 get_host.history = None  # noqa: E305
 
 
+CRED_SUBMIT_DIR = 'iceprod_credentials'
+
+
 class BaseGrid(object):
     """
     Interface for a generic job distribution system.
@@ -514,11 +517,12 @@ class BaseGrid(object):
 
             file_creds = {}
             for url in cred_keys:
-                f = os.path.join(self.credentials_dir, hashlib.sha1(oauth_creds[url]['access_token'].encode('utf-8')).hexdigest())
-                if not os.path.exists(f):
-                    with open(f, 'w') as f:
+                cred_name = hashlib.sha1(oauth_creds[url]['access_token'].encode('utf-8')).hexdigest()
+                path = os.path.join(self.credentials_dir, cred_name)
+                if not os.path.exists(path):
+                    with open(path, 'w') as f:
                         f.write(oauth_creds[url]['access_token'])
-                file_creds[url] = f
+                file_creds[url] = cred_name
             job_cfg['options']['credentials'] = file_creds
 
     async def setup_submit_directory(self,task):
@@ -607,12 +611,13 @@ class BaseGrid(object):
 
         config = self.create_config(task)
         if creds := config['options'].get('credentials', {}):
-            cred_dir = os.path.join(task['submit_dir'], 'iceprod_credentials')
+            cred_dir = os.path.join(task['submit_dir'], CRED_SUBMIT_DIR)
             os.mkdir(cred_dir)
-            for src in creds.values():
-                dest = os.path.join(cred_dir, os.path.basename(src))
+            for name in creds.values():
+                src = os.path.join(self.credentials_dir, name)
+                dest = os.path.join(cred_dir, name)
                 os.symlink(src, dest)
-            filelist.append('iceprod_credentials')
+            filelist.append(cred_dir)
         if 'system' in self.cfg and 'remote_cacert' in self.cfg['system']:
             config['options']['ssl'] = {}
             config['options']['ssl']['cacert'] = os.path.basename(self.cfg['system']['remote_cacert'])
