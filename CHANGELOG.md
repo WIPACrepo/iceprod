@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v2.6.11 (2023-04-18)
+### Other
+* More credentials fixes ([#338](https://github.com/WIPACrepo/iceprod/issues/338)) ([`95f1a3c`](https://github.com/WIPACrepo/iceprod/commit/95f1a3c95f2939bfe3251e2aa58465c2f017b77c))
+
 ## v2.6.10 (2023-04-14)
 ### Other
 * Fix credentials refresh post body ([#337](https://github.com/WIPACrepo/iceprod/issues/337)) ([`9a4f203`](https://github.com/WIPACrepo/iceprod/commit/9a4f203627e034142d441aa2b1bdac9ae5d84c53))
