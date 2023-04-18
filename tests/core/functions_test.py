@@ -819,6 +819,35 @@ class functions_test(AsyncTestCase):
 
     @requests_mock.mock()
     @unittest_reporter(name='upload() http')
+    async def test_402_upload(self, http_mock):
+        """Test the upload function"""
+        download_options = {'username': 'user',
+                            'password': 'pass',}
+        data = b'the data'
+
+        # upload file to http
+        http_mock.put('/globus.tar.gz', content=b'')
+        http_mock.get('/globus.tar.gz', content=data)
+        filename = os.path.join(self.test_dir, 'globus.tar.gz')
+        with open(filename, 'wb') as f:
+            f.write(data)
+        await iceprod.core.functions.upload(filename,
+                'http://prod-exe.icecube.wisc.edu/globus.tar.gz',
+                options=download_options)
+        self.assertTrue(http_mock.called)
+        req = http_mock.request_history[0]
+        self.assertEqual(req.method, 'PUT', msg='not a PUT request')
+        self.assertEqual(os.path.basename(req.url), 'globus.tar.gz', msg='bad upload url')
+
+        # test bad upload
+        http_mock.get('/globus.tar.gz', content=b'blah')
+        with self.assertRaises(Exception):
+            await iceprod.core.functions.upload(filename,
+                    'http://prod-exe.icecube.wisc.edu/globus.tar.gz',
+                    options=download_options)
+
+    @requests_mock.mock()
+    @unittest_reporter(name='upload() http')
     async def test_403_upload(self, http_mock):
         """Test the upload function"""
         download_options = {'username': 'user',
@@ -826,6 +855,7 @@ class functions_test(AsyncTestCase):
         data = b'the data'
 
         # upload file to http
+        http_mock.put('/globus.tar.gz', content=b'', status_code=405)
         http_mock.post('/globus.tar.gz', content=b'')
         http_mock.get('/globus.tar.gz', content=data)
         filename = os.path.join(self.test_dir, 'globus.tar.gz')
@@ -836,7 +866,10 @@ class functions_test(AsyncTestCase):
                 options=download_options)
         self.assertTrue(http_mock.called)
         req = http_mock.request_history[0]
-        self.assertEqual(req.method, 'POST', msg='not a POST request')
+        self.assertEqual(req.method, 'PUT', msg='not a PUT request first')
+        self.assertEqual(os.path.basename(req.url), 'globus.tar.gz', msg='bad upload url')
+        req = http_mock.request_history[1]
+        self.assertEqual(req.method, 'POST', msg='not a POST request second')
         self.assertEqual(os.path.basename(req.url), 'globus.tar.gz', msg='bad upload url')
 
         # test bad upload
