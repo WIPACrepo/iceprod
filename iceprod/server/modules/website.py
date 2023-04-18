@@ -410,6 +410,8 @@ class Default(PublicHandler):
     """Handle / urls"""
     @catch_error
     async def get(self):
+        # try to get the user, if available
+        await self.get_current_user_async()
         self.statsd.incr('default')
         self.render('main.html')
 
@@ -642,6 +644,8 @@ class Job(PublicHandler):
 class Documentation(PublicHandler):
     @catch_error
     async def get(self, url):
+        # try to get the user, if available
+        await self.get_current_user_async()
         self.statsd.incr('documentation')
         doc_path = get_pkgdata_filename('iceprod.server','data/docs')
         full_path = os.path.join(doc_path, url)
@@ -670,6 +674,8 @@ class Help(PublicHandler):
     """Help Page"""
     @catch_error
     async def get(self):
+        # try to get the user, if available
+        await self.get_current_user_async()
         self.statsd.incr('help')
         self.render('help.html')
 
@@ -678,6 +684,8 @@ class Other(PublicHandler):
     """Handle any other urls - this is basically all 404"""
     @catch_error
     async def get(self):
+        # try to get the user, if available
+        await self.get_current_user_async()
         self.statsd.incr('other')
         path = self.request.path
         self.set_status(404)
@@ -753,4 +761,5 @@ class Logout(PublicHandler):
         self.statsd.incr('logout')
         self.clear_tokens()
         self.current_user = None
+        self.request.uri = '/'  # for login redirect, fake the main page
         self.render('logout.html', status=None)
