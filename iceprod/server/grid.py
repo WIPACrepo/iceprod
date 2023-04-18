@@ -615,7 +615,7 @@ class BaseGrid(object):
             os.mkdir(cred_dir)
             for dest in creds.values():
                 src = os.path.join(self.credentials_dir, os.path.basename(dest))
-                os.symlink(src, dest)
+                os.symlink(src, os.path.join(task['submit_dir'], dest))
             filelist.append(cred_dir)
         if 'system' in self.cfg and 'remote_cacert' in self.cfg['system']:
             config['options']['ssl'] = {}
