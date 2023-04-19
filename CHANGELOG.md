@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v2.6.12 (2023-04-19)
+### Other
+* Eliminate getip.php ([#339](https://github.com/WIPACrepo/iceprod/issues/339)) ([`6ed93a6`](https://github.com/WIPACrepo/iceprod/commit/6ed93a6aa74455b61f16dc2d6041e67a9fa4e4d5))
+
 ## v2.6.11 (2023-04-18)
 ### Other
 * More credentials fixes ([#338](https://github.com/WIPACrepo/iceprod/issues/338)) ([`95f1a3c`](https://github.com/WIPACrepo/iceprod/commit/95f1a3c95f2939bfe3251e2aa58465c2f017b77c))
