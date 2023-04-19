@@ -672,29 +672,25 @@ class functions_test(AsyncTestCase):
             logging.info('%s',e)
 
     @patch('socket.getfqdn')
-    @requests_mock.mock()
+    @patch('socket.gethostname')
     @unittest_reporter
-    def test_301_gethostname(self, fqdn, http_mock):
+    def test_301_gethostname(self, fqdn, hostname):
         fqdn.return_value = 'myhost'
-        http_mock.get('/downloads/getip.php', text='123 myhost')
+        hostname.return_value = 'myhost'
         host = iceprod.core.functions.gethostname()
         self.assertEqual(host, 'myhost')
-        self.assertEqual(http_mock.call_count, 1)
 
-        http_mock.get('/downloads/getip.php', text='123 dyn.test.com')
+        hostname.return_value = 'myhost.test.com'
         host = iceprod.core.functions.gethostname()
         self.assertEqual(host, 'myhost.test.com')
-        self.assertEqual(http_mock.call_count, 2)
 
         fqdn.return_value = 'myhost.foo.bar'
         host = iceprod.core.functions.gethostname()
         self.assertEqual(host, 'myhost.test.com')
-        self.assertEqual(http_mock.call_count, 3)
 
         fqdn.return_value = 'myhost.foo.bar.baz'
         host = iceprod.core.functions.gethostname()
-        self.assertEqual(host, 'myhost.test.com')
-        self.assertEqual(http_mock.call_count, 4)
+        self.assertEqual(host, 'myhost.foo.bar.baz')
 
     @unittest_reporter
     def test_302_isurl(self):
