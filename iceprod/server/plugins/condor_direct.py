@@ -235,6 +235,12 @@ class condor_direct(grid.BaseGrid):
                             if val:
                                 resources[resource_type] = val
                             break
+                    elif 'Transfer output files failure' in line:
+                        reason = 'Failed to transfer output files'
+                        break
+                    elif 'Transfer input files failure' in line:
+                        reason = 'Failed to transfer input files'
+                        break
         return reason
 
     async def task_error(self, task_id, dataset_id, submit_dir, reason='',
