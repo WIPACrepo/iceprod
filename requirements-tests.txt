@@ -134,7 +134,7 @@ pyyaml==6.0
     #   responses
 qrcode==7.4.2
     # via wipac-rest-tools
-requests==2.28.2
+requests==2.31.0
     # via
     #   iceprod (setup.py)
     #   moto
