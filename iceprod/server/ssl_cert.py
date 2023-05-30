@@ -76,7 +76,7 @@ def create_ca(cert_filename,key_filename,days=365,hostname=None):
                                  b"keyCertSign, cRLSign"),
             crypto.X509Extension(b"subjectKeyIdentifier", False, hash,
                                  subject=cert),
-            crypto.X509Extension(b"subjectAltName", False, b'DNS:'+hostname)
+            crypto.X509Extension(b"subjectAltName", False, b'DNS:'+hostname.encode('utf-8'))
         ])
         cert.sign(k, 'sha512')
 
@@ -129,7 +129,7 @@ def create_cert(cert_filename,key_filename,days=365,hostname=None,
             cert.set_pubkey(k)
 
             # add extensions
-            exts = [crypto.X509Extension(b'subjectAltName', False, b'DNS:'+hostname)]
+            exts = [crypto.X509Extension(b'subjectAltName', False, b'DNS:'+hostname.encode('utf-8'))]
             if allow_resign:
                 exts.extend([
                     crypto.X509Extension("basicConstraints", True,
@@ -170,7 +170,7 @@ def create_cert(cert_filename,key_filename,days=365,hostname=None,
             cert2.set_pubkey(cert.get_pubkey())
 
             # add extensions
-            exts = [crypto.X509Extension(b"subjectAltName", False, b'DNS:'+hostname)]
+            exts = [crypto.X509Extension(b"subjectAltName", False, b'DNS:'+hostname.encode('utf-8'))]
             if allow_resign:
                 exts.extend([
                     crypto.X509Extension(b"basicConstraints", True,
