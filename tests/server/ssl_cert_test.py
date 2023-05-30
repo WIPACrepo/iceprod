@@ -35,7 +35,7 @@ class ssl_cert_test(unittest.TestCase):
         ssl_key = os.path.join(self.test_dir,'ca.key')
 
         # make cert
-        iceprod.server.ssl_cert.create_ca(ssl_cert,ssl_key)
+        iceprod.server.ssl_cert.create_ca(ssl_cert, ssl_key, hostname='test-ca.iceprod.local')
 
         # verify cert
         if iceprod.server.ssl_cert.verify_cert(ssl_cert,ssl_key) is False:
@@ -48,7 +48,7 @@ class ssl_cert_test(unittest.TestCase):
         ssl_key = os.path.join(self.test_dir,'self.key')
 
         # make cert
-        iceprod.server.ssl_cert.create_cert(ssl_cert,ssl_key)
+        iceprod.server.ssl_cert.create_cert(ssl_cert, ssl_key, hostname='test.iceprod.local')
 
         # verify cert
         if iceprod.server.ssl_cert.verify_cert(ssl_cert,ssl_key) is False:
@@ -63,11 +63,12 @@ class ssl_cert_test(unittest.TestCase):
         ca_key = os.path.join(self.test_dir,'ca.key')
 
         # make ca
-        iceprod.server.ssl_cert.create_ca(ca_cert,ca_key)
+        iceprod.server.ssl_cert.create_ca(ca_cert, ca_key, hostname='test-ca.iceprod.local')
 
         # make cert
-        iceprod.server.ssl_cert.create_cert(ssl_cert,ssl_key,
-                                            cacert=ca_cert,cakey=ca_key)
+        iceprod.server.ssl_cert.create_cert(ssl_cert, ssl_key,
+                                            cacert=ca_cert, cakey=ca_key,
+                                            hostname='test.iceprod.local')
 
         # verify cert
         if iceprod.server.ssl_cert.verify_cert(ssl_cert,ssl_key) is False:
@@ -80,7 +81,7 @@ class ssl_cert_test(unittest.TestCase):
         ssl_key = os.path.join(self.test_dir,'self.key')
 
         # make cert
-        iceprod.server.ssl_cert.create_cert(ssl_cert,ssl_key,days=-1)
+        iceprod.server.ssl_cert.create_cert(ssl_cert, ssl_key, days=-1, hostname='test.iceprod.local')
 
         # verify cert
         if iceprod.server.ssl_cert.verify_cert(ssl_cert,ssl_key) is True:
