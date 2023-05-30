@@ -37,7 +37,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - id: versions
-        uses: WIPACrepo/wipac-dev-py-versions-action@v2.0
+        uses: WIPACrepo/wipac-dev-py-versions-action@v2.1
 
   pip-install:
     needs: [py-versions]
