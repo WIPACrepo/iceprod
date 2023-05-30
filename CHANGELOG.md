@@ -2,6 +2,11 @@
 
 <!--next-version-placeholder-->
 
+## v2.6.13 (2023-05-30)
+### Other
+
+* Bump py-versions CI release v2.1 ([#343](https://github.com/WIPACrepo/iceprod/issues/343)) ([`05e98b5`](https://github.com/WIPACrepo/iceprod/commit/05e98b50f04049f981c8760ab54ccf786aa1ff84))
+
 ## v2.6.12 (2023-04-19)
 ### Other
 * Eliminate getip.php ([#339](https://github.com/WIPACrepo/iceprod/issues/339)) ([`6ed93a6`](https://github.com/WIPACrepo/iceprod/commit/6ed93a6aa74455b61f16dc2d6041e67a9fa4e4d5))
