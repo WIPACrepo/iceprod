@@ -2,6 +2,14 @@
 
 <!--next-version-placeholder-->
 
+## v2.6.15 (2023-06-09)
+
+### Other
+
+* Only 404 if we don't match any tasks ([#349](https://github.com/WIPACrepo/iceprod/issues/349)) ([`d4700bd`](https://github.com/WIPACrepo/iceprod/commit/d4700bdfc6134a2771f12962524a25272cddc2e8))
+* For names, allow all possible characters ([#348](https://github.com/WIPACrepo/iceprod/issues/348)) ([`9d84049`](https://github.com/WIPACrepo/iceprod/commit/9d84049c1174516332bb31634b0a0fd9164e0722))
+* Make setting requirements in the config work, even when there are no matching tasks ([#347](https://github.com/WIPACrepo/iceprod/issues/347)) ([`91a2c81`](https://github.com/WIPACrepo/iceprod/commit/91a2c815c0e52d139f69fd41c8b96bba879f2377))
+
 ## v2.6.14 (2023-06-09)
 
 ### Other
