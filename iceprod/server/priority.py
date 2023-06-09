@@ -170,19 +170,19 @@ class Priority:
         elif max_dataset_prio_group > 0:
             priority -= (1. - dataset_prio / max_dataset_prio_group) / 4.
             logger.info(f'{dataset_id} after dataset group adjustment: {priority}')
-        priority *= user_prio
+        priority *= user_prio**.5
         logger.info(f'{dataset_id} after user adjustment: {priority}')
         priority *= group_prio
         logger.info(f'{dataset_id} after group adjustment: {priority}')
 
         # bias against large datasets
-        factor = (10000. / num_dataset_tasks)**.15 if num_dataset_tasks > 0 else 1.
+        factor = (10000. / num_dataset_tasks)**.1 if num_dataset_tasks > 0 else 1.
         if factor > 1:
             factor = 1.
         priority *= factor
         logger.info(f'{dataset_id} after large dataset adjustment: {priority}')
 
-        priority -= (1. * num_dataset_tasks_avail / num_all_tasks) / 5.
+        priority -= (1. * num_dataset_tasks_avail / num_all_tasks) / 4.
         logger.info(f'{dataset_id} after avail tasks adjustment: {priority}')
 
         if priority < 0.:
