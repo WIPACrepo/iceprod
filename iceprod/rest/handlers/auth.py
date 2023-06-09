@@ -27,7 +27,7 @@ def setup(handler_cfg):
             ('/groups', MultiGroupHandler, handler_cfg),
             ('/users', MultiUserHandler, handler_cfg),
             (r'/users/(?P<username>[^\/\?\#]+)', UserHandler, handler_cfg),
-            (r'/users/(?P<username>\[^\/\?\#]+)/priority', UserPriorityHandler, handler_cfg),
+            (r'/users/(?P<username>[^\/\?\#]+)/priority', UserPriorityHandler, handler_cfg),
             ('/auths', AuthHandler, handler_cfg),
         ],
         'database': 'auth',
