@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v2.6.14 (2023-06-09)
+
+### Other
+
+* Priority adjustments ([#346](https://github.com/WIPACrepo/iceprod/issues/346)) ([`018a142`](https://github.com/WIPACrepo/iceprod/commit/018a1428086857baedfda92ced4198b989a3522d))
+
 ## v2.6.13 (2023-05-30)
 ### Other
 
