@@ -44,7 +44,7 @@ def setup(handler_cfg):
             (r'/datasets/(?P<dataset_id>\w+)/task_counts/status', DatasetTaskCountsStatusHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/task_counts/name_status', DatasetTaskCountsNameStatusHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/task_actions/bulk_status/(?P<status>\w+)', DatasetTaskBulkStatusHandler, handler_cfg),
-            (r'/datasets/(?P<dataset_id>\w+)/task_actions/bulk_requirements/(?P<name>\w+)', DatasetTaskBulkRequirementsHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/task_actions/bulk_requirements/(?P<name>[^\/\?\#]+)', DatasetTaskBulkRequirementsHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/task_stats', DatasetTaskStatsHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/files', DatasetMultiFilesHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/files/(?P<task_id>\w+)', DatasetTaskFilesHandler, handler_cfg),
@@ -934,7 +934,7 @@ class DatasetTaskBulkRequirementsHandler(APIBase):
             'name': name,
         }
         ret = await self.db.tasks.update_many(query, {'$max':reqs})
-        if (not ret) or (ret.matchedCount > 1 and ret.modified_count < 1):
+        if (not ret) or (ret.matched_count > 1 and ret.modified_count < 1):
             self.send_error(404, reason="Tasks not found")
         else:
             self.write({})
