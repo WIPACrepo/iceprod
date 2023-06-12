@@ -150,13 +150,16 @@ class BaseCredentialsHandler(APIBase):
         async for row in db.find(base_data, projection={'_id': False}):
             ret[row['url']] = row
 
-        for key in ret:
+        for key in list(ret):
             cred = ret[key]
             if refresh and is_expired(cred) and cred['refresh_token']:
-                new_cred = await self.refresh_service.refresh_cred(cred)
-                filters = base_data.copy()
-                filters['url'] = key
-                ret[key] = await db.find_one_and_update(filters, {'$set': new_cred}, projection={'_id': False})
+                try:
+                    new_cred = await self.refresh_service.refresh_cred(cred)
+                    filters = base_data.copy()
+                    filters['url'] = key
+                    ret[key] = await db.find_one_and_update(filters, {'$set': new_cred}, projection={'_id': False})
+                except Exception:
+                    del ret[key]
 
         return ret
 
