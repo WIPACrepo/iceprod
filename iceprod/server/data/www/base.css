@@ -299,17 +299,27 @@ table.browse th, table.browse td {
     font-size: 1.05em;
 }
 .dataset .browse .entry {
-    margin: .5em;
+    margin: 1em 0;
 }
 .dataset .browse .entry .header {
     background-color: #e5e5e2;
     padding: .2em;
+    margin-bottom: .2em;
     text-align: center;
     font-family: sans-serif;
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
     gap: .2em 2em;
+}
+.dataset .browse .entry .header > div {
+    min-width: 8em;
+}
+.dataset .browse .entry .header > div:first-child {
+    text-align: left;
+}
+.dataset .browse .entry .header > div:last-child {
+    text-align: right;
 }
 .dataset .browse .entry .status {
     text-transform: uppercase;
