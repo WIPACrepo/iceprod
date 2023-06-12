@@ -33,7 +33,7 @@
     <div class="entry">
         <div class="header">
             <div class="id"><a href="/dataset/{{ dataset['dataset_id'] }}">{{ dataset['dataset'] }}</a></div>
-            <div class="user-group">{{ dataset['username'] }} ({{ dataset['group'] }})</div>
+            <div class="user-group"><span class="username">{{ dataset['username'] }}</span> <span class="group">({{ dataset['group'] }})</span></div>
             <div class="status">{{ dataset['status'] }}</div>
         </div>
         <div class="description">{{ dataset['description'] }}</div>
