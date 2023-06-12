@@ -331,7 +331,7 @@ table.browse th, table.browse td {
 .dataset .browse .entry .user-group > span.group {
     text-align: left;
 }
-@media only screen and (max-width: 680px) {
+@media screen and (max-width: 900px) {
     .dataset .browse .entry .user-group {
         order: 10;
         width: 100%;
