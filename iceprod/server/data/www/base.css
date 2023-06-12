@@ -304,18 +304,15 @@ table.browse th, table.browse td {
 .dataset .browse .entry .header {
     background-color: #e5e5e2;
     padding: .2em;
-    text-align:center;
+    text-align: center;
     font-family: sans-serif;
-}
-.dataset .browse .entry .id {
-    float:left;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: .2em 2em;
 }
 .dataset .browse .entry .status {
-    float:right;
     text-transform: uppercase;
-}
-.dataset .browse .entry>span {
-    margin: .1em .5em;
 }
 .filters select {
     width: 9.5em;
