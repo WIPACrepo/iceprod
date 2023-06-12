@@ -331,6 +331,12 @@ table.browse th, table.browse td {
 .dataset .browse .entry .user-group > span.group {
     text-align: left;
 }
+@media only screen and (max-width: 680px) {
+    .dataset .browse .entry .user-group {
+        order: 10;
+        width: 100%;
+    }
+}
 .dataset .browse .entry .status {
     text-transform: uppercase;
 }
