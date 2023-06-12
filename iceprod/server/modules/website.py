@@ -444,7 +444,7 @@ class Submit(PublicHandler):
             'groups':groups,
             'description':'',
         }
-        self.render('submit.html',**render_args)
+        self.render('submit.html', **render_args)
 
 
 class Config(PublicHandler):
@@ -477,7 +477,7 @@ class DatasetBrowse(PublicHandler):
     """Handle /dataset urls"""
     @ttl_cache(maxsize=256, ttl=600)
     async def get_usernames(self):
-        ret = await self.rest_client.request('GET', '/users')
+        ret = await self.cred_rest_client.request('GET', '/users')
         return [x['username'] for x in ret['results']]
 
     @authenticated
