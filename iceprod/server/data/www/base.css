@@ -312,9 +312,9 @@ table.browse th, table.browse td {
     justify-content: space-between;
     gap: .2em 2em;
 }
-.dataset .browse .entry .header > div {
+/*.dataset .browse .entry .header > div {
     min-width: 8em;
-}
+}*/
 .dataset .browse .entry .header > div:first-child {
     text-align: left;
 }
