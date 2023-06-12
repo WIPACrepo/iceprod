@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v2.6.16 (2023-06-12)
+
+### Other
+
+* My datasets ([#350](https://github.com/WIPACrepo/iceprod/issues/350)) ([`b2a36d0`](https://github.com/WIPACrepo/iceprod/commit/b2a36d0a6d19d633df72f4b1e665b7ef33fdcd1e))
+
 ## v2.6.15 (2023-06-09)
 
 ### Other
