@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v2.6.17 (2023-06-12)
+
+### Other
+
+* Credentials - handle refresh failures more gracefully ([#351](https://github.com/WIPACrepo/iceprod/issues/351)) ([`fcbdfe6`](https://github.com/WIPACrepo/iceprod/commit/fcbdfe603b2d2dfb1fab435e41587a576b46af58))
+
 ## v2.6.16 (2023-06-12)
 
 ### Other
