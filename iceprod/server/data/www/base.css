@@ -299,23 +299,46 @@ table.browse th, table.browse td {
     font-size: 1.05em;
 }
 .dataset .browse .entry {
-    margin: .5em;
+    margin: 1em 0;
 }
 .dataset .browse .entry .header {
     background-color: #e5e5e2;
     padding: .2em;
-    text-align:center;
+    margin-bottom: .2em;
+    text-align: center;
     font-family: sans-serif;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: .2em 2em;
 }
-.dataset .browse .entry .id {
-    float:left;
+.dataset .browse .entry .header > div {
+    min-width: 8em;
+}
+.dataset .browse .entry .header > div:first-child {
+    text-align: left;
+}
+.dataset .browse .entry .header > div:last-child {
+    text-align: right;
+}
+.dataset .browse .entry .user-group > span {
+    min-width: 8em;
+    display: inline-block;
+}
+.dataset .browse .entry .user-group > span.username {
+    text-align: right;
+}
+.dataset .browse .entry .user-group > span.group {
+    text-align: left;
+}
+@media screen and (max-width: 900px) {
+    .dataset .browse .entry .user-group {
+        order: 10;
+        width: 100%;
+    }
 }
 .dataset .browse .entry .status {
-    float:right;
     text-transform: uppercase;
-}
-.dataset .browse .entry>span {
-    margin: .1em .5em;
 }
 .filters select {
     width: 9.5em;

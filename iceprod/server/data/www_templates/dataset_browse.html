@@ -32,11 +32,11 @@
     {% for dataset in datasets %}
     <div class="entry">
         <div class="header">
-            <span class="id"><a href="/dataset/{{ dataset['dataset_id'] }}">{{ dataset['dataset'] }}</a></span>
-            <span class="status">{{ dataset['status'] }}</span>
-            <div style="clear:right"></div>
+            <div class="id"><a href="/dataset/{{ dataset['dataset_id'] }}">{{ dataset['dataset'] }}</a></div>
+            <div class="user-group"><span class="username">{{ dataset['username'] }}</span> <span class="group">({{ dataset['group'] }})</span></div>
+            <div class="status">{{ dataset['status'] }}</div>
         </div>
-        <span class="description">{{ dataset['description'] }}</span>
+        <div class="description">{{ dataset['description'] }}</div>
     </div>
     {% end %}
 </div>

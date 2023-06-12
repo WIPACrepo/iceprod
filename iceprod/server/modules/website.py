@@ -21,6 +21,7 @@ from datetime import datetime, timedelta
 
 from iceprod.core.jsonUtil import json_encode
 
+from cachetools.func import ttl_cache
 import tornado.web
 import tornado.httpserver
 import tornado.gen
@@ -140,6 +141,7 @@ class website(module.module):
                 'modules': self.modules,
                 'statsd': self.statsd,
                 'rest_api': rest_address,
+                'system_rest_client': self.rest_client,
             })
             if 'debug' in self.cfg['webserver'] and self.cfg['webserver']['debug']:
                 handler_args['debug'] = True
@@ -343,7 +345,7 @@ class Login(TokenStorageMixin, OpenIDLoginHandler):
 
 class PublicHandler(TokenStorageMixin, RestHandler):
     """Default Handler"""
-    def initialize(self, cfg=None, modules=None, statsd=None, rest_api=None, cred_rest_client=None, full_url=None, **kwargs):
+    def initialize(self, cfg=None, modules=None, statsd=None, rest_api=None, cred_rest_client=None, system_rest_client=None, full_url=None, **kwargs):
         """
         Get some params from the website module
 
@@ -358,6 +360,7 @@ class PublicHandler(TokenStorageMixin, RestHandler):
         self.statsd = statsd
         self.rest_api = rest_api
         self.cred_rest_client = cred_rest_client
+        self.system_rest_client = system_rest_client
         self.rest_client = None
         self.full_url = full_url
 
@@ -443,7 +446,7 @@ class Submit(PublicHandler):
             'groups':groups,
             'description':'',
         }
-        self.render('submit.html',**render_args)
+        self.render('submit.html', **render_args)
 
 
 class Config(PublicHandler):
@@ -474,13 +477,23 @@ class Config(PublicHandler):
 
 class DatasetBrowse(PublicHandler):
     """Handle /dataset urls"""
+    @ttl_cache(maxsize=256, ttl=600)
+    async def get_usernames(self):
+        ret = await self.system_rest_client.request('GET', '/users')
+        return [x['username'] for x in ret['results']]
+
     @authenticated
     async def get(self):
         self.statsd.incr('dataset_browse')
-        filter_options = {'status':['processing','suspended','errors','complete','truncated']}
-        filter_results = {n:self.get_arguments(n) for n in filter_options}
+        usernames = await self.get_usernames()
+        filter_options = {
+            'status': ['processing', 'suspended', 'errors', 'complete', 'truncated'],
+            'groups': list(GROUPS.keys()),
+            'users': usernames,
+        }
+        filter_results = {n: self.get_arguments(n) for n in filter_options}
 
-        args = {'keys': 'dataset_id|dataset|status|description'}
+        args = {'keys': 'dataset_id|dataset|status|description|group|username'}
         for name in filter_results:
             val = filter_results[name]
             if not val:
@@ -495,9 +508,12 @@ class DatasetBrowse(PublicHandler):
         datasets = sorted(ret.values(), key=lambda x:x.get('dataset',0), reverse=True)
         logger.debug('datasets: %r', datasets)
         datasets = filter(lambda x: 'dataset' in x, datasets)
-        self.render('dataset_browse.html',datasets=datasets,
-                    filter_options=filter_options,
-                    filter_results=filter_results)
+        self.render(
+            'dataset_browse.html',
+            datasets=datasets,
+            filter_options=filter_options,
+            filter_results=filter_results,
+        )
 
 
 class Dataset(PublicHandler):
