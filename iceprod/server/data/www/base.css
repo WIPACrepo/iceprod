@@ -312,7 +312,7 @@ table.browse th, table.browse td {
     justify-content: space-between;
     gap: .2em 2em;
 }
-.dataset .browse .entry .user-group > span {
+.dataset .browse .entry .header > span {
     min-width: 8em;
 }
 .dataset .browse .entry .header > div:first-child {
@@ -320,6 +320,16 @@ table.browse th, table.browse td {
 }
 .dataset .browse .entry .header > div:last-child {
     text-align: right;
+}
+.dataset .browse .entry .user-group > span {
+    min-width: 8em;
+    display: inline-block;
+}
+.dataset .browse .entry .user-group > span.username {
+    text-align: right;
+}
+.dataset .browse .entry .user-group > span.group {
+    text-align: left;
 }
 .dataset .browse .entry .status {
     text-transform: uppercase;
