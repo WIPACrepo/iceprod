@@ -271,7 +271,7 @@ class condor_direct(grid.BaseGrid):
         return reason
 
     async def task_error(self, task_id, dataset_id, submit_dir, reason='',
-                         site=None, pilot_id=None, kill=False):
+                         site=None, pilot_id=None, kill=False, failed=False):
         """reset a task"""
         if submit_dir is None:
             submit_dir = ''
@@ -306,6 +306,8 @@ class condor_direct(grid.BaseGrid):
         if batch_job_id:
             resources.update(await self.get_grid_resources(batch_job_id))
 
+        if (not reason) and failed:
+            reason = 'payload failure'
         if not reason:
             # search for reason in logfile
             filename = os.path.join(submit_dir, constants['stdlog'])
@@ -346,7 +348,7 @@ class condor_direct(grid.BaseGrid):
                                   resources=resources, message=message, site=site)
         else:
             await comms.task_error(task_id, dataset_id=dataset_id, reason=reason,
-                                   resources=resources, site=site)
+                                   resources=resources, site=site, failed=failed)
 
     async def finish_task(self, task_id, dataset_id, submit_dir, site=None):
         """complete a task"""
