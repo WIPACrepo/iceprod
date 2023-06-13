@@ -966,7 +966,7 @@ class condor_direct(grid.BaseGrid):
         cmd = ['condor_q', job_id, '-af:,', 'CpusUsage', 'GPUsUsage', 'ResidentSetSize_RAW', 'DiskUsage_RAW', 'LastRemoteWallClockTime']
         out = await check_output_clean_env(*cmd)
         print('get_grid_status():',out)
-        cpu, gpu, memory, disk, time = for x in out.strip().split(',')
+        cpu, gpu, memory, disk, time = out.strip().split(',')
         if cpu != 'undefined':
             ret['cpu'] = float(cpu)
         if gpu != 'undefined':
