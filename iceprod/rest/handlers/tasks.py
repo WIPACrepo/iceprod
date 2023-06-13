@@ -36,6 +36,7 @@ def setup(handler_cfg):
             (r'/task_actions/process', TasksActionsProcessingHandler, handler_cfg),
             (r'/task_counts/status', TaskCountsStatusHandler, handler_cfg),
             (r'/tasks/(?P<task_id>\w+)/task_actions/reset', TasksActionsErrorHandler, handler_cfg),
+            (r'/tasks/(?P<task_id>\w+)/task_actions/failed', TasksActionsFailedHandler, handler_cfg),
             (r'/tasks/(?P<task_id>\w+)/task_actions/complete', TasksActionsCompleteHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/tasks', DatasetMultiTasksHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)', DatasetTasksHandler, handler_cfg),
@@ -654,6 +655,8 @@ class TasksActionsErrorHandler(APIBase):
     """
     Handle task action on error (* -> reset).
     """
+    final_status = 'reset'
+
     @authorization(roles=['admin', 'system'])
     async def post(self, task_id):
         """
@@ -674,7 +677,7 @@ class TasksActionsErrorHandler(APIBase):
         filter_query = {'task_id': task_id, 'status': {'$ne': 'complete'}}
         update_query = defaultdict(dict,{
             '$set': {
-                'status': 'reset',
+                'status': self.final_status,
                 'status_changed': nowstr(),
             },
             '$inc': {
@@ -732,7 +735,7 @@ class TasksActionsErrorHandler(APIBase):
                     if text in data['reason']:
                         reason = r
                         break
-                self.statsd.incr('site.{}.task_reset.{}'.format(site, reason))
+                self.statsd.incr('site.{}.task_{}.{}'.format(site, self.final_status, reason))
         ret = await self.db.tasks.find_one_and_update(
             filter_query,
             update_query,
@@ -744,6 +747,10 @@ class TasksActionsErrorHandler(APIBase):
         else:
             self.write(ret)
             self.finish()
+
+
+class TasksActionsFailedHandler(TasksActionsErrorHandler):
+    final_status = 'failed'
 
 
 class TasksActionsCompleteHandler(APIBase):
