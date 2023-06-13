@@ -304,7 +304,7 @@ class condor_direct(grid.BaseGrid):
                             break
 
         if batch_job_id:
-            resources.update(await get_grid_resources(batch_job_id))
+            resources.update(await self.get_grid_resources(batch_job_id))
 
         if not reason:
             # search for reason in logfile
