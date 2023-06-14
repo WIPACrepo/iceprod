@@ -183,12 +183,8 @@ class condor_direct(grid.BaseGrid):
 
         # upload stdlog
         data['data'] = read_filename(os.path.join(submit_dir, constants['stdlog']))
-        if 'return code' in data['data']:
-            logger.info('logfile return code: %r', data['data'])
         for line in data['data'].split('\n'):
             if 'task exe' in line and 'return code' in line:
-                logger.info('return code line: %s', line)
-                logger.info('return code val: %d', int(line.rsplit(':', 1)[1].strip()))
                 if int(line.rsplit(':', 1)[1].strip()) != 0:
                     payload_failure = True
                     break
