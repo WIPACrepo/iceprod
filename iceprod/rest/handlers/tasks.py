@@ -704,6 +704,9 @@ class TasksActionsErrorHandler(APIBase):
                             if new_val < old_val*1.1:
                                 continue
                             new_val = old_val+1  # increase linearly
+                        elif new_val < 0.5:
+                            logger.info('ignoring val below 0.5 for %s: %f', k, new_val)
+                            continue
                         else:
                             new_val *= 1.5  # increase new request by 1.5
                         if isinstance(Resources.defaults[k], (int, list)):
