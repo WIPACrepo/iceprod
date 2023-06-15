@@ -197,6 +197,13 @@ class condor_direct(grid.BaseGrid):
         data['name'] = 'stderr'
         data['data'] = read_filename(os.path.join(submit_dir, constants['stderr']))
         await self.rest_client.request('POST', '/logs', data)
+        if payload_failure:
+            for line in data['data'].split('\n'):
+                # find cases where it's probably a node failure
+                if ('No such file or directory' in line
+                    or 'py3-v4.1.1/RHEL_8_x86_64/lib/libCore.so.6.18: undefined symbol: usedToIdentifyRootClingByDlSym' in line):
+                    payload_failure = False
+                    break
 
         # upload stdout
         data['name'] = 'stdout'
