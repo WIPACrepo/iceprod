@@ -178,6 +178,7 @@ class condor_direct(grid.BaseGrid):
             submit_dir = ''
 
         payload_failure = False
+        return_code = -1
 
         data = {'name': 'stdlog', 'task_id': task_id, 'dataset_id': dataset_id}
 
@@ -185,7 +186,8 @@ class condor_direct(grid.BaseGrid):
         data['data'] = read_filename(os.path.join(submit_dir, constants['stdlog']))
         for line in data['data'].split('\n'):
             if 'task exe' in line and 'return code' in line:
-                if int(line.rsplit(':', 1)[1].strip()) != 0:
+                return_code = int(line.rsplit(':', 1)[1].strip())
+                if return_code != 0 and return_code != 132:  # ignore SIGILL
                     payload_failure = True
                     break
 
@@ -201,6 +203,7 @@ class condor_direct(grid.BaseGrid):
             for line in data['data'].split('\n'):
                 # find cases where it's probably a node failure
                 if ('No such file or directory' in line
+                        or 'Illegal instruction' in line
                         or 'py3-v4.1.1/RHEL_8_x86_64/lib/libCore.so.6.18: undefined symbol: usedToIdentifyRootClingByDlSym' in line):
                     payload_failure = False
                     break
