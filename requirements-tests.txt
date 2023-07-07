@@ -10,11 +10,11 @@ asyncache==0.3.1
     # via iceprod (setup.py)
 beautifulsoup4==4.12.2
     # via iceprod (setup.py)
-boto3==1.27.1
+boto3==1.28.0
     # via
     #   iceprod (setup.py)
     #   moto
-botocore==1.30.1
+botocore==1.31.0
     # via
     #   boto3
     #   moto
