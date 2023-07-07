@@ -279,6 +279,14 @@ class condor_direct(grid.BaseGrid):
                     elif 'Transfer input files failure' in line:
                         reason = 'Failed to transfer input files'
                         break
+                    elif 'failed due to remote transfer hook error' in line:
+                        if 'failed to send file':
+                            reason = 'Failed to transfer output files'
+                        elif 'failed to receive file':
+                            reason = 'Failed to transfer input files'
+                        else:
+                            reason = 'Failed to transfer files'
+                        break
         return reason
 
     async def task_error(self, task_id, dataset_id, submit_dir, reason='',
