@@ -8,9 +8,9 @@ anyio==3.7.1
     # via httpcore
 asyncache==0.3.1
     # via iceprod (setup.py)
-boto3==1.28.0
+boto3==1.28.1
     # via iceprod (setup.py)
-botocore==1.31.0
+botocore==1.31.1
     # via
     #   boto3
     #   s3transfer
@@ -27,7 +27,7 @@ certifi==2023.5.7
     #   requests
 cffi==1.15.1
     # via cryptography
-charset-normalizer==3.1.0
+charset-normalizer==3.2.0
     # via requests
 cryptography==41.0.1
     # via
