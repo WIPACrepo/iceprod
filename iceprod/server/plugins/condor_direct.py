@@ -178,7 +178,6 @@ class condor_direct(grid.BaseGrid):
             submit_dir = ''
 
         payload_failure = False
-        return_code = -1
 
         data = {'name': 'stdlog', 'task_id': task_id, 'dataset_id': dataset_id}
 
