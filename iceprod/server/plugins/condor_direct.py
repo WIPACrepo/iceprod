@@ -205,6 +205,7 @@ class condor_direct(grid.BaseGrid):
                 if ('No such file or directory' in line
                         or 'No space left on device' in line
                         or 'Illegal instruction' in line
+                        or ('Killed' in line and 'env-shell.sh' in line)
                         or 'py3-v4.1.1/RHEL_8_x86_64/lib/libCore.so.6.18: undefined symbol: usedToIdentifyRootClingByDlSym' in line):
                     payload_failure = False
                     break
