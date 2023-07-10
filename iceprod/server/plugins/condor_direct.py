@@ -162,14 +162,34 @@ class condor_direct(grid.BaseGrid):
         self.grid_remove_once = set()
 
     async def upload_logfiles(self, task_id, dataset_id, submit_dir=None, reason=''):
-        """upload logfiles"""
+        """
+        Upload logfiles
+
+        Args:
+            task_id (str): task id
+            dataset_id (str): dataset id
+            submit_dir (str): (optional) submit dir for task
+            reason (str): (optional) reason to inject into stdlog if it does not exist
+
+        Returns:
+            payload_failure (bool): indicate if the task had a payload failure
+        """
         if submit_dir is None:
             submit_dir = ''
+
+        payload_failure = False
 
         data = {'name': 'stdlog', 'task_id': task_id, 'dataset_id': dataset_id}
 
         # upload stdlog
         data['data'] = read_filename(os.path.join(submit_dir, constants['stdlog']))
+        for line in data['data'].split('\n'):
+            if 'task exe' in line and 'return code' in line:
+                return_code = int(line.rsplit(':', 1)[1].strip())
+                if return_code != 0 and return_code != 132:  # ignore SIGILL
+                    payload_failure = True
+                    break
+
         if not data['data']:
             data['data'] = reason
         await self.rest_client.request('POST', '/logs', data)
@@ -178,11 +198,23 @@ class condor_direct(grid.BaseGrid):
         data['name'] = 'stderr'
         data['data'] = read_filename(os.path.join(submit_dir, constants['stderr']))
         await self.rest_client.request('POST', '/logs', data)
+        if payload_failure:
+            for line in data['data'].split('\n'):
+                # find cases where it's probably a node failure
+                if ('No such file or directory' in line
+                        or 'No space left on device' in line
+                        or 'Illegal instruction' in line
+                        or ('Killed' in line and 'env-shell.sh' in line)
+                        or 'py3-v4.1.1/RHEL_8_x86_64/lib/libCore.so.6.18: undefined symbol: usedToIdentifyRootClingByDlSym' in line):
+                    payload_failure = False
+                    break
 
         # upload stdout
         data['name'] = 'stdout'
         data['data'] = read_filename(os.path.join(submit_dir, constants['stdout']))
         await self.rest_client.request('POST', '/logs', data)
+
+        return payload_failure
 
     async def get_hold_reason(self, submit_dir, resources=None):
         """Search for a hold reason in the condor.log"""
@@ -206,6 +238,8 @@ class condor_direct(grid.BaseGrid):
                                     val = float(line.split(':')[-1].split('mb')[0].strip())/1024.
                                 except Exception:
                                     pass
+                        elif 'memory usage exceeded' in line:
+                            resource_type = 'memory'
                         elif 'cpu limit' in line or 'cpu consumption limit':
                             resource_type = 'cpu'
                             try:
@@ -215,6 +249,8 @@ class condor_direct(grid.BaseGrid):
                                     val = float(line.split('used')[-1].split('usr')[0].strip())
                                 except Exception:
                                     pass
+                        elif 'cpu usage exceeded' in line:
+                            resource_type = 'cpu'
                         elif 'execution time limit' in line:
                             resource_type = 'time'
                             try:
@@ -230,26 +266,45 @@ class condor_direct(grid.BaseGrid):
                                     val = float(line.split('used')[-1].split('gb')[0].strip())
                                 except Exception:
                                     pass
+                        elif 'disk usage exceeded' in line:
+                            resource_type = 'disk'
                         if resource_type:
-                            reason = f'Resource overusage for {resource_type}: {val}'
                             if val:
                                 resources[resource_type] = val
+                            reason = f'Resource overusage for {resource_type}: {resources[resource_type]}'
                             break
+                    elif 'Transfer output files failure' in line:
+                        reason = 'Failed to transfer output files'
+                        break
+                    elif 'Transfer input files failure' in line:
+                        reason = 'Failed to transfer input files'
+                        break
+                    elif 'failed due to remote transfer hook error' in line:
+                        if 'failed to send file' in line:
+                            reason = 'Failed to transfer output files'
+                        elif 'failed to receive file' in line:
+                            reason = 'Failed to transfer input files'
+                        else:
+                            reason = 'Failed to transfer files'
+                        break
         return reason
 
     async def task_error(self, task_id, dataset_id, submit_dir, reason='',
-                         site=None, pilot_id=None, kill=False):
+                         site=None, pilot_id=None, kill=False, failed=False):
         """reset a task"""
         if submit_dir is None:
             submit_dir = ''
         # search for resources in stdout
         resources = {}
+        batch_job_id = None
         filename = os.path.join(submit_dir, self.batch_outfile)
         if os.path.exists(filename):
             with open(filename) as f:
                 resource_lines = False
                 for line in f:
                     line = line.strip()
+                    if (not batch_job_id) and 'Job submitted from host' in line:
+                        batch_job_id = '.'.join(line.split('(', 1)[1].split('.')[0:2])
                     if line == 'Resources:':
                         resource_lines = True
                         continue
@@ -266,6 +321,12 @@ class condor_direct(grid.BaseGrid):
                             continue
                         else:
                             break
+
+        if batch_job_id:
+            resources.update(await self.get_grid_resources(batch_job_id))
+
+        if (not reason) and failed:
+            reason = 'payload failure'
         if not reason:
             # search for reason in logfile
             filename = os.path.join(submit_dir, constants['stdlog'])
@@ -306,7 +367,7 @@ class condor_direct(grid.BaseGrid):
                                   resources=resources, message=message, site=site)
         else:
             await comms.task_error(task_id, dataset_id=dataset_id, reason=reason,
-                                   resources=resources, site=site)
+                                   resources=resources, site=site, failed=failed)
 
     async def finish_task(self, task_id, dataset_id, submit_dir, site=None):
         """complete a task"""
@@ -405,8 +466,8 @@ class condor_direct(grid.BaseGrid):
                 task['dataset_id'] = ret['dataset_id']
 
                 logger.info('uploading logs for task %s', task_id)
-                await self.upload_logfiles(task_id, task['dataset_id'],
-                                           submit_dir=task['submit_dir'])
+                payload_failure = await self.upload_logfiles(task_id, task['dataset_id'],
+                                                             submit_dir=task['submit_dir'])
                 if task['grid']['status'] == 'ok':
                     # upload files (may be a no-op)
                     await self.upload_output(task)
@@ -418,9 +479,12 @@ class condor_direct(grid.BaseGrid):
                                            site=task['grid']['site'])
                 else:
                     logger.info('error in task %s', task_id)
+                    if payload_failure:
+                        logger.info('payload failed')
                     await self.task_error(task_id, task['dataset_id'],
                                           submit_dir=task['submit_dir'],
-                                          site=task['grid']['site'])
+                                          site=task['grid']['site'],
+                                          failed=payload_failure)
 
         async def post_process_complete(fut):
             ret = await fut
@@ -916,6 +980,25 @@ class condor_direct(grid.BaseGrid):
         task['grid_queue_id'] = ','.join(grid_queue_id)
 
         return task
+
+    async def get_grid_resources(self, job_id):
+        """Get resource information from a running/held task on the queue system"""
+        ret = {}
+        cmd = ['condor_q', job_id, '-af:,', 'CpusUsage', 'GPUsUsage', 'ResidentSetSize_RAW', 'DiskUsage_RAW', 'LastRemoteWallClockTime']
+        out = await check_output_clean_env(*cmd)
+        print('get_grid_status():',out)
+        cpu, gpu, memory, disk, time = out.strip().split(',')
+        if cpu != 'undefined':
+            ret['cpu'] = float(cpu)
+        if gpu != 'undefined':
+            ret['gpu'] = float(gpu)
+        if memory != 'undefined':
+            ret['memory'] = float(memory)/1024/1024.
+        if disk != 'undefined':
+            ret['disk'] = float(disk)/1024/1024.
+        if time != 'undefined':
+            ret['time'] = float(time)/3600.
+        return ret
 
     async def get_grid_status(self):
         """Get all tasks running on the queue system.

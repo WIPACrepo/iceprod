@@ -488,6 +488,62 @@ async def test_rest_tasks_actions_reset(server):
     assert exc_info.value.response.status_code == 400
 
 
+async def test_rest_tasks_actions_failed(server):
+    client = server(roles=['system'])
+
+    data = {
+        'dataset_id': 'foo',
+        'job_id': 'foo1',
+        'task_index': 0,
+        'job_index': 0,
+        'status': 'queued',
+        'priority': .5,
+        'name': 'bar',
+        'depends': [],
+        'requirements': {'memory':5.6, 'gpu':1},
+    }
+    ret = await client.request('POST', '/tasks', data)
+    task_id = ret['result']
+
+    await client.request('POST', f'/tasks/{task_id}/task_actions/failed', {})
+
+    ret = await client.request('GET', f'/tasks/{task_id}')
+    assert ret['status'] == 'failed'
+
+    # now try with time_used
+    await client.request('PUT', f'/tasks/{task_id}/status', {'status': 'queued'})
+
+    args = {'time_used': 7200}
+    await client.request('POST', f'/tasks/{task_id}/task_actions/failed', args)
+
+    ret = await client.request('GET', f'/tasks/{task_id}')
+    assert ret['status'] == 'failed'
+    assert ret['walltime_err_n'] == 1
+    assert ret['walltime_err'] == 2.0
+
+    # now try with resources
+    await client.request('PUT', f'/tasks/{task_id}/status', {'status': 'queued'})
+
+    args = {'resources': {'time':2.5, 'memory':3.5, 'disk': 20.3, 'gpu': 23}}
+    await client.request('POST', f'/tasks/{task_id}/task_actions/failed', args)
+
+    ret = await client.request('GET', f'/tasks/{task_id}')
+    assert ret['status'] == 'failed'
+    assert ret['walltime_err_n'] == 2
+    assert ret['walltime_err'] == 4.5
+    assert ret['requirements']['memory'] == data['requirements']['memory']
+    assert ret['requirements']['time'] >= args['resources']['time']
+    assert ret['requirements']['disk'] >= args['resources']['disk']
+    assert ret['requirements']['gpu'] != args['resources']['gpu']  # gpu doesn't change
+
+    # now try with a bad status
+    await client.request('PUT', f'/tasks/{task_id}/status', {'status': 'complete'})
+    
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('POST', f'/tasks/{task_id}/task_actions/failed', {})
+    assert exc_info.value.response.status_code == 400
+
+
 async def test_rest_tasks_actions_complete(server):
     client = server(roles=['system'])
 

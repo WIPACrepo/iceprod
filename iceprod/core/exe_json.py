@@ -207,7 +207,7 @@ class ServerComms:
 
     async def task_error(self, task_id, dataset_id=None, stats={},
                          start_time=None, reason=None, resources=None,
-                         site=None):
+                         site=None, failed=False):
         """
         Tell the server about the error experienced
 
@@ -219,6 +219,7 @@ class ServerComms:
             reason (str): (optional) one-line summary of error
             resources (dict): (optional) task resource usage
             site (str): (optional) site the task is running at
+            failed (bool): (optional) instead of resetting the task, just fail
         """
         iceprod_stats = {}
         try:
@@ -263,7 +264,8 @@ class ServerComms:
             data['site'] = site
         if reason:
             data['reason'] = reason
-        await self.rest.request('POST', '/tasks/{}/task_actions/reset'.format(task_id), data)
+        status = 'failed' if failed else 'reset'
+        await self.rest.request('POST', f'/tasks/{task_id}/task_actions/{status}', data)
 
     async def task_kill(self, task_id, dataset_id=None, resources=None,
                         reason=None, message=None, site=None):
