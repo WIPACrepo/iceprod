@@ -19,7 +19,6 @@ from iceprod.core.resources import sanitized_requirements, rounded_requirements
 from iceprod.core.exe_json import ServerComms
 from iceprod.server import grid
 from iceprod.server.globus import SiteGlobusProxy
-from iceprod.server.plugins.condor import condor_os_reqs
 
 logger = logging.getLogger('plugin-condor_direct')
 
@@ -83,6 +82,15 @@ class TaskInfo(dict):
         self['pilot'] = None
         self['submit_dir'] = None
         super(TaskInfo, self).__init__(**kwargs)
+
+
+def condor_os_reqs(os_arch):
+    """Convert from OS_ARCH to Condor OS requirements"""
+    os_arch = os_arch.rsplit('_',2)[0].rsplit('.',1)[0]
+    reqs = 'OpSysAndVer =?= "{}"'.format(os_arch.replace('RHEL','CentOS').replace('_',''))
+    reqs = reqs + '|| OpSysAndVer =?= "{}"'.format(os_arch.replace('RHEL','SL').replace('_',''))
+    reqs = reqs + ' || OSGVO_OS_STRING =?= "{}"'.format(os_arch.replace('_',' '))
+    return '('+reqs+')'
 
 
 def run_async(func,*args,**kwargs):
