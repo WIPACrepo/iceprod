@@ -471,6 +471,7 @@ class BaseGrid(object):
                                     raise RuntimeError('bad s3 bucket')
 
                             s = S3(url, s3_creds[url]['access_key'], s3_creds[url]['secret_key'], bucket=bucket)
+                            logger.info(f'S3 url={url} bucket={bucket} key={key}')
                             if d['movement'] == 'input':
                                 d['remote'] = s.get_presigned(key, expiration=expiration)
                                 new_data.append(d)
