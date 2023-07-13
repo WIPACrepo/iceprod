@@ -311,6 +311,7 @@ class Task(_TaskCommon):
         self['trays'] = []
         self['requirements'] = Requirement()
         self['task_files'] = False
+        self['container'] = None
         super(Task,self).__init__(*args,**kwargs)
 
     def output(self):
@@ -363,6 +364,7 @@ class Task(_TaskCommon):
                 and isinstance(self['requirements'],Requirement)
                 and self['requirements'].valid()
                 and isinstance(self['task_files'],bool)
+                and self['container'] is None or isinstance(self['container'], str)
             )
         except Exception:
             return False
