@@ -451,7 +451,7 @@ class BaseGrid(object):
                 processing_time = timedelta(seconds=self.queue_cfg['max_task_processing_time'])
             except Exception:
                 processing_time = timedelta(seconds=86400*2)
-            expiration = (queued_time + processing_time).seconds
+            expiration = (queued_time + processing_time).total_seconds()
             logger.info(f's3 cred expire time: {expiration}')
 
             def presign_s3(cfg):
