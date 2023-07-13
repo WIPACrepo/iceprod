@@ -591,7 +591,7 @@ class BaseGrid(object):
         config['options']['debug'] = task['debug']
         config['options']['upload'] = 'logging'
         config['options']['gridspec'] = self.gridspec
-        if 'site_temp' in self.cfg['queue']:
+        if (not config['options'].get('site_temp','')) and 'site_temp' in self.cfg['queue']:
             config['options']['site_temp'] = self.cfg['queue']['site_temp']
         if ('download' in self.cfg and 'http_username' in self.cfg['download']
                 and self.cfg['download']['http_username']):
