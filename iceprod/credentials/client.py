@@ -33,10 +33,10 @@ async def main():
     args = parser.parse_args()
 
     if args.type_ == 'oauth' and not (args.access_token or args.refresh_token):
-        raise argparse.ArgumentError(argument=args.refresh_token,  message='--access-token or --refresh-token is required')
+        raise argparse.ArgumentError(argument=args.refresh_token, message='--access-token or --refresh-token is required')
 
     args.rest_url = 'https://credentials.iceprod.icecube.aq'
-    rc = create_rest_client(args) 
+    rc = create_rest_client(args)
 
     if args.user:
         url = f'/users/{args.user}/credentials'
