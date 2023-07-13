@@ -452,6 +452,7 @@ class BaseGrid(object):
             except Exception:
                 processing_time = timedelta(seconds=86400*2)
             expiration = (queued_time + processing_time).seconds
+            logger.info(f's3 cred expire time: {expiration}')
 
             def presign_s3(cfg):
                 new_data = []

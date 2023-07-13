@@ -271,7 +271,9 @@ class condor_direct(grid.BaseGrid):
                         if resource_type:
                             if val:
                                 resources[resource_type] = val
-                            reason = f'Resource overusage for {resource_type}: {resources[resource_type]}'
+                            reason = f'Resource overusage for {resource_type}: '
+                            if resource_type in resources:
+                                reason += f'{resources[resource_type]}'
                             break
                     elif 'Transfer output files failure' in line:
                         reason = 'Failed to transfer output files'
