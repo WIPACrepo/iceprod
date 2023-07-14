@@ -470,6 +470,9 @@ class BaseGrid(object):
                                 if bucket not in s3_creds[url]['buckets']:
                                     raise RuntimeError('bad s3 bucket')
 
+                            while key.startswith('/'):
+                                key = key[1:]
+
                             s = S3(url, s3_creds[url]['access_key'], s3_creds[url]['secret_key'], bucket=bucket)
                             logger.info(f'S3 url={url} bucket={bucket} key={key}')
                             if d['movement'] == 'input':
