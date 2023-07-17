@@ -451,7 +451,8 @@ class BaseGrid(object):
                 processing_time = timedelta(seconds=self.queue_cfg['max_task_processing_time'])
             except Exception:
                 processing_time = timedelta(seconds=86400*2)
-            expiration = (queued_time + processing_time).seconds
+            expiration = (queued_time + processing_time).total_seconds()
+            logger.info(f's3 cred expire time: {expiration}')
 
             def presign_s3(cfg):
                 new_data = []
@@ -469,7 +470,11 @@ class BaseGrid(object):
                                 if bucket not in s3_creds[url]['buckets']:
                                     raise RuntimeError('bad s3 bucket')
 
+                            while key.startswith('/'):
+                                key = key[1:]
+
                             s = S3(url, s3_creds[url]['access_key'], s3_creds[url]['secret_key'], bucket=bucket)
+                            logger.info(f'S3 url={url} bucket={bucket} key={key}')
                             if d['movement'] == 'input':
                                 d['remote'] = s.get_presigned(key, expiration=expiration)
                                 new_data.append(d)
@@ -591,7 +596,7 @@ class BaseGrid(object):
         config['options']['debug'] = task['debug']
         config['options']['upload'] = 'logging'
         config['options']['gridspec'] = self.gridspec
-        if 'site_temp' in self.cfg['queue']:
+        if (not config['options'].get('site_temp','')) and 'site_temp' in self.cfg['queue']:
             config['options']['site_temp'] = self.cfg['queue']['site_temp']
         if ('download' in self.cfg and 'http_username' in self.cfg['download']
                 and self.cfg['download']['http_username']):

@@ -415,16 +415,21 @@ async def upload(local, url, checksum=True, options={}):
                                        headers={'Content-Type': m.content_type})
                             r.raise_for_status()
                 if checksum:  # get checksum
-                    r = s.get(url, stream=True, timeout=300)
-                    try:
-                        with open(local+'.tmp', 'wb') as f:
-                            for chunk in r.iter_content(65536):
-                                f.write(chunk)
-                        r.raise_for_status()
-                        if sha512sum(local+'.tmp') != chksum:
+                    if 'ETAG' in r.headers:
+                        md5 = r.headers['ETAG'].strip('"\'')
+                        if md5sum(local) != md5:
                             raise Exception('http checksum error')
-                    finally:
-                        removedirs(local+'.tmp')
+                    else:
+                        r = s.get(url, stream=True, timeout=300)
+                        try:
+                            with open(local+'.tmp', 'wb') as f:
+                                for chunk in r.iter_content(65536):
+                                    f.write(chunk)
+                            r.raise_for_status()
+                            if sha512sum(local+'.tmp') != chksum:
+                                raise Exception('http checksum error')
+                        finally:
+                            removedirs(local+'.tmp')
         await asyncio.get_event_loop().run_in_executor(None, _d)
     elif url.startswith('file:'):
         # use copy command

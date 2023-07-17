@@ -843,7 +843,7 @@ class functions_test(AsyncTestCase):
                     options=download_options)
 
     @requests_mock.mock()
-    @unittest_reporter(name='upload() http')
+    @unittest_reporter(name='upload() http POST')
     async def test_403_upload(self, http_mock):
         """Test the upload function"""
         download_options = {'username': 'user',
@@ -870,6 +870,35 @@ class functions_test(AsyncTestCase):
 
         # test bad upload
         http_mock.get('/globus.tar.gz', content=b'blah')
+        with self.assertRaises(Exception):
+            await iceprod.core.functions.upload(filename,
+                    'http://prod-exe.icecube.wisc.edu/globus.tar.gz',
+                    options=download_options)
+
+    @requests_mock.mock()
+    @unittest_reporter(name='upload() http s3 ETAG')
+    async def test_403_upload(self, http_mock):
+        """Test the upload function with ETAG"""
+        download_options = {}
+        data = b'the data'
+        filename = os.path.join(self.test_dir, 'globus.tar.gz')
+        with open(filename, 'wb') as f:
+            f.write(data)
+
+        # upload file to http
+        http_mock.put('/globus.tar.gz', content=b'', headers={'ETAG': iceprod.core.functions.md5sum(filename)})
+        http_mock.get('/globus.tar.gz', content=b'', status_code=403)
+        await iceprod.core.functions.upload(filename,
+                'http://prod-exe.icecube.wisc.edu/globus.tar.gz',
+                options=download_options)
+        self.assertTrue(http_mock.called)
+        req = http_mock.request_history[0]
+        self.assertEqual(req.method, 'PUT', msg='not a PUT request first')
+        self.assertEqual(os.path.basename(req.url), 'globus.tar.gz', msg='bad upload url')
+        self.assertEqual(len(http_mock.request_history), 1, msg='more than one http request')
+
+        # test bad upload
+        http_mock.put('/globus.tar.gz', content=b'', headers={'ETAG': 'blah'})
         with self.assertRaises(Exception):
             await iceprod.core.functions.upload(filename,
                     'http://prod-exe.icecube.wisc.edu/globus.tar.gz',
