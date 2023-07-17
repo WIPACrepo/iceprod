@@ -2,6 +2,13 @@
 
 <!--next-version-placeholder-->
 
+## v2.7.1 (2023-07-17)
+
+### Other
+
+* Fix semantic release ([`7c714aa`](https://github.com/WIPACrepo/iceprod/commit/7c714aa7988371e3d7f409adb4d828f1e32c7af5))
+* Cred client ([#353](https://github.com/WIPACrepo/iceprod/issues/353)) ([`c4267b8`](https://github.com/WIPACrepo/iceprod/commit/c4267b8ecbfc51e532e5793b6533ff9776df560d))
+
 ## v2.7.0 (2023-07-10)
 
 
