@@ -16,22 +16,33 @@ logger = logging.getLogger('s3')
 
 class S3:
     """S3 wrapper for uploading and downloading objects"""
-    def __init__(self, address, access_key, secret_key, bucket='iceprod2-logs'):
-        self.s3 = None
+    def __init__(self, address, access_key, secret_key, bucket='iceprod2-logs', mock_s3=None):
         self.bucket = bucket
-        try:
-            self.s3 = boto3.client(
-                's3',
-                'us-east-1',
-                endpoint_url=address,
-                aws_access_key_id=access_key,
-                aws_secret_access_key=secret_key,
-                config=botocore.client.Config(max_pool_connections=101)
-            )
-        except Exception:
-            logger.warning('failed to connect to s3: %r', address, exc_info=True)
-            raise
+        if mock_s3:
+            self.s3 = mock_s3
+        else:
+            try:
+                self.s3 = boto3.client(
+                    's3',
+                    'us-east-1',
+                    endpoint_url=address,
+                    aws_access_key_id=access_key,
+                    aws_secret_access_key=secret_key,
+                    config=botocore.client.Config(max_pool_connections=101)
+                )
+            except Exception:
+                logger.warning('failed to connect to s3: %r', address, exc_info=True)
+                raise
         self.executor = ThreadPoolExecutor(max_workers=20)
+
+    async def create_bucket(self):
+        """Create the bucket, if it does not exist"""
+        def _inner():
+            buckets = {b['Name'] for b in self.s3.list_buckets().get('Buckets', [])}
+            if self.bucket not in buckets:
+                self.s3.create_bucket(Bucket=self.bucket)
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(self.executor, _inner)
 
     async def get(self, key):
         """Download object from S3"""
@@ -83,6 +94,57 @@ class S3:
         """Delete object in S3"""
         loop = asyncio.get_running_loop()
         await loop.run_in_executor(self.executor, partial(self.s3.delete_object, Bucket=self.bucket, Key=key))
+
+    async def list(self, prefix=None, recursive=True):
+        """
+        List bucket contents.
+
+        Args:
+            prefix (str): key prefix
+            recursive (bool): recursive directory structure (default: True)
+        Returns:
+            dict: directory listing, with size for files
+        """
+        kwargs = {'Bucket': self.bucket}
+        if prefix:
+            kwargs['Prefix'] = prefix
+
+        def _inner():
+            paginator = self.s3.get_paginator('list_objects_v2')
+            page_iterator = paginator.paginate(**kwargs)
+            ret = {}
+            for page in page_iterator:
+                for item in page.get('Contents', []):
+                    if not recursive:
+                        ret[item['Key']] = item['Size']
+                    else:
+                        parts = item['Key'].split('/')
+                        handle = ret
+                        while len(parts) > 1:
+                            d = parts.pop(0)
+                            if d not in handle:
+                                handle[d] = {}
+                            handle = handle[d]
+                        handle[parts[0]] = item['Size']
+            return ret
+
+        loop = asyncio.get_running_loop()
+        ret = await loop.run_in_executor(self.executor, _inner)
+        return ret
+
+    async def rmtree(self, prefix):
+        """Delete multiple objects in S3 by prefix"""
+        objects = await self.list(prefix, recursive=False)
+        loop = asyncio.get_running_loop()
+
+        keys = [{'Key': k} for k in objects]
+        while keys:
+            d = {
+                'Objects': keys[:1000],
+                'Quiet': True,
+            }
+            keys = keys[1000:]
+            await loop.run_in_executor(self.executor, partial(self.s3.delete_objects, Bucket=self.bucket, Delete=d))
 
 
 class FakeS3(S3):
