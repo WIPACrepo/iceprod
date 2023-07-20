@@ -145,10 +145,3 @@ class S3:
             }
             keys = keys[1000:]
             await loop.run_in_executor(self.executor, partial(self.s3.delete_objects, Bucket=self.bucket, Delete=d))
-
-
-class FakeS3(S3):
-    def __init__(self, s3override):
-        self.s3 = s3override
-        self.bucket = 'iceprod2-logs'
-        self.executor = ThreadPoolExecutor(max_workers=20)

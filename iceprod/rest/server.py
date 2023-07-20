@@ -13,7 +13,7 @@ from rest_tools.server import RestServer
 from tornado.web import RequestHandler, HTTPError
 from wipac_dev_tools import from_environment
 
-from ..s3 import boto3, S3, FakeS3
+from ..s3 import boto3, S3
 from ..server.module import FakeStatsClient, StatsClientIgnoreErrors
 from .base_handler import IceProdRestConfig
 
@@ -92,7 +92,7 @@ class Server:
         s3conn = None
         if s3_override:
             logging.warning('S3 in testing mode')
-            s3conn = FakeS3(s3_override)
+            s3conn = S3('', '', '', mock_s3=s3_override)
         elif boto3 and config['S3_ACCESS_KEY'] and config['S3_SECRET_KEY']:
             s3conn = S3(config['S3_ADDRESS'], config['S3_ACCESS_KEY'], config['S3_SECRET_KEY'])
         else:
