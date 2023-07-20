@@ -290,11 +290,11 @@ class resources_test(unittest.TestCase):
 
     @unittest_reporter(name='Resources.check_claims() - memory overuse')
     def test_052_Resources_check_claims(self):
-        raw = {'cpu':8, 'gpu':['0','1'], 'memory':.4, 'disk':20,
+        raw = {'cpu':8, 'gpu':['0','1'], 'memory':.8, 'disk':20,
                'time':12}
         r = iceprod.core.resources.Resources(raw=raw)
         task_id = 'foo'
-        reqs = {'cpu':1, 'gpu':1, 'memory':.25, 'disk':3.4, 'time': 1}
+        reqs = {'cpu':1, 'gpu':1, 'memory':.5, 'disk':3.4, 'time': 1}
         c = r.claim(task_id, reqs)
         proc = psutil.Process()
         tmpdir = self.test_dir
@@ -305,7 +305,7 @@ class resources_test(unittest.TestCase):
 
         usage = r.get_usage(task_id)
         megabyte = 2**18
-        extra_mem = max(0, 256 - int(usage['memory']/1000))
+        extra_mem = max(0, 500 - int(usage['memory']/1000))
 
         # test managable overusage
         import array
@@ -316,7 +316,7 @@ class resources_test(unittest.TestCase):
         self.assertEqual(ret, {})
 
         # test overusage above total
-        blah *= 2 # 512 MB
+        blah *= 2 # 1000 MB
         ret = r.check_claims(force=True)
         logger.info('check_claims ret: %r',ret)
         self.assertIn(task_id, ret)
