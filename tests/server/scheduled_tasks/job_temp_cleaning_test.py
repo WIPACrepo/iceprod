@@ -81,7 +81,7 @@ async def test_scheduled_tasks_job_temp_cleaning_s3_list():
 
 async def test_scheduled_tasks_job_temp_cleaning_s3_rmtree():
     s3 = AsyncMock(job_temp_cleaning.S3)
-    ret = await job_temp_cleaning.rmtree_s3('/foo', s3_client=s3)
+    await job_temp_cleaning.rmtree_s3('/foo', s3_client=s3)
     s3.rmtree.assert_awaited_with('/foo')
 
 

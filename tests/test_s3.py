@@ -2,7 +2,6 @@ from math import isclose
 import time
 from urllib.parse import urlparse, parse_qs
 
-import pytest
 from iceprod.s3 import S3
 
 
