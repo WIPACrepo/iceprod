@@ -61,8 +61,10 @@ async def rmtree_webdav(path, rest_client=None):
 async def list_dataset_job_dirs_s3(path, prefix=None, s3_client=None):
     if prefix:
         path = os.path.join(path, prefix)
-    ret = await s3_client.list(path)
-    return ret
+        ret = await s3_client.list(path)
+        return {prefix: ret}
+    else:
+        return await s3_client.list(path)
 
 
 async def rmtree_s3(path, s3_client=None):
@@ -93,9 +95,11 @@ async def run(rest_client, temp_dir, list_dirs, rmtree, dataset=None, debug=Fals
         logger.debug('dataset_dirs: %r', dataset_dirs)
 
         ret = await rest_client.request('GET', '/datasets?keys=dataset_id|dataset')
+        logger.debug('datasets api raw: %r', ret)
         datasets = {}
         for d in ret:
             datasets[str(ret[d]['dataset'])] = ret[d]['dataset_id']
+        logger.debug('datasets: %r', datasets)
 
         for d in dataset_dirs:
             if not isinstance(dataset_dirs[d], dict):
@@ -120,7 +124,7 @@ async def run(rest_client, temp_dir, list_dirs, rmtree, dataset=None, debug=Fals
             logger.debug('job_indexes: %r', job_indexes)
 
             for j in job_dirs:
-                if not isinstance(job_dirs[j], dict):
+                if isinstance(job_dirs[j], dict):
                     continue
                 if not j.isnumeric():
                     if debug:
