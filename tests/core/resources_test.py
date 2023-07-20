@@ -303,10 +303,14 @@ class resources_test(unittest.TestCase):
         ret = r.check_claims()
         self.assertEqual(ret, {})
 
+        usage = r.get_usage(task_id)
+        megabyte = 2**18
+        extra_mem = max(0, 256 - int(usage['memory']/1000))
+
         # test managable overusage
         import array
         blah = array.array('L',[0])
-        blah *= 2**26 # 256 MB
+        blah *= extra_mem * megabyte
         ret = r.check_claims(force=True)
         logger.info('check_claims ret: %r',ret)
         self.assertEqual(ret, {})
