@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v2.7.2 (2023-07-20)
+
+### Other
+
+* S3 site temp cleaning ([#355](https://github.com/WIPACrepo/iceprod/issues/355)) ([`cf0f029`](https://github.com/WIPACrepo/iceprod/commit/cf0f02956280b251bd6a01489527a96d4f4d4de6))
+
 ## v2.7.1 (2023-07-17)
 
 ### Other
