@@ -19,7 +19,7 @@ cachetools==5.3.1
     #   asyncache
     #   iceprod (setup.py)
     #   wipac-rest-tools
-certifi==2023.5.7
+certifi==2023.7.22
     # via
     #   httpcore
     #   httpx
