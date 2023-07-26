@@ -470,6 +470,8 @@ class BaseGrid(object):
                                 if bucket not in s3_creds[url]['buckets']:
                                     raise RuntimeError('bad s3 bucket')
 
+                            while '//' in key:
+                                key = key.replace('//', '/')
                             while key.startswith('/'):
                                 key = key[1:]
 
