@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v2.7.3 (2023-07-26)
+
+### Other
+
+* Remove extra slashes in keys ([#357](https://github.com/WIPACrepo/iceprod/issues/357)) ([`9f9734c`](https://github.com/WIPACrepo/iceprod/commit/9f9734c5e1ddb20f2f9191ce806428908a8e15a6))
+
 ## v2.7.2 (2023-07-20)
 
 ### Other
