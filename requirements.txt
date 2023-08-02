@@ -8,9 +8,9 @@ anyio==3.7.1
     # via httpcore
 asyncache==0.3.1
     # via iceprod (setup.py)
-boto3==1.28.11
+boto3==1.28.18
     # via iceprod (setup.py)
-botocore==1.31.11
+botocore==1.31.18
     # via
     #   boto3
     #   s3transfer
@@ -29,7 +29,7 @@ cffi==1.15.1
     # via cryptography
 charset-normalizer==3.2.0
     # via requests
-cryptography==41.0.2
+cryptography==41.0.3
     # via
     #   iceprod (setup.py)
     #   pyjwt
@@ -125,5 +125,5 @@ wipac-dev-tools==1.6.16
     # via
     #   iceprod (setup.py)
     #   wipac-rest-tools
-wipac-rest-tools==1.4.20
+wipac-rest-tools==1.4.21
     # via iceprod (setup.py)
