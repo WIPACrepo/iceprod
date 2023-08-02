@@ -10,11 +10,11 @@ asyncache==0.3.1
     # via iceprod (setup.py)
 beautifulsoup4==4.12.2
     # via iceprod (setup.py)
-boto3==1.28.11
+boto3==1.28.18
     # via
     #   iceprod (setup.py)
     #   moto
-botocore==1.31.11
+botocore==1.31.18
     # via
     #   boto3
     #   moto
@@ -38,7 +38,7 @@ coverage[toml]==7.2.7
     # via
     #   iceprod (setup.py)
     #   pytest-cov
-cryptography==41.0.2
+cryptography==41.0.3
     # via
     #   iceprod (setup.py)
     #   moto
@@ -50,7 +50,7 @@ exceptiongroup==1.1.2
     # via
     #   anyio
     #   pytest
-flake8==6.0.0
+flake8==6.1.0
     # via iceprod (setup.py)
 flexmock==0.11.3
     # via iceprod (setup.py)
@@ -85,7 +85,7 @@ mccabe==0.7.0
     # via flake8
 mock==5.1.0
     # via iceprod (setup.py)
-moto==4.1.13
+moto==4.1.14
     # via iceprod (setup.py)
 motor==3.2.0
     # via iceprod (setup.py)
@@ -97,11 +97,11 @@ psutil==5.9.5
     # via iceprod (setup.py)
 pyasn1==0.5.0
     # via ldap3
-pycodestyle==2.10.0
+pycodestyle==2.11.0
     # via flake8
 pycparser==2.21
     # via cffi
-pyflakes==3.0.1
+pyflakes==3.1.0
     # via flake8
 pyjwt[crypto]==2.8.0
     # via wipac-rest-tools
@@ -154,7 +154,7 @@ requests-mock==1.11.0
     # via iceprod (setup.py)
 requests-toolbelt==1.0.0
     # via iceprod (setup.py)
-responses==0.23.1
+responses==0.23.3
     # via moto
 respx==0.20.2
     # via iceprod (setup.py)
@@ -202,7 +202,7 @@ wipac-dev-tools==1.6.16
     # via
     #   iceprod (setup.py)
     #   wipac-rest-tools
-wipac-rest-tools==1.4.20
+wipac-rest-tools==1.4.21
     # via iceprod (setup.py)
 xmltodict==0.13.0
     # via moto
