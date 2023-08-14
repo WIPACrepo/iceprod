@@ -179,7 +179,7 @@ tomli==2.0.1
     # via
     #   coverage
     #   pytest
-tornado==6.3.2
+tornado==6.3.3
     # via
     #   iceprod (setup.py)
     #   wipac-rest-tools
