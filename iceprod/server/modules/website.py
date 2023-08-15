@@ -15,6 +15,7 @@ import random
 import logging
 from collections import defaultdict
 import functools
+import importlib.resources
 from urllib.parse import urlencode
 import re
 from datetime import datetime, timedelta
@@ -33,7 +34,6 @@ from rest_tools import telemetry as wtt
 
 import iceprod
 from iceprod.roles_groups import GROUPS
-from iceprod.server import get_pkgdata_filename
 from iceprod.server import module
 import iceprod.core.functions
 from iceprod.server import documentation
@@ -81,11 +81,11 @@ class website(module.module):
                         pass
 
             # get package data
-            static_path = get_pkgdata_filename('iceprod.server','data/www')
+            static_path = str(importlib.resources.files('iceprod.server')/'data'/'www')
             if static_path is None or not os.path.exists(static_path):
                 logger.info('static path: %r',static_path)
                 raise Exception('bad static path')
-            template_path = get_pkgdata_filename('iceprod.server','data/www_templates')
+            template_path = str(importlib.resources.files('iceprod.server')/'data'/'www_templates')
             if template_path is None or not os.path.exists(template_path):
                 logger.info('template path: %r',template_path)
                 raise Exception('bad template path')
@@ -663,7 +663,7 @@ class Documentation(PublicHandler):
         # try to get the user, if available
         await self.get_current_user_async()
         self.statsd.incr('documentation')
-        doc_path = get_pkgdata_filename('iceprod.server','data/docs')
+        doc_path = str(importlib.resources.files('iceprod.server')/'data'/'docs')
         full_path = os.path.join(doc_path, url)
         if not full_path.startswith(doc_path):
             self.set_status(404)

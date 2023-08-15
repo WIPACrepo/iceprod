@@ -2,13 +2,12 @@
 Detailed configuration for IceProd
 """
 
-from __future__ import absolute_import, division, print_function
-
+import importlib.resources
 import os
 import logging
 
 from iceprod.core.jsonUtil import json_encode, json_decode
-from iceprod.server import GlobalID, get_pkgdata_filename
+from iceprod.server import GlobalID
 
 import json
 try:
@@ -26,9 +25,6 @@ def locateconfig(filename):
     cfgpaths = [os.path.expandvars('$I3PROD')]
     if os.getcwd() not in cfgpaths:
         cfgpaths.append(os.getcwd())
-    cfgpath = get_pkgdata_filename('iceprod.server','data')
-    if cfgpath:
-        cfgpaths.append(cfgpath)
     for cfgpath in list(cfgpaths):
         # try for an etc directory
         i = cfgpaths.index(cfgpath)
@@ -123,10 +119,7 @@ class IceProdConfig(dict):
         filename = None
         try:
             self.loading = True
-            filename = get_pkgdata_filename('iceprod.server',
-                                            'data/etc/config_defaults.json')
-            text = open(filename).read()
-            obj = json_decode(text)
+            obj = json.loads((importlib.resources.files('iceprod.core')/'data'/'etc'/'config_defaults.json').read_text())
 
             def setter(new_obj,self_obj):
                 logger.debug('setter()')
@@ -160,8 +153,7 @@ class IceProdConfig(dict):
     def do_validate(self):
         if validate and self.validate:
             try:
-                filename = get_pkgdata_filename('iceprod.server', 'data/etc/iceprod_schema.json')
-                schema = json.load(open(filename))
+                schema = json.loads((importlib.resources.files('iceprod.server')/'data'/'etc'/'iceprod_schema.json').read_text())
                 validate(self, schema)
             except ValidationError as e:
                 path = '.'.join(e.path)
@@ -185,6 +177,7 @@ class IceProdConfig(dict):
         except Exception:
             logger.warning('failed to load from config file %s',self.filename,
                            exc_info=True)
+            raise
         finally:
             self.loading = False
 
