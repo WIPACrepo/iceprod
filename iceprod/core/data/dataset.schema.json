@@ -1,0 +1,242 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://iceprod2.icecube.wisc.edu/static/dataset.schema.json",
+  "title": "IceProd Dataset Config",
+  "description": "The schema for an IceProd Dataset Config",
+  "type": "object",
+  "properties": {
+    "version": {
+      "description": "Schema version",
+      "type": "integer",
+      "default": 4
+    },
+    "description": {
+        "description": "Dataset description",
+        "type": "string",
+        "default": "Test Dataset"
+    },
+    "options": {
+      "description": "Internal parameters attached to a dataset",
+      "type": "object",
+      "properties": {},
+      "additionalProperties": true
+    },
+    "steering": {
+      "description": "General paramters, used as references elsewhere in the config",
+      "type": "object",
+      "properties": {
+        "parameters": { "$ref": "#/$defs/parameters" },
+        "batchsys": { "$ref": "#/$defs/batchsys" },
+        "data": { "$ref": "#/$defs/data" }
+      },
+      "additionalProperties": false
+    },
+    "tasks": {
+      "description": "Tasks to execute - individual batch jobs",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "title": "Task",
+        "description": "An individual batch job",
+        "properties": {
+          "name": { "type": "string" },
+          "depends": {
+            "type": "array",
+            "description": "Task dependency names",
+            "items": { "type": "string" }
+          },
+          "task_files": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable to use the task files API"
+          },
+          "data": { "$ref": "#/$defs/data" },
+          "classes": { "$ref": "#/$defs/classes" },
+          "parameters": { "$ref": "#/$defs/parameters" },
+          "batchsys": { "$ref": "#/$defs/batchsys" },
+          "requirements": { "$ref": "#/$defs/requirements" },
+          "container": {
+            "type": "string",
+            "default": "",
+            "description": "Specify a /cvmfs container path, if this task should run in a container"
+          },
+          "trays": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "title": "Tray",
+              "description": "Collection of modules",
+              "properties": {
+                "name": { "type": "string" },
+                "iterations": {
+                  "type": "integer",
+                  "default": 1,
+                  "description": "Number of times to execute this tray"
+                },
+                "data": { "$ref": "#/$defs/data", "deprecated": true },
+                "classes": { "$ref": "#/$defs/classes", "deprecated": true },
+                "parameters": { "$ref": "#/$defs/parameters" },
+                "modules": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "title": "Module",
+                    "description": "The actual thing to execute, usually a script",
+                    "properties": {
+                      "data": { "$ref": "#/$defs/data", "deprecated": true },
+                      "classes": { "$ref": "#/$defs/classes", "deprecated": true },
+                      "parameters": { "$ref": "#/$defs/parameters" },
+                      "running_class": {
+                        "type": "string",
+                        "description": "a Python class or function to call directly"
+                      },
+                      "src": {
+                        "type": "string",
+                        "description": "the location of a class or script"
+                      },
+                      "args": {
+                        "anyOf": [
+                          { "type": "string" },
+                          { "type": "array", "items": { "type": "string" } },
+                          { "type": "object", "additionalProperties": { "type": "string" } }
+                        ],
+                        "description": "args to give to a class or script"
+                      },
+                      "env_shell": {
+                        "type": "string",
+                        "default": "",
+                        "description": "src of script which sets env and calls args"
+                      },
+                      "env_clear": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "clear the env before calling the module"
+                      },
+                      "configs": {
+                        "type": "object",
+                        "description": "any json config files that should be written in $PWD (format is {filename: data})",
+                        "additionalProperties": { "type": "string" }
+                      }
+                    },
+                    "required": []
+                  },
+                  "minItems": 1
+                }
+              },
+              "required": ["modules"]
+            },
+            "minItems": 1
+          }
+        },
+        "required": ["name", "trays"]
+      },
+      "minItems": 1
+    }
+  },
+  "required": [ "version", "tasks", "description" ],
+
+  "$defs": {
+    "parameters": {},
+    "batchsys": {
+      "description": "Overrides for batch system properties",
+      "additionalProperties": {
+        "type": "object"
+      }
+    },
+    "requirements": {
+      "type": "object",
+      "description": "Task requirements",
+      "properties": {
+        "cpu": {
+          "type": "integer",
+          "default": 1,
+          "description": "CPU cores required"
+        },
+        "gpu": {
+          "type": "integer",
+          "default": 0,
+          "description": "GPUs required"
+        },
+        "memory": {
+          "type": "number",
+          "default": 1.0,
+          "description": "Memory required in GB"
+        },
+        "disk": {
+          "type": "number",
+          "default": 1.0,
+          "description": "Disk required in GB"
+        },
+        "os": {
+          "type": "string",
+          "default": "",
+          "description": "OS required in CVMFS format"
+        },
+        "site": {
+          "type": "string",
+          "default": "",
+          "description": "Site required"
+        }
+      }
+    },
+    "data": {
+      "type": "object",
+      "description": "A data file, to upload or download",
+      "properties": {
+        "remote": {
+          "type": "string",
+          "default": "",
+          "description": "remote url (can leave blank for temp files)"
+        },
+        "local": {
+          "type": "string",
+          "default": "",
+          "description": "local file name (will use basename of remote if available)"
+        },
+        "type": {
+          "enum": ["permanent", "job_temp", "dataset_temp", "site_temp"],
+          "default": "permanent",
+          "description": "type of data"
+        },
+        "movement": {
+          "enum": ["input", "output", "both"],
+          "default": "both",
+          "description": "movement of data"
+        }
+      }
+    },
+    "class": {
+      "type": "object",
+      "description": "A class object, downloaded from a url",
+      "properties": {
+        "name": {
+          "type": "string",
+          "default": "",
+          "description": "name of class"
+        },
+        "src": {
+          "type": "string",
+          "default": "",
+          "description": "url"
+        },
+        "recursive": {
+          "type": "boolean",
+          "default": false,
+          "description": "recusively add to path",
+          "deprecated": true
+        },
+        "libs": {
+          "type": "string",
+          "default": "",
+          "description": "explicit library paths"
+        },
+        "env_vars": {
+          "type": "string",
+          "default": "",
+          "description": "any env vars to add"
+        }
+      },
+      "required": ["name", "src"]
+    }
+  }
+}
