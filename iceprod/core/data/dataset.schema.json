@@ -7,8 +7,8 @@
   "properties": {
     "version": {
       "description": "Schema version",
-      "type": "integer",
-      "default": 4
+      "type": "number",
+      "default": 3.1
     },
     "description": {
         "description": "Dataset description",
