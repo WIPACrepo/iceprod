@@ -2,6 +2,7 @@ import asyncio
 from dataclasses import dataclass
 import importlib.resources
 import json
+import logging
 try:
     from typing import Self
 except ImportError:
@@ -19,28 +20,63 @@ class Dataset:
     """IceProd Dataset config and basic attributes"""
     dataset_id: str
     dataset_num: int
+    jobs_submitted: int
+    tasks_submitted: int
+    tasks_per_job: int
+    status: str
+    priority: float
     group: str
     user: str
+    debug: bool
     config: dict
 
     @classmethod
     async def load_from_api(cls, dataset_id: str, rest_client: RestClient) -> Self:
         dataset = await rest_client.request('GET', f'/datasets/{dataset_id}')
         config = await rest_client.request('GET', f'/config/{dataset_id}')
-        return cls(dataset_id, dataset['dataset'], dataset['group'], dataset['username'], config)
+        return cls(
+            dataset_id=dataset_id,
+            dataset_num=dataset['dataset'],
+            jobs_submitted=dataset['jobs_submitted'],
+            tasks_submitted=dataset['tasks_submitted'],
+            tasks_per_job=dataset['tasks_per_job'],
+            status=dataset['status'],
+            priority=dataset['priority'],
+            group=dataset['group'],
+            user=dataset['username'],
+            debug=dataset['debug'],
+            config=config,
+        )
 
     def fill_defaults(self):
+        def _load_ref(schema_value):
+            if '$ref' in list(schema_value.keys()):
+                # load from ref
+                parts = schema_value['$ref'].split('/')[1:]
+                schema_value = CONFIG_SCHEMA
+                while parts:
+                    schema_value = schema_value.get(parts.pop(0), {})
+                logging.debug('loading from ref: %r', schema_value)
+            return schema_value
         def _fill_dict(user, schema):
             for prop in schema['properties']:
-                v = schema['properties'][prop].get('default', None)
+                schema_value = _load_ref(schema['properties'][prop])
+                v = schema_value.get('default', None)
                 if prop not in user and v is not None:
                     user[prop] = v
             for k in user:
-                schema_value = schema['properties'].get(k, {})
-                if isinstance(user[k], dict) and schema_value['type'] == 'object':
-                    _fill_dict(user[k], schema_value)
-                elif isinstance(user[k], list) and schema_value['type'] == 'array':
-                    _fill_list(user[k], schema_value)
+                schema_value = _load_ref(schema['properties'].get(k, {}))
+                logging.debug('filling defaults for %s: %r', k, schema_value)
+                try:
+                    t = schema_value.get('type', 'str')
+                    logging.debug('user[k] type == %r, schema_value[type] == %r', type(user[k]), t)
+                    if isinstance(user[k], dict) and t == 'object':
+                        _fill_dict(user[k], schema_value)
+                    elif isinstance(user[k], list) and t == 'array':
+                        _fill_list(user[k], schema_value)
+                except KeyError:
+                    logging.warning('error processing key %r with schema %r', k, schema_value)
+                    raise
 
         def _fill_list(user, schema):
             for item in user:
@@ -82,12 +118,10 @@ class Task:
 
     @classmethod
     async def load_from_api(cls, dataset_id: str, task_id: str, rest_client: RestClient) -> Self:
-        dataset, config, task = await asyncio.gather(
-            rest_client.request('GET', f'/datasets/{dataset_id}'),
-            rest_client.request('GET', f'/config/{dataset_id}'),
+        d, task = await asyncio.gather(
+            Dataset.load_from_api(dataset_id, rest_client),
             rest_client.request('GET', f'/datasets/{dataset_id}/tasks/{task_id}')
         )
-        d = Dataset(dataset_id, dataset['dataset'], dataset['group'], dataset['username'], config)
         job = await rest_client.request('GET', f'/datasets/{dataset_id}/jobs/{task["job_id"]}')
         j = Job(d, task['job_id'], job['job_index'], job['status'])
         return cls(d, j, task['task_id'], task['task_index'], task['name'], task['depends'], task['requirements'], task['status'], task['site'], {})

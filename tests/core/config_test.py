@@ -1,3 +1,4 @@
+import logging
 import pytest
 from rest_tools.client import RestClient
 
@@ -9,11 +10,17 @@ def test_dataset_dataclasses():
     with pytest.raises(Exception):
         Dataset()
 
-    d = Dataset('did123', 123, 'grp', 'usr', {})
+    d = Dataset('did123', 123, 1, 2, 3, 'processing', 0.5, 'grp', 'usr', False, {})
     assert d.dataset_id == 'did123'
     assert d.dataset_num == 123
+    assert d.jobs_submitted == 1
+    assert d.tasks_submitted == 2
+    assert d.tasks_per_job == 3
+    assert d.status == 'processing'
+    assert d.priority == 0.5
     assert d.group == 'grp'
     assert d.user == 'usr'
+    assert d.debug is False
     assert d.config == {}
 
 
@@ -22,8 +29,14 @@ async def test_load_config(requests_mock):
     dataset_data = {
         'dataset': 123,
         'dataset_id': 'did123',
+        'status': 'processing',
+        'jobs_submitted': 1,
+        'tasks_submitted': 1,
+        'tasks_per_job': 1,
+        'priority': 0.5,
         'group': 'g123',
         'username': 'u123',
+        'debug': False
     }
     requests_mock.get(f'http://test.iceprod/datasets/{dataset_id}', json=dataset_data)
     config_data = {
@@ -46,26 +59,119 @@ async def test_defaults():
     dataset_data = {
         'dataset': 123,
         'dataset_id': 'did123',
+        'status': 'processing',
+        'jobs_submitted': 1,
+        'tasks_submitted': 1,
+        'tasks_per_job': 1,
+        'priority': 0.5,
         'group': 'g123',
         'username': 'u123',
+        'debug': False
     }
     config_data = {}
-    d = Dataset(dataset_data['dataset_id'], dataset_data['dataset'], dataset_data['group'], dataset_data['username'], config_data)
+    d = Dataset(
+        dataset_data['dataset_id'],
+        dataset_data['dataset'],
+        dataset_data['jobs_submitted'],
+        dataset_data['tasks_submitted'],
+        dataset_data['tasks_per_job'],
+        dataset_data['status'],
+        dataset_data['priority'],
+        dataset_data['group'],
+        dataset_data['username'],
+        dataset_data['debug'],
+        config_data
+    )
     d.fill_defaults()
+    logging.info('after defaults: %r', d.config)
     assert d.config['version'] == 3.1
+    assert d.config['options'] == {}
+    assert d.config['steering'] == {'parameters': {}, 'batchsys': {}, 'data': []}
 
+    
+async def test_defaults_refs():
+    dataset_data = {
+        'dataset': 123,
+        'dataset_id': 'did123',
+        'status': 'processing',
+        'jobs_submitted': 1,
+        'tasks_submitted': 1,
+        'tasks_per_job': 1,
+        'priority': 0.5,
+        'group': 'g123',
+        'username': 'u123',
+        'debug': False
+    }
+    config_data = {
+        'steering': {
+            'parameters': {'a': 'b'}
+        },
+        'tasks': [{
+            'requirements': {},
+            'data': [{
+                'remote': 'http://test/file'
+            }],
+            'trays': [{
+                'modules': [{}]
+            }]
+        }]
+    }
+    d = Dataset(
+        dataset_data['dataset_id'],
+        dataset_data['dataset'],
+        dataset_data['jobs_submitted'],
+        dataset_data['tasks_submitted'],
+        dataset_data['tasks_per_job'],
+        dataset_data['status'],
+        dataset_data['priority'],
+        dataset_data['group'],
+        dataset_data['username'],
+        dataset_data['debug'],
+        config_data
+    )
+    d.fill_defaults()
+    logging.info('after defaults: %r', d.config)
+    assert d.config['tasks'][0]['requirements']['cpu'] == 1
+    assert d.config['tasks'][0]['requirements']['memory'] == 1.0
+    assert d.config['tasks'][0]['requirements']['disk'] == 1.0
+    assert d.config['tasks'][0]['requirements']['time'] == 1.0
+    assert d.config['tasks'][0]['data'][0]['local'] == ''
+    assert d.config['tasks'][0]['data'][0]['type'] == 'permanent'
+    assert d.config['tasks'][0]['data'][0]['movement'] == 'input'
+    assert d.config['tasks'][0]['data'][0]['transfer'] is True
+    assert d.config['tasks'][0]['trays'][0]['iterations'] == 1
+    assert d.config['tasks'][0]['trays'][0]['modules'][0]['env_shell'] == ''
+    assert d.config['tasks'][0]['trays'][0]['modules'][0]['env_clear'] is True
 
 async def test_validate_error():
     dataset_data = {
         'dataset': 123,
         'dataset_id': 'did123',
+        'status': 'processing',
+        'jobs_submitted': 1,
+        'tasks_submitted': 1,
+        'tasks_per_job': 1,
+        'priority': 0.5,
         'group': 'g123',
         'username': 'u123',
+        'debug': False
     }
     config_data = {
         'my': 'config'
     }
-    d = Dataset(dataset_data['dataset_id'], dataset_data['dataset'], dataset_data['group'], dataset_data['username'], config_data)
+    d = Dataset(
+        dataset_data['dataset_id'],
+        dataset_data['dataset'],
+        dataset_data['jobs_submitted'],
+        dataset_data['tasks_submitted'],
+        dataset_data['tasks_per_job'],
+        dataset_data['status'],
+        dataset_data['priority'],
+        dataset_data['group'],
+        dataset_data['username'],
+        dataset_data['debug'],
+        config_data
+    )
     with pytest.raises(Exception):
         d.validate()
 
@@ -74,8 +180,14 @@ async def test_validate_valid():
     dataset_data = {
         'dataset': 123,
         'dataset_id': 'did123',
+        'status': 'processing',
+        'jobs_submitted': 1,
+        'tasks_submitted': 1,
+        'tasks_per_job': 1,
+        'priority': 0.5,
         'group': 'g123',
         'username': 'u123',
+        'debug': False
     }
     config_data = {
         'tasks': [{
@@ -85,7 +197,19 @@ async def test_validate_valid():
             }]
         }]
     }
-    d = Dataset(dataset_data['dataset_id'], dataset_data['dataset'], dataset_data['group'], dataset_data['username'], config_data)
+    d = Dataset(
+        dataset_data['dataset_id'],
+        dataset_data['dataset'],
+        dataset_data['jobs_submitted'],
+        dataset_data['tasks_submitted'],
+        dataset_data['tasks_per_job'],
+        dataset_data['status'],
+        dataset_data['priority'],
+        dataset_data['group'],
+        dataset_data['username'],
+        dataset_data['debug'],
+        config_data
+    )
     d.fill_defaults()
     d.validate()
 
@@ -94,7 +218,7 @@ def test_job_dataclasses():
     with pytest.raises(Exception):
         Job()
 
-    d = Dataset('did123', 123, 'grp', 'usr', {})
+    d = Dataset('did123', 123, 2, 1, 1, 'processing', 0.5, 'grp', 'usr', False, {})
     j = Job(d, 'j123', 1, 'processing')
 
     assert j.dataset == d
@@ -107,7 +231,7 @@ def test_task_dataclasses():
     with pytest.raises(Exception):
         Task()
 
-    d = Dataset('did123', 123, 'grp', 'usr', {})
+    d = Dataset('did123', 123, 2, 1, 1, 'processing', 0.5, 'grp', 'usr', False, {})
     j = Job(d, 'j123', 1, 'processing')
     t = Task(d, j, 't123', 0, 'foo', [], {}, 'waiting', '', {})
 
@@ -124,7 +248,7 @@ def test_task_dataclasses():
 
 
 def test_task_config():
-    d = Dataset('did123', 123, 'grp', 'usr', {'tasks':[1,2,3]})
+    d = Dataset('did123', 123, 2, 1, 1, 'processing', 0.5, 'grp', 'usr', False, {'tasks':[1,2,3]})
     j = Job(d, 'j123', 1, 'processing')
     t = Task(d, j, 't123', 0, 'foo', [], {}, 'waiting', '', {})
 
@@ -135,9 +259,15 @@ async def test_task_load_from_api(requests_mock):
     dataset_id = 'did123'
     dataset_data = {
         'dataset': 123,
-        'dataset_id': dataset_id,
+        'dataset_id': 'did123',
+        'status': 'processing',
+        'jobs_submitted': 1,
+        'tasks_submitted': 1,
+        'tasks_per_job': 1,
+        'priority': 0.5,
         'group': 'g123',
         'username': 'u123',
+        'debug': False
     }
     requests_mock.get(f'http://test.iceprod/datasets/{dataset_id}', json=dataset_data)
     config_data = {
@@ -177,7 +307,7 @@ async def test_task_load_from_api(requests_mock):
 
 
 async def test_task_load_stats(requests_mock):
-    d = Dataset('did123', 123, 'grp', 'usr', {'tasks':[1,2,3]})
+    d = Dataset('did123', 123, 2, 1, 1, 'processing', 0.5, 'grp', 'usr', False, {'tasks':[1,2,3]})
     j = Job(d, 'j123', 1, 'processing')
     t = Task(d, j, 't123', 0, 'foo', [], {}, 'waiting', '', {})
 
