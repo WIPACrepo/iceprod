@@ -15,15 +15,11 @@ The `output` method of each class will create json with info on each
 dataclass, to be used in javascript.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import time
 
 from numbers import Number, Integral
-try:
-    String = basestring
-except NameError:
-    String = str
+String = str
+
 
 # pluralizations for keys that are not classes here
 _plurals = {

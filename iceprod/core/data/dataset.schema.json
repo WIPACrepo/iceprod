@@ -18,12 +18,14 @@
     "options": {
       "description": "Internal parameters attached to a dataset",
       "type": "object",
+      "default": {},
       "properties": {},
       "additionalProperties": true
     },
     "steering": {
       "description": "General paramters, used as references elsewhere in the config",
       "type": "object",
+      "default": {},
       "properties": {
         "parameters": { "$ref": "#/$defs/parameters" },
         "batchsys": { "$ref": "#/$defs/batchsys" },
@@ -39,7 +41,10 @@
         "title": "Task",
         "description": "An individual batch job",
         "properties": {
-          "name": { "type": "string" },
+          "name": {
+            "type": "string",
+            "description": "Unique name of task"
+          },
           "depends": {
             "type": "array",
             "description": "Task dependency names",
@@ -51,7 +56,6 @@
             "description": "Enable to use the task files API"
           },
           "data": { "$ref": "#/$defs/data" },
-          "classes": { "$ref": "#/$defs/classes" },
           "parameters": { "$ref": "#/$defs/parameters" },
           "batchsys": { "$ref": "#/$defs/batchsys" },
           "requirements": { "$ref": "#/$defs/requirements" },
@@ -67,14 +71,17 @@
               "title": "Tray",
               "description": "Collection of modules",
               "properties": {
-                "name": { "type": "string" },
+                "name": {
+                  "type": "string",
+                  "default": "",
+                  "description": "Name of tray"
+                },
                 "iterations": {
                   "type": "integer",
                   "default": 1,
                   "description": "Number of times to execute this tray"
                 },
                 "data": { "$ref": "#/$defs/data", "deprecated": true },
-                "classes": { "$ref": "#/$defs/classes", "deprecated": true },
                 "parameters": { "$ref": "#/$defs/parameters" },
                 "modules": {
                   "type": "array",
@@ -83,15 +90,21 @@
                     "title": "Module",
                     "description": "The actual thing to execute, usually a script",
                     "properties": {
+                      "name": {
+                        "type": "string",
+                        "default": "",
+                        "description": "Name of module"
+                      },
                       "data": { "$ref": "#/$defs/data", "deprecated": true },
-                      "classes": { "$ref": "#/$defs/classes", "deprecated": true },
                       "parameters": { "$ref": "#/$defs/parameters" },
                       "running_class": {
                         "type": "string",
+                        "default": "",
                         "description": "a Python class or function to call directly"
                       },
                       "src": {
                         "type": "string",
+                        "default": "",
                         "description": "the location of a class or script"
                       },
                       "args": {
@@ -100,6 +113,7 @@
                           { "type": "array", "items": { "type": "string" } },
                           { "type": "object", "additionalProperties": { "type": "string" } }
                         ],
+                        "default": "",
                         "description": "args to give to a class or script"
                       },
                       "env_shell": {
@@ -114,7 +128,9 @@
                       },
                       "configs": {
                         "type": "object",
+                        "default": {},
                         "description": "any json config files that should be written in $PWD (format is {filename: data})",
+                        "properties": {},
                         "additionalProperties": { "type": "string" }
                       }
                     },
@@ -136,9 +152,18 @@
   "required": [ "version", "tasks", "description" ],
 
   "$defs": {
-    "parameters": {},
+    "parameters": {
+      "type": "object",
+      "description": "Config parameters",
+      "default": {},
+      "properties": {},
+      "additionalProperties": true
+    },
     "batchsys": {
-      "description": "Overrides for batch system properties",
+      "type": "object",
+      "description": "Overrides for batch system properties: {batchsys: {propname: propvalue}}",
+      "default": {},
+      "properties": {},
       "additionalProperties": {
         "type": "object"
       }
@@ -154,7 +179,6 @@
         },
         "gpu": {
           "type": "integer",
-          "default": 0,
           "description": "GPUs required"
         },
         "memory": {
@@ -167,76 +191,55 @@
           "default": 1.0,
           "description": "Disk required in GB"
         },
+        "time": {
+          "type": "number",
+          "default": 1.0,
+          "description": "Time required in hours"
+        },
         "os": {
           "type": "string",
-          "default": "",
           "description": "OS required in CVMFS format"
         },
         "site": {
           "type": "string",
-          "default": "",
           "description": "Site required"
         }
       }
     },
     "data": {
-      "type": "object",
-      "description": "A data file, to upload or download",
-      "properties": {
-        "remote": {
-          "type": "string",
-          "default": "",
-          "description": "remote url (can leave blank for temp files)"
-        },
-        "local": {
-          "type": "string",
-          "default": "",
-          "description": "local file name (will use basename of remote if available)"
-        },
-        "type": {
-          "enum": ["permanent", "job_temp", "dataset_temp", "site_temp"],
-          "default": "permanent",
-          "description": "type of data"
-        },
-        "movement": {
-          "enum": ["input", "output", "both"],
-          "default": "both",
-          "description": "movement of data"
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "object",
+        "description": "A data file, to upload or download",
+        "properties": {
+          "remote": {
+            "type": "string",
+            "default": "",
+            "description": "remote url (can leave blank for temp files)"
+          },
+          "local": {
+            "type": "string",
+            "default": "",
+            "description": "local file name (will use basename of remote if available)"
+          },
+          "type": {
+            "enum": ["permanent", "job_temp", "dataset_temp", "site_temp"],
+            "default": "permanent",
+            "description": "type of data"
+          },
+          "movement": {
+            "enum": ["input", "output", "both"],
+            "default": "input",
+            "description": "movement of data"
+          },
+          "transfer": {
+            "anyOf": [{"type": "string"}, {"type": "boolean"}],
+            "default": true,
+            "description": "should the data be transferred"
+          }
         }
       }
-    },
-    "class": {
-      "type": "object",
-      "description": "A class object, downloaded from a url",
-      "properties": {
-        "name": {
-          "type": "string",
-          "default": "",
-          "description": "name of class"
-        },
-        "src": {
-          "type": "string",
-          "default": "",
-          "description": "url"
-        },
-        "recursive": {
-          "type": "boolean",
-          "default": false,
-          "description": "recusively add to path",
-          "deprecated": true
-        },
-        "libs": {
-          "type": "string",
-          "default": "",
-          "description": "explicit library paths"
-        },
-        "env_vars": {
-          "type": "string",
-          "default": "",
-          "description": "any env vars to add"
-        }
-      },
-      "required": ["name", "src"]
     }
   }
 }
