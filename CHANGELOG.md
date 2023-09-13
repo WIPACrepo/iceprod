@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v2.7.4 (2023-09-13)
+
+### Other
+
+* Fix os selection ([#361](https://github.com/WIPACrepo/iceprod/issues/361)) ([`efa52ac`](https://github.com/WIPACrepo/iceprod/commit/efa52acf9aafea60ac974d236363bddb4c3397e5))
+
 ## v2.7.3 (2023-07-26)
 
 ### Other
