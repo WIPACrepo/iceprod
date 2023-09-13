@@ -36,8 +36,8 @@ def condor_os_reqs(os_arch):
     os_arch = os_arch.rsplit('_',2)[0].rsplit('.',1)[0]
     reqs = 'OpSysAndVer =?= "{}"'.format(os_arch.replace('RHEL','CentOS').replace('_',''))
     reqs = reqs + '|| OpSysAndVer =?= "{}"'.format(os_arch.replace('RHEL','SL').replace('_',''))
-    reqs = reqs + ' || OSGVO_OS_STRING =?= "{}"'.format(os_arch.replace('_',' '))
-    return '('+reqs+')'
+    reqs = 'isUndefined(OSGVO_OS_STRING) ? ('+reqs+') : OSGVO_OS_STRING =?= "{}"'.format(os_arch.replace('_',' '))
+    return reqs
 
 
 class condor(grid.BaseGrid):
