@@ -284,7 +284,7 @@ def _http_helper(options={}, sync=True):
         session = Session
     else:
         session = AsyncSession
-    with session() as s:
+    with session(retries=10, backoff_factor=0.3) as s:
         if 'username' in options and 'password' in options:
             s.auth = (options['username'], options['password'])
         if 'sslcert' in options:
