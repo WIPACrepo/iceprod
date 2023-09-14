@@ -58,6 +58,7 @@ class Dataset:
                     schema_value = schema_value.get(parts.pop(0), {})
                 logging.debug('loading from ref: %r', schema_value)
             return schema_value
+
         def _fill_dict(user, schema):
             for prop in schema['properties']:
                 schema_value = _load_ref(schema['properties'][prop])
