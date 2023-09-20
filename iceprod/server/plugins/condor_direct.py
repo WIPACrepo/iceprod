@@ -206,7 +206,8 @@ class condor_direct(grid.BaseGrid):
                         or 'Illegal instruction' in line
                         or ('Killed' in line and 'env-shell.sh' in line)
                         or ('python: command not found' in line and 'env-shell.sh' in line)
-                        or 'py3-v4.1.1/RHEL_8_x86_64/lib/libCore.so.6.18: undefined symbol: usedToIdentifyRootClingByDlSym' in line):
+                        or 'py3-v4.1.1/RHEL_8_x86_64/lib/libCore.so.6.18: undefined symbol: usedToIdentifyRootClingByDlSym' in line
+                        or 'OpenCL ERROR: clGetPlatformIDs' in line):
                     payload_failure = False
                     break
 
