@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v2.7.5 (2023-09-20)
+
+### Other
+
+* Opencl errors are node failures ([#362](https://github.com/WIPACrepo/iceprod/issues/362)) ([`7b148fc`](https://github.com/WIPACrepo/iceprod/commit/7b148fcc516ccb822be13be613819caffd941c86))
+
 ## v2.7.4 (2023-09-13)
 
 ### Other
