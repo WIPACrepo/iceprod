@@ -14,11 +14,11 @@ attrs==23.1.0
     #   referencing
 beautifulsoup4==4.12.2
     # via iceprod (setup.py)
-boto3==1.28.47
+boto3==1.28.53
     # via
     #   iceprod (setup.py)
     #   moto
-botocore==1.31.47
+botocore==1.31.53
     # via
     #   boto3
     #   moto
@@ -42,7 +42,7 @@ coverage[toml]==7.3.1
     # via
     #   iceprod (setup.py)
     #   pytest-cov
-cryptography==41.0.3
+cryptography==41.0.4
     # via
     #   iceprod (setup.py)
     #   moto
@@ -79,7 +79,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-jsonschema==4.19.0
+jsonschema==4.19.1
     # via iceprod (setup.py)
 jsonschema-specifications==2023.7.1
     # via jsonschema
@@ -93,7 +93,7 @@ mccabe==0.7.0
     # via flake8
 mock==5.1.0
     # via iceprod (setup.py)
-moto==4.2.2
+moto==4.2.3
     # via iceprod (setup.py)
 motor==3.3.1
     # via iceprod (setup.py)
@@ -201,7 +201,7 @@ tornado==6.3.3
     #   wipac-rest-tools
 types-pyyaml==6.0.12.11
     # via responses
-typing-extensions==4.7.1
+typing-extensions==4.8.0
     # via
     #   qrcode
     #   wipac-dev-tools
