@@ -53,7 +53,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-jsonschema==4.19.0
+jsonschema==4.19.1
     # via iceprod (setup.py)
 jsonschema-specifications==2023.7.1
     # via jsonschema
