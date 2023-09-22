@@ -25,11 +25,7 @@ async def run(rest_client, debug=False):
         debug (bool): debug flag to propagate exceptions
     """
     datasets = await rest_client.request('GET', '/dataset_summaries/status')
-    dataset_ids = []
-    if 'processing' in datasets:
-        dataset_ids.extend(datasets['processing'])
-    if 'truncated' in datasets:
-        dataset_ids.extend(datasets['truncated'])
+    dataset_ids = datasets.get('processing', [])
     for dataset_id in dataset_ids:
         # clean up misconfigured datasets that have no config
         try:
@@ -50,10 +46,10 @@ async def run(rest_client, debug=False):
         try:
             dataset = await rest_client.request('GET', f'/datasets/{dataset_id}')
             jobs = await rest_client.request('GET', f'/datasets/{dataset_id}/job_counts/status')
-            if sum(jobs[s] for s in jobs) >= dataset['jobs_submitted']:
+            if dataset.get('truncated', False) or sum(jobs[s] for s in jobs) >= dataset['jobs_submitted']:
                 # jobs are all buffered / materialized
                 job_statuses = set(jobs)
-                if job_statuses == set(['complete']):
+                if job_statuses == {'complete'}:
                     logger.info('dataset %s status -> complete', dataset_id)
                     args = {'status': 'complete'}
                     await rest_client.request('PUT', f'/datasets/{dataset_id}/status', args)

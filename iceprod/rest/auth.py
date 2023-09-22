@@ -92,6 +92,29 @@ class AttrAuthMixin:
             logger.debug('arg=%r, val=%r, role=%r, auths=%r', arg, val, role, ret, exc_info=True)
             raise HTTPError(403, reason='failed auth')
 
+    async def manual_attr_auth(self, arg, val, role, token_role_bypass=['admin', 'system']):
+        """
+        Manually run check_attr_auth and return a boolean.
+
+        Args:
+            arg (str): attribute name to check
+            val (str): attribute value
+            role (str): the role to check for (read|write)
+            token_role_bypass (list): token roles that bypass this auth (default: admin,system)
+
+        Returns:
+            bool: authorized
+        """
+        if any(r in self.auth_roles for r in token_role_bypass):
+            logger.debug('token role bypass')
+            return True
+        try:
+            await self.check_attr_auth(arg, val, role)
+        except Exception:
+            logger.debug('unauthorized')
+            return False
+        return True
+
 
 #: match token roles and groups
 authorization = token_attribute_role_mapping_auth(role_attrs=ROLES, group_attrs=GROUPS)

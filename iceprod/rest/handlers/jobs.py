@@ -8,7 +8,8 @@ import tornado.web
 
 from ..base_handler import APIBase
 from ..auth import authorization, attr_auth
-from iceprod.server.util import nowstr, job_statuses, job_status_sort
+from iceprod.server.util import nowstr
+from iceprod.server.states import JOB_STATUS, JOB_STATUS_START, job_prev_statuses, job_status_sort
 
 logger = logging.getLogger('rest.jobs')
 
@@ -31,6 +32,7 @@ def setup(handler_cfg):
             (r'/datasets/(?P<dataset_id>\w+)/jobs/(?P<job_id>\w+)', DatasetJobsHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/jobs/(?P<job_id>\w+)/status', DatasetJobsStatusHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/job_actions/bulk_status/(?P<status>\w+)', DatasetJobBulkStatusHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/job_actions/bulk_hard_reset', DatasetJobBulkHardResetHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/job_summaries/status', DatasetJobSummariesStatusHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/job_counts/status', DatasetJobCountsStatusHandler, handler_cfg),
         ],
@@ -72,6 +74,19 @@ class MultiJobsHandler(APIBase):
                 r = 'key {} should be of type {}'.format(k, req_fields[k])
                 raise tornado.web.HTTPError(400, reason=r)
 
+        opt_fields = {
+            'job_id': str,
+        }
+        for k in opt_fields:
+            if k in data and not isinstance(data[k], opt_fields[k]):
+                r = 'key "{}" should be of type {}'.format(k, opt_fields[k].__name__)
+                raise tornado.web.HTTPError(400, reason=r)
+
+        bad_fields = set(data).difference(set(opt_fields).union(req_fields))
+        if bad_fields:
+            r = 'invalid keys found'
+            raise tornado.web.HTTPError(400, reason=r)
+
         # validate job_id if given
         if 'job_id' in data:
             try:
@@ -84,7 +99,7 @@ class MultiJobsHandler(APIBase):
         # set some fields
         data.update({
             'job_id': job_id,
-            'status': 'processing',
+            'status': JOB_STATUS_START,
             'status_changed': nowstr(),
         })
 
@@ -159,7 +174,7 @@ class DatasetMultiJobsHandler(APIBase):
 
         Params (optional):
             job_index: job_index to filter by
-            status: | separated list of task status to filter by
+            status: | separated list of job status to filter by
             keys: | separated list of keys to return for each task
 
         Args:
@@ -171,7 +186,10 @@ class DatasetMultiJobsHandler(APIBase):
         filters = {'dataset_id':dataset_id}
         status = self.get_argument('status', None)
         if status:
-            filters['status'] = {'$in': status.split('|')}
+            status_list = status.split('|')
+            if any(s not in JOB_STATUS for s in status_list):
+                raise tornado.web.HTTPError(400, reason='Unknown status')
+            filters['status'] = {'$in': status_list}
 
         job_index = self.get_argument('job_index', None)
         if job_index:
@@ -230,7 +248,7 @@ class DatasetJobsStatusHandler(APIBase):
     @attr_auth(arg='dataset_id', role='write')
     async def put(self, dataset_id, job_id):
         """
-        Set a job status.
+        Set a job status, following possible state transitions.
 
         Body should have {'status': <new_status>}
 
@@ -244,7 +262,7 @@ class DatasetJobsStatusHandler(APIBase):
         data = json.loads(self.request.body)
         if (not data) or 'status' not in data:
             raise tornado.web.HTTPError(400, reason='Missing status in body')
-        if data['status'] not in job_statuses:
+        if data['status'] not in JOB_STATUS:
             raise tornado.web.HTTPError(400, reason='Bad status')
         update_data = {
             'status': data['status'],
@@ -252,14 +270,18 @@ class DatasetJobsStatusHandler(APIBase):
         }
 
         ret = await self.db.jobs.update_one(
-            {'job_id':job_id,'dataset_id':dataset_id},
-            {'$set':update_data}
+            {'job_id': job_id, 'dataset_id': dataset_id, 'status': {'$in': job_prev_statuses(data['status'])}},
+            {'$set': update_data}
         )
         if (not ret) or ret.modified_count < 1:
-            self.send_error(404, reason="Job not found")
+            ret = await self.db.jobs.find_one({'job_id': job_id, 'dataset_id': dataset_id})
+            if not ret:
+                self.send_error(404, reason="Job not found")
+            else:
+                self.send_error(400, reason="Bad state transition for status")
         else:
             self.write({})
-            self.finish
+            self.finish()
 
 
 class DatasetJobBulkStatusHandler(APIBase):
@@ -270,7 +292,7 @@ class DatasetJobBulkStatusHandler(APIBase):
     @attr_auth(arg='dataset_id', role='write')
     async def post(self, dataset_id, status):
         """
-        Set multiple jobs' status.
+        Set multiple jobs' status, following possible state transitions.
 
         Body should have {'jobs': [<job_id>, <job_id>, ...]}
 
@@ -287,18 +309,61 @@ class DatasetJobBulkStatusHandler(APIBase):
         jobs = list(data['jobs'])
         if len(jobs) > 100000:
             raise tornado.web.HTTPError(400, reason='Too many jobs specified (limit: 100k)')
-        if status not in job_statuses:
+        if status not in JOB_STATUS:
             raise tornado.web.HTTPError(400, reason='Bad status')
         query = {
             'dataset_id': dataset_id,
             'job_id': {'$in': jobs},
+            'status': {'$in': job_prev_statuses(status)}
         }
         update_data = {
             'status': status,
             'status_changed': nowstr(),
         }
 
-        ret = await self.db.jobs.update_many(query, {'$set':update_data})
+        ret = await self.db.jobs.update_many(query, {'$set': update_data})
+        if (not ret) or ret.modified_count < 1:
+            self.send_error(404, reason="Jobs not found")
+        else:
+            self.write({})
+            self.finish()
+
+
+class DatasetJobBulkHardResetHandler(APIBase):
+    """
+    Update the status of multiple jobs at once.
+    """
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='write')
+    async def post(self, dataset_id):
+        """
+        Do a hard reset on jobs.
+
+        Body should have {'jobs': [<job_id>, <job_id>, ...]}
+
+        Args:
+            dataset_id (str): dataset id
+
+        Returns:
+            dict: empty dict
+        """
+        data = json.loads(self.request.body)
+        if (not data) or 'jobs' not in data or not data['jobs']:
+            raise tornado.web.HTTPError(400, reason='Missing jobs in body')
+        jobs = list(data['jobs'])
+        if len(jobs) > 100000:
+            raise tornado.web.HTTPError(400, reason='Too many jobs specified (limit: 100k)')
+
+        query = {
+            'dataset_id': dataset_id,
+            'job_id': {'$in': jobs},
+        }
+        update_data = {
+            'status': JOB_STATUS_START,
+            'status_changed': nowstr(),
+        }
+
+        ret = await self.db.jobs.update_many(query, {'$set': update_data})
         if (not ret) or ret.modified_count < 1:
             self.send_error(404, reason="Jobs not found")
         else:
@@ -353,8 +418,8 @@ class DatasetJobCountsStatusHandler(APIBase):
             dict: {<status>: [<job_id>,]}
         """
         cursor = self.db.jobs.aggregate([
-            {'$match':{'dataset_id':dataset_id}},
-            {'$group':{'_id':'$status', 'total': {'$sum':1}}},
+            {'$match': {'dataset_id': dataset_id}},
+            {'$group': {'_id':'$status', 'total': {'$sum':1}}},
         ])
         ret = {}
         async for row in cursor:
