@@ -253,3 +253,29 @@ async def test_rest_datasets_summaries_status(server):
 
     ret = await client.request('GET', '/dataset_summaries/status')
     assert ret == {'processing': [dataset_id]}
+
+    client2 = server(roles=['user'], groups=['filtering'], username='user2')
+    ret = await client2.request('GET', '/dataset_summaries/status')
+    assert ret == {'processing': [dataset_id]}
+
+
+async def test_rest_datasets_summaries_status_with_groups(server):
+    client = server(roles=['user'], groups=['simprod'])
+
+    data = {
+        'description': 'blah',
+        'tasks_per_job': 4,
+        'jobs_submitted': 1,
+        'tasks_submitted': 4,
+        'group': 'simprod',
+        'auth_groups_read': [],
+    }
+    ret = await client.request('POST', '/datasets', data)
+    dataset_id = ret['result'].split('/')[-1]
+
+    ret = await client.request('GET', '/dataset_summaries/status')
+    assert ret == {'processing': [dataset_id]}
+
+    client2 = server(roles=['user'], groups=['filtering'], username='user2')
+    ret = await client2.request('GET', '/dataset_summaries/status')
+    assert ret == {}

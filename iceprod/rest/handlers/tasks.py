@@ -11,7 +11,8 @@ from ..base_handler import APIBase
 from ..auth import authorization, attr_auth
 from iceprod.core import dataclasses
 from iceprod.core.resources import Resources
-from iceprod.server.util import nowstr, task_statuses, task_status_sort
+from iceprod.server.util import nowstr
+from iceprod.server.states import TASK_STATUS, TASK_STATUS_START, task_status_sort, task_prev_statuses
 
 logger = logging.getLogger('rest.tasks')
 
@@ -31,10 +32,11 @@ def setup(handler_cfg):
             (r'/tasks', MultiTasksHandler, handler_cfg),
             (r'/tasks/(?P<task_id>\w+)', TasksHandler, handler_cfg),
             (r'/tasks/(?P<task_id>\w+)/status', TasksStatusHandler, handler_cfg),
-            (r'/task_actions/queue', TasksActionsQueueHandler, handler_cfg),
             (r'/task_actions/bulk_status/(?P<status>\w+)', TaskBulkStatusHandler, handler_cfg),
-            (r'/task_actions/process', TasksActionsProcessingHandler, handler_cfg),
+            (r'/task_actions/waiting', TasksActionsWaitingHandler, handler_cfg),
+            (r'/task_actions/queue', TasksActionsQueueHandler, handler_cfg),
             (r'/task_counts/status', TaskCountsStatusHandler, handler_cfg),
+            (r'/tasks/(?P<task_id>\w+)/task_actions/processing', TasksActionsProcessingHandler, handler_cfg),
             (r'/tasks/(?P<task_id>\w+)/task_actions/reset', TasksActionsErrorHandler, handler_cfg),
             (r'/tasks/(?P<task_id>\w+)/task_actions/failed', TasksActionsFailedHandler, handler_cfg),
             (r'/tasks/(?P<task_id>\w+)/task_actions/complete', TasksActionsCompleteHandler, handler_cfg),
@@ -45,6 +47,7 @@ def setup(handler_cfg):
             (r'/datasets/(?P<dataset_id>\w+)/task_counts/status', DatasetTaskCountsStatusHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/task_counts/name_status', DatasetTaskCountsNameStatusHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/task_actions/bulk_status/(?P<status>\w+)', DatasetTaskBulkStatusHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/task_actions/bulk_hard_reset', DatasetTaskBulkHardResetHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/task_actions/bulk_requirements/(?P<name>[^\/\?\#]+)', DatasetTaskBulkRequirementsHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/task_stats', DatasetTaskStatsHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/files', DatasetMultiFilesHandler, handler_cfg),
@@ -148,6 +151,23 @@ class MultiTasksHandler(APIBase):
                 r = 'key {} should be of type {}'.format(k, req_fields[k])
                 raise tornado.web.HTTPError(400, reason=r)
 
+        opt_fields = {
+            'status': str,
+            'priority': float,
+        }
+        for k in opt_fields:
+            if k in data and not isinstance(data[k], opt_fields[k]):
+                r = 'key "{}" should be of type {}'.format(k, opt_fields[k].__name__)
+                raise tornado.web.HTTPError(400, reason=r)
+
+        bad_fields = set(data).difference(set(opt_fields).union(req_fields))
+        if bad_fields:
+            r = 'invalid keys found'
+            raise tornado.web.HTTPError(400, reason=r)
+
+        if 'status' in data and data['status'] not in TASK_STATUS:
+            raise tornado.web.HTTPError(400, reason='invalid status')
+
         # set some fields
         task_id = uuid.uuid1().hex
         data.update({
@@ -161,7 +181,7 @@ class MultiTasksHandler(APIBase):
             'site': '',
         })
         if 'status' not in data:
-            data['status'] = 'waiting'
+            data['status'] = TASK_STATUS_START
         if 'priority' not in data:
             data['priority'] = 1.
 
@@ -244,16 +264,23 @@ class TasksStatusHandler(APIBase):
         data = json.loads(self.request.body)
         if (not data) or 'status' not in data:
             raise tornado.web.HTTPError(400, reason='Missing status in body')
-        if data['status'] not in task_statuses:
+        if data['status'] not in TASK_STATUS:
             raise tornado.web.HTTPError(400, reason='Bad status')
         update_data = {
             'status': data['status'],
             'status_changed': nowstr(),
         }
 
-        ret = await self.db.tasks.update_one({'task_id':task_id}, {'$set':update_data})
+        ret = await self.db.tasks.update_one(
+            {'task_id': task_id, 'status': {'$in': task_prev_statuses(data['status'])}},
+            {'$set': update_data}
+        )
         if (not ret) or ret.modified_count < 1:
-            self.send_error(404, reason="Task not found")
+            ret = await self.db.tasks.find_one({'task_id': task_id})
+            if not ret:
+                self.send_error(404, reason="Task not found")
+            else:
+                self.send_error(400, reason="Bad state transition for status")
         else:
             self.write({})
             self.finish()
@@ -272,8 +299,8 @@ class TaskCountsStatusHandler(APIBase):
             dict: {<status>: num}
         """
         ret = {}
-        for status in task_statuses:
-            ret[status] = await self.db.tasks.count_documents({"status":status})
+        for status in TASK_STATUS:
+            ret[status] = await self.db.tasks.count_documents({"status": status})
 
         ret2 = {}
         for k in sorted(ret, key=task_status_sort):
@@ -308,7 +335,10 @@ class DatasetMultiTasksHandler(APIBase):
 
         status = self.get_argument('status', None)
         if status:
-            filters['status'] = {'$in': status.split('|')}
+            status_list = status.split('|')
+            if any(s not in TASK_STATUS for s in status_list):
+                raise tornado.web.HTTPError(400, reaosn='Unknown task status')
+            filters['status'] = {'$in': status_list}
 
         job_id = self.get_argument('job_id', None)
         if job_id:
@@ -376,6 +406,52 @@ class DatasetTasksStatusHandler(APIBase):
     @attr_auth(arg='dataset_id', role='write')
     async def put(self, dataset_id, task_id):
         """
+        Set a task status, following possible state transitions.
+
+        Body should have {'status': <new_status>}
+
+        Args:
+            dataset_id (str): dataset id
+            task_id (str): the task id
+
+        Returns:
+            dict: empty dict
+        """
+        data = json.loads(self.request.body)
+        if (not data) or 'status' not in data:
+            raise tornado.web.HTTPError(400, reason='Missing status in body')
+        if data['status'] not in TASK_STATUS:
+            raise tornado.web.HTTPError(400, reason='Bad status')
+        update_data = {
+            'status': data['status'],
+            'status_changed': nowstr(),
+        }
+        if data['status'] == 'reset':
+            update_data['failures'] = 0
+
+        ret = await self.db.tasks.update_one(
+            {'task_id': task_id, 'dataset_id': dataset_id, 'status': {'$in': task_prev_statuses(data['status'])}},
+            {'$set': update_data}
+        )
+        if (not ret) or ret.modified_count < 1:
+            ret = await self.db.tasks.find_one({'task_id': task_id, 'dataset_id': dataset_id})
+            if not ret:
+                self.send_error(404, reason="Task not found")
+            else:
+                self.send_error(400, reason="Bad state transition for status")
+        else:
+            self.write({})
+            self.finish()
+
+
+class DatasetTasksForceStatusHandler(APIBase):
+    """
+    Handle single task requests.
+    """
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='write')
+    async def put(self, dataset_id, task_id):
+        """
         Set a task status.
 
         Body should have {'status': <new_status>}
@@ -390,7 +466,7 @@ class DatasetTasksStatusHandler(APIBase):
         data = json.loads(self.request.body)
         if (not data) or 'status' not in data:
             raise tornado.web.HTTPError(400, reason='Missing status in body')
-        if data['status'] not in task_statuses:
+        if data['status'] not in TASK_STATUS:
             raise tornado.web.HTTPError(400, reason='Bad status')
         update_data = {
             'status': data['status'],
@@ -453,8 +529,8 @@ class DatasetTaskCountsStatusHandler(APIBase):
             dict: {<status>: num}
         """
         cursor = self.db.tasks.aggregate([
-            {'$match':{'dataset_id':dataset_id}},
-            {'$group':{'_id':'$status', 'total': {'$sum':1}}},
+            {'$match': {'dataset_id': dataset_id}},
+            {'$group': {'_id': '$status', 'total': {'$sum': 1}}},
         ])
         ret = {}
         async for row in cursor:
@@ -483,11 +559,11 @@ class DatasetTaskCountsNameStatusHandler(APIBase):
             dict: {<name>: {<status>: num}}
         """
         cursor = self.db.tasks.aggregate([
-            {'$match':{'dataset_id':dataset_id}},
+            {'$match':{'dataset_id': dataset_id}},
             {'$group':{
-                '_id':{'name':'$name','status':'$status'},
-                'ordering':{'$first':'$task_index'},
-                'total': {'$sum':1}
+                '_id':{'name': '$name', 'status': '$status'},
+                'ordering': {'$first': '$task_index'},
+                'total': {'$sum': 1}
             }},
         ])
         ret = defaultdict(dict)
@@ -548,9 +624,9 @@ class DatasetTaskStatsHandler(APIBase):
         self.finish()
 
 
-class TasksActionsQueueHandler(APIBase):
+class TasksActionsWaitingHandler(APIBase):
     """
-    Handle task action for waiting -> queued.
+    Handle task action for idle -> waiting.
     """
     @authorization(roles=['admin', 'system'])
     async def post(self):
@@ -563,38 +639,38 @@ class TasksActionsQueueHandler(APIBase):
             num_tasks: int
 
         Returns:
-            dict: {queued: num tasks queued}
+            dict: {waiting: num tasks waiting}
         """
         data = json.loads(self.request.body)
         num_tasks = data.get('num_tasks', 100)
 
-        query = {'status': 'waiting'}
-        val = {'$set': {'status': 'queued'}}
+        query = {'status': 'idle'}
+        val = {'$set': {'status': 'waiting'}}
 
-        queued = 0
-        while queued < num_tasks:
+        waiting = 0
+        while waiting < num_tasks:
             ret = await self.db.tasks.find_one_and_update(
                 query,
                 val,
-                projection={'_id':False,'task_id':True},
+                projection={'_id': False, 'task_id': True},
                 sort=[('priority', -1)]
             )
             if not ret:
                 logger.debug('no more tasks to queue')
                 break
-            queued += 1
-        logger.info(f'queued {queued} tasks')
-        self.write({'queued': queued})
+            waiting += 1
+        logger.info(f'waiting {waiting} tasks')
+        self.write({'waiting': waiting})
 
 
-class TasksActionsProcessingHandler(APIBase):
+class TasksActionsQueueHandler(APIBase):
     """
-    Handle task action for queued -> processing.
+    Handle task action for waiting -> queued.
     """
     @authorization(roles=['admin', 'system'])
     async def post(self):
         """
-        Take one queued task, set its status to processing, and return it.
+        Take one waiting task, set its status to queued, and return it.
 
         Body args (json):
             requirements: dict
@@ -603,7 +679,7 @@ class TasksActionsProcessingHandler(APIBase):
         Returns:
             dict: <task dict>
         """
-        filter_query = {'status':'queued'}
+        filter_query = {'status': 'waiting'}
         sort_by = [('priority',-1)]
         site = 'unknown'
         if self.request.body:
@@ -637,8 +713,8 @@ class TasksActionsProcessingHandler(APIBase):
         print('filter_query', filter_query)
         ret = await self.db.tasks.find_one_and_update(
             filter_query,
-            {'$set':{'status':'processing'}},
-            projection={'_id':False},
+            {'$set': {'status': 'queued'}},
+            projection={'_id': False},
             sort=sort_by,
             return_document=pymongo.ReturnDocument.AFTER
         )
@@ -646,21 +722,65 @@ class TasksActionsProcessingHandler(APIBase):
             logger.info('filter_query: %r', filter_query)
             self.send_error(404, reason="Task not found")
         else:
-            self.statsd.incr('site.{}.task_processing'.format(site))
+            self.statsd.incr('site.{}.task_queued'.format(site))
+            self.write(ret)
+            self.finish()
+
+
+class TasksActionsProcessingHandler(APIBase):
+    """
+    Handle task action for waiting -> queued.
+    """
+    @authorization(roles=['admin', 'system'])
+    async def post(self, task_id):
+        """
+        Take one queued task, set its status to processing.
+
+        Args:
+            task_id (str): task id
+
+        Body args (json):
+            site (str): (optional) site the task is running at
+
+        Returns:
+            dict: <task dict>
+        """
+        filter_query = {'task_id': task_id, 'status': {'$in': task_prev_statuses('processing')}}
+        update_query = {
+            '$set': {
+                'status': 'processing',
+                'status_changed': nowstr(),
+            },
+        }
+        if self.request.body:
+            data = json.loads(self.request.body)
+            if 'site' in data:
+                site = data['site']
+                update_query['$set']['site'] = site
+
+        ret = await self.db.tasks.find_one_and_update(
+            filter_query,
+            update_query,
+            projection={'_id': False}
+        )
+        if not ret:
+            logger.info('filter_query: %r', filter_query)
+            self.send_error(400, reason="Task not found")
+        else:
             self.write(ret)
             self.finish()
 
 
 class TasksActionsErrorHandler(APIBase):
     """
-    Handle task action on error (* -> reset).
+    Handle task action on error (* -> waiting).
     """
-    final_status = 'reset'
+    final_status = 'waiting'
 
     @authorization(roles=['admin', 'system'])
     async def post(self, task_id):
         """
-        Take one task, set its status to reset.
+        Take one task, set its status to waiting.
 
         Args:
             task_id (str): task id
@@ -672,9 +792,9 @@ class TasksActionsErrorHandler(APIBase):
             reason (str): (optional) reason for error
 
         Returns:
-            dict: {}  empty dict
+            dict: <task dict>
         """
-        filter_query = {'task_id': task_id, 'status': {'$ne': 'complete'}}
+        filter_query = {'task_id': task_id, 'status': {'$in': task_prev_statuses(self.final_status)}}
         update_query = defaultdict(dict,{
             '$set': {
                 'status': self.final_status,
@@ -773,7 +893,7 @@ class TasksActionsCompleteHandler(APIBase):
             site (str): (optional) site the task was running at
 
         Returns:
-            dict: {}  empty dict
+            dict: <task dict>
         """
         filter_query = {'task_id': task_id, 'status': 'processing'}
         update_query = {
@@ -827,7 +947,7 @@ class TaskBulkStatusHandler(APIBase):
         tasks = list(data['tasks'])
         if len(tasks) > 100000:
             raise tornado.web.HTTPError(400, reason='Too many tasks specified (limit: 100k)')
-        if status not in task_statuses:
+        if status not in TASK_STATUS:
             raise tornado.web.HTTPError(400, reason='Bad status')
         query = {
             'task_id': {'$in': tasks},
@@ -836,10 +956,8 @@ class TaskBulkStatusHandler(APIBase):
             'status': status,
             'status_changed': nowstr(),
         }
-        if status == 'reset':
-            update_data['failures'] = 0
 
-        ret = await self.db.tasks.update_many(query, {'$set':update_data})
+        ret = await self.db.tasks.update_many(query, {'$set': update_data})
         if (not ret) or ret.modified_count < 1:
             self.send_error(404, reason="Tasks not found")
         else:
@@ -872,7 +990,7 @@ class DatasetTaskBulkStatusHandler(APIBase):
         tasks = list(data['tasks'])
         if len(tasks) > 100000:
             raise tornado.web.HTTPError(400, reason='Too many tasks specified (limit: 100k)')
-        if status not in task_statuses:
+        if status not in TASK_STATUS:
             raise tornado.web.HTTPError(400, reason='Bad status')
         query = {
             'dataset_id': dataset_id,
@@ -885,7 +1003,50 @@ class DatasetTaskBulkStatusHandler(APIBase):
         if status == 'reset':
             update_data['failures'] = 0
 
-        ret = await self.db.tasks.update_many(query, {'$set':update_data})
+        ret = await self.db.tasks.update_many(query, {'$set': update_data})
+        if (not ret) or ret.modified_count < 1:
+            self.send_error(404, reason="Tasks not found")
+        else:
+            self.write({})
+            self.finish()
+
+
+class DatasetTaskBulkHardResetHandler(APIBase):
+    """
+    Perform a hard reset of multiple tasks at once.
+    """
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='write')
+    async def post(self, dataset_id, status):
+        """
+        Set multiple tasks' status back to the starting status.
+
+        Body should have {'tasks': [<task_id>, <task_id>, ...]}
+
+        Args:
+            dataset_id (str): dataset id
+
+        Returns:
+            dict: empty dict
+        """
+        data = json.loads(self.request.body)
+        if (not data) or 'tasks' not in data or not data['tasks']:
+            raise tornado.web.HTTPError(400, reason='Missing tasks in body')
+        tasks = list(data['tasks'])
+        if len(tasks) > 100000:
+            raise tornado.web.HTTPError(400, reason='Too many tasks specified (limit: 100k)')
+        query = {
+            'dataset_id': dataset_id,
+            'task_id': {'$in': tasks},
+        }
+        update_data = {
+            'status': TASK_STATUS_START,
+            'status_changed': nowstr(),
+            'failures': 0,
+            'site': '',
+        }
+
+        ret = await self.db.tasks.update_many(query, {'$set': update_data})
         if (not ret) or ret.modified_count < 1:
             self.send_error(404, reason="Tasks not found")
         else:

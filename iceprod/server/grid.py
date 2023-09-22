@@ -35,15 +35,10 @@ from iceprod.server import get_pkg_binary
 logger = logging.getLogger('grid')
 
 
+@ttl_cache(ttl=3600)
 def get_host():
     """Cache the host fqdn for 1 hour"""
-    t = time.time()
-    if get_host.history and get_host.history[0]+3600 < t:
-        return get_host.history[1]
-    host = socket.getfqdn()
-    get_host.history = [t, host]
-    return host
-get_host.history = None  # noqa: E305
+    return socket.getfqdn()
 
 
 CRED_SUBMIT_DIR = 'iceprod_credentials'

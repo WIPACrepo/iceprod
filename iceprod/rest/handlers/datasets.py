@@ -8,7 +8,8 @@ import tornado.web
 
 from ..base_handler import APIBase
 from ..auth import authorization, attr_auth
-from iceprod.server.util import nowstr, dataset_statuses, dataset_status_sort
+from iceprod.server.util import nowstr
+from iceprod.server.states import DATASET_STATUS, DATASET_STATUS_START, dataset_prev_statuses, dataset_status_sort
 
 logger = logging.getLogger('rest.datasets')
 
@@ -31,6 +32,7 @@ def setup(handler_cfg):
             (r'/datasets/(?P<dataset_id>\w+)/status', DatasetStatusHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/priority', DatasetPriorityHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/jobs_submitted', DatasetJobsSubmittedHandler, handler_cfg),
+            (r'/dataset_actions/hard_reset', DatasetHardResetHandler, handler_cfg),
             (r'/dataset_summaries/status', DatasetSummariesStatusHandler, handler_cfg),
         ],
         'database': 'datasets',
@@ -63,7 +65,10 @@ class MultiDatasetHandler(APIBase):
         query = {}
         status = self.get_argument('status', None)
         if status:
-            query['status'] = {'$in': status.split('|')}
+            status_list = status.split('|')
+            if any(s not in DATASET_STATUS for s in status_list):
+                raise tornado.web.HTTPError(400, reason='unknown status')
+            query['status'] = {'$in': status_list}
         groups = self.get_argument('groups', None)
         if groups:
             query['group'] = {'$in': groups.split('|')}
@@ -80,7 +85,8 @@ class MultiDatasetHandler(APIBase):
         ret = {}
         async for row in self.db.datasets.find(query, projection=projection):
             k = row['dataset_id']
-            ret[k] = row
+            if await self.manual_attr_auth('dataset_id', k, 'read'):
+                ret[k] = row
         self.write(ret)
         self.finish()
 
@@ -113,6 +119,7 @@ class MultiDatasetHandler(APIBase):
             'debug': bool,
             'jobs_immutable': bool,
             'status': str,
+            'auth_groups_read': list,
         }
         for k in opt_fields:
             if k in data and not isinstance(data[k], opt_fields[k]):
@@ -124,12 +131,17 @@ class MultiDatasetHandler(APIBase):
             r = 'invalid keys found'
             raise tornado.web.HTTPError(400, reason=r)
 
+        read_groups = data.pop('auth_groups_read') if 'auth_groups_read' in data else ['users']
+
         if data['jobs_submitted'] == 0 and data['tasks_per_job'] <= 0:
             r = '"tasks_per_job" must be > 0'
             raise tornado.web.HTTPError(400, reason=r)
         elif data['tasks_submitted'] != 0 and data['tasks_submitted'] / data['jobs_submitted'] != data['tasks_per_job']:
             r = '"tasks_per_job" does not match "tasks_submitted"/"jobs_submitted"'
             raise tornado.web.HTTPError(400, reason=r)
+
+        if 'status' in data and data['status'] not in DATASET_STATUS:
+            raise tornado.web.HTTPError(400, reason='unknown status')
 
         # generate dataset number
         ret = await self.db.settings.find_one_and_update(
@@ -145,7 +157,7 @@ class MultiDatasetHandler(APIBase):
         data['dataset_id'] = dataset_id
         data['dataset'] = dataset_num
         if 'status' not in data:
-            data['status'] = 'processing'
+            data['status'] = DATASET_STATUS_START
         data['start_date'] = nowstr()
         data['username'] = self.current_user
         if 'priority' not in data:
@@ -154,6 +166,7 @@ class MultiDatasetHandler(APIBase):
             data['debug'] = False
         if 'jobs_immutable' not in data:
             data['jobs_immutable'] = False
+        data['truncated'] = False
 
         # insert
         ret = await self.db.datasets.insert_one(data)
@@ -163,7 +176,7 @@ class MultiDatasetHandler(APIBase):
         await self.set_attr_auth(
             'dataset_id',
             data['dataset_id'],
-            read_groups=list({'admin', data['group'], 'users'}),
+            read_groups=list({'admin', data['group']} | set(read_groups)),
             write_groups=write_groups,
             read_users=[data['username']],
             write_users=[data['username']],
@@ -249,7 +262,7 @@ class DatasetStatusHandler(APIBase):
     @attr_auth(arg='dataset_id', role='write')
     async def put(self, dataset_id):
         """
-        Set a dataset status.
+        Set a dataset status, following possible state transitions.
 
         Args:
             dataset_id (str): the dataset
@@ -260,16 +273,23 @@ class DatasetStatusHandler(APIBase):
         data = json.loads(self.request.body)
         if 'status' not in data:
             raise tornado.web.HTTPError(400, reason='missing status')
-        elif data['status'] not in dataset_statuses:
+        elif data['status'] not in DATASET_STATUS:
             raise tornado.web.HTTPError(400, reason='bad status')
 
+        logging.debug('%r %r', dataset_prev_statuses, data['status'])
+        prev_statuses = dataset_prev_statuses(data['status'])
+        logging.debug('prev_statuses: %r', prev_statuses)
         ret = await self.db.datasets.find_one_and_update(
-            {'dataset_id':dataset_id},
-            {'$set':{'status': data['status']}},
+            {'dataset_id': dataset_id, 'status': {'$in': prev_statuses}},
+            {'$set': {'status': data['status']}},
             projection=['_id']
         )
         if not ret:
-            self.send_error(404, reason="Dataset not found")
+            ret = await self.db.datasets.find_one({'dataset_id': dataset_id})
+            if not ret:
+                self.send_error(404, reason="Dataset not found")
+            else:
+                self.send_error(400, reason="Bad state transition for status")
         else:
             self.write({})
             self.finish()
@@ -363,6 +383,39 @@ class DatasetJobsSubmittedHandler(APIBase):
             self.finish()
 
 
+class DatasetHardResetHandler(APIBase):
+    """
+    Update the status of multiple datasets at once.
+    """
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='write')
+    async def put(self):
+        """
+        Do a hard reset on datasets.
+
+        Body should have {'datasets': [<dataset_id>, <dataset_id>, ...]}
+
+        Returns:
+            dict: empty dict
+        """
+        data = json.loads(self.request.body)
+        if (not data) or 'datasets' not in data or not data['datasets']:
+            raise tornado.web.HTTPError(400, reason='Missing datasets in body')
+        datasets = list(data['datasets'])
+        if len(datasets) > 100000:
+            raise tornado.web.HTTPError(400, reason='Too many datasets specified (limit: 100k)')
+
+        ret = await self.db.datasets.update_many(
+            {'dataset_id': {'$in': datasets}},
+            {'$set': {'status': DATASET_STATUS_START}}
+        )
+        if (not ret) or ret.modified_count < 1:
+            self.send_error(404, reason="Dataset not found")
+        else:
+            self.write({})
+            self.finish()
+
+
 class DatasetSummariesStatusHandler(APIBase):
     """
     Handle dataset summary grouping by status.
@@ -375,10 +428,11 @@ class DatasetSummariesStatusHandler(APIBase):
         Returns:
             dict: {<status>: [<dataset_id>,]}
         """
-        cursor = self.db.datasets.find(projection={'_id':False,'status':True,'dataset_id':True})
+        cursor = self.db.datasets.find(projection={'_id': False, 'status': True, 'dataset_id': True})
         ret = defaultdict(list)
         async for row in cursor:
-            ret[row['status']].append(row['dataset_id'])
+            if await self.manual_attr_auth('dataset_id', row['dataset_id'], 'read'):
+                ret[row['status']].append(row['dataset_id'])
         ret2 = {}
         for k in sorted(ret, key=dataset_status_sort):
             ret2[k] = ret[k]
