@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v2.7.6 (2023-09-25)
+
+### Other
+
+* Make the bias against large datasets less severe ([#363](https://github.com/WIPACrepo/iceprod/issues/363)) ([`a09e009`](https://github.com/WIPACrepo/iceprod/commit/a09e00903e2fa839f99493c5abaf55ca3d555ef0))
+
 ## v2.7.5 (2023-09-20)
 
 ### Other
