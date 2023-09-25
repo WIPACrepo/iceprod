@@ -153,6 +153,9 @@ class Priority:
             group_prio = await self._get_group_prio(group)
             logger.debug(f'{dataset_id} group_prio: {group_prio}')
 
+        num_dataset_jobs = dataset['jobs_submitted']
+        logger.debug(f'{dataset_id} num_dataset_jobs: {num_dataset_jobs}')
+
         num_all_tasks = await self._get_num_tasks()
         logger.debug(f'{dataset_id} num_all_tasks: {num_all_tasks}')
         num_dataset_tasks = dataset['tasks_submitted']
@@ -176,7 +179,7 @@ class Priority:
         logger.info(f'{dataset_id} after group adjustment: {priority}')
 
         # bias against large datasets
-        factor = (10000. / num_dataset_tasks)**.1 if num_dataset_tasks > 0 else 1.
+        factor = (10000. / num_dataset_jobs)**.05 if num_dataset_jobs > 0 else 1.
         if factor > 1:
             factor = 1.
         priority *= factor
