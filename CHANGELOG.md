@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v2.7.7 (2023-09-27)
+
+### Other
+
+* Mark cvmfs client errors as node errors ([#364](https://github.com/WIPACrepo/iceprod/issues/364)) ([`d939a44`](https://github.com/WIPACrepo/iceprod/commit/d939a447436152fd35badf55fcc33c05f455c66a))
+
 ## v2.7.6 (2023-09-25)
 
 ### Other
