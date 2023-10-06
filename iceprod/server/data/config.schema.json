@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://iceprod2.icecube.wisc.edu/static/config.schema.json",
+  "title": "IceProd Server Config",
+  "description": "The schema for an IceProd Server Config",
+  "type": "object",
+  "properties": {
+    "version": {
+      "description": "Schema version",
+      "type": "number",
+      "default": 3.1
+    },
+    "logging": {
+      "description": "Logging specifications",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "level": {
+          "description": "logging level",
+          "enum": ["ERROR", "WARNING", "INFO", "DEBUG"],
+          "default": "INFO"
+        }
+      }
+    },
+    "queue": {
+      "description": "Queue specifications",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "type": {
+          "description": "type of grid",
+          "type": "string",
+          "default": "condor"
+        },
+        "description": {
+          "type": "string",
+          "default": "generic grid plugin"
+        },
+        "credentials_dir": {
+          "description": "local credentials store",
+          "type": "string",
+          "default": "$PWD/credentials"
+        },
+        "submit_dir": {
+          "description": "local submit dir",
+          "type": "string",
+          "default": "$PWD/submit"
+        },
+        "site_temp": {
+          "description": "site temp storage",
+          "type": "string",
+          "default": ""
+        },
+        "max_idle_tasks_on_queue": {
+          "description": "max idle tasks on queue",
+          "type": "number",
+          "default": 1
+        },
+        "max_total_tasks_on_queue": {
+          "description": "max idle tasks on queue",
+          "type": "number",
+          "default": 10
+        },
+        "max_task_queued_time": {
+          "description": "max time a task can remain queued",
+          "type": "number",
+          "default": 86400
+        },
+        "max_task_processing_time": {
+          "description": "max time a task can remain processing",
+          "type": "number",
+          "default": 86400
+        },
+        "max_task_reset_time": {
+          "description": "max time a task can remain reset",
+          "type": "number",
+          "default": 3600
+        },
+        "suspend_submit_dir_time": {
+          "description": "max time a submit directory for a task stays around after finishing",
+          "type": "number",
+          "default": 86400
+        },
+        "batchopts": {
+          "description": "additional batch system options",
+          "type": "object",
+          "default": {},
+          "properties": {},
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "rest_api": {
+      "description": "REST API specification",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "url": {
+          "description": "REST API url",
+          "type": "string",
+          "default": "https://iceprod2-api.icecube.wisc.edu"
+        },
+        "cred_url": {
+          "description": "Credentials API url",
+          "type": "string",
+          "default": "https://credentials.iceprod.icecube.aq"
+        },
+        "oauth_url": {
+          "description": "OAuth provider url",
+          "type": "string",
+          "default": "https://keycloak.icecube.wisc.edu/auth/realms/IceCube"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "required": [ "version", "queue", "rest_api" ],
+  "additionalProperties": true
+}
