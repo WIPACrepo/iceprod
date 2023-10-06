@@ -5,19 +5,16 @@ Server
 Run the iceprod server.
 """
 
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta
+import logging
 import os
 import sys
-import logging
-import importlib
-import subprocess
-from datetime import datetime, timedelta
-import asyncio
-
-from concurrent.futures import ThreadPoolExecutor
 
 from iceprod.core.logger import set_log_level
 from iceprod.server.config import IceProdConfig
-
+from iceprod.server.queue import Queue
 
 logger = logging.getLogger('Server')
 
@@ -30,35 +27,13 @@ class Server(object):
     def __init__(self, config_params=None, outfile=None, errfile=None):
         self.executor = ThreadPoolExecutor(max_workers=10)
         self.cfg = IceProdConfig(override=config_params)
-        self.modules = {}
-        self.services = {
-            'daemon': {
-                'restart': self.restart,
-                'reload': self.reload,
-                'stop': self.stop,
-                'kill': self.kill,
-                'get_running_modules': lambda: self.modules.keys(),
-            },
-        }
         self.outfile = outfile
         self.errfile = errfile
 
-        set_log_level(self.cfg['logging']['level'])
+        self.rotate_logs_task = None
+        self.queue = Queue(self.cfg)
 
-        for mod_name in self.cfg['modules']:
-            if self.cfg['modules'][mod_name]:
-                try:
-                    m = importlib.import_module('iceprod.server.modules.'+mod_name)
-                    mod = getattr(m, mod_name)(cfg=self.cfg,
-                                               executor=self.executor,
-                                               modules=self.services)
-                    self.modules[mod_name] = mod
-                    self.services[mod_name] = mod.service
-                    mod.start()
-                except Exception:
-                    logger.critical('cannot start module', exc_info=True)
-                    self.kill()
-                    raise
+        set_log_level(self.cfg['logging']['level'])
 
     async def rotate_logs(self):
         current_date = datetime.utcnow()
@@ -72,28 +47,17 @@ class Server(object):
                     roll_files(sys.stderr, self.errfile)
             await asyncio.sleep(3600)
 
-    def start(self):
-        asyncio.create_task(self.rotate_logs())
+    async def start(self):
+        self.rotate_logs_task = asyncio.create_task(self.rotate_logs())
+        await self.queue.start()
 
-    def restart(self):
-        env = os.environ.copy()
-        extra_path = os.path.join(os.environ['I3PROD'],'bin')
-        env['PATH'] = extra_path+(':'+env['PATH'] if 'PATH' in env else '')
-        subprocess.Popen(['iceprod_server.py','restart'],
-                         cwd=os.environ['I3PROD'], env=env)
-
-    def reload(self):
-        for m in self.modules.values():
-            m.stop()
-            m.start()
-
-    def stop(self):
-        for m in self.modules.values():
-            m.stop()
-
-    def kill(self):
-        for m in self.modules.values():
-            m.kill()
+    async def stop(self):
+        if self.rotate_logs_task:
+            self.rotate_logs_task.cancel()
+            self.rotate_logs_task = None
+        if self.queue:
+            await self.queue.stop()
+        await asyncio.sleep(0)
 
 
 def roll_files(fd, filename, num_files=5):

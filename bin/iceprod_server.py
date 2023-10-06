@@ -23,47 +23,15 @@ import iceprod.server
 import iceprod.core.logger
 from iceprod.server.server import Server
 
-data_class_path = iceprod.server.get_pkgdata_filename('iceprod.server','data/www/dataclasses.js')
-if not os.path.exists(data_class_path):
-    print('Generating data classes')
-    import inspect
-    import json
-    from iceprod.core import dataclasses
-    dcs = {}
-    names = dataclasses._plurals.copy()
-    for name, obj in inspect.getmembers(dataclasses,inspect.isclass):
-        if name[0] != '_' and dict in inspect.getmro(obj):
-            dcs[name] = obj().output()
-            names[name] = obj.plural
-    data = {'classes':dcs,'names':names}
-    with open(data_class_path,'w') as f:
-        f.write('var dataclasses='+json.dumps(data,separators=(',',':'))+';')
-
-def check_module(name, message='', required=False):
-    try:
-        importlib.import_module(name)
-    except ImportError:
-        print('Cannot import python module %s. %s' % (name, message))
-        if required:
-            print('Required module "%s" not found. Exiting...' % name)
-            exit(0)
-
-def check_dependencies():
-    check_module('setproctitle', 'Will not be able to set process title.')
-    check_module('tornado', required=True)
-    check_module('jsonschema')
-    check_module('rest_tools', required=True)
-
-check_dependencies()
 
 # start server
 async def start_server(*args, **kwargs):
     s = Server(*args, **kwargs)
-    s.start()
+    await s.start()
     try:
         await asyncio.Event().wait()
     finally:
-        s.stop()
+        await s.stop()
 
 def runner(stdout=False, *args, **kwargs):
     # set logger

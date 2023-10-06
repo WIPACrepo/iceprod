@@ -7,8 +7,6 @@ import os
 import logging
 import socket
 
-import certifi
-
 import iceprod
 import iceprod.server
 from iceprod.server import module
@@ -20,23 +18,24 @@ class StopException(Exception):
     pass
 
 
-logger = logging.getLogger('modules_queue')
+logger = logging.getLogger('queue')
 
 
-class queue(module.module):
+class Queue:
     """
     Run the queue module, which queues jobs onto the local grid system(s).
     """
 
-    def __init__(self,*args,**kwargs):
-        # run default init
-        super(queue,self).__init__(*args,**kwargs)
-
+    def __init__(self, cfg):
+        self.cfg = cfg
         self.proxy = None
 
         self.max_duration = 3600*12
 
-    def start(self):
+        self.grid = None
+        self.queue_task = None
+
+    async def start(self):
         """Start the queue"""
         super(queue,self).start()
 
@@ -46,21 +45,7 @@ class queue(module.module):
             proxy_kwargs['cfgfile'] = self.cfg['queue']['gridftp_cfgfile']
         self.proxy = SiteGlobusProxy(**proxy_kwargs)
 
-        # set up job cacert
-        use_ssl = 'system' in self.cfg and 'ssl' in self.cfg['system'] and self.cfg['system']['ssl']
-        if (use_ssl and 'cert' in self.cfg['system']['ssl']):
-            if 'I3PROD' in os.environ:
-                remote_cacert = os.path.expandvars(os.path.join('$I3PROD','etc','remote_cacert'))
-            else:
-                remote_cacert = os.path.expandvars(os.path.join('$PWD','remote_cacert'))
-            with open(remote_cacert,'w') as f:
-                f.write(open(certifi.where()).read())
-                f.write('\n# IceProd local cert\n')
-                f.write(open(self.cfg['system']['ssl']['cert']).read())
-            self.cfg['system']['remote_cacert'] = remote_cacert
-
         # some setup
-        self.plugins = []
         plugin_names = [x for x in self.cfg['queue'] if isinstance(self.cfg['queue'][x],dict)]
         plugin_cfg = [self.cfg['queue'][x] for x in plugin_names]
         plugin_types = [x['type'] for x in plugin_cfg]
@@ -130,46 +115,17 @@ class queue(module.module):
                 if duration > self.max_duration:
                     self.max_duration = duration
 
-        # add gridspec and types to the db
-        args = {
-            'host': socket.getfqdn(),
-            'queues': {p_name:p_cfg['type'] for p,p_name,p_cfg in plugins_tmp},
-            'version': iceprod.__version__,
-        }
-        if 'grid_id' in self.cfg and self.cfg['grid_id']:
-            try:
-                self.rest_client.request_seq('GET', '/grids/{}'.format(self.cfg['grid_id']))
-            except Exception:
-                logger.warning('grid_id %s not present in DB',
-                               self.cfg['grid_id'], exc_info=True)
-                del self.cfg['grid_id']
-        if 'grid_id' not in self.cfg:
-            # register grid
-            try:
-                ret = self.rest_client.request_seq('POST', '/grids', args)
-                self.cfg['grid_id'] = ret['result']
-            except Exception:
-                logger.fatal('cannot register grid in DB', exc_info=True)
-                raise
-        else:
-            # update grid
-            try:
-                ret = self.rest_client.request_seq('PATCH', '/grids/{}'.format(self.cfg['grid_id']), args)
-            except Exception:
-                logger.warning('error updating grid in DB', exc_info=True)
-
-        asyncio.create_task(self.queue_loop())
+        self.queue_task = asyncio.create_task(self.queue_loop())
 
     async def queue_loop(self, run_once=False):
         """Run the queueing loop"""
         while True:
-            # check and clean grids
-            for p in self.plugins:
-                try:
-                    await p.check_and_clean()
-                except Exception:
-                    logger.error('plugin %s.check_and_clean() raised exception',
-                                 p.__class__.__name__,exc_info=True)
+            # check and clean grid
+            try:
+                await self.grid.check_and_clean()
+            except Exception:
+                logger.error('plugin %s.check_and_clean() raised exception',
+                             self.grid.__class__.__name__,exc_info=True)
 
             # check proxy cert
             try:
@@ -178,24 +134,25 @@ class queue(module.module):
                 logger.error('error checking proxy',exc_info=True)
 
             # queue tasks to grids
-            for p in self.plugins:
-                try:
-                    await p.queue()
-                except Exception:
-                    logger.error('plugin %s.queue() raised exception',
-                                 p.__class__.__name__,exc_info=True)
+            try:
+                await self.grid.queue()
+            except Exception:
+                logger.error('plugin %s.queue() raised exception',
+                             self.grid.__class__.__name__,exc_info=True)
 
             if run_once:
                 break
 
             # set timeout
-            if 'queue' in self.cfg and 'queue_interval' in self.cfg['queue']:
-                timeout = self.cfg['queue']['queue_interval']
-                if timeout <= 0:
-                    timeout = 300
-            else:
+            timeout = self.cfg.get('queue', {}).get('queue_interval', 300)
+            if timeout <= 0:
                 timeout = 300
             await asyncio.sleep(timeout)
+
+    async def stop(self):
+        if self.queue_task:
+            self.queue_task.cancel()
+            self.queue_task = None
 
     def check_proxy(self, duration=None):
         """
