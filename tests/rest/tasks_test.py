@@ -139,7 +139,7 @@ async def test_rest_tasks_put_status(server):
         'name': 'bar',
         'depends': [],
         'requirements': {},
-        'status': 'waiting',
+        'status': 'queued',
     }
     ret = await client.request('POST', '/tasks', data)
     task_id = ret['result']
@@ -211,7 +211,7 @@ async def test_rest_tasks_dataset_put_status(server):
         'name': 'bar',
         'depends': [],
         'requirements': {},
-        'status': 'waiting',
+        'status': 'queued',
     }
     ret = await client.request('POST', '/tasks', data)
     task_id = ret['result']
@@ -647,6 +647,7 @@ async def test_rest_tasks_actions_bulk_status(server):
         'name': 'bar',
         'depends': [],
         'requirements': {},
+        'status': 'queued',
     }
     ret = await client.request('POST', '/tasks', data)
     task_id = ret['result']
@@ -682,8 +683,300 @@ async def test_rest_tasks_actions_bulk_status(server):
     assert exc_info.value.response.status_code == 400
 
     with pytest.raises(requests.exceptions.HTTPError) as exc_info:
-        await client.request('POST', f'/datasets/{data["dataset_id"]}/task_actions/bulk_status/failed', {})
+        await client.request('POST', f'/datasets/{data["dataset_id"]}/task_actions/bulk_status/processing', {})
     assert exc_info.value.response.status_code == 400
+
+
+async def test_rest_tasks_actions_bulk_suspend(server):
+    client = server(roles=['system'])
+
+    data = {
+        'dataset_id': 'foo',
+        'job_id': 'foo1',
+        'task_index': 0,
+        'job_index': 0,
+        'name': 'bar',
+        'depends': [],
+        'requirements': {},
+    }
+    ret = await client.request('POST', '/tasks', data)
+    task_id = ret['result']
+
+    data2 = {}
+    await client.request('POST', f'/datasets/{data["dataset_id"]}/task_actions/bulk_suspend', data2)
+
+    ret = await client.request('GET', f'/tasks/{task_id}')
+    assert ret['status'] == 'suspended'
+
+
+async def test_rest_tasks_actions_bulk_suspend_by_job(server):
+    client = server(roles=['system'])
+
+    data = {
+        'dataset_id': 'foo',
+        'job_id': 'foo1',
+        'task_index': 0,
+        'job_index': 0,
+        'name': 'bar',
+        'depends': [],
+        'requirements': {},
+    }
+    ret = await client.request('POST', '/tasks', data)
+    task_id = ret['result']
+
+    data = {
+        'dataset_id': 'foo',
+        'job_id': 'foo2',
+        'task_index': 0,
+        'job_index': 1,
+        'name': 'bar',
+        'depends': [],
+        'requirements': {},
+    }
+    ret = await client.request('POST', '/tasks', data)
+    task_id2 = ret['result']
+
+    data2 = {'jobs': ['foo1']}
+    await client.request('POST', f'/datasets/{data["dataset_id"]}/task_actions/bulk_suspend', data2)
+
+    ret = await client.request('GET', f'/tasks/{task_id}')
+    assert ret['status'] == 'suspended'
+    ret = await client.request('GET', f'/tasks/{task_id2}')
+    assert ret['status'] == states.TASK_STATUS_START
+
+
+async def test_rest_tasks_actions_bulk_suspend_by_task(server):
+    client = server(roles=['system'])
+
+    data = {
+        'dataset_id': 'foo',
+        'job_id': 'foo1',
+        'task_index': 0,
+        'job_index': 0,
+        'name': 'bar',
+        'depends': [],
+        'requirements': {},
+    }
+    ret = await client.request('POST', '/tasks', data)
+    task_id = ret['result']
+
+    data = {
+        'dataset_id': 'foo',
+        'job_id': 'foo2',
+        'task_index': 0,
+        'job_index': 1,
+        'name': 'bar',
+        'depends': [],
+        'requirements': {},
+    }
+    ret = await client.request('POST', '/tasks', data)
+    task_id2 = ret['result']
+
+    data2 = {'tasks': [task_id]}
+    await client.request('POST', f'/datasets/{data["dataset_id"]}/task_actions/bulk_suspend', data2)
+
+    ret = await client.request('GET', f'/tasks/{task_id}')
+    assert ret['status'] == 'suspended'
+    ret = await client.request('GET', f'/tasks/{task_id2}')
+    assert ret['status'] == states.TASK_STATUS_START
+
+
+async def test_rest_tasks_actions_bulk_reset(server):
+    client = server(roles=['system'])
+
+    data = {
+        'dataset_id': 'foo',
+        'job_id': 'foo1',
+        'task_index': 0,
+        'job_index': 0,
+        'name': 'bar',
+        'depends': [],
+        'requirements': {},
+        'status': 'waiting',
+    }
+    ret = await client.request('POST', '/tasks', data)
+    task_id = ret['result']
+
+    data2 = {}
+    await client.request('POST', f'/datasets/{data["dataset_id"]}/task_actions/bulk_reset', data2)
+
+    ret = await client.request('GET', f'/tasks/{task_id}')
+    assert ret['status'] == states.TASK_STATUS_START
+
+
+async def test_rest_tasks_actions_bulk_reset_by_job(server):
+    client = server(roles=['system'])
+
+    data = {
+        'dataset_id': 'foo',
+        'job_id': 'foo1',
+        'task_index': 0,
+        'job_index': 0,
+        'name': 'bar',
+        'depends': [],
+        'requirements': {},
+        'status': 'waiting',
+    }
+    ret = await client.request('POST', '/tasks', data)
+    task_id = ret['result']
+
+    data = {
+        'dataset_id': 'foo',
+        'job_id': 'foo2',
+        'task_index': 0,
+        'job_index': 1,
+        'name': 'bar',
+        'depends': [],
+        'requirements': {},
+        'status': 'waiting',
+    }
+    ret = await client.request('POST', '/tasks', data)
+    task_id2 = ret['result']
+
+    data2 = {'jobs': ['foo1']}
+    await client.request('POST', f'/datasets/{data["dataset_id"]}/task_actions/bulk_reset', data2)
+
+    ret = await client.request('GET', f'/tasks/{task_id}')
+    assert ret['status'] == states.TASK_STATUS_START
+    ret = await client.request('GET', f'/tasks/{task_id2}')
+    assert ret['status'] == 'waiting'
+
+
+async def test_rest_tasks_actions_bulk_reset_by_task(server):
+    client = server(roles=['system'])
+
+    data = {
+        'dataset_id': 'foo',
+        'job_id': 'foo1',
+        'task_index': 0,
+        'job_index': 0,
+        'name': 'bar',
+        'depends': [],
+        'requirements': {},
+        'status': 'waiting',
+    }
+    ret = await client.request('POST', '/tasks', data)
+    task_id = ret['result']
+
+    data = {
+        'dataset_id': 'foo',
+        'job_id': 'foo2',
+        'task_index': 0,
+        'job_index': 1,
+        'name': 'bar',
+        'depends': [],
+        'requirements': {},
+        'status': 'waiting',
+    }
+    ret = await client.request('POST', '/tasks', data)
+    task_id2 = ret['result']
+
+    data2 = {'tasks': [task_id]}
+    await client.request('POST', f'/datasets/{data["dataset_id"]}/task_actions/bulk_reset', data2)
+
+    ret = await client.request('GET', f'/tasks/{task_id}')
+    assert ret['status'] == states.TASK_STATUS_START
+    ret = await client.request('GET', f'/tasks/{task_id2}')
+    assert ret['status'] == 'waiting'
+
+
+async def test_rest_tasks_actions_bulk_hard_reset(server):
+    client = server(roles=['system'])
+
+    data = {
+        'dataset_id': 'foo',
+        'job_id': 'foo1',
+        'task_index': 0,
+        'job_index': 0,
+        'name': 'bar',
+        'depends': [],
+        'requirements': {},
+        'status': 'complete',
+    }
+    ret = await client.request('POST', '/tasks', data)
+    task_id = ret['result']
+
+    data2 = {}
+    await client.request('POST', f'/datasets/{data["dataset_id"]}/task_actions/bulk_hard_reset', data2)
+
+    ret = await client.request('GET', f'/tasks/{task_id}')
+    assert ret['status'] == states.TASK_STATUS_START
+
+
+async def test_rest_tasks_actions_bulk_hard_reset_by_job(server):
+    client = server(roles=['system'])
+
+    data = {
+        'dataset_id': 'foo',
+        'job_id': 'foo1',
+        'task_index': 0,
+        'job_index': 0,
+        'name': 'bar',
+        'depends': [],
+        'requirements': {},
+        'status': 'complete',
+    }
+    ret = await client.request('POST', '/tasks', data)
+    task_id = ret['result']
+
+    data = {
+        'dataset_id': 'foo',
+        'job_id': 'foo2',
+        'task_index': 0,
+        'job_index': 1,
+        'name': 'bar',
+        'depends': [],
+        'requirements': {},
+        'status': 'complete',
+    }
+    ret = await client.request('POST', '/tasks', data)
+    task_id2 = ret['result']
+
+    data2 = {'jobs': ['foo1']}
+    await client.request('POST', f'/datasets/{data["dataset_id"]}/task_actions/bulk_hard_reset', data2)
+
+    ret = await client.request('GET', f'/tasks/{task_id}')
+    assert ret['status'] == states.TASK_STATUS_START
+    ret = await client.request('GET', f'/tasks/{task_id2}')
+    assert ret['status'] == 'complete'
+
+
+async def test_rest_tasks_actions_bulk_hard_reset_by_task(server):
+    client = server(roles=['system'])
+
+    data = {
+        'dataset_id': 'foo',
+        'job_id': 'foo1',
+        'task_index': 0,
+        'job_index': 0,
+        'name': 'bar',
+        'depends': [],
+        'requirements': {},
+        'status': 'complete',
+    }
+    ret = await client.request('POST', '/tasks', data)
+    task_id = ret['result']
+
+    data = {
+        'dataset_id': 'foo',
+        'job_id': 'foo2',
+        'task_index': 0,
+        'job_index': 1,
+        'name': 'bar',
+        'depends': [],
+        'requirements': {},
+        'status': 'complete',
+    }
+    ret = await client.request('POST', '/tasks', data)
+    task_id2 = ret['result']
+
+    data2 = {'tasks': [task_id]}
+    await client.request('POST', f'/datasets/{data["dataset_id"]}/task_actions/bulk_hard_reset', data2)
+
+    ret = await client.request('GET', f'/tasks/{task_id}')
+    assert ret['status'] == states.TASK_STATUS_START
+    ret = await client.request('GET', f'/tasks/{task_id2}')
+    assert ret['status'] == 'complete'
 
 
 async def test_rest_tasks_actions_bulk_requirements(server):

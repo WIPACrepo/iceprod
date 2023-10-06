@@ -47,6 +47,8 @@ def setup(handler_cfg):
             (r'/datasets/(?P<dataset_id>\w+)/task_counts/status', DatasetTaskCountsStatusHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/task_counts/name_status', DatasetTaskCountsNameStatusHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/task_actions/bulk_status/(?P<status>\w+)', DatasetTaskBulkStatusHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/task_actions/bulk_suspend', DatasetTaskBulkSuspendHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/task_actions/bulk_reset', DatasetTaskBulkResetHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/task_actions/bulk_hard_reset', DatasetTaskBulkHardResetHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/task_actions/bulk_requirements/(?P<name>[^\/\?\#]+)', DatasetTaskBulkRequirementsHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/task_stats', DatasetTaskStatsHandler, handler_cfg),
@@ -1011,17 +1013,19 @@ class DatasetTaskBulkStatusHandler(APIBase):
             self.finish()
 
 
-class DatasetTaskBulkHardResetHandler(APIBase):
+class DatasetTaskBulkSuspendHandler(APIBase):
     """
-    Perform a hard reset of multiple tasks at once.
+    Perform a suspend of all tasks in a dataset.
     """
     @authorization(roles=['admin', 'user', 'system'])
     @attr_auth(arg='dataset_id', role='write')
-    async def post(self, dataset_id, status):
+    async def post(self, dataset_id):
         """
-        Set multiple tasks' status back to the starting status.
+        Set multiple tasks' status to suspended.
 
-        Body should have {'tasks': [<task_id>, <task_id>, ...]}
+        Body may have {'jobs': [<job_id>, <job_id>, ...]}
+        or {'tasks': [<task_id>, <task_id>, ...]}.
+        If it does not, all tasks in a dataset are suspended.
 
         Args:
             dataset_id (str): dataset id
@@ -1029,15 +1033,102 @@ class DatasetTaskBulkHardResetHandler(APIBase):
         Returns:
             dict: empty dict
         """
-        data = json.loads(self.request.body)
-        if (not data) or 'tasks' not in data or not data['tasks']:
-            raise tornado.web.HTTPError(400, reason='Missing tasks in body')
-        tasks = list(data['tasks'])
-        if len(tasks) > 100000:
-            raise tornado.web.HTTPError(400, reason='Too many tasks specified (limit: 100k)')
         query = {
             'dataset_id': dataset_id,
-            'task_id': {'$in': tasks},
+            'status': {'$in': task_prev_statuses('suspended')},
+        }
+        update_data = {
+            'status': 'suspended',
+            'status_changed': nowstr(),
+        }
+
+        if self.request.body:
+            data = json.loads(self.request.body)
+            if data and 'jobs' in data:
+                jobs = list(data['jobs'])
+                if len(jobs) > 100000:
+                    raise tornado.web.HTTPError(400, reason='Too many jobs specified (limit: 100k)')
+                query['job_id'] = {'$in': jobs}
+            elif data and 'tasks' in data:
+                tasks = list(data['tasks'])
+                if len(tasks) > 100000:
+                    raise tornado.web.HTTPError(400, reason='Too many tasks specified (limit: 100k)')
+                query['task_id'] = {'$in': tasks}
+
+        ret = await self.db.tasks.update_many(query, {'$set': update_data})
+        self.write({})
+        self.finish()
+
+
+class DatasetTaskBulkResetHandler(APIBase):
+    """
+    Perform a reset of all tasks in a dataset.
+    """
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='write')
+    async def post(self, dataset_id):
+        """
+        Set multiple tasks' status back to the starting status.
+
+        Body may have {'jobs': [<job_id>, <job_id>, ...]}
+        or {'tasks': [<task_id>, <task_id>, ...]}.
+        If it does not, all tasks in a dataset are reset.
+
+        Args:
+            dataset_id (str): dataset id
+
+        Returns:
+            dict: empty dict
+        """
+        query = {
+            'dataset_id': dataset_id,
+            'status': {'$in': task_prev_statuses(TASK_STATUS_START)},
+        }
+        update_data = {
+            'status': TASK_STATUS_START,
+            'status_changed': nowstr(),
+        }
+
+        if self.request.body:
+            data = json.loads(self.request.body)
+            if data and 'jobs' in data:
+                jobs = list(data['jobs'])
+                if len(jobs) > 100000:
+                    raise tornado.web.HTTPError(400, reason='Too many jobs specified (limit: 100k)')
+                query['job_id'] = {'$in': jobs}
+            elif data and 'tasks' in data:
+                tasks = list(data['tasks'])
+                if len(tasks) > 100000:
+                    raise tornado.web.HTTPError(400, reason='Too many tasks specified (limit: 100k)')
+                query['task_id'] = {'$in': tasks}
+
+        ret = await self.db.tasks.update_many(query, {'$set': update_data})
+        self.write({})
+        self.finish()
+
+
+class DatasetTaskBulkHardResetHandler(APIBase):
+    """
+    Perform a hard reset of all tasks in a dataset.
+    """
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='write')
+    async def post(self, dataset_id):
+        """
+        Set multiple tasks' status back to the starting status.
+
+        Body may have {'jobs': [<job_id>, <job_id>, ...]}
+        or {'tasks': [<task_id>, <task_id>, ...]}.
+        If it does not, all tasks in a dataset are hard reset.
+
+        Args:
+            dataset_id (str): dataset id
+
+        Returns:
+            dict: empty dict
+        """
+        query = {
+            'dataset_id': dataset_id,
         }
         update_data = {
             'status': TASK_STATUS_START,
@@ -1046,12 +1137,22 @@ class DatasetTaskBulkHardResetHandler(APIBase):
             'site': '',
         }
 
+        if self.request.body:
+            data = json.loads(self.request.body)
+            if data and 'jobs' in data:
+                jobs = list(data['jobs'])
+                if len(jobs) > 100000:
+                    raise tornado.web.HTTPError(400, reason='Too many jobs specified (limit: 100k)')
+                query['job_id'] = {'$in': jobs}
+            elif data and 'tasks' in data:
+                tasks = list(data['tasks'])
+                if len(tasks) > 100000:
+                    raise tornado.web.HTTPError(400, reason='Too many tasks specified (limit: 100k)')
+                query['task_id'] = {'$in': tasks}
+
         ret = await self.db.tasks.update_many(query, {'$set': update_data})
-        if (not ret) or ret.modified_count < 1:
-            self.send_error(404, reason="Tasks not found")
-        else:
-            self.write({})
-            self.finish()
+        self.write({})
+        self.finish()
 
 
 class DatasetTaskBulkRequirementsHandler(APIBase):

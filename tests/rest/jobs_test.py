@@ -1,7 +1,7 @@
 import pytest
 import requests.exceptions
 
-
+import iceprod.server.states
 
 
 async def test_rest_jobs_add(server):
@@ -130,6 +130,159 @@ async def test_rest_jobs_dataset_bulk_set_status(server):
 
     ret = await client.request('GET', f'/jobs/{job_id}')
     assert ret['status'] == 'errors'
+
+
+async def test_rest_jobs_dataset_bulk_suspend(server):
+    client = server(roles=['system'])
+
+    data = {
+        'dataset_id': 'foo',
+        'job_index': 0,
+    }
+    ret = await client.request('POST', '/jobs', data)
+    job_id = ret['result']
+
+    new_data = {}
+    ret = await client.request('POST', f'/datasets/{data["dataset_id"]}/job_actions/bulk_suspend', new_data)
+
+    ret = await client.request('GET', f'/jobs/{job_id}')
+    assert ret['status'] == 'suspended'
+
+
+async def test_rest_jobs_dataset_bulk_suspend_specific(server):
+    client = server(roles=['system'])
+
+    data = {
+        'dataset_id': 'foo',
+        'job_index': 0,
+    }
+    ret = await client.request('POST', '/jobs', data)
+    job_id = ret['result']
+
+    data = {
+        'dataset_id': 'foo',
+        'job_index': 1,
+    }
+    ret = await client.request('POST', '/jobs', data)
+    job_id2 = ret['result']
+
+    new_data = {'jobs': [job_id]}
+    ret = await client.request('POST', f'/datasets/{data["dataset_id"]}/job_actions/bulk_suspend', new_data)
+
+    ret = await client.request('GET', f'/jobs/{job_id}')
+    assert ret['status'] == 'suspended'
+    ret = await client.request('GET', f'/jobs/{job_id2}')
+    assert ret['status'] == iceprod.server.states.JOB_STATUS_START
+
+
+async def test_rest_jobs_dataset_bulk_reset(server):
+    client = server(roles=['system'])
+
+    data = {
+        'dataset_id': 'foo',
+        'job_index': 0,
+        'status': 'errors',
+    }
+    ret = await client.request('POST', '/jobs', data)
+    job_id = ret['result']
+
+    new_data = {}
+    ret = await client.request('POST', f'/datasets/{data["dataset_id"]}/job_actions/bulk_reset', new_data)
+
+    ret = await client.request('GET', f'/jobs/{job_id}')
+    assert ret['status'] == iceprod.server.states.JOB_STATUS_START
+
+
+async def test_rest_jobs_dataset_bulk_reset_specific(server):
+    client = server(roles=['system'])
+
+    data = {
+        'dataset_id': 'foo',
+        'job_index': 0,
+        'status': 'errors',
+    }
+    ret = await client.request('POST', '/jobs', data)
+    job_id = ret['result']
+
+    data = {
+        'dataset_id': 'foo',
+        'job_index': 1,
+        'status': 'errors',
+    }
+    ret = await client.request('POST', '/jobs', data)
+    job_id2 = ret['result']
+
+    new_data = {'jobs': [job_id]}
+    ret = await client.request('POST', f'/datasets/{data["dataset_id"]}/job_actions/bulk_reset', new_data)
+
+    ret = await client.request('GET', f'/jobs/{job_id}')
+    assert ret['status'] == iceprod.server.states.JOB_STATUS_START
+    ret = await client.request('GET', f'/jobs/{job_id2}')
+    assert ret['status'] == 'errors'
+
+
+async def test_rest_jobs_dataset_bulk_reset_blocked(server):
+    client = server(roles=['system'])
+
+    data = {
+        'dataset_id': 'foo',
+        'job_index': 0,
+        'status': 'complete',
+    }
+    ret = await client.request('POST', '/jobs', data)
+    job_id = ret['result']
+
+    with pytest.raises(Exception):
+        await client.request('POST', f'/datasets/{data["dataset_id"]}/job_actions/bulk_reset', new_data)
+
+    ret = await client.request('GET', f'/jobs/{job_id}')
+    assert ret['status'] == 'complete'
+
+
+async def test_rest_jobs_dataset_bulk_hardreset(server):
+    client = server(roles=['system'])
+
+    data = {
+        'dataset_id': 'foo',
+        'job_index': 0,
+        'status': 'complete',
+    }
+    ret = await client.request('POST', '/jobs', data)
+    job_id = ret['result']
+
+    new_data = {}
+    ret = await client.request('POST', f'/datasets/{data["dataset_id"]}/job_actions/bulk_hard_reset', new_data)
+
+    ret = await client.request('GET', f'/jobs/{job_id}')
+    assert ret['status'] == iceprod.server.states.JOB_STATUS_START
+
+
+async def test_rest_jobs_dataset_bulk__hardreset_specific(server):
+    client = server(roles=['system'])
+
+    data = {
+        'dataset_id': 'foo',
+        'job_index': 0,
+        'status': 'complete',
+    }
+    ret = await client.request('POST', '/jobs', data)
+    job_id = ret['result']
+
+    data = {
+        'dataset_id': 'foo',
+        'job_index': 1,
+        'status': 'complete',
+    }
+    ret = await client.request('POST', '/jobs', data)
+    job_id2 = ret['result']
+
+    new_data = {'jobs': [job_id]}
+    ret = await client.request('POST', f'/datasets/{data["dataset_id"]}/job_actions/bulk_hard_reset', new_data)
+
+    ret = await client.request('GET', f'/jobs/{job_id}')
+    assert ret['status'] == iceprod.server.states.JOB_STATUS_START
+    ret = await client.request('GET', f'/jobs/{job_id2}')
+    assert ret['status'] == 'complete'
 
 
 async def test_rest_jobs_dataset_summaries_status(server):

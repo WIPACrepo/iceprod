@@ -32,7 +32,8 @@ def setup(handler_cfg):
             (r'/datasets/(?P<dataset_id>\w+)/status', DatasetStatusHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/priority', DatasetPriorityHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/jobs_submitted', DatasetJobsSubmittedHandler, handler_cfg),
-            (r'/dataset_actions/hard_reset', DatasetHardResetHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/dataset_actions/hard_reset', DatasetHardResetHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/dataset_actions/truncate', DatasetTruncateHandler, handler_cfg),
             (r'/dataset_summaries/status', DatasetSummariesStatusHandler, handler_cfg),
         ],
         'database': 'datasets',
@@ -385,31 +386,46 @@ class DatasetJobsSubmittedHandler(APIBase):
 
 class DatasetHardResetHandler(APIBase):
     """
-    Update the status of multiple datasets at once.
+    Do a hard reset on a dataset.
     """
     @authorization(roles=['admin', 'user', 'system'])
     @attr_auth(arg='dataset_id', role='write')
-    async def put(self):
+    async def post(self, dataset_id):
         """
-        Do a hard reset on datasets.
-
-        Body should have {'datasets': [<dataset_id>, <dataset_id>, ...]}
+        Do a hard reset on a dataset.
 
         Returns:
             dict: empty dict
         """
-        data = json.loads(self.request.body)
-        if (not data) or 'datasets' not in data or not data['datasets']:
-            raise tornado.web.HTTPError(400, reason='Missing datasets in body')
-        datasets = list(data['datasets'])
-        if len(datasets) > 100000:
-            raise tornado.web.HTTPError(400, reason='Too many datasets specified (limit: 100k)')
-
-        ret = await self.db.datasets.update_many(
-            {'dataset_id': {'$in': datasets}},
+        ret = await self.db.datasets.update_one(
+            {'dataset_id': dataset_id},
             {'$set': {'status': DATASET_STATUS_START}}
         )
         if (not ret) or ret.modified_count < 1:
+            self.send_error(404, reason="Dataset not found")
+        else:
+            self.write({})
+            self.finish()
+
+
+class DatasetTruncateHandler(APIBase):
+    """
+    Truncate a dataset.
+    """
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='write')
+    async def post(self, dataset_id):
+        """
+        Truncate a dataset.
+
+        Returns:
+            dict: empty dict
+        """
+        ret = await self.db.datasets.update_one(
+            {'dataset_id': dataset_id, 'status': {'$ne': 'complete'}},
+            {'$set': {'truncated': True}}
+        )
+        if (not ret) or ret.matched_count < 1:
             self.send_error(404, reason="Dataset not found")
         else:
             self.write({})

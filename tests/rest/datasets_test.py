@@ -1,6 +1,8 @@
 import pytest
 import requests.exceptions
 
+import iceprod.server.states
+
 
 async def test_rest_datasets_empty(server):
     client = server(roles=['system'])
@@ -180,6 +182,45 @@ async def test_rest_datasets_update_priority(server):
 
     ret = await client.request('GET', f'/datasets/{dataset_id}')
     assert data['priority'] == ret['priority']
+
+
+async def test_rest_datasets_hard_reset(server):
+    client = server(roles=['user'], groups=['users'])
+
+    data = {
+        'description': 'blah',
+        'tasks_per_job': 4,
+        'jobs_submitted': 1,
+        'tasks_submitted': 4,
+        'group': 'users',
+        'status': 'complete',
+    }
+    ret = await client.request('POST', '/datasets', data)
+    dataset_id = ret['result'].split('/')[-1]
+
+    await client.request('POST', f'/datasets/{dataset_id}/dataset_actions/hard_reset', {})
+
+    ret = await client.request('GET', f'/datasets/{dataset_id}')
+    assert ret['status'] == iceprod.server.states.DATASET_STATUS_START
+
+
+async def test_rest_datasets_truncate(server):
+    client = server(roles=['user'], groups=['users'])
+
+    data = {
+        'description': 'blah',
+        'tasks_per_job': 4,
+        'jobs_submitted': 1,
+        'tasks_submitted': 4,
+        'group': 'users',
+    }
+    ret = await client.request('POST', '/datasets', data)
+    dataset_id = ret['result'].split('/')[-1]
+
+    await client.request('POST', f'/datasets/{dataset_id}/dataset_actions/truncate', {})
+
+    ret = await client.request('GET', f'/datasets/{dataset_id}')
+    assert ret['truncated'] is True
 
 
 async def test_rest_datasets_update_jobs_submitted(server):
