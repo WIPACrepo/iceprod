@@ -1,24 +1,21 @@
 """
-The website module uses `Tornado <http://www.tornadoweb.org>`_,
-a fast and scalable python web server.
-
 Main website
 ------------
 
 This is the external website users will see when interacting with IceProd.
 It has been broken down into several sub-handlers for easier maintenance.
-
 """
 
-import os
-import random
-import logging
+import asyncio
 from collections import defaultdict
+from datetime import datetime, timedelta
 import functools
 import importlib.resources
-from urllib.parse import urlencode
+import logging
+import os
+import random
 import re
-from datetime import datetime, timedelta
+from urllib.parse import urlencode
 
 from iceprod.core.jsonUtil import json_encode
 
@@ -28,166 +25,19 @@ import tornado.httpserver
 import tornado.gen
 import jwt
 import tornado.concurrent
-from rest_tools.client import RestClient
+from rest_tools.client import RestClient, ClientCredentialsAuth
 from rest_tools.server import catch_error, RestServer, RestHandlerSetup, RestHandler, OpenIDLoginHandler
 from rest_tools import telemetry as wtt
+from wipac_dev_tools import from_environment
 
 import iceprod
 from iceprod.roles_groups import GROUPS
-from iceprod.server import module
 import iceprod.core.functions
 from iceprod.server import documentation
+import iceprod.server.states
+from iceprod.server.util import nowstr
 
 logger = logging.getLogger('website')
-
-
-class website(module.module):
-    """
-    The main website module.
-
-    Run the website, which is required for anything to work.
-    """
-
-    def __init__(self,*args,**kwargs):
-        # run default init
-        super(website,self).__init__(*args,**kwargs)
-
-        # set up local variables
-        self.http_server = None
-
-    async def stop(self):
-        """Stop website"""
-        # stop tornado
-        try:
-            if self.http_server:
-                await self.http_server.stop()
-        except Exception:
-            logger.error('cannot stop tornado', exc_info=True)
-        super(website,self).stop()
-
-    def start(self):
-        """Run the website"""
-        super(website,self).start()
-
-        try:
-            # make sure directories are set up properly
-            for d in self.cfg['webserver']:
-                if '_dir' in d:
-                    path = self.cfg['webserver'][d]
-                    path = os.path.expanduser(os.path.expandvars(path))
-                    try:
-                        os.makedirs(path)
-                    except Exception:
-                        pass
-
-            # get package data
-            static_path = str(importlib.resources.files('iceprod.server')/'data'/'www')
-            if static_path is None or not os.path.exists(static_path):
-                logger.info('static path: %r',static_path)
-                raise Exception('bad static path')
-            template_path = str(importlib.resources.files('iceprod.server')/'data'/'www_templates')
-            if template_path is None or not os.path.exists(template_path):
-                logger.info('template path: %r',template_path)
-                raise Exception('bad template path')
-
-            if 'url' in self.cfg['rest_api']:
-                rest_address = self.cfg['rest_api']['url']
-            else:
-                # for local systems
-                rest_address = 'http://{}:{}'.format(
-                    self.cfg['rest_api']['address'],
-                    self.cfg['rest_api']['port'],
-                )
-
-            rest_cfg = {
-                'debug': False,
-                'server_header': 'IceProd/' + iceprod.__version__,
-            }
-            if os.environ.get('CI_TESTING', None):
-                logger.warning('CI TESTING MODE!')
-                rest_cfg['auth'] = {
-                    'secret': 'secret'
-                }
-            else:
-                if not ('rest_api' in self.cfg and 'oauth_url' in self.cfg['rest_api']
-                        and 'oauth_client_id' in self.cfg['rest_api']
-                        and 'oauth_client_secret' in self.cfg['rest_api']):
-                    raise Exception('must set oauth_ params in cfg[rest_api]')
-                rest_cfg['auth'] = {
-                    'audience': self.cfg['rest_api'].get('oauth_audience', 'iceprod'),
-                    'openid_url': self.cfg['rest_api']['oauth_url'],
-                }
-
-                if 'cred_url' not in self.cfg['rest_api']:
-                    raise Exception('must set cred_url in cfg[rest_api]')
-                if not self.cred_client:
-                    raise Exception('credentials rest client not set up!')
-
-            handler_args = RestHandlerSetup(rest_cfg)
-            handler_args['cred_rest_client'] = self.cred_client
-
-            full_url = self.cfg['webserver'].get('full_url', '')
-            handler_args['full_url'] = full_url
-            login_url = full_url+'/login'
-
-            login_handler_args = handler_args.copy()
-            if not os.environ.get('CI_TESTING', None):
-                login_handler_args['oauth_client_id'] = self.cfg['rest_api']['oauth_client_id']
-                login_handler_args['oauth_client_secret'] = self.cfg['rest_api']['oauth_client_secret']
-                login_handler_args['oauth_client_scope'] = 'offline_access posix profile'
-
-            handler_args.update({
-                'cfg': self.cfg,
-                'modules': self.modules,
-                'statsd': self.statsd,
-                'rest_api': rest_address,
-                'system_rest_client': self.rest_client,
-            })
-            if 'debug' in self.cfg['webserver'] and self.cfg['webserver']['debug']:
-                handler_args['debug'] = True
-            if 'cookie_secret' in self.cfg['webserver']:
-                cookie_secret = self.cfg['webserver']['cookie_secret']
-                logger.info('using supplied cookie secret %r', cookie_secret)
-            else:
-                cookie_secret = ''.join(hex(random.randint(0,15))[-1] for _ in range(64))
-                self.cfg['webserver']['cookie_secret'] = cookie_secret
-
-            routes = [
-                (r"/", Default, handler_args),
-                (r"/submit", Submit, handler_args),
-                (r"/config", Config, handler_args),
-                (r"/dataset", DatasetBrowse, handler_args),
-                (r"/dataset/(\w+)", Dataset, handler_args),
-                (r"/dataset/(\w+)/task", TaskBrowse, handler_args),
-                (r"/dataset/(\w+)/task/(\w+)", Task, handler_args),
-                (r"/dataset/(\w+)/job", JobBrowse, handler_args),
-                (r"/dataset/(\w+)/job/(\w+)", Job, handler_args),
-                (r"/help", Help, handler_args),
-                (r"/docs/(.*)", Documentation, handler_args),
-                (r"/dataset/(\w+)/log/(\w+)", Log, handler_args),
-                (r'/profile', Profile, handler_args),
-                (r"/login", Login, login_handler_args),
-                (r"/logout", Logout, handler_args),
-                (r"/.*", Other, handler_args),
-            ]
-            self.http_server = RestServer(
-                static_path=static_path,
-                template_path=template_path,
-                cookie_secret=cookie_secret,
-                login_url=login_url,
-                debug=handler_args['debug'],
-            )
-            for r in routes:
-                self.http_server.add_route(*r)
-
-            # start tornado
-            self.http_server.startup(
-                port=self.cfg['webserver']['port'],
-                address='0.0.0.0',  # bind to all
-            )
-        except Exception:
-            logger.error('website startup error',exc_info=True)
-            raise
 
 
 def authenticated(method):
@@ -345,18 +195,17 @@ class Login(TokenStorageMixin, OpenIDLoginHandler):
 
 class PublicHandler(TokenStorageMixin, RestHandler):
     """Default Handler"""
-    def initialize(self, cfg=None, modules=None, statsd=None, rest_api=None, cred_rest_client=None, system_rest_client=None, full_url=None, **kwargs):
+    def initialize(self, statsd=None, rest_api=None, cred_rest_client=None, system_rest_client=None, full_url=None, **kwargs):
         """
         Get some params from the website module
 
-        :param cfg: the global config
-        :param modules: modules handle
         :param statsd: statsd client
         :param rest_api: the rest api url
+        :param cred_rest_client: the rest api url for the cred service
+        :param system_rest_client: the rest client for the system role
+        :param full_url: the full base url for the website
         """
         super().initialize(**kwargs)
-        self.cfg = cfg
-        self.modules = modules
         self.statsd = statsd
         self.rest_api = rest_api
         self.cred_rest_client = cred_rest_client
@@ -368,17 +217,8 @@ class PublicHandler(TokenStorageMixin, RestHandler):
         namespace = super().get_template_namespace()
         namespace['version'] = iceprod.__version__
         namespace['section'] = self.request.uri.lstrip('/').split('?')[0].split('/')[0]
-        namespace['master'] = ('master' in self.cfg and
-                               'status' in self.cfg['master'] and
-                               self.cfg['master']['status'])
-        namespace['master_url'] = ('master' in self.cfg and
-                                   'url' in self.cfg['master'] and
-                                   self.cfg['master']['url'])
-        namespace['site_id'] = (self.cfg['site_id'] if 'site_id' in self.cfg else None)
-        namespace['sites'] = (self.cfg['webserver']['sites'] if (
-                              'webserver' in self.cfg and
-                              'sites' in self.cfg['webserver']) else None)
         namespace['json_encode'] = json_encode
+        namespace['states'] = iceprod.server.states
         return namespace
 
     async def get_current_user_async(self):
@@ -548,22 +388,23 @@ class Dataset(PublicHandler):
         config = await self.rest_client.request('GET','/config/{}'.format(dataset_id))
         for t in task_info:
             logger.info('task_info[%s] = %r', t, task_info[t])
-            for s in ('waiting','queued','processing','complete'):
-                if s not in task_info[t]:
-                    task_info[t][s] = 0
-            error = 0
-            for s in ('reset','resume','failed'):
-                if s in task_info[t]:
-                    error += task_info[t][s]
-            task_info[t]['error'] = error
+            type_ = 'UNK'
             for task in config['tasks']:
                 if 'name' in task and task['name'] == t:
-                    task_info[t]['type'] = 'GPU' if 'requirements' in task and 'gpu' in task['requirements'] and task['requirements']['gpu'] else 'CPU'
+                    type_ = 'GPU' if 'requirements' in task and 'gpu' in task['requirements'] and task['requirements']['gpu'] else 'CPU'
                     break
-            else:
-                task_info[t]['type'] = 'UNK'
-        self.render('dataset_detail.html',dataset_id=dataset_id,dataset_num=dataset_num,
-                    dataset=dataset,jobs=jobs,tasks=tasks,task_info=task_info,task_stats=task_stats,passkey=passkey)
+            task_info[t] = {
+                'name': t,
+                'type': type_,
+                'waiting': task_info[t].get('waiting', 0) + task_info[t].get('idle', 0),
+                'queued': task_info[t].get('queued', 0),
+                'running': task_info[t].get('processing', 0),
+                'complete': task_info[t].get('complete', 0),
+                'error': task_info[t].get('failed', 0) + task_info[t].get('suspended', 0),
+            }
+        self.render('dataset_detail.html', dataset_id=dataset_id, dataset_num=dataset_num,
+                    dataset=dataset, jobs=jobs, tasks=tasks, task_info=task_info,
+                    task_stats=task_stats, passkey=passkey)
 
 
 class TaskBrowse(PublicHandler):
@@ -779,3 +620,189 @@ class Logout(PublicHandler):
         self.current_user = None
         self.request.uri = '/'  # for login redirect, fake the main page
         self.render('logout.html', status=None)
+
+
+class HealthHandler(PublicHandler):
+    """
+    Handle health requests.
+    """
+    async def get(self):
+        """
+        Get health status.
+
+        Returns based on exit code, 200 = ok, 400 = failure
+        """
+        status = {
+            'now': nowstr(),
+        }
+
+        try:
+            await self.system_rest_client.request('GET', '/dataset_summaries/status')
+            status['rest_api'] = 'OK'
+        except Exception:
+            logger.info('error from REST API', exc_info=True)
+            self.send_error(500, reason='error from REST API')
+            return
+
+        try:
+            await self.cred_rest_client.request('GET', '/healthz')
+            status['cred_service'] = 'OK'
+        except Exception:
+            logger.info('error from REST API', exc_info=True)
+            self.send_error(500, reason='error from credential service')
+            return
+
+        self.write(status)
+
+
+class Server:
+    def __init__(self):
+        default_config = {
+            'HOST': 'localhost',
+            'PORT': 8080,
+            'DEBUG': False,
+            'OPENID_URL': '',
+            'OPENID_AUDIENCE': '',
+            'ICEPROD_WEB_URL': 'https://iceprod2.icecube.wisc.edu',
+            'ICEPROD_API_ADDRESS': 'https://iceprod2-api.icecube.wisc.edu',
+            'ICEPROD_API_CLIENT_ID': '',
+            'ICEPROD_API_CLIENT_SECRET': '',
+            'ICEPROD_CRED_ADDRESS': 'https://credentials.iceprod.icecube.aq',
+            'ICEPROD_CRED_CLIENT_ID': '',
+            'ICEPROD_CRED_CLIENT_SECRET': '',
+            'COOKIE_SECRET': '',
+            'STATSD_ADDRESS': '',
+            'STATSD_PREFIX': 'rest_api',
+            'CI_TESTING': '',
+        }
+        config = from_environment(default_config)
+
+        # get package data
+        static_path = str(importlib.resources.files('iceprod.website')/'data'/'www')
+        if static_path is None or not os.path.exists(static_path):
+            logger.info('static path: %r',static_path)
+            raise Exception('bad static path')
+        template_path = str(importlib.resources.files('iceprod.website')/'data'/'www_templates')
+        if template_path is None or not os.path.exists(template_path):
+            logger.info('template path: %r',template_path)
+            raise Exception('bad template path')
+
+        # set IceProd REST API
+        if config['ICEPROD_API_ADDRESS']:
+            rest_address = config['ICEPROD_API_ADDRESS']
+        else:
+            raise RuntimeError('ICEPROD_API_ADDRESS not specified')
+
+        rest_config = {
+            'debug': config['DEBUG'],
+            'server_header': 'IceProd/' + iceprod.__version__,
+        }
+
+        if config['OPENID_URL']:
+            logging.info(f'enabling auth via {config["OPENID_URL"]} for aud "{config["OPENID_AUDIENCE"]}"')
+            rest_config.update({
+                'auth': {
+                    'openid_url': config['OPENID_URL'],
+                    'audience': config['OPENID_AUDIENCE'],
+                }
+            })
+        elif config['CI_TESTING']:
+            rest_config.update({
+                'auth': {
+                    'secret': 'secret',
+                }
+            })
+        else:
+            raise RuntimeError('OPENID_URL not specified, and CI_TESTING not enabled!')
+
+        statsd = FakeStatsClient()
+        if config['STATSD_ADDRESS']:
+            try:
+                addr = config['STATSD_ADDRESS']
+                port = 8125
+                if ':' in addr:
+                    addr,port = addr.split(':')
+                    port = int(port)
+                statsd = StatsClientIgnoreErrors(addr, port=port, prefix=config['STATSD_PREFIX'])
+            except Exception:
+                logger.warning('failed to connect to statsd: %r', config['STATSD_ADDRESS'], exc_info=True)
+
+        if config['ICEPROD_CRED_CLIENT_ID'] and config['ICEPROD_CRED_CLIENT_SECRET']:
+            logging.info(f'enabling auth via {config["OPENID_URL"]} for aud "{config["OPENID_AUDIENCE"]}"')
+            cred_client = ClientCredentialsAuth(
+                address=config['ICEPROD_CRED_ADDRESS'],
+                token_url=config['OPENID_URL'],
+                client_id=config['ICEPROD_CRED_CLIENT_ID'],
+                client_secret=config['ICEPROD_CRED_CLIENT_SECRET'],
+            )
+        elif config['CI_TESTING']:
+            cred_client = RestClient(config['ICEPROD_CRED_ADDRESS'], timeout=1, retries=0)
+        else:
+            raise RuntimeError('ICEPROD_CRED_CLIENT_ID or ICEPROD_CRED_CLIENT_SECRET not specified, and CI_TESTING not enabled!')
+
+        handler_args = RestHandlerSetup(rest_cfg)
+        handler_args['cred_rest_client'] = cred_client
+
+        full_url = config['ICEPROD_WEB_URL']
+        handler_args['full_url'] = full_url
+        login_url = full_url+'/login'
+
+        login_handler_args = handler_args.copy()
+        if config['ICEPROD_API_CLIENT_ID'] and config['ICEPROD_API_CLIENT_SECRET']:
+            logging.info('enabling system rest client and website logins"')
+            rest_client = ClientCredentialsAuth(
+                address=config['ICEPROD_API_ADDRESS'],
+                token_url=config['OPENID_URL'],
+                client_id=config['ICEPROD_API_CLIENT_ID'],
+                client_secret=config['ICEPROD_API_CLIENT_SECRET'],
+            )
+            login_handler_args['oauth_client_id'] = config['ICEPROD_API_CLIENT_ID']
+            login_handler_args['oauth_client_secret'] = config['ICEPROD_API_CLIENT_SECRET']
+            login_handler_args['oauth_client_scope'] = 'offline_access posix profile'
+        elif config['CI_TESTING']:
+            logger.info('CI_TESTING: no login for testing')
+            rest_client = RestClient(config['ICEPROD_API_ADDRESS'], timeout=1, retries=0)
+        else:
+            raise RuntimeError('ICEPROD_API_CLIENT_ID or ICEPROD_API_CLIENT_SECRET not specified, and CI_TESTING not enabled!')
+
+        handler_args.update({
+            'statsd': statsd,
+            'rest_api': rest_address,
+            'system_rest_client': rest_client,
+        })
+        if config['COOKIE_SECRET']:
+            cookie_secret = config['COOKIE_SECRET']
+            log_cookie_secret = cookie_secret[:4] + 'X'*(len(cookie_secret)-8) + cookie_secret[-4:]
+            logger.info('using supplied cookie secret %r', log_cookie_secret)
+        else:
+            cookie_secret = ''.join(hex(random.randint(0,15))[-1] for _ in range(64))
+
+        server = RestServer(debug=config['DEBUG'])
+
+        server.add_route(r"/", Default, handler_args)
+        server.add_route(r"/submit", Submit, handler_args)
+        server.add_route(r"/config", Config, handler_args)
+        server.add_route(r"/dataset", DatasetBrowse, handler_args)
+        server.add_route(r"/dataset/(\w+)", Dataset, handler_args)
+        server.add_route(r"/dataset/(\w+)/task", TaskBrowse, handler_args)
+        server.add_route(r"/dataset/(\w+)/task/(\w+)", Task, handler_args)
+        server.add_route(r"/dataset/(\w+)/job", JobBrowse, handler_args)
+        server.add_route(r"/dataset/(\w+)/job/(\w+)", Job, handler_args)
+        server.add_route(r"/help", Help, handler_args)
+        server.add_route(r"/docs/(.*)", Documentation, handler_args)
+        server.add_route(r"/dataset/(\w+)/log/(\w+)", Log, handler_args)
+        server.add_route(r'/profile', Profile, handler_args)
+        server.add_route(r"/login", Login, login_handler_args)
+        server.add_route(r"/logout", Logout, handler_args)   
+        server.add_route('/healthz', HealthHandler, kwargs)
+        server.add_route(r"/.*", Other, handler_args)     
+
+        server.startup(address=config['HOST'], port=config['PORT'])
+
+        self.server = server
+
+    async def start(self):
+        pass
+
+    async def stop(self):
+        await self.server.stop()
