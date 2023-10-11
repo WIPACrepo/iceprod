@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v2.7.8 (2023-10-11)
+
+### Other
+
+* Update basic_submit.py fix docstring ([#365](https://github.com/WIPACrepo/iceprod/issues/365)) ([`93d4237`](https://github.com/WIPACrepo/iceprod/commit/93d423713abd91331ff569e878ef83d87b425ba0))
+
 ## v2.7.7 (2023-09-27)
 
 ### Other
