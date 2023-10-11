@@ -23,7 +23,7 @@ Example
 
 An example submission::
 
-    ./basic_submit.py --token XXXX --env_shell '/cvmfs/icecube.opensciencegrid.org/py3-v4.1.1/icetray-env combo/stable' my_script.py '--foo=bar $(input) $(output)' job_files.txt
+    ./basic_submit.py --env_shell '/cvmfs/icecube.opensciencegrid.org/py3-v4.1.1/icetray-env combo/stable' my_script.py '--foo=bar $(input) $(output)' job_files.txt
 
 This will execute `my_script.py` from the local directory, while in the
 combo/stable environment.  If the first line of `job_files.txt` contains::
