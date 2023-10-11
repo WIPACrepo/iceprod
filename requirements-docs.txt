@@ -165,5 +165,5 @@ wipac-dev-tools==1.7.0
     # via
     #   iceprod (setup.py)
     #   wipac-rest-tools
-wipac-rest-tools==1.6.0
+wipac-rest-tools==1.5.3
     # via iceprod (setup.py)
