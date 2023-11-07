@@ -224,6 +224,15 @@ class condor_direct(grid.BaseGrid):
         if submit_dir is None:
             submit_dir = ''
         reason = None
+        submit_filename = os.path.join(submit_dir, 'condor.submit')
+        submit_data = {}
+        if os.path.exists(submit_filename):
+            with open(submit_filename) as f:
+                for line in f:
+                    line = line.strip().lower()
+                    if line:
+                        key, value = line.split('=', 1)
+                        submit_data[key.strip()] = value.strip()
         filename = os.path.join(submit_dir, 'condor.log')
         if os.path.exists(filename):
             with open(filename) as f:
@@ -278,6 +287,34 @@ class condor_direct(grid.BaseGrid):
                             if resource_type in resources:
                                 reason += f'{resources[resource_type]}'
                             break
+                    elif 'cpu usage exceeded request_cpus' in line:
+                        reason = 'Resource overusage for cpu: '
+                        try:
+                            reason += str(int(submit_data['request_cpus']))
+                        except Exception:
+                            pass
+                        break
+                    elif 'memory usage exceeded request_memory' in line:
+                        reason = 'Resource overusage for memory: '
+                        try:
+                            reason += str(float(submit_data['request_memory'])/1000.)
+                        except Exception:
+                            pass
+                        break
+                    elif 'disk usage exceeded request_disk' in line:
+                        reason = 'Resource overusage for disk: '
+                        try:
+                            reason += str(float(submit_data['request_disk'])/1000000.)
+                        except Exception:
+                            pass
+                        break
+                    elif 'runtime exceeded maximum' in line:
+                        reason = 'Resource overusage for time: '
+                        try:
+                            reason += str(float(line.split()[-2].strip('('))/3600)
+                        except Exception:
+                            pass
+                        break
                     elif 'Transfer output files failure' in line:
                         reason = 'Failed to transfer output files'
                         break
