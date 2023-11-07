@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v2.7.9 (2023-11-07)
+
+### Other
+
+* Add condor startd hold expressions ([#366](https://github.com/WIPACrepo/iceprod/issues/366)) ([`bb37ad4`](https://github.com/WIPACrepo/iceprod/commit/bb37ad4a2a63dcebf5d763d337786627b4a1b770))
+
 ## v2.7.8 (2023-10-11)
 
 ### Other
