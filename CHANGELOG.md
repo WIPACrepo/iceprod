@@ -2,6 +2,15 @@
 
 <!--next-version-placeholder-->
 
+## v2.7.10 (2023-11-08)
+
+### Other
+
+* <bot> update requirements.txt ([`ebf9adb`](https://github.com/WIPACrepo/iceprod/commit/ebf9adb10f0ee55db6020a7e7382275979e8aa72))
+* <bot> update requirements-tests.txt ([`0f35b39`](https://github.com/WIPACrepo/iceprod/commit/0f35b390d4f769fa9c02b0b92539302a84687241))
+* <bot> update requirements-docs.txt ([`246abad`](https://github.com/WIPACrepo/iceprod/commit/246abadc894f5e882c57939cff29e9ac1460cf6f))
+* Fix not enough values to unpack error ([`bcf6496`](https://github.com/WIPACrepo/iceprod/commit/bcf6496baf6872069ff75e1338212ead7772b255))
+
 ## v2.7.9 (2023-11-07)
 
 ### Other
