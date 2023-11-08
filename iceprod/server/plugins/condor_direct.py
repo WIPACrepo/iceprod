@@ -230,7 +230,7 @@ class condor_direct(grid.BaseGrid):
             with open(submit_filename) as f:
                 for line in f:
                     line = line.strip().lower()
-                    if line:
+                    if '=' in line:
                         key, value = line.split('=', 1)
                         submit_data[key.strip()] = value.strip()
         filename = os.path.join(submit_dir, 'condor.log')
