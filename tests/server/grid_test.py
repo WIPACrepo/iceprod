@@ -1,516 +1,256 @@
-"""
-Test script for grid
-"""
+import asyncio
+from unittest.mock import MagicMock, AsyncMock
 
-from __future__ import absolute_import, division, print_function
+import pytest
+import requests.exceptions
 
-from tests.util import unittest_reporter, glob_tests, services_mock
-
-import logging
-logger = logging.getLogger('grid_test')
-
-import os
-import sys
-import time
-import random
-from datetime import datetime,timedelta
-from contextlib import contextmanager
-import shutil
-import socket
-import tempfile
-from multiprocessing import Queue,Pipe
-
-try:
-    import cPickle as pickle
-except:
-    import pickle
-
-import unittest
-from unittest.mock import patch, MagicMock, AsyncMock
-
-import tornado.gen
-from tornado.concurrent import Future
-from tornado.testing import AsyncTestCase
-
-import iceprod.server
-from iceprod.server import module
-from iceprod.server.grid import BaseGrid
-from iceprod.core import dataclasses
-from iceprod.core.exe import Config
 from iceprod.core.resources import Resources
-from rest_tools.client import RestClient, ClientCredentialsAuth
-
-from .module_test import Executor
-
-class grid_test(AsyncTestCase):
-    def setUp(self):
-        super(grid_test,self).setUp()
-        orig_dir = os.getcwd()
-        self.test_dir = tempfile.mkdtemp(dir=orig_dir)
-        os.chdir(self.test_dir)
-        def clean_dir():
-            os.chdir(orig_dir)
-            shutil.rmtree(self.test_dir)
-        self.addCleanup(clean_dir)
-
-        self.executor = Executor()
-
-        # override self.db_handle
-        self.services = services_mock()
-
-    @unittest_reporter
-    def test_001_init(self):
-        site = 'thesite'
-        name = 'grid1'
-        gridspec = site+'.'+name
-        submit_dir = os.path.join(self.test_dir,'submit_dir')
-        credentials_dir = os.path.join(self.test_dir,'credentials_dir')
-        cfg = {'site_id':site,
-               'queue':{'max_resets':5,
-                        'submit_dir':submit_dir,
-                        'credentials_dir':credentials_dir,
-                        name:{'test':1}},
-               'db':{'address':None,'ssl':False}}
-
-        # call normal init
-        g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.executor, module.FakeStatsClient(),
-                 None, None)
-
-        self.assertTrue(g)
-        self.assertEqual(g.gridspec, gridspec)
-        self.assertEqual(g.queue_cfg, cfg['queue'][name])
-        self.assertEqual(g.cfg, cfg)
+from iceprod.core.config import Dataset, Job, Task
+import iceprod.server.config
+import iceprod.server.grid
 
 
-        # call init with too few args
-        try:
-            g = BaseGrid(gridspec, cfg['queue'][name], cfg)
-        except:
-            pass
-        else:
-            raise Exception('too few args did not raise exception')
+def test_grid_init():
+    override = ['queue.type=test']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
-    @patch('iceprod.server.grid.BaseGrid._delete_dirs')
-    @patch('iceprod.server.grid.BaseGrid.remove')
-    @patch('iceprod.server.grid.BaseGrid.get_grid_status')
-    @unittest_reporter
-    async def test_010_check_and_clean(self, get_grid_status, remove, delete_dirs):
-        """Test check_and_clean"""
-        site = 'thesite'
-        name = 'grid1'
-        gridspec = site+'.'+name
-        submit_dir = os.path.join(self.test_dir,'submit_dir')
-        credentials_dir = os.path.join(self.test_dir,'credentials_dir')
-        cfg = {'queue':{'max_resets':5,
-                        'submit_dir':submit_dir,
-                        'credentials_dir':credentials_dir,
-                        name:{'test':1,'monitor_address':'localhost'}},
-               'db':{'address':None,'ssl':False}}
-
-        # init
-        client = MagicMock(spec=RestClient)
-        g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.executor, module.FakeStatsClient(),
-                 client, client)
-        if not g:
-            raise Exception('init did not return grid object')
-
-        # call with empty queue
-        f = Future()
-        f.set_result({})
-        client.request.return_value = f
-
-        f = Future()
-        f.set_result({})
-        get_grid_status.return_value = f
-
-        await g.check_and_clean()
-
-        self.assertEqual(client.request.call_args_list[0][0][1], '/pilots')
-        get_grid_status.assert_called()
-        remove.assert_not_called()
-        delete_dirs.assert_not_called()
-
-        # call with one pilot in iceprod, nothing on queue
-        client.request.reset_mock()
-        host = socket.getfqdn()
-        f = Future()
-        f.set_result({'123':{'pilot_id':'123','grid_queue_id':'foo','submit_dir':'bar','queue_host':host}})
-        client.request.return_value = f
-
-        f = Future()
-        f.set_result({})
-        get_grid_status.return_value = f
-
-        f = Future()
-        f.set_result(MagicMock())
-        remove.return_value = f
-
-        f = Future()
-        f.set_result(MagicMock())
-        delete_dirs.return_value = f
-
-        await g.check_and_clean()
-
-        self.assertEqual(client.request.call_args_list[0][0][1], '/pilots')
-        get_grid_status.assert_called()
-        remove.assert_not_called()
-        delete_dirs.assert_not_called()
-        self.assertEqual(client.request.call_args_list[1][0][1], '/pilots/123')
-
-    @patch('iceprod.server.grid.BaseGrid.setup_pilots')
-    @unittest_reporter
-    async def test_011_queue(self, setup_pilots):
-        f = Future()
-        f.set_result(None)
-        setup_pilots.return_value = f
-
-        site = 's1'
-        name = 'grid1'
-        gridspec = site+'.'+name
-        submit_dir = os.path.join(self.test_dir,'submit_dir')
-        credentials_dir = os.path.join(self.test_dir,'credentials_dir')
-        cfg = {'site_id':site,
-               'queue':{'max_resets':5,
-                        'submit_dir':submit_dir,
-                        'credentials_dir':credentials_dir,
-                        name:{'tasks_on_queue':[1,5,2],
-                              'monitor_address':'localhost'}},
-               'db':{'address':None,'ssl':False}}
-
-        # init
-        client = MagicMock(spec=RestClient)
-        g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.executor, module.FakeStatsClient(),
-                 client, client)
-        if not g:
-            raise Exception('init did not return grid object')
-
-        tasks = [{'task_id':'1', 'dataset_id':'bar', 'status_changed':'2017', 'requirements':{}},
-                 {'task_id':'2', 'dataset_id':'bar', 'status_changed':'2017', 'requirements':{}},
-                 {'task_id':'3', 'dataset_id':'baz', 'status_changed':'2017', 'requirements':{}},]
-        dataset = {'dataset_id':'bar', 'priority':1}
-        dataset2 = {'dataset_id':'baz', 'priority':2}
-        async def req(method, path, args=None):
-            logger.info('req path=%r, args=%r', path, args)
-            if 'task' in path:
-                return {'tasks':tasks.copy()}
-            if 'bar' in path:
-                return dataset
-            else:
-                return dataset2
-        client.request.side_effect = req
-
-        # call normally
-        g.tasks_queued = 0
-        await g.queue()
-        self.assertTrue(setup_pilots.called)
-        expected = [tasks[2], tasks[0], tasks[1]]
-        self.assertEqual(setup_pilots.call_args[0][0], expected)
-
-    @patch('iceprod.server.grid.BaseGrid.setup_submit_directory')
-    @patch('iceprod.server.grid.BaseGrid.submit')
-    @unittest_reporter
-    async def test_020_setup_pilots(self, submit, setup_submit_directory):
-        async def submit_func(task):
-            task['grid_queue_id'] = ','.join('123' for _ in range(task['num']))
-        submit.side_effect = submit_func
-        f = Future()
-        f.set_result(None)
-        setup_submit_directory.return_value = f
-
-        site = 'thesite'
-        self.check_run_stop = False
-        name = 'grid1'
-        gridspec = site+'.'+name
-        submit_dir = os.path.join(self.test_dir,'submit_dir')
-        credentials_dir = os.path.join(self.test_dir,'credentials_dir')
-        cfg = {'site_id':site,
-               'queue':{'max_resets':5,
-                        'submit_dir':submit_dir,
-                        'credentials_dir':credentials_dir,
-                        name:{'queueing_factor_priority':1,
-                              'queueing_factor_dataset':1,
-                              'queueing_factor_tasks':1,
-                              'max_task_queued_time':1000,
-                              'max_task_processing_time':1000,
-                              'max_task_reset_time':300,
-                              'pilots_on_queue': [5,10],
-                              'ping_interval':60,
-                              'monitor_address':'localhost'
-                              }},
-               'db':{'address':None,'ssl':False}}
-
-        # init
-        client = MagicMock(spec=RestClient)
-        g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.executor, module.FakeStatsClient(),
-                 client, client)
-        if not g:
-            raise Exception('init did not return grid object')
-
-        pilot_ids = list(range(100))
-        async def req(method, path, args=None):
-            logger.info('req path=%r, args=%r', path, args)
-            if method == 'GET':
-                return {'foo':{'pilot_id':'foo','host':None,'resources':{'cpu':1,'gpu':0,'disk':10,'memory':3,'time':1}},
-                        'bar':{'pilot_id':'bar','host':'baz','resources':{}},
-                       }
-            elif method == 'POST':
-                return {'result':str(pilot_ids.pop(0))}
-            else: # PATCH
-                req.num_queued += 1
-                return None
-        req.num_queued = 0
-        client.request.side_effect = req
-
-        # call normally
-        tasks = [{'task_id':'3', 'dataset_id':'baz', 'requirements':{'cpu':1,'memory':4}},
-                 {'task_id':'1', 'dataset_id':'bar', 'requirements':{'cpu':1,'memory':2}},
-                 {'task_id':'2', 'dataset_id':'bar', 'requirements':{'cpu':1,'memory':2}},]
-        await g.setup_pilots(tasks)
-        self.assertTrue(submit.called)
-        self.assertTrue(setup_submit_directory.called)
-        self.assertEqual(req.num_queued, 3)
-        self.assertEqual(req.num_queued, 3)
-
-        # test error
-        setup_submit_directory.side_effect = Exception()
-        await g.setup_pilots(tasks)
-
-        f = Future()
-        f.set_result(None)
-        setup_submit_directory.return_value = f
-        submit.side_effect = Exception()
-        await g.setup_pilots(tasks)
-
-    @patch('iceprod.server.grid.BaseGrid.generate_submit_file')
-    @patch('iceprod.server.grid.BaseGrid.write_cfg')
-    @unittest_reporter
-    async def test_023_setup_submit_directory(self, write_cfg, generate_submit_file):
-        site = 'thesite'
-        self.check_run_stop = False
-        name = 'grid1'
-        gridspec = site+'.'+name
-        submit_dir = os.path.join(self.test_dir,'submit_dir')
-        credentials_dir = os.path.join(self.test_dir,'credentials_dir')
-        cfg = {'site_id':site,
-               'queue':{'max_resets':5,
-                        'submit_dir':submit_dir,
-                        'credentials_dir':credentials_dir,
-                        name:{'tasks_on_queue':[1,5,2],
-                              'max_task_queued_time':1000,
-                              'max_task_processing_time':1000,
-                              'max_task_reset_time':300,
-                              'ping_interval':60,
-                              'monitor_address':'localhost'
-                             }
-                       },
-              }
-
-        # init
-        client = MagicMock(spec=ClientCredentialsAuth)
-        g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.executor, module.FakeStatsClient(),
-                 client, client)
-        if not g:
-            raise Exception('init did not return grid object')
-
-        # call normally
-        tokens = list(range(100,200))
-        async def req(method, path, args=None):
-            logger.info('req path=%r, args=%r', path, args)
-            return {'result':str(tokens.pop(0))}
-        req.num_queued = 0
-        client.request.side_effect = req
-
-        f = Future()
-        f.set_result(None)
-        generate_submit_file.return_value = f
-        write_cfg.return_value = (None, None)
-
-        task = {'task_id':'1','name':'0','debug':0,'dataset_id':'d1',
-                'job':0,'jobs_submitted':1}
-        await g.setup_submit_directory(task)
-
-        self.assertTrue(generate_submit_file.called)
-        self.assertTrue(write_cfg.called)
-
-    @unittest_reporter
-    async def test_024_customize_task_config(self):
-        site = 'thesite'
-        self.check_run_stop = False
-        name = 'grid1'
-        gridspec = site+'.'+name
-        submit_dir = os.path.join(self.test_dir,'submit_dir')
-        credentials_dir = os.path.join(self.test_dir,'credentials_dir')
-        cfg = {'site_id':site,
-               'queue':{'max_resets':5,
-                        'submit_dir':submit_dir,
-                        'credentials_dir':credentials_dir,
-                        'site_temp': 'http://test.test/bucket',
-                        name:{'tasks_on_queue':[1,5,2],
-                              'max_task_queued_time':1000,
-                              'max_task_processing_time':1000,
-                              'max_task_reset_time':300,
-                              'ping_interval':60,
-                              'monitor_address':'localhost'
-                             }
-                       },
-               'creds':{'http://test.test':{'url':'http://test.test','type':'s3',
-                                            'access_key':'XXXX','secret_key':'YYYYYYY',
-                                            'buckets':['bucket'],
-                                           }
-                       },
-              }
-
-        # init
-        client = MagicMock(spec=RestClient)
-        g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.executor, module.FakeStatsClient(),
-                 client, client)
-        if not g:
-            raise Exception('init did not return grid object')
-
-        g.get_user_credentials = AsyncMock(return_value={})
-        g.get_group_credentials = AsyncMock(return_value={})
-
-        logger.info('test: add job temp file using s3 site temp')
-        task = {'task_id':'1','name':'0','debug':0,'dataset_id':'d1',
-                'dataset':1,'job':0,'jobs_submitted':1}
-        job_cfg = g.create_config(task)
-        task_cfg = dataclasses.Task()
-        task_cfg['data'].append(dataclasses.Data(local='file.txt', type='job_temp', movement='both'))
-        job_cfg['tasks'].append(task_cfg)
-        parser = Config(job_cfg)
-        job_cfg = parser.parseObject(job_cfg, {})
-        dataset = {'debug':0,'dataset_id':'d1','jobs_submitted':1,
-                   'tasks_submitted':1,'tasks_per_job':1,
-                   'username':'foo','group':'users'}
-        await g.customize_task_config(task_cfg, job_cfg, dataset)
-
-        g.get_user_credentials.assert_awaited_once()
-        g.get_group_credentials.assert_not_awaited()
-        assert len(task_cfg['data']) == 2
-        assert task_cfg['data'][0]['remote'].startswith('http://test.test/bucket')
-        assert 'Signature' in task_cfg['data'][0]['remote']
-        assert 'Expires' in task_cfg['data'][0]['remote']
-        assert task_cfg['data'][0]['movement'] == 'input'
-        assert task_cfg['data'][1]['remote'].startswith('http://test.test/bucket')
-        assert 'Signature' in task_cfg['data'][1]['remote']
-        assert 'Expires' in task_cfg['data'][1]['remote']
-        assert task_cfg['data'][1]['movement'] == 'output'
-
-        logger.info('test: add group cred with token')
-        g.get_group_credentials = AsyncMock(return_value={
-                'http://test.test2':{'url':'http://test.test2','type':'oauth',
-                                     'access_token':'XXXX',
-                                    }})
-        task = {'task_id':'1','name':'0','debug':0,'dataset_id':'d1',
-                'dataset':1,'job':0,'jobs_submitted':1}
-        job_cfg = g.create_config(task)
-        task_cfg = dataclasses.Task()
-        task_cfg['data'].append(dataclasses.Data(local='file.txt', remote='http://test.test2/foo/bar/file.txt',
-                                                 type='permanent', movement='both'))
-        job_cfg['tasks'].append(task_cfg)
-        parser = Config(job_cfg)
-        job_cfg = parser.parseObject(job_cfg, {})
-        dataset = {'debug':0,'dataset_id':'d1','jobs_submitted':1,
-                   'tasks_submitted':1,'tasks_per_job':1,
-                   'username':'foo','group':'simprod'}
-        await g.customize_task_config(task_cfg, job_cfg, dataset)
-
-        g.get_group_credentials.assert_awaited_once()
-        assert len(task_cfg['data']) == 1
-        assert task_cfg['data'][0]['remote'].startswith('http://test.test2')
-        assert 'http://test.test2' in job_cfg['options']['credentials']
-
-    @unittest_reporter
-    def test_026_write_cfg(self):
-        site = 'thesite'
-        self.check_run_stop = False
-        name = 'grid1'
-        gridspec = site+'.'+name
-        submit_dir = os.path.join(self.test_dir,'submit_dir')
-        credentials_dir = os.path.join(self.test_dir,'credentials_dir')
-        cfg = {'site_id':site,
-               'queue':{'max_resets':5,
-                        'submit_dir':submit_dir,
-                        'credentials_dir':credentials_dir,
-                        name:{'tasks_on_queue':[1,5,2],
-                              'max_task_queued_time':1000,
-                              'max_task_processing_time':1000,
-                              'max_task_reset_time':300,
-                              'ping_interval':60,
-                              'monitor_address':'localhost'
-                             }
-                       },
-              }
-
-        # init
-        client = MagicMock(spec=RestClient)
-        g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.executor, module.FakeStatsClient(),
-                 client, client)
-        if not g:
-            raise Exception('init did not return grid object')
-
-        # call normally
-        task = {'task_id':'1','name':'0','debug':0,'dataset_id':'d1',
-                'job':0,'jobs_submitted':1,'submit_dir':submit_dir}
-        config, filelist = g.write_cfg(task)
-        self.assertEqual(filelist[0], os.path.join(submit_dir,'task.cfg'))
-        self.assertTrue(os.path.exists(filelist[0]))
-
-        # call with extra opts
-        task = {'task_id':'1','name':'0','debug':0,'submit_dir':submit_dir,
-                'reqs':{'OS':'RHEL6'}}
-        cfg['queue']['site_temp'] = 'tmp'
-        cfg['download'] = {'http_username':'foo','http_password':'bar'}
-        cfg['system'] = {'remote_cacert': 'baz'}
-        with open('baz', 'w') as f:
-            f.write('bazbaz')
-        cfg['queue']['x509proxy'] = 'x509'
-        with open('x509', 'w') as f:
-            f.write('x509x509')
-        config, filelist = g.write_cfg(task)
-        self.assertEqual(filelist[0], os.path.join(submit_dir,'task.cfg'))
-        self.assertTrue(os.path.exists(filelist[0]))
-        self.assertEqual(len(filelist),3)
-        self.assertIn('baz', filelist[1])
-        self.assertIn('x509', filelist[2])
-
-    @unittest_reporter
-    def test_100_get_resources(self):
-        tasks = [
-            {'reqs':{'cpu':1,'memory':4.6}},
-        ]
-        reqs = list(BaseGrid._get_resources(tasks))
-        self.assertIn('cpu', reqs[0])
-        self.assertEqual(reqs[0]['cpu'], tasks[0]['reqs']['cpu'])
-        self.assertIn('memory', reqs[0])
-        self.assertEqual(reqs[0]['memory'], tasks[0]['reqs']['memory'])
-
-        tasks = [
-            {'reqs':{'os':'RHEL_7_x86_64'}},
-        ]
-        reqs = list(BaseGrid._get_resources(tasks))
-        self.assertIn('os', reqs[0])
-        self.assertEqual(reqs[0]['os'], tasks[0]['reqs']['os'])
-
-        tasks = [
-            {'reqs':{'cpu':1,'memory':4.6,'foo':'bar'}},
-        ]
-        reqs = list(BaseGrid._get_resources(tasks))
-        self.assertIn('cpu', reqs[0])
-        self.assertEqual(reqs[0]['cpu'], tasks[0]['reqs']['cpu'])
-        self.assertIn('memory', reqs[0])
-        self.assertEqual(reqs[0]['memory'], tasks[0]['reqs']['memory'])
+    rc = MagicMock()
+    iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
 
 
-def load_tests(loader, tests, pattern):
-    suite = unittest.TestSuite()
-    alltests = glob_tests(loader.getTestCaseNames(grid_test))
-    suite.addTests(loader.loadTestsFromNames(alltests,grid_test))
-    return suite
+def test_grid_get_submit_dir():
+    override = ['queue.type=test']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+
+    rc = MagicMock()
+    g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
+
+    assert g.get_submit_dir() == g.submit_dir
+
+
+async def test_grid_run():
+    override = ['queue.type=test', 'queue.check_time=0']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+
+    rc = MagicMock()
+    g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
+
+    g.active_jobs.load = AsyncMock()
+    g.submit = AsyncMock()
+    g.active_jobs.wait = AsyncMock()
+    g.active_jobs.check = AsyncMock(side_effect=Exception('halt run'))
+
+    with pytest.raises(Exception, match='halt run'):
+        await g.run()
+
+    assert g.active_jobs.load.called
+    assert g.submit.called
+    assert g.active_jobs.wait.called
+    assert g.active_jobs.check.called
+
+
+async def test_grid_dataset_lookup(monkeypatch):
+    override = ['queue.type=test']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+
+    rc = MagicMock()
+    g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
+
+    dataset_mock = AsyncMock()
+    d = dataset_mock.load_from_api.return_value
+    d.fill_defaults = MagicMock()
+    d.validate = MagicMock()
+    monkeypatch.setattr(iceprod.server.grid, 'Dataset', dataset_mock)
+    ret = await g._dataset_lookup('12345')
+    assert ret == d
+    assert dataset_mock.load_from_api.call_count == 1
+
+    # test cache miss
+    ret = await g._dataset_lookup('6789')
+    assert ret == d
+    assert dataset_mock.load_from_api.call_count == 2
+
+    # test cache hit
+    ret = await g._dataset_lookup('12345')
+    assert ret == d
+    assert dataset_mock.load_from_api.call_count == 2
+
+
+async def test_grid_submit():
+    override = ['queue.type=test', 'queue.check_time=0']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+
+    rc = MagicMock()
+    g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
+
+    NUM_TASKS = 2
+    g.get_queue_num = MagicMock(return_value=NUM_TASKS)
+    rc.request = AsyncMock()
+    job = iceprod.server.grid.BaseGridJob(task=MagicMock())
+    g.convert_task_to_job = AsyncMock(return_value=job)
+    g._get_resources = MagicMock(return_value={"cpu":1})
+    g.active_jobs.jobs.submit = AsyncMock()
+
+    await g.submit()
+
+    assert g.get_queue_num.called
+    assert rc.request.call_count == NUM_TASKS
+    assert g.convert_task_to_job.call_count == NUM_TASKS
+    assert g._get_resources.call_count == NUM_TASKS
+    assert g.active_jobs.jobs.submit.call_count == 1
+    assert g.active_jobs.jobs.submit.call_args == (([job,job],),)
+
+
+async def test_grid_submit_none():
+    override = ['queue.type=test', 'queue.check_time=0']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+
+    rc = MagicMock()
+    g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
+
+    NUM_TASKS = 2
+    g.get_queue_num = MagicMock(return_value=NUM_TASKS)
+    response = MagicMock()
+    response.status_code = 404
+    rc.request = AsyncMock(side_effect=requests.exceptions.HTTPError(response=response))
+    job = iceprod.server.grid.BaseGridJob(task=MagicMock())
+    g.convert_task_to_job = AsyncMock(return_value=job)
+    g._get_resources = MagicMock(return_value={"cpu":1})
+    g.active_jobs.jobs.submit = AsyncMock()
+
+    await g.submit()
+
+    assert g.get_queue_num.called
+    assert rc.request.call_count == 1
+    assert g.convert_task_to_job.call_count == 0
+    assert g._get_resources.call_count == 0
+    assert g.active_jobs.jobs.submit.call_count == 0
+
+
+async def test_grid_convert_task_to_job():
+    override = ['queue.type=test', 'queue.check_time=0']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+
+    rc = MagicMock()
+    g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
+
+    TASK = MagicMock()
+    DATASET = MagicMock()
+    g._dataset_lookup = AsyncMock(return_value=DATASET)
+    g.create_submit_dir = AsyncMock()
+
+    ret = await g.convert_task_to_job(TASK)
+
+    assert ret.task.dataset == DATASET
+    assert g.create_submit_dir.called
+
+
+async def test_grid_create_submit_dir(i3prod_path):
+    override = ['queue.type=test', 'queue.check_time=0']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+
+    rc = MagicMock()
+    g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
+
+    submit_dir = i3prod_path / 'submit'
+
+    job = iceprod.server.grid.BaseGridJob(task=MagicMock())
+    await g.create_submit_dir(job)
+
+    assert job.submit_dir is not None
+    assert job.submit_dir.is_relative_to(submit_dir)
+
+    
+def test_grid_get_resources(i3prod_path):
+    d = Dataset(
+        dataset_id='1234',
+        dataset_num=1234,
+        jobs_submitted=10,
+        tasks_submitted=10,
+        tasks_per_job=1,
+        status='processing',
+        priority=.5,
+        group='group',
+        user='user',
+        debug=False,
+        config={},
+    )
+    j = Job(dataset=d, job_id='5678', job_index=3, status='processing')
+    t = Task(
+        dataset=d,
+        job=j,
+        task_id='91011',
+        task_index=0,
+        name='generate',
+        depends=[],
+        requirements={},
+        status='queued',
+        site='site',
+        stats={},
+    )
+
+    r = iceprod.server.grid.BaseGrid._get_resources(t)
+    assert list(r.keys()) == list(Resources.defaults.keys())
+
+    t.requirements['cpu'] = 2
+    r = iceprod.server.grid.BaseGrid._get_resources(t)
+    assert r['cpu'] == 2
+
+    t.requirements['gpu'] = 2
+    r = iceprod.server.grid.BaseGrid._get_resources(t)
+    assert r['gpu'] == 2
+
+    t.requirements['os'] = 'RHEL_7_x86_64'
+    r = iceprod.server.grid.BaseGrid._get_resources(t)
+    assert r['os'] == ['RHEL_7_x86_64']
+
+    t.requirements['os'] = ['RHEL_7_x86_64', 'RHEL_8_x86_64']
+    r = iceprod.server.grid.BaseGrid._get_resources(t)
+    assert r['os'] == ['RHEL_7_x86_64', 'RHEL_8_x86_64']
+
+
+async def test_grid_get_queue_num(i3prod_path):
+    override = ['queue.type=test', 'queue.max_total_tasks_on_queue=10', 'queue.max_idle_tasks_on_queue=5', 'queue.max_tasks_per_submit=3']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+
+    rc = MagicMock()
+    g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
+
+    n = g.get_queue_num()
+    assert n == 3
+
+    JobStatus = iceprod.server.grid.JobStatus
+    BaseGridJob = iceprod.server.grid.BaseGridJob
+    g.active_jobs.jobs.jobs['1'] = BaseGridJob(task=MagicMock(), status=JobStatus.IDLE)
+    g.active_jobs.jobs.jobs['2'] = BaseGridJob(task=MagicMock(), status=JobStatus.IDLE)
+    g.active_jobs.jobs.jobs['3'] = BaseGridJob(task=MagicMock(), status=JobStatus.IDLE)
+    n = g.get_queue_num()
+    assert n == 2
+    
+    g.active_jobs.jobs.jobs['4'] = BaseGridJob(task=MagicMock(), status=JobStatus.IDLE)
+    g.active_jobs.jobs.jobs['5'] = BaseGridJob(task=MagicMock(), status=JobStatus.IDLE)
+    n = g.get_queue_num()
+    assert n == 0
+
+    g.active_jobs.jobs.jobs['1'] = BaseGridJob(task=MagicMock(), status=JobStatus.RUNNING)
+    g.active_jobs.jobs.jobs['2'] = BaseGridJob(task=MagicMock(), status=JobStatus.RUNNING)
+    g.active_jobs.jobs.jobs['3'] = BaseGridJob(task=MagicMock(), status=JobStatus.RUNNING)
+    g.active_jobs.jobs.jobs['4'] = BaseGridJob(task=MagicMock(), status=JobStatus.RUNNING)
+    g.active_jobs.jobs.jobs['5'] = BaseGridJob(task=MagicMock(), status=JobStatus.RUNNING)
+    g.active_jobs.jobs.jobs['6'] = BaseGridJob(task=MagicMock(), status=JobStatus.RUNNING)
+    n = g.get_queue_num()
+    assert n == 3
+
+    g.active_jobs.jobs.jobs['7'] = BaseGridJob(task=MagicMock(), status=JobStatus.IDLE)
+    g.active_jobs.jobs.jobs['8'] = BaseGridJob(task=MagicMock(), status=JobStatus.IDLE)
+    g.active_jobs.jobs.jobs['9'] = BaseGridJob(task=MagicMock(), status=JobStatus.IDLE)
+    n = g.get_queue_num()
+    assert n == 1
+
+    g.active_jobs.jobs.jobs['10'] = BaseGridJob(task=MagicMock(), status=JobStatus.IDLE)
+    n = g.get_queue_num()
+    assert n == 0
+
+    g.active_jobs.jobs.jobs['11'] = BaseGridJob(task=MagicMock(), status=JobStatus.IDLE)
+    n = g.get_queue_num()
+    assert n == 0

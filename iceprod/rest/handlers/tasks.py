@@ -715,7 +715,7 @@ class TasksActionsQueueHandler(APIBase):
         print('filter_query', filter_query)
         ret = await self.db.tasks.find_one_and_update(
             filter_query,
-            {'$set': {'status': 'queued'}},
+            {'$set': {'status': 'queued', 'site': site}},
             projection={'_id': False},
             sort=sort_by,
             return_document=pymongo.ReturnDocument.AFTER

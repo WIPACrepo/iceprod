@@ -2,14 +2,7 @@
 Test script for config
 """
 
-import logging
-logger = logging.getLogger('config_test')
-
-import os, sys, time
-import shutil
-import tempfile
-import random
-import unittest
+import os
 import json
 
 import pytest
@@ -17,14 +10,7 @@ import pytest
 import iceprod.server.config
 
 
-@pytest.fixture
-def prod_path(monkeypatch, tmp_path):
-    (tmp_path / 'etc').mkdir(mode=0o700)
-    monkeypatch.setenv('I3PROD', str(tmp_path))
-    yield tmp_path
-
-
-def test_01_IceProdConfig(prod_path):
+def test_01_IceProdConfig():
     """Test config.IceProdConfig()"""
     cfg = iceprod.server.config.IceProdConfig(defaults=False, validate=False)
     cfg.save()
@@ -54,13 +40,14 @@ def test_01_IceProdConfig(prod_path):
     assert actual == expected
 
 
-def test_02_IceProdConfig(prod_path):
+def test_02_filename(i3prod_path):
     """Test config.IceProdConfig()"""
-    cfg = iceprod.server.config.IceProdConfig(filename='test.json')
-    assert cfg.filename == 'test.json'
+    name = str(i3prod_path / 'test.json')
+    cfg = iceprod.server.config.IceProdConfig(filename=name)
+    assert cfg.filename == name
 
 
-def test_10_config_override(prod_path):
+def test_10_config_override():
     vals = ['test=foo']
     cfg = iceprod.server.config.IceProdConfig(override=vals, defaults=False, validate=False)
     assert cfg['test'] == 'foo'
@@ -73,13 +60,23 @@ def test_10_config_override(prod_path):
     assert cfg['test2'] == {'foo': 123}
     assert cfg['test3'] is True
 
-def test_20_defaults(prod_path):
+    vals = ['queue.resources.cpu=1', 'queue.exclusive=true']
+    cfg = iceprod.server.config.IceProdConfig(override=vals, defaults=False, validate=False)
+
+
+def test_20_defaults():
     cfg = iceprod.server.config.IceProdConfig(validate=False)
     assert cfg['logging']['level'] == 'INFO'
 
-def test_30_validate(prod_path):
+
+def test_30_validate():
     cfg = iceprod.server.config.IceProdConfig()
 
     cfg['logging']['level'] = 'foo'
     with pytest.raises(Exception):
         cfg.do_validate()
+
+
+def test_40_save():
+    cfg = iceprod.server.config.IceProdConfig(validate=False, save=False)
+    assert os.path.exists(cfg.filename) is False
