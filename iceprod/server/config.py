@@ -34,17 +34,19 @@ class IceProdConfig(dict):
         defaults: use default values (optional: default True)
         validate: turn validation on/off (optional: default True)
         override: override list of key=value strings
+        save: enable saving to file (optional: default True)
     """
-    def __init__(self, filename=None, defaults=True, validate=True, override=None):
+    def __init__(self, filename=None, defaults=True, validate=True, override=None, save=True):
         if filename:
             self.filename = filename
         else:
             self.filename = os.path.expandvars('$I3PROD/etc/iceprod_config.json')
 
-        if not Path(self.filename).parent.is_dir():
+        if save and not Path(self.filename).parent.is_dir():
             raise RuntimeError('$I3PROD/etc does not exist')
 
         self.validate = validate
+        self._save = save
         self.loading = False
 
         # load user input, apply defaults, and save
@@ -168,7 +170,7 @@ class IceProdConfig(dict):
 
     def save(self):
         """Save config from file."""
-        if not self.loading:
+        if self._save and not self.loading:
             try:
                 # save securely
                 with os.fdopen(os.open(self.filename+'.tmp', os.O_WRONLY | os.O_CREAT, 0o600), 'w') as f:

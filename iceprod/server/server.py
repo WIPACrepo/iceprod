@@ -47,17 +47,15 @@ class Server(object):
                     roll_files(sys.stderr, self.errfile)
             await asyncio.sleep(3600)
 
-    async def start(self):
+    async def run(self):
         self.rotate_logs_task = asyncio.create_task(self.rotate_logs())
-        await self.queue.start()
-
-    async def stop(self):
-        if self.rotate_logs_task:
-            self.rotate_logs_task.cancel()
-            self.rotate_logs_task = None
-        if self.queue:
-            await self.queue.stop()
-        await asyncio.sleep(0)
+        try:
+            await self.queue.run()
+        finally:
+            if self.rotate_logs_task:
+                self.rotate_logs_task.cancel()
+                self.rotate_logs_task = None
+            await asyncio.sleep(0)
 
 
 def roll_files(fd, filename, num_files=5):

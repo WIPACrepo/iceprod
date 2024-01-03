@@ -24,15 +24,6 @@ import iceprod.core.logger
 from iceprod.server.server import Server
 
 
-# start server
-async def start_server(*args, **kwargs):
-    s = Server(*args, **kwargs)
-    await s.start()
-    try:
-        await asyncio.Event().wait()
-    finally:
-        await s.stop()
-
 def runner(stdout=False, *args, **kwargs):
     # set logger
     if stdout:
@@ -47,7 +38,8 @@ def runner(stdout=False, *args, **kwargs):
     except Exception:
         logging.warning("could not rename process")
 
-    asyncio.run(start_server(*args, **kwargs))
+    s = Server(*args, **kwargs)
+    asyncio.run(s.run())
     logging.warning('iceprod exiting')
 
 def setup_I3PROD():
