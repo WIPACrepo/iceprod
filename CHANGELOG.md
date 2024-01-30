@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v2.7.11 (2024-01-30)
+
+### Other
+
+* Update docs ([#367](https://github.com/WIPACrepo/iceprod/issues/367)) ([`ab611f0`](https://github.com/WIPACrepo/iceprod/commit/ab611f0be4fd5b5f9151eb357661b01a9f3d3509))
+
 ## v2.7.10 (2023-11-08)
 
 ### Other
