@@ -1,4 +1,4 @@
 REST API - Pilots
 =================
 
-.. automodule:: iceprod.server.rest.pilots
+.. automodule:: iceprod.rest.handlers.pilots

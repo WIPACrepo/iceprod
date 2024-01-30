@@ -1,4 +1,4 @@
 REST API - Logs
 ===============
 
-.. automodule:: iceprod.server.rest.logs
+.. automodule:: iceprod.rest.handlers.logs

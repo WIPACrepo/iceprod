@@ -1,4 +1,4 @@
 REST API - Datasets
 ===================
 
-.. automodule:: iceprod.server.rest.datasets
+.. automodule:: iceprod.rest.handlers.datasets

@@ -1,4 +1,4 @@
 REST API - Grids
 ================
 
-.. automodule:: iceprod.server.rest.grids
+.. automodule:: iceprod.rest.handlers.grids

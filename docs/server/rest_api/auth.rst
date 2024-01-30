@@ -1,4 +1,4 @@
 REST API - Auth
 ===============
 
-.. automodule:: iceprod.server.rest.auth
+.. automodule:: iceprod.rest.handlers.auth
