@@ -8,9 +8,9 @@ anyio==4.2.0
     # via httpx
 asyncache==0.3.1
     # via iceprod (setup.py)
-boto3==1.34.30
+boto3==1.34.31
     # via iceprod (setup.py)
-botocore==1.34.30
+botocore==1.34.31
     # via
     #   boto3
     #   s3transfer
