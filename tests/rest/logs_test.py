@@ -4,7 +4,7 @@ import random
 import string
 
 import boto3
-from moto import mock_s3
+from moto import mock_aws
 import pytest
 import requests.exceptions
 from rest_tools.utils.json_util import json_decode
