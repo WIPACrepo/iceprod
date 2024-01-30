@@ -1,4 +1,4 @@
 REST API - Config
 =================
 
-.. automodule:: iceprod.server.rest.config
+.. automodule:: iceprod.rest.handlers.config

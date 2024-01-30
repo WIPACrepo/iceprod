@@ -1,4 +1,4 @@
 REST API - Tasks
 ================
 
-.. automodule:: iceprod.server.rest.tasks
+.. automodule:: iceprod.rest.handlers.tasks

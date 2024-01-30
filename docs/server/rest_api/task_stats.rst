@@ -1,4 +1,4 @@
 REST API - Task Stats
 =====================
 
-.. automodule:: iceprod.server.rest.task_stats
+.. automodule:: iceprod.rest.handlers.task_stats

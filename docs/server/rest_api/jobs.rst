@@ -1,4 +1,4 @@
 REST API - Jobs
 ===============
 
-.. automodule:: iceprod.server.rest.jobs
+.. automodule:: iceprod.rest.handlers.jobs
