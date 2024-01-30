@@ -2,7 +2,7 @@ import os
 import socket
 
 import boto3
-from moto import mock_s3
+from moto import mock_aws
 import motor.motor_asyncio
 import pytest
 import pytest_asyncio
@@ -62,7 +62,7 @@ def s3conn(monkeypatch):
     monkeypatch.setenv('S3_ACCESS_KEY', 'XXXX')
     monkeypatch.setenv('S3_SECRET_KEY', 'XXXX')
 
-    with mock_s3():
+    with mock_aws():
         conn = boto3.client('s3', region_name='us-east-1')
         conn.create_bucket(Bucket='iceprod2-logs')
         yield conn
