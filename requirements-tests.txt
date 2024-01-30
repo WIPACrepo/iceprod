@@ -86,7 +86,9 @@ mccabe==0.7.0
 mock==5.1.0
     # via iceprod (setup.py)
 moto[s3]==5.0.0
-    # via iceprod (setup.py)
+    # via
+    #   iceprod (setup.py)
+    #   moto
 motor==3.3.2
     # via iceprod (setup.py)
 packaging==23.2
