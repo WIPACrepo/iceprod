@@ -85,7 +85,7 @@ mccabe==0.7.0
     # via flake8
 mock==5.1.0
     # via iceprod (setup.py)
-moto==5.0.0
+moto[s3]==5.0.0
     # via iceprod (setup.py)
 motor==3.3.2
     # via iceprod (setup.py)
@@ -95,6 +95,8 @@ pluggy==1.4.0
     # via pytest
 psutil==5.9.8
     # via iceprod (setup.py)
+py-partiql-parser==0.5.0
+    # via moto
 pyasn1==0.5.1
     # via ldap3
 pycodestyle==2.11.1
@@ -135,6 +137,7 @@ python-dateutil==2.8.2
 pyyaml==6.0.1
     # via
     #   iceprod (setup.py)
+    #   moto
     #   responses
 qrcode==7.4.2
     # via wipac-rest-tools
