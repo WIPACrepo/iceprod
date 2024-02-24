@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v2.7.12 (2024-02-24)
+
+### Other
+
+* Handle empty gridftp dirs properly ([#368](https://github.com/WIPACrepo/iceprod/issues/368)) ([`1ef6661`](https://github.com/WIPACrepo/iceprod/commit/1ef666181a233f9e278e2a35dee626e601d0921b))
+
 ## v2.7.11 (2024-01-30)
 
 ### Other
