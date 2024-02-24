@@ -221,6 +221,8 @@ class GridFTP(object):
 
         ret = _cmd_output(cmd, timeout=timeout)
         if ret[0]:
+            if (not dotfiles) and 'No match for' in ret[1]:
+                return []
             logger.warning(f'{ret[1]}')
             raise Exception('Error getting listing')
         return listify(ret[1], details=details, dotfiles=dotfiles)
