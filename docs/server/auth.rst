@@ -5,4 +5,4 @@
 Token Authentication
 ====================
 
-.. automodule:: iceprod.server.auth
+.. automodule:: iceprod.client_auth
