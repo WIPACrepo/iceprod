@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v2.7.13 (2024-03-14)
+
+### Other
+
+* Update sphinx options to re-enable autodocs ([#369](https://github.com/WIPACrepo/iceprod/issues/369)) ([`a7dd319`](https://github.com/WIPACrepo/iceprod/commit/a7dd31966339327acc045cf373c0af92ba4e6c61))
+
 ## v2.7.12 (2024-02-24)
 
 ### Other
