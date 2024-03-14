@@ -115,7 +115,7 @@ pyopenssl==24.1.0
     # via iceprod (setup.py)
 pypng==0.20220715.0
     # via qrcode
-pytest==8.1.1
+pytest==8.0.2
     # via
     #   iceprod (setup.py)
     #   pytest-asyncio
