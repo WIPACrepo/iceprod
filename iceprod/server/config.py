@@ -78,6 +78,8 @@ class IceProdConfig(dict):
                 schema_value = _load_ref(schema['properties'][prop])
                 v = schema_value.get('default', None)
                 if prop not in user and v is not None:
+                    if isinstance(v, (dict, list)):
+                        v = v.copy()
                     user[prop] = v
             for k in user:
                 schema_value = _load_ref(schema['properties'].get(k, {}))

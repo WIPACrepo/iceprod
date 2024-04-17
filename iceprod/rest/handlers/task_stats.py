@@ -65,7 +65,7 @@ class MultiTaskStatsHandler(APIBase):
         data = {
             'task_stat_id': task_stat_id,
             'task_id': task_id,
-            'dataset_id': stat_data['dataset_id'],
+            'dataset_id': stat_data.pop('dataset_id', ''),
             'create_date': nowstr(),
             'stats': stat_data,
         }

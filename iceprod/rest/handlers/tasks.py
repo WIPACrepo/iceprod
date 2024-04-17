@@ -181,6 +181,7 @@ class MultiTasksHandler(APIBase):
             'walltime_err': 0.0,
             'walltime_err_n': 0,
             'site': '',
+            'instance_id': '',
         })
         if 'status' not in data:
             data['status'] = TASK_STATUS_START
@@ -255,7 +256,9 @@ class TasksStatusHandler(APIBase):
         """
         Set a task status.
 
-        Body should have {'status': <new_status>}
+        Body args:
+            status (str): new status
+            instance_id (str): matching instance id (optional)
 
         Args:
             task_id (str): the task id
@@ -266,15 +269,26 @@ class TasksStatusHandler(APIBase):
         data = json.loads(self.request.body)
         if (not data) or 'status' not in data:
             raise tornado.web.HTTPError(400, reason='Missing status in body')
-        if data['status'] not in TASK_STATUS:
+        status = data['status']
+        if status not in TASK_STATUS:
             raise tornado.web.HTTPError(400, reason='Bad status')
+
+        search = {
+            'task_id': task_id,
+            'status': {'$in': task_prev_statuses(status)},
+        }
+
         update_data = {
-            'status': data['status'],
+            'status': status,
             'status_changed': nowstr(),
         }
 
+        instance_id = data.get('instance_id', '')
+        if instance_id:
+            search['instance_id'] = instance_id
+
         ret = await self.db.tasks.update_one(
-            {'task_id': task_id, 'status': {'$in': task_prev_statuses(data['status'])}},
+            search,
             {'$set': update_data}
         )
         if (not ret) or ret.modified_count < 1:
@@ -427,6 +441,7 @@ class DatasetTasksStatusHandler(APIBase):
         update_data = {
             'status': data['status'],
             'status_changed': nowstr(),
+            'instance_id': '',
         }
         if data['status'] == 'reset':
             update_data['failures'] = 0
@@ -473,6 +488,7 @@ class DatasetTasksForceStatusHandler(APIBase):
         update_data = {
             'status': data['status'],
             'status_changed': nowstr(),
+            'instance_id': '',
         }
         if data['status'] == 'reset':
             update_data['failures'] = 0
@@ -684,6 +700,7 @@ class TasksActionsQueueHandler(APIBase):
         filter_query = {'status': 'waiting'}
         sort_by = [('priority',-1)]
         site = 'unknown'
+        queue_instance_id = uuid.uuid1().hex
         if self.request.body:
             data = json.loads(self.request.body)
             # handle requirements
@@ -715,7 +732,7 @@ class TasksActionsQueueHandler(APIBase):
         print('filter_query', filter_query)
         ret = await self.db.tasks.find_one_and_update(
             filter_query,
-            {'$set': {'status': 'queued', 'site': site}},
+            {'$set': {'status': 'queued', 'site': site, 'instance_id': queue_instance_id}},
             projection={'_id': False},
             sort=sort_by,
             return_document=pymongo.ReturnDocument.AFTER
@@ -731,7 +748,7 @@ class TasksActionsQueueHandler(APIBase):
 
 class TasksActionsProcessingHandler(APIBase):
     """
-    Handle task action for waiting -> queued.
+    Handle task action for queued -> processing.
     """
     @authorization(roles=['admin', 'system'])
     async def post(self, task_id):
@@ -742,23 +759,30 @@ class TasksActionsProcessingHandler(APIBase):
             task_id (str): task id
 
         Body args (json):
+            instance_id (str): task instance id
             site (str): (optional) site the task is running at
 
         Returns:
             dict: <task dict>
         """
-        filter_query = {'task_id': task_id, 'status': {'$in': task_prev_statuses('processing')}}
+        data = json.loads(self.request.body)
+        if (not data) or 'instance_id' not in data:
+            raise tornado.web.HTTPError(400, reason='Missing instance_id in body')
+
+        filter_query = {
+            'task_id': task_id,
+            'status': {'$in': task_prev_statuses('processing')},
+            'instance_id': data['instance_id'],
+        }
         update_query = {
             '$set': {
                 'status': 'processing',
                 'status_changed': nowstr(),
             },
         }
-        if self.request.body:
-            data = json.loads(self.request.body)
-            if 'site' in data:
-                site = data['site']
-                update_query['$set']['site'] = site
+
+        if 'site' in data:
+            update_query['$set']['site'] = data['site']
 
         ret = await self.db.tasks.find_one_and_update(
             filter_query,
@@ -767,7 +791,11 @@ class TasksActionsProcessingHandler(APIBase):
         )
         if not ret:
             logger.info('filter_query: %r', filter_query)
-            self.send_error(400, reason="Task not found")
+            ret = await self.db.tasks.find_one({'task_id': task_id, 'instance_id': data['instance_id']})
+            if not ret:
+                self.send_error(404, reason="Task not found")
+            else:
+                self.send_error(400, reason="Bad state transition for status")
         else:
             self.write(ret)
             self.finish()
@@ -788,6 +816,7 @@ class TasksActionsErrorHandler(APIBase):
             task_id (str): task id
 
         Body args (json):
+            instance_id (str): task instance id 
             time_used (int): (optional) time used to run task, in seconds
             resources (dict): (optional) resources used by task
             site (str): (optional) site the task was running at
@@ -796,48 +825,57 @@ class TasksActionsErrorHandler(APIBase):
         Returns:
             dict: <task dict>
         """
-        filter_query = {'task_id': task_id, 'status': {'$in': task_prev_statuses(self.final_status)}}
+        data = json.loads(self.request.body)
+        if (not data) or 'instance_id' not in data:
+            raise tornado.web.HTTPError(400, reason='Missing instance_id in body')
+
+        filter_query = {
+            'task_id': task_id,
+            'status': {'$in': task_prev_statuses(self.final_status)},
+            'instance_id': data['instance_id'],
+        }
         update_query = defaultdict(dict,{
             '$set': {
                 'status': self.final_status,
                 'status_changed': nowstr(),
+                'instance_id': '',
             },
             '$inc': {
                 'failures': 1,
             },
         })
-        if self.request.body:
-            data = json.loads(self.request.body)
-            task = await self.db.tasks.find_one(filter_query)
-            if 'time_used' in data:
-                update_query['$inc']['walltime_err_n'] = 1
-                update_query['$inc']['walltime_err'] = data['time_used']/3600.
-            elif 'resources' in data and 'time' in data['resources']:
-                update_query['$inc']['walltime_err_n'] = 1
-                update_query['$inc']['walltime_err'] = data['resources']['time']
-            for k in ('cpu','memory','disk','time'):
-                if 'resources' in data and k in data['resources']:
-                    try:
-                        new_val = float(data['resources'][k])
-                        old_val = task['requirements'][k] if k in task['requirements'] else Resources.defaults[k]
-                        if k == 'cpu':  # special handling for cpu
-                            if new_val <= 1.1 or new_val > 20:
-                                continue
-                            if new_val < old_val*1.1:
-                                continue
-                            new_val = old_val+1  # increase linearly
-                        elif new_val < 0.5:
-                            logger.info('ignoring val below 0.5 for %s: %f', k, new_val)
+
+        task = await self.db.tasks.find_one(filter_query)
+        if 'time_used' in data:
+            update_query['$inc']['walltime_err_n'] = 1
+            update_query['$inc']['walltime_err'] = data['time_used']/3600.
+        elif 'resources' in data and 'time' in data['resources']:
+            update_query['$inc']['walltime_err_n'] = 1
+            update_query['$inc']['walltime_err'] = data['resources']['time']
+        for k in ('cpu','memory','disk','time'):
+            if 'resources' in data and k in data['resources']:
+                try:
+                    new_val = float(data['resources'][k])
+                    old_val = task['requirements'][k] if k in task['requirements'] else Resources.defaults[k]
+                    if k == 'cpu':  # special handling for cpu
+                        if new_val <= 1.1 or new_val > 20:
                             continue
-                        else:
-                            new_val *= 1.5  # increase new request by 1.5
-                        if isinstance(Resources.defaults[k], (int, list)):
-                            new_val = math.ceil(new_val)
-                    except Exception:
-                        logger.info('error converting requirement %r',
-                                    data['resources'][k], exc_info=True)
+                        if new_val < old_val*1.1:
+                            continue
+                        new_val = old_val+1  # increase linearly
+                    elif new_val < 0.5:
+                        logger.info('ignoring val below 0.5 for %s: %f', k, new_val)
+                        continue
                     else:
-                        update_query['$max']['requirements.'+k] = new_val
+                        new_val *= 1.5  # increase new request by 1.5
+                    if isinstance(Resources.defaults[k], (int, list)):
+                        new_val = math.ceil(new_val)
+                except Exception:
+                    logger.info('error converting requirement %r',
+                                data['resources'][k], exc_info=True)
+                else:
+                    update_query['$max']['requirements.'+k] = new_val
+
             site = 'unknown'
             if 'site' in data:
                 site = data['site']
@@ -861,6 +899,7 @@ class TasksActionsErrorHandler(APIBase):
                         reason = r
                         break
                 self.statsd.incr('site.{}.task_{}.{}'.format(site, self.final_status, reason))
+
         ret = await self.db.tasks.find_one_and_update(
             filter_query,
             update_query,
@@ -891,28 +930,38 @@ class TasksActionsCompleteHandler(APIBase):
             task_id (str): task id
 
         Body args (json):
+            instance_id (str): task instance id 
             time_used (int): (optional) time used to run task, in seconds
             site (str): (optional) site the task was running at
 
         Returns:
             dict: <task dict>
         """
-        filter_query = {'task_id': task_id, 'status': 'processing'}
+        data = json.loads(self.request.body)
+        if (not data) or 'instance_id' not in data:
+            raise tornado.web.HTTPError(400, reason='Missing instance_id in body')
+
+        filter_query = {
+            'task_id': task_id,
+            'status': 'processing',
+            'instance_id': data['instance_id'],
+        }
         update_query = {
             '$set': {
                 'status': 'complete',
                 'status_changed': nowstr(),
+                'instance_id': '',
             },
         }
-        if self.request.body:
-            data = json.loads(self.request.body)
-            if 'time_used' in data:
-                update_query['$set']['walltime'] = data['time_used']/3600.
-            site = 'unknown'
-            if 'site' in data:
-                site = data['site']
-                update_query['$set']['site'] = site
-            self.statsd.incr('site.{}.task_complete'.format(site))
+
+        if 'time_used' in data:
+            update_query['$set']['walltime'] = data['time_used']/3600.
+        site = 'unknown'
+        if 'site' in data:
+            site = data['site']
+            update_query['$set']['site'] = site
+        self.statsd.incr('site.{}.task_complete'.format(site))
+
         ret = await self.db.tasks.find_one_and_update(
             filter_query,
             update_query,
@@ -957,6 +1006,7 @@ class TaskBulkStatusHandler(APIBase):
         update_data = {
             'status': status,
             'status_changed': nowstr(),
+            'instance_id': '',
         }
 
         ret = await self.db.tasks.update_many(query, {'$set': update_data})
@@ -1001,6 +1051,7 @@ class DatasetTaskBulkStatusHandler(APIBase):
         update_data = {
             'status': status,
             'status_changed': nowstr(),
+            'instance_id': '',
         }
         if status == 'reset':
             update_data['failures'] = 0
@@ -1040,6 +1091,7 @@ class DatasetTaskBulkSuspendHandler(APIBase):
         update_data = {
             'status': 'suspended',
             'status_changed': nowstr(),
+            'instance_id': '',
         }
 
         if self.request.body:
@@ -1087,6 +1139,7 @@ class DatasetTaskBulkResetHandler(APIBase):
         update_data = {
             'status': TASK_STATUS_START,
             'status_changed': nowstr(),
+            'instance_id': '',
         }
 
         if self.request.body:
@@ -1135,6 +1188,7 @@ class DatasetTaskBulkHardResetHandler(APIBase):
             'status_changed': nowstr(),
             'failures': 0,
             'site': '',
+            'instance_id': '',
         }
 
         if self.request.body:

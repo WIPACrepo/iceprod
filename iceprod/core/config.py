@@ -116,6 +116,7 @@ class Task:
     status: str
     site: str
     stats: dict
+    instance_id: str | None = None
 
     @classmethod
     async def load_from_api(cls, dataset_id: str, task_id: str, rest_client: RestClient) -> Self:
@@ -125,7 +126,19 @@ class Task:
         )
         job = await rest_client.request('GET', f'/datasets/{dataset_id}/jobs/{task["job_id"]}')
         j = Job(d, task['job_id'], job['job_index'], job['status'])
-        return cls(d, j, task['task_id'], task['task_index'], task['name'], task['depends'], task['requirements'], task['status'], task['site'], {})
+        return cls(
+            dataset=d,
+            job=j,
+            task_id=task['task_id'],
+            task_index=task['task_index'],
+            name=task['name'],
+            depends=task['depends'],
+            requirements=task['requirements'],
+            status=task['status'],
+            site=task['site'],
+            stats={},
+            instance_id=task.get('instance_id', '')
+        )
 
     async def load_stats_from_api(self, rest_client: RestClient):
         ret = await rest_client.request('GET', f'/datasets/{self.dataset.dataset_id}/tasks/{self.task_id}/task_stats', {'last': 'true'})

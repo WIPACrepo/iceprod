@@ -1,4 +1,5 @@
 import asyncio
+from dataclasses import dataclass
 from unittest.mock import MagicMock, AsyncMock
 
 import pytest
@@ -15,38 +16,38 @@ def test_grid_init():
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
     rc = MagicMock()
-    iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
+    g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
 
+    assert 'gpu' not in g.site_requirements
 
-def test_grid_get_submit_dir():
+def test_grid_init_gpu():
+    override = ['queue.type=test', 'queue.site=grid-gpu']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+
+    rc = MagicMock()
+    g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
+
+    assert 'gpu' in g.site_requirements
+
+def test_grid_init_exclusive():
+    override = ['queue.type=test', 'queue.site=grid', 'queue.exclusive=true']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+
+    rc = MagicMock()
+    g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
+
+    assert 'requirements.site' in g.site_query_params
+    assert g.site_query_params['requirements.site'] == 'grid'
+
+async def test_grid_run():
     override = ['queue.type=test']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
     rc = MagicMock()
     g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
 
-    assert g.get_submit_dir() == g.submit_dir
-
-
-async def test_grid_run():
-    override = ['queue.type=test', 'queue.check_time=0']
-    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
-
-    rc = MagicMock()
-    g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
-
-    g.active_jobs.load = AsyncMock()
-    g.submit = AsyncMock()
-    g.active_jobs.wait = AsyncMock()
-    g.active_jobs.check = AsyncMock(side_effect=Exception('halt run'))
-
-    with pytest.raises(Exception, match='halt run'):
+    with pytest.raises(NotImplementedError):
         await g.run()
-
-    assert g.active_jobs.load.called
-    assert g.submit.called
-    assert g.active_jobs.wait.called
-    assert g.active_jobs.check.called
 
 
 async def test_grid_dataset_lookup(monkeypatch):
@@ -61,22 +62,22 @@ async def test_grid_dataset_lookup(monkeypatch):
     d.fill_defaults = MagicMock()
     d.validate = MagicMock()
     monkeypatch.setattr(iceprod.server.grid, 'Dataset', dataset_mock)
-    ret = await g._dataset_lookup('12345')
+    ret = await g.dataset_lookup('12345')
     assert ret == d
     assert dataset_mock.load_from_api.call_count == 1
 
     # test cache miss
-    ret = await g._dataset_lookup('6789')
+    ret = await g.dataset_lookup('6789')
     assert ret == d
     assert dataset_mock.load_from_api.call_count == 2
 
     # test cache hit
-    ret = await g._dataset_lookup('12345')
+    ret = await g.dataset_lookup('12345')
     assert ret == d
     assert dataset_mock.load_from_api.call_count == 2
 
 
-async def test_grid_submit():
+async def test_grid_get_tasks_to_queue():
     override = ['queue.type=test', 'queue.check_time=0']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
@@ -84,21 +85,16 @@ async def test_grid_submit():
     g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
 
     NUM_TASKS = 2
-    g.get_queue_num = MagicMock(return_value=NUM_TASKS)
     rc.request = AsyncMock()
-    job = iceprod.server.grid.BaseGridJob(task=MagicMock())
-    g.convert_task_to_job = AsyncMock(return_value=job)
-    g._get_resources = MagicMock(return_value={"cpu":1})
-    g.active_jobs.jobs.submit = AsyncMock()
+    g._convert_to_task = AsyncMock()
+    g._get_resources = MagicMock()
 
-    await g.submit()
+    tasks = await g.get_tasks_to_queue(NUM_TASKS)
 
-    assert g.get_queue_num.called
+    assert len(tasks) == NUM_TASKS
     assert rc.request.call_count == NUM_TASKS
-    assert g.convert_task_to_job.call_count == NUM_TASKS
+    assert g._convert_to_task.call_count == NUM_TASKS
     assert g._get_resources.call_count == NUM_TASKS
-    assert g.active_jobs.jobs.submit.call_count == 1
-    assert g.active_jobs.jobs.submit.call_args == (([job,job],),)
 
 
 async def test_grid_submit_none():
@@ -109,25 +105,21 @@ async def test_grid_submit_none():
     g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
 
     NUM_TASKS = 2
-    g.get_queue_num = MagicMock(return_value=NUM_TASKS)
     response = MagicMock()
     response.status_code = 404
     rc.request = AsyncMock(side_effect=requests.exceptions.HTTPError(response=response))
-    job = iceprod.server.grid.BaseGridJob(task=MagicMock())
-    g.convert_task_to_job = AsyncMock(return_value=job)
-    g._get_resources = MagicMock(return_value={"cpu":1})
-    g.active_jobs.jobs.submit = AsyncMock()
+    g._convert_to_task = AsyncMock()
+    g._get_resources = MagicMock()
 
-    await g.submit()
+    tasks = await g.get_tasks_to_queue(NUM_TASKS)
 
-    assert g.get_queue_num.called
+    assert len(tasks) == 0
     assert rc.request.call_count == 1
-    assert g.convert_task_to_job.call_count == 0
+    assert g._convert_to_task.call_count == 0
     assert g._get_resources.call_count == 0
-    assert g.active_jobs.jobs.submit.call_count == 0
 
 
-async def test_grid_convert_task_to_job():
+async def test_grid_convert_to_task():
     override = ['queue.type=test', 'queue.check_time=0']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
@@ -136,29 +128,12 @@ async def test_grid_convert_task_to_job():
 
     TASK = MagicMock()
     DATASET = MagicMock()
-    g._dataset_lookup = AsyncMock(return_value=DATASET)
-    g.create_submit_dir = AsyncMock()
+    g.dataset_lookup = AsyncMock(return_value=DATASET)
 
-    ret = await g.convert_task_to_job(TASK)
+    ret = await g._convert_to_task(TASK)
 
-    assert ret.task.dataset == DATASET
-    assert g.create_submit_dir.called
+    assert ret.dataset == DATASET
 
-
-async def test_grid_create_submit_dir(i3prod_path):
-    override = ['queue.type=test', 'queue.check_time=0']
-    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
-
-    rc = MagicMock()
-    g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
-
-    submit_dir = i3prod_path / 'submit'
-
-    job = iceprod.server.grid.BaseGridJob(task=MagicMock())
-    await g.create_submit_dir(job)
-
-    assert job.submit_dir is not None
-    assert job.submit_dir.is_relative_to(submit_dir)
 
     
 def test_grid_get_resources(i3prod_path):
@@ -209,48 +184,214 @@ def test_grid_get_resources(i3prod_path):
     assert r['os'] == ['RHEL_7_x86_64', 'RHEL_8_x86_64']
 
 
-async def test_grid_get_queue_num(i3prod_path):
-    override = ['queue.type=test', 'queue.max_total_tasks_on_queue=10', 'queue.max_idle_tasks_on_queue=5', 'queue.max_tasks_per_submit=3']
+@dataclass(kw_only=True, slots=True)
+class GT(iceprod.server.grid.GridTask):
+    dataset_id: str
+    task_id: str
+    instance_id: str | None = None
+
+
+async def test_grid_upload_log():
+    override = ['queue.type=test']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
     rc = MagicMock()
+    rc.request = AsyncMock()
     g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
 
-    n = g.get_queue_num()
-    assert n == 3
+    task = GT(dataset_id='ddd', task_id='ttt')
+    name = 'name'
+    data = 'the log\ndata'
+    await g._upload_log(task, name=name, data=data)
 
-    JobStatus = iceprod.server.grid.JobStatus
-    BaseGridJob = iceprod.server.grid.BaseGridJob
-    g.active_jobs.jobs.jobs['1'] = BaseGridJob(task=MagicMock(), status=JobStatus.IDLE)
-    g.active_jobs.jobs.jobs['2'] = BaseGridJob(task=MagicMock(), status=JobStatus.IDLE)
-    g.active_jobs.jobs.jobs['3'] = BaseGridJob(task=MagicMock(), status=JobStatus.IDLE)
-    n = g.get_queue_num()
-    assert n == 2
+    assert rc.request.call_count == 1
+
+    rc.request = AsyncMock(side_effect=requests.exceptions.HTTPError())
+    await g._upload_log(task, name=name, data=data)
+
+
+async def test_grid_upload_stats():
+    override = ['queue.type=test']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+
+    rc = MagicMock()
+    rc.request = AsyncMock()
+    g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
+
+    task = GT(dataset_id='ddd', task_id='ttt')
+    stats = {}
+    await g._upload_stats(task, stats=stats)
+
+    assert rc.request.call_count == 1
     
-    g.active_jobs.jobs.jobs['4'] = BaseGridJob(task=MagicMock(), status=JobStatus.IDLE)
-    g.active_jobs.jobs.jobs['5'] = BaseGridJob(task=MagicMock(), status=JobStatus.IDLE)
-    n = g.get_queue_num()
-    assert n == 0
+    stats = {
+        'site': 'Foo'
+    }
+    await g._upload_stats(task, stats=stats)
 
-    g.active_jobs.jobs.jobs['1'] = BaseGridJob(task=MagicMock(), status=JobStatus.RUNNING)
-    g.active_jobs.jobs.jobs['2'] = BaseGridJob(task=MagicMock(), status=JobStatus.RUNNING)
-    g.active_jobs.jobs.jobs['3'] = BaseGridJob(task=MagicMock(), status=JobStatus.RUNNING)
-    g.active_jobs.jobs.jobs['4'] = BaseGridJob(task=MagicMock(), status=JobStatus.RUNNING)
-    g.active_jobs.jobs.jobs['5'] = BaseGridJob(task=MagicMock(), status=JobStatus.RUNNING)
-    g.active_jobs.jobs.jobs['6'] = BaseGridJob(task=MagicMock(), status=JobStatus.RUNNING)
-    n = g.get_queue_num()
-    assert n == 3
+    assert rc.request.call_args.args[-1]['site'] == 'Foo'
 
-    g.active_jobs.jobs.jobs['7'] = BaseGridJob(task=MagicMock(), status=JobStatus.IDLE)
-    g.active_jobs.jobs.jobs['8'] = BaseGridJob(task=MagicMock(), status=JobStatus.IDLE)
-    g.active_jobs.jobs.jobs['9'] = BaseGridJob(task=MagicMock(), status=JobStatus.IDLE)
-    n = g.get_queue_num()
-    assert n == 1
+    rc.request = AsyncMock(side_effect=requests.exceptions.HTTPError())
+    await g._upload_stats(task, stats=stats)
 
-    g.active_jobs.jobs.jobs['10'] = BaseGridJob(task=MagicMock(), status=JobStatus.IDLE)
-    n = g.get_queue_num()
-    assert n == 0
 
-    g.active_jobs.jobs.jobs['11'] = BaseGridJob(task=MagicMock(), status=JobStatus.IDLE)
-    n = g.get_queue_num()
-    assert n == 0
+async def test_grid_task_idle():
+    override = ['queue.type=test']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+
+    rc = MagicMock()
+    rc.request = AsyncMock()
+    g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
+
+    task = GT(dataset_id='ddd', task_id='ttt', instance_id='iii')
+    await g.task_idle(task)
+
+    assert rc.request.call_count == 1
+
+    response = MagicMock()
+    response.status_code = 404
+    rc.request = AsyncMock(side_effect=requests.exceptions.HTTPError(response=response))
+    await g.task_idle(task)
+
+    response.status_code = 500
+    with pytest.raises(requests.exceptions.HTTPError):
+        await g.task_idle(task)
+
+
+async def test_grid_task_processing():
+    override = ['queue.type=test']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+
+    rc = MagicMock()
+    rc.request = AsyncMock()
+    g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
+
+    task = GT(dataset_id='ddd', task_id='ttt', instance_id='iii')
+    await g.task_processing(task)
+
+    assert rc.request.call_count == 1
+
+    response = MagicMock()
+    response.status_code = 404
+    rc.request = AsyncMock(side_effect=requests.exceptions.HTTPError(response=response))
+    await g.task_processing(task)
+
+    response.status_code = 500
+    with pytest.raises(requests.exceptions.HTTPError):
+        await g.task_processing(task)
+
+
+async def test_grid_task_reset():
+    override = ['queue.type=test']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+
+    rc = MagicMock()
+    rc.request = AsyncMock()
+    g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
+
+    task = GT(dataset_id='ddd', task_id='ttt', instance_id='iii')
+    await g.task_reset(task)
+
+    assert rc.request.call_count == 1
+
+    response = MagicMock()
+    response.status_code = 404
+    rc.request = AsyncMock(side_effect=requests.exceptions.HTTPError(response=response))
+    await g.task_reset(task, reason='reason')
+
+    assert rc.request.call_args.args[-1]['reason'] == 'reason'
+
+    response.status_code = 500
+    with pytest.raises(requests.exceptions.HTTPError):
+        await g.task_reset(task)
+
+
+async def test_grid_task_failure(i3prod_path):
+    override = ['queue.type=test']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+
+    rc = MagicMock()
+    rc.request = AsyncMock()
+    g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
+
+    task = GT(dataset_id='ddd', task_id='ttt', instance_id='iii')
+    await g.task_failure(task)
+
+    assert rc.request.call_count == 1
+
+    response = MagicMock()
+    response.status_code = 404
+    rc.request = AsyncMock(side_effect=requests.exceptions.HTTPError(response=response))
+    await g.task_failure(task)
+
+    response.status_code = 500
+    with pytest.raises(requests.exceptions.HTTPError):
+        await g.task_failure(task)
+
+    rc.request = AsyncMock()
+    await g.task_failure(task, reason='reason')
+    assert rc.request.call_count == 2
+    assert rc.request.call_args_list[0].args[-1]['reason'] == 'reason'
+
+    rc.request = AsyncMock()
+    stats = {'resources': {'cpu': 1}}
+    await g.task_failure(task, stats=stats)
+    assert rc.request.call_count == 2
+
+    rc.request = AsyncMock()
+    outfile = i3prod_path / 'outfile'
+    outfile.write_text('out data')
+    await g.task_failure(task, stdout=outfile)
+    assert rc.request.call_count == 2
+
+    rc.request = AsyncMock()
+    outfile = i3prod_path / 'outfile'
+    outfile.write_text('out data')
+    errfile = i3prod_path / 'errfile'
+    errfile.write_text('err message')
+    await g.task_failure(task, stdout=outfile, stderr=errfile, reason='reason')
+    assert rc.request.call_count == 4
+
+
+async def test_grid_task_success(i3prod_path):
+    override = ['queue.type=test']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+
+    rc = MagicMock()
+    rc.request = AsyncMock()
+    g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
+
+    task = GT(dataset_id='ddd', task_id='ttt', instance_id='iii')
+    await g.task_success(task)
+
+    assert rc.request.call_count == 1
+
+    response = MagicMock()
+    response.status_code = 404
+    rc.request = AsyncMock(side_effect=requests.exceptions.HTTPError(response=response))
+    await g.task_success(task)
+
+    response.status_code = 500
+    with pytest.raises(requests.exceptions.HTTPError):
+        await g.task_success(task)
+
+    rc.request = AsyncMock()
+    stats = {'resources': {'cpu': 1, 'time': 4.3}, 'site': 'MySite'}
+    await g.task_success(task, stats=stats)
+    assert rc.request.call_count == 2
+
+    rc.request = AsyncMock()
+    outfile = i3prod_path / 'outfile'
+    outfile.write_text('out data')
+    await g.task_success(task, stdout=outfile)
+    assert rc.request.call_count == 2
+
+    rc.request = AsyncMock()
+    outfile = i3prod_path / 'outfile'
+    outfile.write_text('out data')
+    errfile = i3prod_path / 'errfile'
+    errfile.write_text('err message')
+    await g.task_success(task, stdout=outfile, stderr=errfile)
+    assert rc.request.call_count == 3
+
+

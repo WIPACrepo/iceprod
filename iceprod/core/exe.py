@@ -395,26 +395,25 @@ class WriteToScript:
 
     async def _write_module(self, module, env, file):
         module = module.copy()
-        if module['running_class']:
-            module['running_class'] = self.cfgparser.parseValue(module['running_class'], env)
+        if module['src']:
+            module_src = self.cfgparser.parseValue(module['src'], env)
+            if functions.isurl(module_src):
+                path = os.path.basename(module_src).split('?', 0)[0].split('#', 0)[0]
+                env['input_files'][module_src] = path
+                module_src = path
+            self.logger.info('running module %r with src %s', module['name'], module_src)
+        else:
+            self.logger.error('module is missing src')
+            raise ConfigError('error running module - need "src"')
+
         if module['args']:
             module['args'] = self.cfgparser.parseObject(module['args'], env)
-        if module['src']:
-            module['src'] = self.cfgparser.parseValue(module['src'], env)
         if module['env_shell']:
             module['env_shell'] = self.cfgparser.parseValue(module['env_shell'], env)
         if module['configs']:
             # parse twice to make sure it's parsed, even if it starts as a string
             module['configs'] = self.cfgparser.parseObject(module['configs'], env)
             module['configs'] = self.cfgparser.parseObject(module['configs'], env)
-
-        module_src = None
-        if module['src']:
-            module_src = module['src']
-            if functions.isurl(module_src):
-                path = os.path.basename(module_src).split('?', 0)[0].split('#', 0)[0]
-                env['input_files'][module_src] = path
-                module_src = path
 
         # set up env_shell
         env_shell = []
@@ -424,11 +423,6 @@ class WriteToScript:
                 path = os.path.basename(env_shell[0]).split('?', 0)[0].split('#', 0)[0]
                 env['input_files'][env_shell[0]] = path
                 env_shell[0] = f'./{path}'
-
-        if module_src:
-            self.logger.info('running module %r with src %s', module['name'], module_src)
-        else:
-            self.logger.info('running module %r with class %s', module['name'], module['running_class'])
 
         # set up the args
         args = module['args']
@@ -480,25 +474,17 @@ class WriteToScript:
                 env['input_files'][str(self.workdir / filename)] = filename
 
         # run the module
-        if module['running_class']:
-            self.logger.info('run as a python module')
-            cmd.extend(['python', '-m', module['running_class']] + args)
-        elif module_src:
-            self.logger.info('run as a script directly')
-            if module_src[-3:] == '.py':
-                # call as python script
-                cmd.extend(['python', module_src] + args)
-            elif module_src[-3:] == '.sh':
-                # call as shell script
-                cmd.extend(['/bin/sh', module_src] + args)
-            else:
-                # call as regular executable
-                if module_src[0] != '/':
-                    module_src = f'./{module_src}'
-                cmd.extend([module_src] + args)
+        if module_src[-3:] == '.py':
+            # call as python script
+            cmd.extend(['python', module_src] + args)
+        elif module_src[-3:] == '.sh':
+            # call as shell script
+            cmd.extend(['/bin/sh', module_src] + args)
         else:
-            self.logger.error('module is missing class and src')
-            raise ConfigError('error running module - need either "class" or "src"')
+            # call as regular executable
+            if module_src[0] != '/':
+                module_src = f'./{module_src}'
+            cmd.extend([module_src] + args)
 
         if module['env_clear']:
             # must be on cvmfs-like environ for this to apply

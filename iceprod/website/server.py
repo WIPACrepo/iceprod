@@ -740,7 +740,7 @@ class Server:
         else:
             raise RuntimeError('ICEPROD_CRED_CLIENT_ID or ICEPROD_CRED_CLIENT_SECRET not specified, and CI_TESTING not enabled!')
 
-        handler_args = RestHandlerSetup(rest_cfg)
+        handler_args = RestHandlerSetup(rest_config)
         handler_args['cred_rest_client'] = cred_client
 
         full_url = config['ICEPROD_WEB_URL']
@@ -777,7 +777,13 @@ class Server:
         else:
             cookie_secret = ''.join(hex(random.randint(0,15))[-1] for _ in range(64))
 
-        server = RestServer(debug=config['DEBUG'])
+        server = RestServer(
+            debug=config['DEBUG'],
+            cookie_secret=cookie_secret,
+            login_url=login_url,
+            template_path=template_path,
+            static_path=static_path,
+        )
 
         server.add_route(r"/", Default, handler_args)
         server.add_route(r"/submit", Submit, handler_args)
@@ -793,8 +799,8 @@ class Server:
         server.add_route(r"/dataset/(\w+)/log/(\w+)", Log, handler_args)
         server.add_route(r'/profile', Profile, handler_args)
         server.add_route(r"/login", Login, login_handler_args)
-        server.add_route(r"/logout", Logout, handler_args)   
-        server.add_route('/healthz', HealthHandler, kwargs)
+        server.add_route(r"/logout", Logout, handler_args)
+        server.add_route('/healthz', HealthHandler, handler_args)
         server.add_route(r"/.*", Other, handler_args)     
 
         server.startup(address=config['HOST'], port=config['PORT'])

@@ -18,10 +18,10 @@ import hashlib
 from pathlib import Path
 import socket
 import stat
-from typing import Optional
+from typing import Any, Protocol
 from urllib.parse import urlparse
 
-from asyncache import cached, cachedmethod
+from asyncache import cached, cachedmethod  # type: ignore
 from cachetools import TTLCache
 from cachetools.func import ttl_cache
 from rest_tools.client import RestClient
@@ -36,7 +36,7 @@ import iceprod
 #import iceprod.core.exe
 from iceprod.core.defaults import add_default_options
 from iceprod.core.config import Task, Job, Dataset
-#from iceprod.core import functions
+from iceprod.core import functions
 #from iceprod.core import serialization
 from iceprod.core.exe import WriteToScript
 from iceprod.core.resources import Resources, group_hasher
@@ -54,117 +54,11 @@ def get_host():
     return socket.getfqdn()
 
 
-@enum.unique
-class JobStatus(enum.Enum):
-    IDLE = enum.auto()
-    TRANSFERRING_INPUT = enum.auto()
-    RUNNING = enum.auto()
-    TRANSFERRING_OUTPUT = enum.auto()
-    FAILED = enum.auto()
-    COMPLETED = enum.auto()
-
-
-@dataclass(kw_only=True, slots=True)
-class BaseGridJob:
-    """
-    Interface for a grid job.
-    Should be subclassed with a batch system id.
-    """
-    task: Task
-    executable: str = ''
-    infiles: list = field(default_factory=list)
-    outfiles: list = field(default_factory=list)
-    submit_dir: Optional[Path] = None
-    status: JobStatus = JobStatus.IDLE
-
-
-class GridJobActions:
-    """
-    Class holding job states and actions.
-
-    Override for batch systems as needed, and call `super()` functions.
-
-    Args:
-        site: grid site name
-        rest_client: IceProd API REST client
-    """
-    def __init__(self, site: str, rest_client: RestClient):
-        self.jobs = {}
-        self.site = site
-        self.rest_client = rest_client
-
-    async def submit(self, jobs: list[BaseGridJob]):
-        """
-        Submit multiple jobs to the batch system.
-
-        Assumes that the resource requirements are identical.
-        """
-        raise NotImplementedError()
-
-    async def job_update(self, job: BaseGridJob):
-        """
-        Send updated info from the batch system to the IceProd API.
-
-        Must handle dup calls.
-        """
-        raise NotImplementedError()
-
-    async def finish(self, job: BaseGridJob):
-        """
-        Run cleanup actions after a batch job completes.
-
-        Must handle dup calls.
-        """
-        raise NotImplementedError()
-
-    def get_job_counts(self):
-        """
-        Get an aggregated count of jobs per state.
-        """
-        ret = {s: 0 for s in JobStatus}
-        for job in self.jobs.values():
-            ret[job.status] += 1
-        return ret
-
-
-class BaseActiveJobs:
-    """
-    Interface for active job counting.
-    Do not use this class directly.  Use one of the plugins.
-    """
-    def __init__(self, jobs: GridJobActions, submit_dir: Path):
-        self.jobs = jobs
-        self.submit_dir = submit_dir
-
-    async def load(self):
-        """
-        Load currently active jobs.
-
-        Returns:
-            iterator of completed jobs
-        """
-        raise NotImplementedError()
-
-    async def wait(self, timeout):
-        """
-        Wait for jobs to complete.
-
-        Args:
-            timeout: wait up to N seconds
-
-        Returns:
-            iterator of completed jobs
-        """
-        raise NotImplementedError()
-
-    async def check(self):
-        """
-        Do any checks necessary that the active job tracking is correct.
-
-        Returns:
-            iterator of completed jobs
-        """
-        raise NotImplementedError()
+class GridTask(Protocol):
+    """Protocol for grid task dataclass"""
+    dataset_id: str | None
+    task_id: str | None
+    instance_id: str | None
 
 
 class BaseGrid:
@@ -191,7 +85,12 @@ class BaseGrid:
         if self.site:
             self.site_requirements['site'] = self.site
             if queue_cfg.get('exclusive', False):
+                logger.info('site requirements: must match site name')
                 self.site_query_params['requirements.site'] = self.site
+
+            if 'gpu' in self.site.lower():
+                logger.info('site requirements: GPU site!')
+                self.site_requirements['gpu'] = 1
 
         # directories
         self.credentials_dir = Path(os.path.expanduser(os.path.expandvars(
@@ -204,52 +103,52 @@ class BaseGrid:
 
         # dataset lookup cache
         self.dataset_cache = TTLCache(maxsize=100, ttl=60)
-        
-        # set up active jobs
-        self.active_jobs = self.get_active_jobs()
+
 
     # Functions to override #
 
-    def get_active_jobs(self):
-        """Override the `ActiveJobs` and `JobActions` batch submission / monitoring classes"""
-        return BaseActiveJobs(GridJobActions(site=self.site, rest_client=self.rest_client), submit_dir=self.submit_dir)
-
-    def get_submit_dir(self):
-        """Allow dynamically modifying the submit dir"""
-        return self.submit_dir
-
-    # Private functions #
-
     async def run(self):
-        await self.active_jobs.load()
+        """Override the `ActiveJobs` and `JobActions` batch submission / monitoring classes"""
+        raise NotImplementedError()
 
-        check_time = time.monotonic()
-        while True:
-            await self.submit()
-            await self.active_jobs.wait(timeout=300)
 
-            now = time.monotonic()
-            if now - check_time >= self.cfg['queue']['check_time']:
-                await self.active_jobs.check()
+    # Commong functions #
 
     @cachedmethod(lambda self: self.dataset_cache)
-    async def _dataset_lookup(self, dataset_id):
+    async def dataset_lookup(self, dataset_id: str) -> Dataset:
+        """
+        Lookup a dataset fromn the REST API.
+
+        Uses caching with TTL 60 seconds.
+
+        Args:
+            dataset_id: dataset id
+
+        Returns:
+            iceprod.core.config.Dataset object
+        """ 
         ret = await Dataset.load_from_api(dataset_id, rest_client=self.rest_client)
         ret.fill_defaults()
         ret.validate()
         return ret
 
-    async def submit(self):
-        num_to_submit = self.get_queue_num()
-        logger.info("Attempting to submit %d tasks", num_to_submit)
+    async def get_tasks_to_queue(self, num: int) -> list[Task]:
+        """
+        Get new tasks to queue from the REST API.
 
+        Args:
+            num: number of tasks to retrieve
+
+        Returns:
+            list of iceprod.core.config.Task objects
+        """
         # get tasks to run from REST API, and convert to batch jobs
         args = {
             'requirements': self.site_requirements,
             'query_params': self.site_query_params,
         }
         futures = set()
-        for tasks_queued in range(num_to_submit):
+        for tasks_queued in range(num):
             try:
                 ret = await self.rest_client.request('GET', '/task_actions/queue', args)
             except requests.exceptions.HTTPError as e:
@@ -257,28 +156,28 @@ class BaseGrid:
                     break
                 raise
             else:
-                futures.add(asyncio.create_task(self.convert_task_to_job(ret)))
+                futures.add(asyncio.create_task(self._convert_to_task(ret)))
         logging.info('got %d tasks to queue', tasks_queued)
 
-        jobs = []
+        tasks = []
         while futures:
             done, futures = await asyncio.wait(futures)
             for f in done:
-                job = await f
-                jobs.append(job)
+                task = await f
+                tasks.append(task)
 
-        if not jobs:
-            return
+        if not tasks:
+            return []
 
         # add default resource requirements
-        for job in jobs:
-            job.task.requirements = self._get_resources(job.task)
+        for task in tasks:
+            task.requirements = self._get_resources(task)
 
-        # submit to batch system
-        await self.active_jobs.jobs.submit(jobs)
+        return tasks
 
-    async def convert_task_to_job(self, task):
-        d = await self._dataset_lookup(task['dataset_id'])
+    async def _convert_to_task(self, task):
+        """Convert from basic task dict to a Task object"""
+        d = await self.dataset_lookup(task['dataset_id'])
         # don't bother looking up the job status - trust that if we got a task, we're in processing
         j = Job(dataset=d, job_id=task['job_id'], job_index=task['job_index'], status=JOB_STATUS_START)
         t = Task(
@@ -293,27 +192,7 @@ class BaseGrid:
             site=self.site,
             stats={},
         )
-        job = BaseGridJob(task=t)
-        await self.create_submit_dir(job)
-        return job
-
-    async def create_submit_dir(self, job: BaseGridJob):
-        """
-        Create the submit dir and fill in the task
-        """
-        submit_dir = self.get_submit_dir()
-        path = submit_dir / job.task.task_id
-        i = 1
-        while path.exists():
-            path = submit_dir / '{job.task.task_id}_{i}'
-            i += 1
-        path.mkdir(parents=True)
-        job.submit_dir = path
-
-        s = WriteToScript(task=job.task, workdir=path)
-        job.executable = await s.convert()
-        job.infiles = s.infiles
-        job.outfiles = s.outfiles
+        return t
 
     @staticmethod
     def _get_resources(task):
@@ -351,18 +230,201 @@ class BaseGrid:
         resource.update(values)
         return resource
 
-    def get_queue_num(self):
-        """Determine how many tasks to queue."""
-        counts = self.active_jobs.jobs.get_job_counts()
-        idle_jobs = counts[JobStatus.IDLE]
-        processing_jobs = counts[JobStatus.RUNNING] + counts[JobStatus.TRANSFERRING_INPUT] + counts[JobStatus.TRANSFERRING_OUTPUT]
-        queue_tot_max = self.cfg['queue']['max_total_tasks_on_queue'] - idle_jobs - processing_jobs
-        queue_idle_max = self.cfg['queue']['max_idle_tasks_on_queue'] - idle_jobs
-        queue_interval_max = self.cfg['queue']['max_tasks_per_submit']
-        queue_num = max(0, min(queue_tot_max, queue_idle_max, queue_interval_max))
-        return queue_num
 
+    ### Task Actions ###
 
+    async def _upload_log(self, task: GridTask, name: str, data: str):
+        """
+        Upload a log to the IceProd API.
+
+        Args:
+            task: IceProd task info
+            name: log name
+            data: log text data
+        """
+        args = {
+            'dataset_id': task.dataset_id,
+            'task_id': task.task_id,
+            'name': 'stdlog',
+            'data': data,
+        }
+        try:
+            await self.rest_client.request('POST', f'/logs', args)
+        except requests.exceptions.HTTPError as e:
+            logger.warning('cannot upload log', exc_info=True)
+
+    async def _upload_stats(self, task: GridTask, stats: dict):
+        """
+        Upload task statistics to the IceProd API.
+
+        Args:
+            task: IceProd task info
+            stats: stats dict
+        """
+        stats_cp = stats.copy()
+        
+        hostname = functions.gethostname()
+        domain = '.'.join(hostname.split('.')[-2:])
+        site = self.site
+        if 'site' in stats_cp:
+            site = stats_cp.pop('site', '')
+        args = {
+            'dataset_id': task.dataset_id,
+            'hostname': hostname,
+            'domain': domain,
+            'site': site,
+            'resources': stats_cp.pop('resources', {}),
+            'task_stats': stats_cp,
+            'time': datetime.utcnow().isoformat(),
+        }
+        try:
+            await self.rest_client.request('POST', f'/tasks/{task.task_id}/task_stats', args)
+        except requests.exceptions.HTTPError as e:
+            logger.warning('cannot upload stats', exc_info=True)
+
+    async def task_idle(self, task: GridTask):
+        """
+        Tell IceProd API a task is now idle on the queue (put back to "queue" status).
+
+        Args:
+            task: IceProd task info
+        """
+        if not task.task_id or not task.instance_id:
+            raise RuntimeError("Either task_id or instance_id is empty")
+
+        args = {
+            'status': 'queued',
+            'instance_id': task.instance_id,
+        }
+        try:
+            ret = await self.rest_client.request('PUT', f'/tasks/{task.task_id}/status', args)
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code != 404:
+                raise
+
+    async def task_processing(self, task: GridTask):
+        """
+        Tell IceProd API a task is now processing (put in the "processing" status).
+
+        Args:
+            task: IceProd task info
+        """
+        if not task.task_id or not task.instance_id:
+            raise RuntimeError("Either task_id or instance_id is empty")
+
+        args = {
+            'instance_id': task.instance_id,
+        }
+        try:
+            ret = await self.rest_client.request('POST', f'/tasks/{task.task_id}/task_actions/processing', args)
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code != 404:
+                raise
+
+    async def task_reset(self, task: GridTask, reason: str | None = None):
+        """
+        Tell IceProd API a task should be reset back to the "waiting" status.
+
+        This is for non-payload errors.
+
+        Args:
+            task: IceProd task info
+            reason: A reason for resetting
+        """
+        if not task.task_id or not task.instance_id:
+            raise RuntimeError("Either task_id or instance_id is empty")
+
+        args = {
+            'instance_id': task.instance_id,
+        }
+        if reason:
+            args['reason'] = reason
+        try:
+            ret = await self.rest_client.request('POST', f'/tasks/{task.task_id}/task_actions/reset', args)
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code != 404:
+                raise
+
+    async def task_failure(self, task: GridTask, reason: str | None = None, stats: dict | None = None, stdout: Path | None = None, stderr: Path | None = None):
+        """
+        Tell IceProd API a task should be put in the "failed" status.
+
+        Stats format:
+            {
+                resources: {cpu: 1, gpu: 1, ...},
+                ...
+            }
+
+        Args:
+            task: IceProd task info
+            reason: A reason for failure
+            stats: task resource statistics
+            stdout: path to stdout file
+            stderr: path to stderr file
+        """
+        if not task.task_id or not task.instance_id:
+            raise RuntimeError("Either task_id or instance_id is empty")
+
+        args: dict[str, Any] = {
+            'instance_id': task.instance_id,
+        }
+        if reason:
+            args['reason'] = reason
+        if stats:
+            args['resources'] = stats.get('resources', {})
+        try:
+            await self.rest_client.request('POST', f'/tasks/{task.task_id}/task_actions/failed', args)
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code != 404:
+                raise
+        else:
+            if stats:
+                await self._upload_stats(task, stats)
+            if stdout and stdout.exists():
+                await self._upload_log(task, 'stdout', stdout.read_text())
+            if stderr and stderr.exists():
+                await self._upload_log(task, 'stderr', stderr.read_text())
+            if reason:
+                await self._upload_log(task, 'stdlog', reason)
+
+    async def task_success(self, task: GridTask, stats: dict | None = None, stdout: Path | None = None, stderr: Path | None = None):
+        """
+        Tell IceProd API a task was successfully completed.
+
+        Args:
+            task: IceProd task info
+            stats: task resource statistics
+            stdout: path to stdout file
+            stderr: path to stderr file
+        """
+        if not task.task_id or not task.instance_id:
+            raise RuntimeError("Either task_id or instance_id is empty")
+
+        site = self.site
+        if stats and 'site' in stats:
+            site = stats['site']
+        args = {
+            'site': site,
+            'instance_id': task.instance_id,
+        }
+        if stats:
+            resources = stats.get('resources', {})
+            if 'time' in resources:
+                args['time_used'] = resources['time']*3600.
+
+        try:
+            await self.rest_client.request('GET', f'/tasks/{task.task_id}/task_actions/complete', args)
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code != 404:
+                raise
+        else:
+            if stats:
+                await self._upload_stats(task, stats)
+            if stdout and stdout.exists():
+                await self._upload_log(task, 'stdout', stdout.read_text())
+            if stderr and stderr.exists():
+                await self._upload_log(task, 'stderr', stderr.read_text())
+    
 
 
 

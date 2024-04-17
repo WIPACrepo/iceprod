@@ -4,26 +4,28 @@ The Condor plugin.  Allows submission to
 
 Note: Condor was renamed to HTCondor in 2012.
 """
-from dataclasses import dataclass, asdict
-from datetime import datetime
+import asyncio
+from collections import defaultdict
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 import enum
-import getpass
-import glob
-from functools import partial, total_ordering
 import importlib
 import logging
 import os
 from pathlib import Path
 import shutil
+import stat
 import subprocess
 import time
+from typing import NamedTuple
 
-import classad
-import htcondor
-from rest_tools.client import RestClient
-from tornado.concurrent import run_on_executor
+#import classad
+import htcondor  # type: ignore
+#from rest_tools.client import RestClient
+#from tornado.concurrent import run_on_executor
 
 from iceprod.core.config import Task
+from iceprod.core.exe import WriteToScript
 from iceprod.server.config import IceProdConfig
 from iceprod.server import grid
 
@@ -44,55 +46,81 @@ def check_output_clean_env(*args, **kwargs):
     return subprocess.check_output(*args, **kwargs)
 
 
+@enum.unique
+class JobStatus(enum.Enum):
+    IDLE = enum.auto()       # job is waiting in the queue
+    RUNNING = enum.auto()    # job is running
+    FAILED = enum.auto()     # job needs cleanup
+    COMPLETED = enum.auto()  # job is out of the queue
+
+
 JOB_EVENT_STATUS_TRANSITIONS = {
-    htcondor.JobEventType.SUBMIT: grid.JobStatus.IDLE,
-    htcondor.JobEventType.JOB_STAGE_IN: grid.JobStatus.TRANSFERRING_INPUT,
-    htcondor.JobEventType.JOB_STAGE_OUT: grid.JobStatus.TRANSFERRING_OUTPUT,
-    htcondor.JobEventType.EXECUTE: grid.JobStatus.RUNNING,
-    htcondor.JobEventType.JOB_EVICTED: grid.JobStatus.IDLE,
-    htcondor.JobEventType.JOB_UNSUSPENDED: grid.JobStatus.IDLE,
-    htcondor.JobEventType.JOB_RELEASED: grid.JobStatus.IDLE,
-    htcondor.JobEventType.SHADOW_EXCEPTION: grid.JobStatus.IDLE,
-    htcondor.JobEventType.JOB_RECONNECT_FAILED: grid.JobStatus.IDLE,
-    htcondor.JobEventType.JOB_TERMINATED: grid.JobStatus.FAILED,
-    htcondor.JobEventType.JOB_HELD: grid.JobStatus.FAILED,
-    htcondor.JobEventType.JOB_SUSPENDED: grid.JobStatus.FAILED,
-    htcondor.JobEventType.JOB_ABORTED: grid.JobStatus.FAILED,
-}
-
-TRANSFER_EVENT_STATUS_TRANSITIONS = {
-    htcondor.FileTransferEventType.IN_QUEUED: grid.JobStatus.TRANSFERRING_INPUT,
-    htcondor.FileTransferEventType.IN_STARTED: grid.JobStatus.TRANSFERRING_INPUT,
-    htcondor.FileTransferEventType.OUT_QUEUED: grid.JobStatus.TRANSFERRING_OUTPUT,
-    htcondor.FileTransferEventType.OUT_STARTED: grid.JobStatus.TRANSFERRING_OUTPUT,
+    htcondor.JobEventType.SUBMIT: JobStatus.IDLE,
+    htcondor.JobEventType.JOB_STAGE_IN: JobStatus.RUNNING,
+    htcondor.JobEventType.JOB_STAGE_OUT: JobStatus.RUNNING,
+    htcondor.JobEventType.FILE_TRANSFER: JobStatus.RUNNING,
+    htcondor.JobEventType.EXECUTE: JobStatus.RUNNING,
+    htcondor.JobEventType.JOB_EVICTED: JobStatus.IDLE,
+    htcondor.JobEventType.JOB_UNSUSPENDED: JobStatus.IDLE,
+    htcondor.JobEventType.JOB_RELEASED: JobStatus.IDLE,
+    htcondor.JobEventType.SHADOW_EXCEPTION: JobStatus.IDLE,
+    htcondor.JobEventType.JOB_RECONNECT_FAILED: JobStatus.IDLE,
+    htcondor.JobEventType.JOB_TERMINATED: JobStatus.FAILED,
+    htcondor.JobEventType.JOB_HELD: JobStatus.FAILED,
+    htcondor.JobEventType.JOB_SUSPENDED: JobStatus.FAILED,
+    htcondor.JobEventType.JOB_ABORTED: JobStatus.FAILED,
 }
 
 
-@total_ordering
+def parse_usage(usage: str) -> int:
+    """
+    Parse HTCondor usage expression
+
+    Example input: "Usr 0 00:00:00, Sys 0 00:00:00"
+
+    Args:
+        usage: usage expression
+
+    Returns:
+        usage sum in seconds
+    """
+    total = 0
+    for part in usage.split(','):
+        _, days, leftovers = part.strip().split(' ')
+        hours, minutes, seconds = leftovers.split(':')
+        total += int(days)*86400 + int(hours)*3600 + int(minutes)*60 + int(seconds)
+    return total
+
+
 @dataclass(kw_only=True, slots=True)
-class CondorJob(grid.BaseGridJob):
+class CondorJob(grid.GridTask):
     """Holds the job states for an HTCondor cluster."""
-    raw_status: htcondor.JobEventType
+    dataset_id: str | None = None
+    task_id: str | None = None
+    instance_id: str | None = None
+    submit_dir: Path | None = None
+    status: JobStatus = JobStatus.IDLE
+
+
+class CondorJobId(NamedTuple):
+    """Represents an HTCondor job id"""
     cluster_id: int
-    proc_id: int = 0
+    proc_id: int
 
-    def __eq__(self, other):
-        return self.cluster_id == other.cluster_id and self.proc_id == other.proc_id
-
-    def __lt__(self, other):
-        return self.cluster_id < other.cluster_id or self.cluster_id == other.cluster_id and self.proc_id < other.proc_id
+    def __str__(self):
+        return f'{self.cluster_id}.{self.proc_id}'
 
 
-
-class CondorJobActions(grid.GridJobActions):
-    """HTCondor job actions"""
-    def __init__(self, site: str, rest_client: RestClient, submit_dir: Path, cfg: IceProdConfig):
-        super().__init__(site=site, rest_client=rest_client)
-        self.submit_dir = submit_dir
+class CondorSubmit:
+    """Factory for submitting HTCondor jobs"""
+    def __init__(self, cfg: IceProdConfig, submit_dir: Path, credentials_dir: Path):
         self.cfg = cfg
+        self.submit_dir = submit_dir
+        self.credentials_dir = credentials_dir
         self.condor_schedd = htcondor.Schedd()
-        self.precmd = submit_dir / 'pre.sh'
+
         submit_dir.mkdir(parents=True, exist_ok=True)
+        self.precmd = submit_dir / 'pre.sh'
         self.precmd.write_text((importlib.resources.files('iceprod.server')/'data'/'condor_input_precmd.py').read_text())
         self.precmd.chmod(0o777)
         self.transfer_plugins = self.condor_plugin_discovery()
@@ -129,6 +157,7 @@ class CondorJobActions(grid.GridJobActions):
             ads['request_cpus'] = task.requirements['cpu']
         if 'gpu' in task.requirements and task.requirements['gpu']:
             ads['request_gpus'] = task.requirements['gpu']
+            requirements.append('GPUs_Capability >= 6.1')
         if 'memory' in task.requirements and task.requirements['memory']:
             ads['request_memory'] = int(task.requirements['memory']*1000)
         else:
@@ -141,9 +170,9 @@ class CondorJobActions(grid.GridJobActions):
             requirements.append('TargetTime > OriginalTime')
         if 'os' in task.requirements and task.requirements['os']:
             if len(task.requirements['os']) == 1:
-                requirements.append(CondorJobActions.condor_os_reqs(task.requirements['os'][0]))
+                requirements.append(CondorSubmit.condor_os_reqs(task.requirements['os'][0]))
             else:
-                requirements.append('('+')||('.join(CondorJobActions.condor_os_reqs(os) for os in task.requirements['os'])+')')
+                requirements.append('('+')||('.join(CondorSubmit.condor_os_reqs(os) for os in task.requirements['os'])+')')
         if requirements:
             ads['requirements'] = '('+')&&('.join(requirements)+')'
         return ads
@@ -156,6 +185,8 @@ class CondorJobActions(grid.GridJobActions):
         if x509_proxy:
             files.append(x509_proxy)
         for infile in infiles:
+            if infile.url.startswith('gsiftp:') and not x509_proxy:
+                raise RuntimeError('need x509 proxy for gridftp!')
             files.append(infile.url)
             basename = Path(infile.url).name
             if basename != infile.local:
@@ -169,84 +200,177 @@ class CondorJobActions(grid.GridJobActions):
             ads['transfer_input_files'] = ','.join(files)
         return ads
 
-    def condor_outfiles(infiles):
+    def condor_outfiles(self, outfiles):
         """Convert from set[Data] to HTCondor classads for output files"""
         files = []
         mapping = []
-        for infile in infiles:
-            files.append(infile.local)
-            mapping.append((infile.local,infile.url))
+        for outfile in outfiles:
+            files.append(outfile.local)
+            mapping.append((outfile.local,outfile.url))
         ads = {}
         ads['transfer_output_files'] = ','.join(files)
         ads['transfer_output_remaps'] = ';'.join(f'{name} = {url}' for name,url in mapping)
         return ads
 
-    async def submit(self, jobs: list[grid.BaseGridJob]):
+    def create_submit_dir(self, task: Task, jel_dir: Path) -> Path:
         """
-        Submit multiple jobs to Condor.
+        Create the submit dir
+        """
+        path = jel_dir / task.task_id
+        i = 1
+        while path.exists():
+            path = jel_dir / f'{task.task_id}_{i}'
+            i += 1
+        path.mkdir(parents=True)
+        return path
+
+    async def submit(self, tasks: list[Task], jel: Path):
+        """
+        Submit multiple jobs to Condor as a single batch.
 
         Assumes that the resource requirements are identical.
+
+        Args:
+            tasks: IceProd Tasks to submit
+            jel: common job event log
         """
+        jel_dir = jel.parent
+        transfer_plugin_str = ';'.join(f'{k}={v}' for k,v in self.transfer_plugins.items())
         cluster_ad = {
-            'log': self.get_current_logfile(),
+            'log': str(jel),
             'notification': 'never',
             '+IsIceProdJob': True,
-            '+IceProdSite': self.site,
-            'transfer_plugins': self.transfer_plugins,
+            '+IceProdSite': self.cfg['queue'].get('site', 'unknown'),
+            'transfer_plugins': transfer_plugin_str,
             'when_to_transfer_output': 'ON_EXIT',
             'should_transfer_files': 'YES',
-            'job_ad_information_attrs': 'Iwd, IceProdDataset, IceProdTaskId',
-            'batch_name': 'IceProdDataset',
+            'job_ad_information_attrs': 'Iwd, IceProdDatasetId, IceProdTaskId, IceProdTaskInstanceId, CommittedTime, RemotePool',
+            'batch_name': f'Dataset {tasks[0].dataset.dataset_num}',
         }
         proc_ads = []
-        for job in jobs:
-            transfer_input = []
-            transfer_output = []
+        for task in tasks:
+            submit_dir = self.create_submit_dir(task, jel_dir)
+            s = WriteToScript(task=task, workdir=submit_dir)
+            executable = await s.convert()
+
             proc_ad = {
-                '+IceProdDatasetId': job.task.dataset.dataset_id,
-                '+IceProdDataset': job.task.dataset.dataset_num,
-                '+IceProdJobId': job.task.job.job_id,
-                '+IceProdJobIndex': job.task.job.job_index,
-                '+IceProdTaskId': job.task.task_id,
-                '+IceProdTaskName': job.task.name,
-                'Iwd': job.submit_dir,
-                'executable': job.executable,
+                '+IceProdDatasetId': task.dataset.dataset_id,
+                '+IceProdDataset': task.dataset.dataset_num,
+                '+IceProdJobId': task.job.job_id,
+                '+IceProdJobIndex': task.job.job_index,
+                '+IceProdTaskId': task.task_id,
+                '+IceProdTaskName': task.name,
+                '+IceProdTaskInstanceId': task.instance_id if task.instance_id else '',
+                'initialdir': str(submit_dir),
+                'executable': str(executable),
+                'output': str(submit_dir / 'condor.out'),
+                'error': str(submit_dir / 'condor.err'),
             }
-            proc_ad.update(self.condor_infiles(job.infiles))
-            proc_ad.update(self.condor_outfiles(job.infiles))
-            proc_ad.update(self.condor_resource_reqs(job.task))
+
+            proc_ad.update(self.condor_infiles(s.infiles))
+            proc_ad.update(self.condor_outfiles(s.outfiles))
+            proc_ad.update(self.condor_resource_reqs(task))
             proc_ads.append((proc_ad, 1))
 
-        cluster_id = self.condor_schedd.submitMany(cluster_ad, proc_ads)
-        for proc_id,job in enumerate(jobs):
-            task_id = job.task.task_id
-            logger.info("task %s submitted as %d.%d", task_id, cluster_id, proc_id)
-            cj = CondorJob(**asdict(job), cluster_id=cluster_id, proc_id=proc_id)
-            self.jobs[task_id] = cj
+        self.condor_schedd.submitMany(cluster_ad, proc_ads)
 
-    async def job_update(self, job: CondorJob):
-        """
-        Send updated info from the batch system to the IceProd API.
+    def remove(self, job_id: str | CondorJob, reason: str | None = None):
+        self.condor_schedd.act(htcondor.JobAction.Remove, str(job_id), reason=reason)
 
-        Must handle dup calls.
-        """
-        await super().job_updates(job)
 
-    async def finish(self, job: CondorJob):
-        """
-        Run cleanup actions after a batch job completes.
+class Grid(grid.BaseGrid):
+    """HTCondor grid plugin"""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.jobs = {}
+        self.jels = {filename: htcondor.JobEventLog(str(filename)).events(0) for filename in self.submit_dir.glob('*/*.jel')}
+        self.submitter = CondorSubmit(self.cfg, submit_dir=self.submit_dir, credentials_dir=self.credentials_dir)
 
-        Must handle dup calls.
-        """
-        if job.raw_status != htcondor.JobEventType.JOB_TERMINATED:
-            # clean up queue if necessary
-            pass  # &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
-            
+        # save last event.timestamp, on restart only process >= timestamp
+        self.last_event_timestamp = 0.
+        self.load_timestamp()
 
-        # do global actions
-        await super().finish(job)
-        
-    def get_current_logfile(self) -> str:
+    def load_timestamp(self):
+        timestamp_path = self.submit_dir / 'last_event_timestamp'
+        if timestamp_path.exists():
+            with timestamp_path.open('r') as f:
+                self.last_event_timestamp = float(f.read().strip())
+
+    def save_timestamp(self):
+        timestamp_path = self.submit_dir / 'last_event_timestamp'
+        with timestamp_path.open('w') as f:
+            f.write(str(self.last_event_timestamp))
+
+    async def run(self, forever=True):
+        # load with timeout=0
+        try:
+            await self.wait(timeout=0)
+        except Exception:
+            logger.warning('failed to wait', exc_info=True)
+
+        check_time = time.monotonic()
+        while True:
+            start = time.monotonic()
+            try:
+                await self.submit()
+            except Exception:
+                logger.warning('failed to submit', exc_info=True)
+            wait_time = max(0, self.cfg['queue']['submit_interval'] - (time.monotonic() - start))
+            try:
+                await self.wait(timeout=wait_time)
+                self.save_timestamp()
+            except Exception:
+                logger.warning('failed to wait', exc_info=True)
+
+            now = time.monotonic()
+            if now - check_time >= self.cfg['queue']['check_time']:
+                try:
+                    await self.check()
+                except Exception:
+                    logger.warning('failed to check', exc_info=True)
+                check_time = now
+
+            if not forever:
+                break
+
+    ### Submit to Condor ###
+
+    async def submit(self):
+        num_to_submit = self.get_queue_num()
+        logger.info("Attempting to submit %d tasks", num_to_submit)
+        tasks = await self.get_tasks_to_queue(num_to_submit)
+        cur_jel = self.get_current_JEL()
+
+        # split into datasets
+        tasks_by_dataset = defaultdict(list)
+        for task in tasks:
+            tasks_by_dataset[task.dataset.dataset_num].append(task)
+        for dataset_num in tasks_by_dataset:
+            tasks = tasks_by_dataset[dataset_num]
+            try:
+                await self.submitter.submit(tasks, cur_jel)
+            except Exception:
+                logger.warning('submit failed for dataset %r', dataset_num, exc_info=True)
+                async with asyncio.TaskGroup() as tg:
+                    for task in tasks:
+                        j = CondorJob(dataset_id=task.dataset.dataset_id, task_id=task.task_id, instance_id=task.instance_id)
+                        tg.create_task(self.task_reset(j, reason='HTCondor submit failed'))
+
+    def get_queue_num(self) -> int:
+        """Determine how many tasks to queue."""
+        counts = {s: 0 for s in JobStatus}
+        for job in self.jobs.values():
+            counts[job.status] += 1
+
+        idle_jobs = counts[JobStatus.IDLE]
+        processing_jobs = counts[JobStatus.RUNNING]
+        queue_tot_max = self.cfg['queue']['max_total_tasks_on_queue'] - idle_jobs - processing_jobs
+        queue_idle_max = self.cfg['queue']['max_idle_tasks_on_queue'] - idle_jobs
+        queue_interval_max = self.cfg['queue']['max_tasks_per_submit']
+        queue_num = max(0, min(queue_tot_max, queue_idle_max, queue_interval_max))
+        return queue_num
+
+    def get_current_JEL(self) -> Path:
         """
         Get the current Job Event Log, possibly creating a new one
         if the day rolls over.
@@ -254,38 +378,19 @@ class CondorJobActions(grid.GridJobActions):
         Returns:
             Path: filename to current JEL
         """
-        day = datetime.utcnow().date.isoformat()
+        day = datetime.utcnow().date().isoformat()
         day_submit_dir = self.submit_dir / day
         if not day_submit_dir.exists():
             day_submit_dir.mkdir(mode=0o700, parents=True)
         cur_jel = day_submit_dir / 'jobs.jel'
-        return cur_jel
-
-
-
-class ActiveJobs(grid.BaseActiveJobs):
-    """HTCondor active jobs plugin"""
-    def __init__(self, jobs: CondorJobActions, submit_dir: Path, cfg: IceProdConfig):
-        super().__init__(jobs, submit_dir)
-        self.cfg = cfg
-        self.jels = {filename: htcondor.JobEventLog(str(filename)).events(0) for filename in self.submit_dir.glob('*/*.jel')}
-        self.job_states = {}
-
-    def get_current_JEL(self) -> str:
-        cur_jel = self.jobs.get_current_logfile()
+        if not cur_jel.exists():
+            cur_jel.touch(mode=0o600)
         cur_jel_str = str(cur_jel)
         if cur_jel_str not in self.jels:
             self.jels[cur_jel_str] = htcondor.JobEventLog(cur_jel_str).events(0)
         return cur_jel
 
-    async def load(self):
-        """
-        Load currently active jobs.
-
-        Scan the Job Event Logs, then run a check().
-        """
-        await self.wait(0)
-        await self.check()
+    ### JEL processing ###
 
     async def wait(self, timeout):
         """
@@ -302,86 +407,187 @@ class ActiveJobs(grid.BaseActiveJobs):
         while True:
             for filename, events in self.jels.items():
                 for event in events:
-                    new_status = JOB_EVENT_STATUS_TRANSITIONS.get(event.type, None)
-                    if event.type == htcondor.JobEventType.FILE_TRANSFER and 'Type' in event:
-                        new_status = TRANSFER_EVENT_STATUS_TRANSITIONS.get(event['Type'], None)
-                    elif event.type == htcondor.JobEventType.JOB_TERMINATED:
-                        if event['TerminatedNormally'] and event['ReturnValue'] == 0:
-                            new_status = grid.JobStatus.COMPLETED
-                        # get stats
-                        mem = event['RunRemoteUsage']
-                        data_in = event['ReceivedBytes']
-                        data_out = event['SentBytes']
+                    if float(event.timestamp) < self.last_event_timestamp:
+                        continue
+                    self.last_event_timestamp = event.timestamp
 
-                    if new_status is None:
+                    job_id = CondorJobId(cluster_id=event.cluster, proc_id=event.proc)
+
+                    if event.type == htcondor.JobEventType.SUBMIT:
+                        self.jobs[job_id] = CondorJob()
                         continue
 
-                    # handle multiple jobs in a single cluster
-                    cluster = self.job_states.setdefault(
-                        event.cluster,
-                        Cluster(
-                            cluster_id=event.cluster,
-                            event_log_path=filename,
-                            procs={},
-                        ),
-                    )
-                    cluster.procs[event.proc] = new_status
-                    
+                    if job_id not in self.jobs:
+                        logger.warning('unknown job: %s', job_id)
+                        continue
+                    job = self.jobs[job_id]
+
+                    if event.type == htcondor.JobEventType.JOB_AD_INFORMATION:
+                        if not job.dataset_id:
+                            job.dataset_id = event['IceProdDatasetId']
+                            job.task_id = event['IceProdTaskId']
+                            job.instance_id = event['IceProdTaskInstanceId']
+                            job.submit_dir = Path(event['Iwd'])
+
+                        type_ = event['TriggerEventTypeNumber']
+                        if type_ == htcondor.JobEventType.JOB_TERMINATED:
+                            logger.info("job %s %s.%s exited on its own", job_id, job.dataset_id, job.task_id)
+
+                            # get stats
+                            cpu = event.get('CpusUsage', None)
+                            if not cpu:
+                                cpu = parse_usage(event.get('RunRemoteUsage', ''))
+                            gpu = event.get('GpusUsage', None)
+                            memory = event.get('MemoryUsage', None) # MB
+                            disk = event.get('DiskUsage', None)  # KB
+                            time_ = event.get('LastRemoteWallClockTime', None)  # seconds
+                            #data_in = event['ReceivedBytes']  # KB
+                            #data_out = event['SentBytes']  # KB
+
+                            resources = {}
+                            if cpu is not None:
+                                resources['cpu'] = cpu
+                            if gpu is not None:
+                                resources['gpu'] = gpu
+                            if memory is not None:
+                                resources['memory'] = memory/1000.
+                            if disk is not None:
+                                resources['disk'] = disk/1000000.
+                            if time_ is not None:
+                                resources['time'] = time_/3600.
+
+                            success = event.get('ReturnValue', 1) == 0
+                            job.status = JobStatus.COMPLETED if success else JobStatus.FAILED
+
+                            # finish job
+                            await self.finish(job_id, success=success, resources=resources)
+
+                        elif type_ == htcondor.JobEventType.JOB_ABORTED:
+                            job.status = JobStatus.FAILED
+                            reason = event.get('Reason', None)
+                            logger.info("job %s %s.%s removed: %r", job_id, job.dataset_id, job.task_id, reason)
+                            await self.finish(job_id, success=False, reason=reason)
+
+                        else:
+                            # update status
+                            new_status = JOB_EVENT_STATUS_TRANSITIONS.get(type_, None)
+                            if new_status is not None and job.status != new_status:
+                                job.status = new_status
+                                if new_status == JobStatus.FAILED:
+                                    self.submitter.remove(job_id, reason=event.get('HoldReason', None))
+                                else:
+                                    await self.job_update(job)
 
             if time.monotonic() - start >= timeout:
                 break
             await asyncio.sleep(1)
 
+    async def job_update(self, job: CondorJob):
+        """
+        Send updated info from the batch system to the IceProd API.
+
+        Must handle dup calls.
+        """
+        if job.status not in (JobStatus.IDLE, JobStatus.RUNNING):
+            logging.warning("unknown job status: %r", job.status)
+            return
+
+        try:
+            if job.status == JobStatus.IDLE:
+                await self.task_idle(job)
+            elif job.status == JobStatus.RUNNING:
+                await self.task_processing(job)
+        except Exception:
+            pass
+
+    async def finish(self, job_id: CondorJobId, success: bool = True, resources: dict | None = None, reason: str | None = None):
+        """
+        Run cleanup actions after a batch job completes.
+
+        Must handle dup calls.
+        """
+        if job_id not in self.jobs:
+            logger.debug('dup call: %s not in job dict', job_id)
+            return
+
+        stats = {}
+        if resources:
+            stats['resources'] = resources
+
+        job = self.jobs[job_id]
+        logger.info('finish for condor=%s iceprod=%s.%s', job_id, job.dataset_id, job.task_id)
+
+        # do global actions
+        try:
+            if success:
+                await self.task_success(job, stats=stats)
+            else:
+                if reason:
+                    stats['error_summary'] = reason
+                await self.task_failure(job, stats=stats, reason=reason)
+        except Exception:
+            logger.warning('failed to update REST', exc_info=True)
+
+        # internal job cleanup
+        del self.jobs[job_id]
+
+    ### Longer checks ###
+
     async def check(self):
         """
         Do a cross-check, to verify `self.jobs` vs the submit dir and IceProd API.
         """
-        pass
+        # check for reset tasks
+
+
+
+        # check for old jobs and dirs
+        async for path in self.check_submit_dir():
+            for job_id, job in self.jobs.items():
+                if job.submit_dir == path:
+                    self.submitter.remove(job_id, reason='exceeded max queue time')
+
 
     async def check_submit_dir(self):
         """
         Return directory paths that should be cleaned up.
         """
         # get time limits
-        try:
-            queued_time = timedelta(seconds=self.cfg['queue']['max_task_queued_time'])
-        except Exception:
-            queued_time = timedelta(seconds=86400*2)
-        try:
-            processing_time = timedelta(seconds=self.cfg['queue']['max_task_processing_time'])
-        except Exception:
-            processing_time = timedelta(seconds=86400*2)
-        try:
-            suspend_time = timedelta(seconds=self.cfg['queue']['suspend_submit_dir_time'])
-        except Exception:
-            suspend_time = timedelta(seconds=86400)
-        all_time = queued_time + processing_time + suspend_time
+        queued_time = seconds=self.cfg['queue'].get('max_task_queued_time', 86400*2)
+        processing_time = seconds=self.cfg['queue'].get('max_task_processing_time', 86400*2)
+        suspend_time = self.cfg['queue'].get('suspend_submit_dir_time', 86400)
         now = time.time()
+        job_old_time = now - (queued_time + processing_time)
+        dir_old_time = now - (queued_time + processing_time + suspend_time)
 
-        for daydir in self.submit_dir.iterdir():
+        for daydir in self.submit_dir.glob('[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'):
+            logger.debug('looking at daydir %s', daydir)
             if daydir.is_dir():
+                empty = True
                 for path in daydir.iterdir():
+                    logger.debug('looking at path %s', path)
                     st = path.lstat()
+                    logger.debug('stat: %r', st)
                     if stat.S_ISDIR(st.st_mode):
-                        if now - all_time > st.st_birthtime:
+                        empty = False
+                        if st.st_mtime < job_old_time:
                             yield path
+                            if st.st_mtime < dir_old_time:
+                                logger.info('cleaning up submit dir %s', path)
+                                shutil.rmtree(path)
+                if empty:
+                    st = daydir.lstat()
+                    if st.st_mtime < dir_old_time:
+                        logger.info('cleaning up daydir %s', daydir)
+                        for path in self.jels.copy():
+                            if Path(path).parent == daydir:
+                                logger.info('removing JEL')
+                                self.jels[path].close()
+                                del self.jels[path]
+                        shutil.rmtree(daydir)
+                        continue
                 # let other processing happen
                 await asyncio.sleep(0)
-        
-
-    
-
-
-class Grid(grid.BaseGrid):
-    """HTCondor grid plugin"""
-    def get_active_jobs(self):
-        return ActiveJobs(CondorJobActions(self.site, self.rest_client, self.submit_dir, self.cfg), self.submit_dir, self.cfg)
-
-    def get_submit_dir(self):
-        # set local submit dir to match day/JEL
-        jel = self.active_jobs.jobs.get_current_logfile()
-        return jel.parent
-
 
 
 

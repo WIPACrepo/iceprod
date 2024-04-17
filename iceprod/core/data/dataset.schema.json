@@ -97,15 +97,10 @@
                       },
                       "data": { "$ref": "#/$defs/data", "deprecated": true },
                       "parameters": { "$ref": "#/$defs/parameters" },
-                      "running_class": {
-                        "type": "string",
-                        "default": "",
-                        "description": "a Python class or function to call directly"
-                      },
                       "src": {
                         "type": "string",
                         "default": "",
-                        "description": "the location of a class or script"
+                        "description": "a script or executable file"
                       },
                       "args": {
                         "anyOf": [

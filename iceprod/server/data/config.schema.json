@@ -113,10 +113,15 @@
           "type": "number",
           "default": 86400
         },
+        "submit_interval": {
+          "description": "time interval before submitting more tasks",
+          "type": "number",
+          "default": 300
+        },
         "check_time": {
           "description": "time interval before doing regular grid checks to sync batch system with IceProd",
           "type": "number",
-          "default": 3600
+          "default": 600
         },
         "batchopts": {
           "description": "additional batch system options",
