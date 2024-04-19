@@ -60,6 +60,8 @@ flexmock==0.12.1
     # via iceprod (setup.py)
 h11==0.14.0
     # via httpcore
+htcondor==23.6.1
+    # via iceprod (setup.py)
 httpcore==1.0.5
     # via httpx
 httpx==0.27.0
