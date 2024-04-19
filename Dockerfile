@@ -1,4 +1,4 @@
-FROM python:3.10-bullseye as base
+FROM python:3.12-bullseye as base
 
 
 FROM base as build
@@ -64,8 +64,6 @@ USER root
 RUN pip install --no-cache-dir -e .
 
 USER iceprod
-
-RUN python make_dataclasses.py
 
 ENTRYPOINT ["/home/iceprod/env.sh"]
 
