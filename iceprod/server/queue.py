@@ -5,14 +5,10 @@ queueing system, putting tasks on the queue and removing them as necessary.
 import asyncio
 import importlib
 import logging
-import os
 from pathlib import Path
 import pkgutil
-import socket
 import time
 
-import iceprod
-import iceprod.server
 from iceprod.server.globus import SiteGlobusProxy
 
 
@@ -132,4 +128,3 @@ class Queue:
             await asyncio.to_thread(blocking())
             end = time.monotonic()
             await asyncio.sleep(max(1, 300 - (end-start)))
-            

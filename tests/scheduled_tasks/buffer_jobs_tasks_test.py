@@ -2,7 +2,7 @@ import pytest
 
 from rest_tools.client import RestClient
 
-from iceprod.server.scheduled_tasks import buffer_jobs_tasks
+from iceprod.scheduled_tasks import buffer_jobs_tasks
 
 
 async def test_buffer_jobs_tasks_run(requests_mock):

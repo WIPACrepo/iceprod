@@ -3,23 +3,14 @@ Test script for scheduled_tasks/job_temp_cleaning
 """
 
 import logging
-logger = logging.getLogger('scheduled_tasks_job_temp_cleaning_test')
-
-import os
-import sys
-import shutil
-import tempfile
-import unittest
-from functools import partial
 from datetime import datetime,timedelta
 from unittest.mock import patch, MagicMock, AsyncMock
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
-from tornado.testing import AsyncTestCase
-from rest_tools.client import RestClient
+from iceprod.scheduled_tasks import job_temp_cleaning
 
-from iceprod.server.scheduled_tasks import job_temp_cleaning
+logger = logging.getLogger('scheduled_tasks_job_temp_cleaning_test')
 
 
 class FakeFile:
@@ -29,7 +20,7 @@ class FakeFile:
         self.size = s
 
 
-@patch('iceprod.server.scheduled_tasks.job_temp_cleaning.GridFTP')
+@patch('iceprod.scheduled_tasks.job_temp_cleaning.GridFTP')
 async def test_scheduled_tasks_job_temp_cleaning_gridftp_list(gridftp):
     executor = ThreadPoolExecutor(max_workers=2)
 
@@ -42,19 +33,19 @@ async def test_scheduled_tasks_job_temp_cleaning_gridftp_list(gridftp):
     gridftp.list.side_effect = [[FakeFile('0')], []]
     ret = await job_temp_cleaning.list_dataset_job_dirs_gridftp('', executor=executor)
     assert ret == {}
-    
+
     # test dataset dir and job
     gridftp.list.side_effect = [[FakeFile('0')], [FakeFile('1', 1024)]]
     ret = await job_temp_cleaning.list_dataset_job_dirs_gridftp('', executor=executor)
     assert ret == {'0': {'1': 1024}}
-    
+
     # test dataset dir prefix
     gridftp.list.side_effect = [[FakeFile('1', 1024)]]
     ret = await job_temp_cleaning.list_dataset_job_dirs_gridftp('', prefix='0', executor=executor)
     assert ret == {'0': {'1': 1024}}
 
 
-@patch('iceprod.server.scheduled_tasks.job_temp_cleaning.GridFTP')
+@patch('iceprod.scheduled_tasks.job_temp_cleaning.GridFTP')
 async def test_scheduled_tasks_job_temp_cleaning_gridftp_rmtree(gridftp):
     executor = ThreadPoolExecutor(max_workers=2)
 
@@ -88,6 +79,7 @@ async def test_scheduled_tasks_job_temp_cleaning_s3_rmtree():
 async def test_scheduled_tasks_job_temp_cleaning_run():
     rc = MagicMock()
     jobs = {}
+
     async def client(method, url, args=None):
         logger.info('REST: %s, %s', method, url)
         if url.startswith('/datasets?'):

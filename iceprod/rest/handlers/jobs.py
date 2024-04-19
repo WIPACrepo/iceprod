@@ -92,7 +92,7 @@ class MultiJobsHandler(APIBase):
 
         if 'job_id' in data:
             try:
-                job_id = uuid.UUID(hex=data['job_id']).hex
+                uuid.UUID(hex=data['job_id']).hex
             except Exception:
                 raise tornado.web.HTTPError(400, reason='job_id should be a valid uuid')
 

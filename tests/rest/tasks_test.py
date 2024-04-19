@@ -423,15 +423,20 @@ async def test_rest_tasks_actions_process(server):
         'name': 'bar',
         'depends': [],
         'requirements': {},
+        'instance_id': '12345',
     }
     ret = await client.request('POST', '/tasks', data)
     task_id = ret['result']
 
-    ret = await client.request('POST', f'/tasks/{task_id}/task_actions/processing', {})
+    args = {
+        'instance_id': '12345'
+    }
+    ret = await client.request('POST', f'/tasks/{task_id}/task_actions/processing', args)
     assert task_id == ret['task_id']
 
     ret = await client.request('GET', f'/tasks/{task_id}')
     assert ret['status'] == 'processing'
+    assert ret['instance_id'] == args['instance_id']
 
 
 async def test_rest_tasks_actions_reset(server):
@@ -447,19 +452,59 @@ async def test_rest_tasks_actions_reset(server):
         'name': 'bar',
         'depends': [],
         'requirements': {'memory':5.6, 'gpu':1},
+        'instance_id': '12345',
     }
     ret = await client.request('POST', '/tasks', data)
     task_id = ret['result']
 
-    await client.request('POST', f'/tasks/{task_id}/task_actions/reset', {})
+    # try without instance id
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('POST', f'/tasks/{task_id}/task_actions/reset', {})
+    assert exc_info.value.response.status_code == 400
+    assert 'Missing instance_id' in exc_info.value.response.text
+
+    # now with instance id
+    args = {
+        'instance_id': '12345',
+    }
+    await client.request('POST', f'/tasks/{task_id}/task_actions/reset', args)
 
     ret = await client.request('GET', f'/tasks/{task_id}')
     assert ret['status'] == 'waiting'
+    assert ret['instance_id'] == ''
+
+    # now with bad instance id
+    args = {
+        'status': 'queued',
+        'instance_id': '12345',
+    }
+    await client.request('PATCH', f'/tasks/{task_id}', args)
+
+    args = {
+        'instance_id': '666',
+    }
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('POST', f'/tasks/{task_id}/task_actions/reset', args)
+    assert exc_info.value.response.status_code == 404
 
     # now try with time_used
-    await client.request('PUT', f'/tasks/{task_id}/status', {'status': 'queued'})
+    args = {
+        'status': 'queued',
+        'instance_id': '12345',
+    }
+    await client.request('PATCH', f'/tasks/{task_id}', args)
 
-    args = {'time_used': 7200}
+    # now try with time_used
+    args = {
+        'status': 'queued',
+        'instance_id': '12345',
+    }
+    await client.request('PATCH', f'/tasks/{task_id}', args)
+
+    args = {
+        'instance_id': '12345',
+        'time_used': 7200,
+    }
     await client.request('POST', f'/tasks/{task_id}/task_actions/reset', args)
 
     ret = await client.request('GET', f'/tasks/{task_id}')
@@ -468,9 +513,16 @@ async def test_rest_tasks_actions_reset(server):
     assert ret['walltime_err'] == 2.0
 
     # now try with resources
-    await client.request('PUT', f'/tasks/{task_id}/status', {'status': 'queued'})
+    args = {
+        'status': 'queued',
+        'instance_id': '12345',
+    }
+    await client.request('PATCH', f'/tasks/{task_id}', args)
 
-    args = {'resources': {'time':2.5, 'memory':3.5, 'disk': 20.3, 'gpu': 23}}
+    args = {
+        'instance_id': '12345',
+        'resources': {'time':2.5, 'memory':3.5, 'disk': 20.3, 'gpu': 23},
+    }
     await client.request('POST', f'/tasks/{task_id}/task_actions/reset', args)
 
     ret = await client.request('GET', f'/tasks/{task_id}')
@@ -493,12 +545,16 @@ async def test_rest_tasks_actions_reset(server):
         'name': 'bar',
         'depends': [],
         'requirements': {'memory':5.6, 'gpu':1},
+        'instance_id': '12345',
     }
     ret = await client.request('POST', '/tasks', data)
     task_id = ret['result']
 
+    args = {
+        'instance_id': '12345',
+    }
     with pytest.raises(requests.exceptions.HTTPError) as exc_info:
-        await client.request('POST', f'/tasks/{task_id}/task_actions/reset', {})
+        await client.request('POST', f'/tasks/{task_id}/task_actions/reset', args)
     assert exc_info.value.response.status_code == 400
 
 
@@ -515,20 +571,51 @@ async def test_rest_tasks_actions_failed(server):
         'name': 'bar',
         'depends': [],
         'requirements': {'memory':5.6, 'gpu':1},
+        'instance_id': '12345',
     }
     ret = await client.request('POST', '/tasks', data)
     task_id = ret['result']
 
-    await client.request('POST', f'/tasks/{task_id}/task_actions/failed', {})
+    # try without instance id
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('POST', f'/tasks/{task_id}/task_actions/failed', {})
+    assert exc_info.value.response.status_code == 400
+    assert 'Missing instance_id' in exc_info.value.response.text
+
+    # now with instance id
+    args = {
+        'instance_id': '12345',
+    }
+    await client.request('POST', f'/tasks/{task_id}/task_actions/failed', args)
 
     ret = await client.request('GET', f'/tasks/{task_id}')
     assert ret['status'] == 'failed'
 
-    # now try with time_used
-    await client.request('PUT', f'/tasks/{task_id}/status', {'status': 'waiting'})
-    await client.request('PUT', f'/tasks/{task_id}/status', {'status': 'queued'})
+    # now with bad instance id
+    args = {
+        'status': 'queued',
+        'instance_id': '12345',
+    }
+    await client.request('PATCH', f'/tasks/{task_id}', args)
 
-    args = {'time_used': 7200}
+    args = {
+        'instance_id': '666',
+    }
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('POST', f'/tasks/{task_id}/task_actions/failed', args)
+    assert exc_info.value.response.status_code == 404
+
+    # now try with time_used
+    args = {
+        'status': 'queued',
+        'instance_id': '12345',
+    }
+    await client.request('PATCH', f'/tasks/{task_id}', args)
+
+    args = {
+        'instance_id': '12345',
+        'time_used': 7200
+    }
     await client.request('POST', f'/tasks/{task_id}/task_actions/failed', args)
 
     ret = await client.request('GET', f'/tasks/{task_id}')
@@ -537,10 +624,16 @@ async def test_rest_tasks_actions_failed(server):
     assert ret['walltime_err'] == 2.0
 
     # now try with resources
-    await client.request('PUT', f'/tasks/{task_id}/status', {'status': 'waiting'})
-    await client.request('PUT', f'/tasks/{task_id}/status', {'status': 'queued'})
+    args = {
+        'status': 'queued',
+        'instance_id': '12345',
+    }
+    await client.request('PATCH', f'/tasks/{task_id}', args)
 
-    args = {'resources': {'time':2.5, 'memory':3.5, 'disk': 20.3, 'gpu': 23}}
+    args = {
+        'instance_id': '12345',
+        'resources': {'time':2.5, 'memory':3.5, 'disk': 20.3, 'gpu': 23}
+    }
     await client.request('POST', f'/tasks/{task_id}/task_actions/failed', args)
 
     ret = await client.request('GET', f'/tasks/{task_id}')
@@ -563,12 +656,16 @@ async def test_rest_tasks_actions_failed(server):
         'name': 'bar',
         'depends': [],
         'requirements': {'memory':5.6, 'gpu':1},
+        'instance_id': '12345',
     }
     ret = await client.request('POST', '/tasks', data)
     task_id = ret['result']
-    
+
+    args = {
+        'instance_id': '12345',
+    }
     with pytest.raises(requests.exceptions.HTTPError) as exc_info:
-        await client.request('POST', f'/tasks/{task_id}/task_actions/failed', {})
+        await client.request('POST', f'/tasks/{task_id}/task_actions/failed', args)
     assert exc_info.value.response.status_code == 400
 
 
@@ -585,14 +682,39 @@ async def test_rest_tasks_actions_complete(server):
         'name': 'bar',
         'depends': [],
         'requirements': {'memory':5.6, 'gpu':1},
+        'instance_id': '12345',
     }
     ret = await client.request('POST', '/tasks', data)
     task_id = ret['result']
 
-    await client.request('POST', f'/tasks/{task_id}/task_actions/complete', {})
+    # try without instance id
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('POST', f'/tasks/{task_id}/task_actions/complete', {})
+    assert exc_info.value.response.status_code == 400
+    assert 'Missing instance_id' in exc_info.value.response.text
+
+    # now with instance id
+    args = {
+        'instance_id': '12345',
+    }
+    await client.request('POST', f'/tasks/{task_id}/task_actions/complete', args)
 
     ret = await client.request('GET', f'/tasks/{task_id}')
     assert ret['status'] == 'complete'
+
+    # now with bad instance id
+    args = {
+        'status': 'processing',
+        'instance_id': '12345',
+    }
+    await client.request('PATCH', f'/tasks/{task_id}', args)
+
+    args = {
+        'instance_id': '666',
+    }
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('POST', f'/tasks/{task_id}/task_actions/complete', args)
+    assert exc_info.value.response.status_code == 404
 
     # now try with time_used
     data = {
@@ -605,11 +727,15 @@ async def test_rest_tasks_actions_complete(server):
         'name': 'bar',
         'depends': [],
         'requirements': {'memory':5.6, 'gpu':1},
+        'instance_id': '12345',
     }
     ret = await client.request('POST', '/tasks', data)
     task_id = ret['result']
 
-    args = {'time_used': 7200}
+    args = {
+        'instance_id': '12345',
+        'time_used': 7200
+    }
     await client.request('POST', f'/tasks/{task_id}/task_actions/complete', args)
 
     ret = await client.request('GET', f'/tasks/{task_id}')
@@ -627,12 +753,16 @@ async def test_rest_tasks_actions_complete(server):
         'name': 'bar',
         'depends': [],
         'requirements': {'memory':5.6, 'gpu':1},
+        'instance_id': '12345',
     }
     ret = await client.request('POST', '/tasks', data)
     task_id = ret['result']
 
+    args = {
+        'instance_id': '12345',
+    }
     with pytest.raises(requests.exceptions.HTTPError) as exc_info:
-        await client.request('POST', f'/tasks/{task_id}/task_actions/complete', {})
+        await client.request('POST', f'/tasks/{task_id}/task_actions/complete', args)
     assert exc_info.value.response.status_code == 400
 
 
@@ -648,6 +778,7 @@ async def test_rest_tasks_actions_bulk_status(server):
         'depends': [],
         'requirements': {},
         'status': 'queued',
+        'instance_id': '12345',
     }
     ret = await client.request('POST', '/tasks', data)
     task_id = ret['result']
@@ -657,6 +788,7 @@ async def test_rest_tasks_actions_bulk_status(server):
 
     ret = await client.request('GET', f'/tasks/{task_id}')
     assert ret['status'] == 'failed'
+    assert ret['instance_id'] == ''
 
     data = {
         'dataset_id': 'foo',

@@ -37,11 +37,11 @@ async def run(rest_client, dataset_id=None, debug=False):
                     logger.info('dataset %s job %s status -> complete', dataset_id, job_id)
                     args = {'status': 'complete'}
                     await rest_client.request('PUT', '/datasets/{}/jobs/{}/status'.format(dataset_id,job_id), args)
-                elif task_statuses - {'complete', 'suspended'}:
+                elif not task_statuses - {'complete', 'suspended'}:
                     logger.info('dataset %s job %s status -> suspended', dataset_id, job_id)
                     args = {'status': 'suspended'}
                     await rest_client.request('PUT', '/datasets/{}/jobs/{}/status'.format(dataset_id,job_id), args)
-                elif task_statuses - {'complete', 'failed', 'suspended'}:
+                elif not task_statuses - {'complete', 'failed', 'suspended'}:
                     logger.info('dataset %s job %s status -> errors', dataset_id, job_id)
                     args = {'status': 'errors'}
                     await rest_client.request('PUT', '/datasets/{}/jobs/{}/status'.format(dataset_id,job_id), args)

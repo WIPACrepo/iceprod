@@ -156,6 +156,7 @@ class MultiTasksHandler(APIBase):
         opt_fields = {
             'status': str,
             'priority': float,
+            'instance_id': str,
         }
         for k in opt_fields:
             if k in data and not isinstance(data[k], opt_fields[k]):
@@ -181,12 +182,13 @@ class MultiTasksHandler(APIBase):
             'walltime_err': 0.0,
             'walltime_err_n': 0,
             'site': '',
-            'instance_id': '',
         })
         if 'status' not in data:
             data['status'] = TASK_STATUS_START
         if 'priority' not in data:
             data['priority'] = 1.
+        if 'instance_id' not in data:
+            data['instance_id'] = ''
 
         await self.db.tasks.insert_one(data)
         self.set_status(201)
@@ -816,7 +818,7 @@ class TasksActionsErrorHandler(APIBase):
             task_id (str): task id
 
         Body args (json):
-            instance_id (str): task instance id 
+            instance_id (str): task instance id
             time_used (int): (optional) time used to run task, in seconds
             resources (dict): (optional) resources used by task
             site (str): (optional) site the task was running at
@@ -907,7 +909,11 @@ class TasksActionsErrorHandler(APIBase):
         )
         if not ret:
             logger.info('filter_query: %r', filter_query)
-            self.send_error(400, reason="Task not found")
+            ret = await self.db.tasks.find_one({'task_id': task_id, 'instance_id': data['instance_id']})
+            if not ret:
+                self.send_error(404, reason="Task not found")
+            else:
+                self.send_error(400, reason="Bad state transition for status")
         else:
             self.write(ret)
             self.finish()
@@ -930,7 +936,7 @@ class TasksActionsCompleteHandler(APIBase):
             task_id (str): task id
 
         Body args (json):
-            instance_id (str): task instance id 
+            instance_id (str): task instance id
             time_used (int): (optional) time used to run task, in seconds
             site (str): (optional) site the task was running at
 
@@ -969,7 +975,11 @@ class TasksActionsCompleteHandler(APIBase):
         )
         if not ret:
             logger.info('filter_query: %r', filter_query)
-            self.send_error(400, reason="Task not found or not processing")
+            ret = await self.db.tasks.find_one({'task_id': task_id, 'instance_id': data['instance_id']})
+            if not ret:
+                self.send_error(404, reason="Task not found")
+            else:
+                self.send_error(400, reason="Bad state transition for status")
         else:
             self.write(ret)
             self.finish()
@@ -1107,7 +1117,7 @@ class DatasetTaskBulkSuspendHandler(APIBase):
                     raise tornado.web.HTTPError(400, reason='Too many tasks specified (limit: 100k)')
                 query['task_id'] = {'$in': tasks}
 
-        ret = await self.db.tasks.update_many(query, {'$set': update_data})
+        await self.db.tasks.update_many(query, {'$set': update_data})
         self.write({})
         self.finish()
 
@@ -1155,7 +1165,7 @@ class DatasetTaskBulkResetHandler(APIBase):
                     raise tornado.web.HTTPError(400, reason='Too many tasks specified (limit: 100k)')
                 query['task_id'] = {'$in': tasks}
 
-        ret = await self.db.tasks.update_many(query, {'$set': update_data})
+        await self.db.tasks.update_many(query, {'$set': update_data})
         self.write({})
         self.finish()
 
@@ -1204,7 +1214,7 @@ class DatasetTaskBulkHardResetHandler(APIBase):
                     raise tornado.web.HTTPError(400, reason='Too many tasks specified (limit: 100k)')
                 query['task_id'] = {'$in': tasks}
 
-        ret = await self.db.tasks.update_many(query, {'$set': update_data})
+        await self.db.tasks.update_many(query, {'$set': update_data})
         self.write({})
         self.finish()
 

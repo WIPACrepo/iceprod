@@ -7,8 +7,6 @@ import logging
 from functools import partial
 from collections import defaultdict
 
-from iceprod.server import GlobalID
-
 
 def apply_group_prios(datasets, groups=None, filters=None):
     """
@@ -84,10 +82,10 @@ def calc_dataset_prio(dataset, queueing_factor_priority=1.0,
         # do not allow negative or overly large priorities (they skew things)
         p = 0
         logging.warning('Priority for dataset %s is invalid, using default',dataset['dataset_id'])
-    d = GlobalID.localID_ret(dataset['dataset_id'],type='int')
+    d = dataset['dataset']
     if d < 0:
         d = 0
-        logging.warning('Dataset for dataset %s is invalid, using default',dataset['dataset_id'])
+        logging.warning('Dataset num for dataset %s is invalid, using default',dataset['dataset_id'])
     t = dataset['tasks_submitted']
 
     # return prio

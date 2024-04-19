@@ -7,12 +7,8 @@ by copying them from the path indicated to a job's working directory.
 """
 
 import classad
-import json
 import glob
 import os
-import posixpath
-import shutil
-import socket
 import sys
 import subprocess
 import time
@@ -25,7 +21,7 @@ EXIT_FAILURE = 1
 EXIT_AUTHENTICATION_REFRESH = 2
 
 
-def print_help(stream = sys.stderr):
+def print_help(stream=sys.stderr):
     help_msg = '''Usage: {0} -infile <input-filename> -outfile <output-filename>
        {0} -classad
 
@@ -39,15 +35,17 @@ Options:
 '''
     stream.write(help_msg.format(sys.argv[0]))
 
+
 def print_capabilities():
     capabilities = {
-         'MultipleFileSupport': True,
-         'PluginType': 'FileTransfer',
-         # SupportedMethods indicates which URL methods/types this plugin supports
-         'SupportedMethods': 'gsiftp',
-         'Version': PLUGIN_VERSION,
+        'MultipleFileSupport': True,
+        'PluginType': 'FileTransfer',
+        # SupportedMethods indicates which URL methods/types this plugin supports
+        'SupportedMethods': 'gsiftp',
+        'Version': PLUGIN_VERSION,
     }
     sys.stdout.write(classad.ClassAd(capabilities).printOld())
+
 
 def parse_args():
 
@@ -95,10 +93,12 @@ def parse_args():
 
     return {'infile': infile, 'outfile': outfile, 'upload': is_upload}
 
+
 def format_error(error):
     return '{0}: {1}'.format(type(error).__name__, str(error))
 
-def get_error_dict(error, url = ''):
+
+def get_error_dict(error, url=''):
     error_string = format_error(error)
     error_dict = {
         'TransferSuccess': False,
@@ -107,6 +107,7 @@ def get_error_dict(error, url = ''):
     }
 
     return error_dict
+
 
 class GridftpPlugin:
 
@@ -196,7 +197,7 @@ if __name__ == '__main__':
     gridftp_plugin = GridftpPlugin()
     gridftp_plugin.setup_env()
 
-    # Parse in the classads stored in the input file. 
+    # Parse in the classads stored in the input file.
     # Each ad represents a single file to be transferred.
     try:
         infile_ads = classad.parseAds(open(args['infile'], 'r'))
@@ -223,7 +224,7 @@ if __name__ == '__main__':
 
                 except Exception as err:
                     try:
-                        outfile_dict = get_error_dict(err, url = ad['Url'])
+                        outfile_dict = get_error_dict(err, url=ad['Url'])
                         outfile.write(str(classad.ClassAd(outfile_dict)))
                     except Exception:
                         pass

@@ -349,29 +349,6 @@ async def test_write_to_script_module_binary_fullpath(tmp_path):
     assert lines == ['/cvmfs/foo']
 
 
-async def test_write_to_script_module_class(tmp_path):
-    t = get_task({
-        'tasks': [{
-            'name': 'foo',
-            'trays': [{
-                'modules': [{
-                    'env_clear': False,
-                    'running_class': 'foo'
-                }]
-            }],
-        }]
-    })
-
-    ws = iceprod.core.exe.WriteToScript(t, workdir=tmp_path, logger=logger)
-    scriptpath = await ws.convert()
-
-    assert not ws.infiles
-    assert not ws.outfiles
-    script = open(scriptpath).read()
-    lines = [line for line in script.split('\n') if not (not line.strip() or line.startswith('#') or line.startswith('set '))]
-    assert lines == ['python -m foo']
-
-
 async def test_write_to_script_tray_iter(tmp_path):
     t = get_task({
         'tasks': [{

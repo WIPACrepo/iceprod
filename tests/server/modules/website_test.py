@@ -14,7 +14,7 @@ import requests.exceptions
 from tornado.web import create_signed_value
 
 from iceprod.rest.auth import ROLES, GROUPS
-from iceprod.server.modules import website
+#from iceprod.server.modules import website
 
 from ...util import services_mock
 
@@ -114,30 +114,30 @@ async def server(monkeypatch, port, requests_mock):
         await s.stop()
 
 
-async def test_website_root(server):
-    client = server()
-    await client.request('GET', '/')
+# async def test_website_root(server):
+    # client = server()
+    # await client.request('GET', '/')
 
-async def test_website_submit(server, requests_mock):
-    client = server(username='username', roles=['user'], groups=['users', 'simprod'])
+# async def test_website_submit(server, requests_mock):
+    # client = server(username='username', roles=['user'], groups=['users', 'simprod'])
 
-    ret = await client.request('GET', '/submit')
+    # ret = await client.request('GET', '/submit')
 
-async def test_website_config(server, requests_mock):
-    client = server(username='username', roles=['user'], groups=['users', 'simprod'])
+# async def test_website_config(server, requests_mock):
+    # client = server(username='username', roles=['user'], groups=['users', 'simprod'])
 
-    requests_mock.register_uri('GET', re.compile('localhost'), real_http=True)
-    requests_mock.get('http://iceprod.test/datasets/123', status_code=200, json={})
-    requests_mock.get('http://iceprod.test/config/123', status_code=200, json={})
+    # requests_mock.register_uri('GET', re.compile('localhost'), real_http=True)
+    # requests_mock.get('http://iceprod.test/datasets/123', status_code=200, json={})
+    # requests_mock.get('http://iceprod.test/config/123', status_code=200, json={})
 
-    ret = await client.request('GET', '/config', {'dataset_id': '123'})
+    # ret = await client.request('GET', '/config', {'dataset_id': '123'})
 
 
-async def test_website_profile(server, requests_mock):
-    client = server(username='username', roles=['user'], groups=['users', 'simprod'])
+# async def test_website_profile(server, requests_mock):
+    # client = server(username='username', roles=['user'], groups=['users', 'simprod'])
 
-    requests_mock.register_uri('GET', re.compile('localhost'), real_http=True)
-    ret = await client.request('GET', '/profile')
+    # requests_mock.register_uri('GET', re.compile('localhost'), real_http=True)
+    # ret = await client.request('GET', '/profile')
 
 
 

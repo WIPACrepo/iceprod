@@ -2,8 +2,6 @@
 Some general functions used by the iceprod server
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import sys
 import logging
@@ -41,78 +39,6 @@ def run_module(name,*args,**kwargs):
     class_name = name.rsplit('.',1)[1]
     x = importlib.import_module(name)
     return (getattr(x,class_name))(*args,**kwargs)
-
-
-class GlobalID(object):
-    """Global ID configuration and generation"""
-    import string
-    # never change these settings, otherwise all old ids will fail
-    CHARS = string.ascii_letters+string.digits
-    CHARS_LEN = len(CHARS)
-    # define dict to make reverse lookup super fast
-    INTS_DICT = {c:i for i,c in enumerate(CHARS)}
-    IDLEN = 15
-    MAXSITEID = 10**10
-    MAXLOCALID = 10**15
-
-    @classmethod
-    def int2char(cls,i):
-        if not isinstance(i,int) or i < 0:  # only deal with positive ints
-            logging.warning('bad input to int2char: %r',i)
-            raise Exception('bad input to int2char')
-        out = ''
-        while i >= 0:
-            out += cls.CHARS[i%cls.CHARS_LEN]
-            i = i//cls.CHARS_LEN - 1
-        return out[::-1]
-
-    @classmethod
-    def char2int(cls,c):
-        if not isinstance(c,str) or len(c) < 1:  # only deal with string
-            logging.warning('bad input to char2int: %r',c)
-            raise Exception('bad input to char2int')
-        out = -1
-        for i,cc in enumerate(reversed(c)):
-            if cc not in cls.CHARS:
-                raise Exception('non-char input to chars2int')
-            out += (cls.INTS_DICT[cc]+1)*(cls.CHARS_LEN**i)
-        return out
-
-    @classmethod
-    def siteID_gen(cls):
-        """Generate a new site id"""
-        import random
-        return cls.int2char(random.randint(0,cls.MAXSITEID-1))
-
-    @classmethod
-    def globalID_gen(cls,id,site_id):
-        """Generate a new global id given a local id and site id"""
-        if isinstance(id,str):
-            id = cls.char2int(id)
-        elif not isinstance(id,int):
-            raise Exception('id is not a string, int, or long')
-        if isinstance(site_id,str):
-            return cls.int2char(cls.char2int(site_id)*cls.MAXLOCALID+id)
-        elif isinstance(site_id,int):
-            return cls.int2char(site_id*cls.MAXLOCALID+id)
-        else:
-            raise Exception('Site id is not a string, int, or long')
-
-    @classmethod
-    def localID_ret(cls,id,type='str'):
-        """Retrieve a local id from a global id"""
-        ret = cls.char2int(id) % cls.MAXLOCALID
-        if type == 'str':
-            ret = cls.int2char(ret)
-        return ret
-
-    @classmethod
-    def siteID_ret(cls,id,type='str'):
-        """Retrieve a site id from a global id"""
-        ret = cls.char2int(id) // cls.MAXLOCALID
-        if type == 'str':
-            ret = cls.int2char(ret)
-        return ret
 
 
 def salt(length=2):

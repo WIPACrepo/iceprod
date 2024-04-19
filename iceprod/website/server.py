@@ -6,7 +6,6 @@ This is the external website users will see when interacting with IceProd.
 It has been broken down into several sub-handlers for easier maintenance.
 """
 
-import asyncio
 from collections import defaultdict
 from datetime import datetime, timedelta
 import functools
@@ -34,6 +33,7 @@ import iceprod
 from iceprod.roles_groups import GROUPS
 import iceprod.core.functions
 from iceprod.server import documentation
+from iceprod.server.module import FakeStatsClient, StatsClientIgnoreErrors
 import iceprod.server.states
 from iceprod.server.util import nowstr
 
@@ -801,7 +801,7 @@ class Server:
         server.add_route(r"/login", Login, login_handler_args)
         server.add_route(r"/logout", Logout, handler_args)
         server.add_route('/healthz', HealthHandler, handler_args)
-        server.add_route(r"/.*", Other, handler_args)     
+        server.add_route(r"/.*", Other, handler_args)
 
         server.startup(address=config['HOST'], port=config['PORT'])
 

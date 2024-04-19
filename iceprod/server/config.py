@@ -9,7 +9,6 @@ import os
 from pathlib import Path
 
 import jsonschema
-from iceprod.server import GlobalID
 
 logger = logging.getLogger('config')
 
