@@ -42,7 +42,7 @@ dnspython==2.6.1
     # via pymongo
 docutils==0.21.1
     # via sphinx
-exceptiongroup==1.2.0
+exceptiongroup==1.2.1
     # via anyio
 h11==0.14.0
     # via httpcore
