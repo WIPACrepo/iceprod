@@ -8,7 +8,7 @@ on:
       - '**'
 
 env:
-  py_version: '3.10'
+  py_version: '3.11'
 
 jobs:
 
