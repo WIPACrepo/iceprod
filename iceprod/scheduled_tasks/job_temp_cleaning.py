@@ -41,7 +41,10 @@ async def list_dataset_job_dirs_gridftp(path, prefix=None, executor=None):
         for entry in dirs:
             if not entry.directory:
                 continue
-            await list_job_dirs(entry.name)
+            try:
+                await list_job_dirs(entry.name)
+            except Exception:
+                logger.warning('error listing %s', entry.name, exc_info=True)
     return dataset_dirs
 
 
@@ -123,6 +126,7 @@ async def run(rest_client, temp_dir, list_dirs, rmtree, dataset=None, debug=Fals
                     job_indexes.add(job['job_index'])
             logger.debug('job_indexes: %r', job_indexes)
 
+            futures = set()
             for j in job_dirs:
                 if isinstance(job_dirs[j], dict):
                     continue
@@ -132,10 +136,25 @@ async def run(rest_client, temp_dir, list_dirs, rmtree, dataset=None, debug=Fals
                         raise Exception('not numeric')
                     continue
                 if int(j) in job_indexes:
+                    while len(futures) >= 16:
+                        done, futures = await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED)
+                        for f in futures:
+                            try:
+                                await f
+                            except Exception:
+                                logger.warning('failed to clean site_temp', exc_info=True)
+                                if debug:
+                                    raise
+
+                    dagtemp = os.path.join(temp_dir, d, j)
+                    logger.info('cleaning site_temp %r', dagtemp)
+                    futures.add(asyncio.create_task(rmtree(dagtemp)))
+
+            while futures:
+                done, futures = await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED)
+                for f in futures:
                     try:
-                        dagtemp = os.path.join(temp_dir, d, j)
-                        logger.info('cleaning site_temp %r', dagtemp)
-                        await rmtree(dagtemp)
+                        await f
                     except Exception:
                         logger.warning('failed to clean site_temp', exc_info=True)
                         if debug:
