@@ -92,7 +92,7 @@
             <th>Eff</th>
         </tr>
         {% for t in task_stats %}
-          {% if 'avg_hrs' in task_stats[t] and task_stats[t]['avg_hrs'] and 'stddev_hrs' in task_stats[t] and task_stats[t]['stddev_hrs'] %}
+          {% if 'avg_hrs' in task_stats[t] and task_stats[t]['avg_hrs'] is not None and 'stddev_hrs' in task_stats[t] and task_stats[t]['stddev_hrs'] is not None %}
         <tr>
             <td>{{ t }}</td>
             <td>{{ '{:0.2f}'.format(task_stats[t]['avg_hrs']) }} / {{ '{:0.2f}'.format(task_stats[t]['stddev_hrs']) }}</td>
