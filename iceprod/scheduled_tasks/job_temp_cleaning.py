@@ -138,7 +138,7 @@ async def run(rest_client, temp_dir, list_dirs, rmtree, dataset=None, debug=Fals
                 if int(j) in job_indexes:
                     while len(futures) >= 16:
                         done, futures = await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED)
-                        for f in futures:
+                        for f in done:
                             try:
                                 await f
                             except Exception:
@@ -152,7 +152,7 @@ async def run(rest_client, temp_dir, list_dirs, rmtree, dataset=None, debug=Fals
 
             while futures:
                 done, futures = await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED)
-                for f in futures:
+                for f in done:
                     try:
                         await f
                     except Exception:
