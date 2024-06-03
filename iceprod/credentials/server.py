@@ -126,7 +126,7 @@ class BaseCredentialsHandler(APIBase):
         argo.add_argument('expiration', type=float, default=0, required=False)
         argo.add_argument('last_use', type=float, default=0, required=False)
         args = vars(argo.parse_args())
-        url = args['url']
+        base_data['url'] = args['url']
 
         data = {}
         for key in ('buckets', 'access_key', 'secret_key', 'access_token', 'refresh_token', 'expiration', 'last_use'):
