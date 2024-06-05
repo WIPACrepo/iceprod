@@ -14,11 +14,11 @@ attrs==23.2.0
     #   referencing
 beautifulsoup4==4.12.3
     # via iceprod (setup.py)
-boto3==1.34.118
+boto3==1.34.120
     # via
     #   iceprod (setup.py)
     #   moto
-botocore==1.34.118
+botocore==1.34.120
     # via
     #   boto3
     #   moto
@@ -42,7 +42,7 @@ coverage[toml]==7.5.3
     # via
     #   iceprod (setup.py)
     #   pytest-cov
-cryptography==42.0.7
+cryptography==42.0.8
     # via
     #   iceprod (setup.py)
     #   moto
@@ -117,7 +117,7 @@ pyflakes==3.2.0
     # via flake8
 pyjwt[crypto]==2.8.0
     # via wipac-rest-tools
-pymongo==4.7.2
+pymongo==4.7.3
     # via
     #   iceprod (setup.py)
     #   motor
