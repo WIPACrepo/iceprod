@@ -393,7 +393,7 @@ async def test_Grid_wait_JEL(schedd, i3prod_path):
 
     await g.wait(timeout=0)
 
-    assert int(g.last_event_timestamp) == 1710279003
+    assert int(g.last_event_timestamp) == 1710261003
     assert len(g.jobs) == 7
 
     JobStatus = iceprod.server.plugins.condor.JobStatus
@@ -435,7 +435,7 @@ async def test_Grid_wait_JEL_finish(schedd, i3prod_path):
 
     await g.wait(timeout=0)
 
-    assert int(g.last_event_timestamp) == 1710279003
+    assert int(g.last_event_timestamp) == 1710261003
     assert len(g.jobs) == 1
 
     CondorJobId = iceprod.server.plugins.condor.CondorJobId
@@ -467,7 +467,7 @@ async def test_Grid_wait_JEL_exception(schedd, i3prod_path):
 
     await g.wait(timeout=0)
 
-    assert int(g.last_event_timestamp) == 1710279003
+    assert int(g.last_event_timestamp) == 1710261003
     assert len(g.jobs) == 1
 
     JobStatus = iceprod.server.plugins.condor.JobStatus
@@ -493,7 +493,7 @@ async def test_Grid_wait_JEL_reprocess(schedd, i3prod_path):
     g.task_reset = AsyncMock()
     g.finish = AsyncMock()
 
-    g.last_event_timestamp = 1710279004
+    g.last_event_timestamp = 1710261004
 
     jel_path = g.get_current_JEL()
     TEST_JEL = Path(__file__).parent / 'condor_test_logfile'
@@ -501,7 +501,7 @@ async def test_Grid_wait_JEL_reprocess(schedd, i3prod_path):
 
     await g.wait(timeout=0)
 
-    assert int(g.last_event_timestamp) == 1710279004
+    assert int(g.last_event_timestamp) == 1710261004
     assert len(g.jobs) == 0
 
 
