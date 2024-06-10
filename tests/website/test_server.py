@@ -1,6 +1,7 @@
 import asyncio
 import binascii
 import logging
+import random
 import re
 import secrets
 from unittest.mock import MagicMock, AsyncMock
@@ -15,47 +16,50 @@ from tornado.web import create_signed_value
 
 from iceprod.rest.auth import ROLES, GROUPS
 #from iceprod.server.modules import website
+from iceprod.website.server import Server
 
-from ...util import services_mock
+
+class ReqMock:
+    def __init__(self):
+        self.mocks = {}
+
+    def add_mock(self, path, ret):
+        self.mocks[path] = ret
+
+    async def mock(self, method, path, *args, **kwargs):
+        if path in self.mocks:
+            return self.mocks[path]
+        else:
+            response = MagicMock()
+            response.status_code = 404
+            raise requests.exceptions.HTTPError(response=response)
 
 
 @pytest_asyncio.fixture
-async def server(monkeypatch, port, requests_mock):
+async def server(monkeypatch, port):
     monkeypatch.setenv('CI_TESTING', '1')
+    monkeypatch.setenv('PORT', str(port))
+
+    monkeypatch.setenv('ICEPROD_CRED_ADDRESS', 'http://iceprod.test')
+    monkeypatch.setenv('ICEPROD_API_ADDRESS', 'http://iceprod.test')
+
+
+    cookie = ''.join(hex(random.randint(0,15))[-1] for _ in range(64))
+    monkeypatch.setenv('COOKIE_SECRET', cookie)
+    cookie_secret = binascii.unhexlify(cookie)
 
     # set hostname
     hostname = b'localhost'
     address = f'http://localhost:{port}'
+    monkeypatch.setenv('ICEPROD_WEB_URL', address)
 
-    cfg = {
-        'webserver': {
-            'port': port,
-            'cookie_secret': secrets.token_hex(16),
-            'full_url': address,
-        },
-        'db': {'name': 'test'},
-        'site_id': 'abc',
-        'download': {
-            'http_username': None,
-            'http_password': None,
-        },
-        'rest_api': {
-            'url': 'http://iceprod.test',
-            'cred_url': 'http://iceprod.test',
-            'auth_key': 'bar'
-        },
-    }
-    executor = {}
-    modules = services_mock()
+    req_mock = ReqMock()
+    monkeypatch.setattr(RestClient, 'request', req_mock.mock)
 
-    s = website.website(cfg, executor, modules)
-    s.rest_client = RestClient('http://iceprod.test', 'bar')
-    s.cred_client = MagicMock()
-    s.cred_client.request = AsyncMock()
-    s.start()
+    s = Server()
+    await s.start()
 
     auth = Auth('secret')
-    cookie_secret = binascii.unhexlify(cfg['webserver']['cookie_secret'])
 
     def _add_to_data(data, attrs):
         logging.debug('attrs: %r', attrs)
@@ -71,7 +75,7 @@ async def server(monkeypatch, port, requests_mock):
                 d[key] = []
             d[key].append(value)
 
-    requests_mock.register_uri('GET', re.compile('localhost'), real_http=True)
+    #requests_mock.register_uri('GET', re.compile('localhost'), real_http=True)
 
     class Request:
         def __init__(self, token_data, token, timeout=None):
@@ -83,15 +87,16 @@ async def server(monkeypatch, port, requests_mock):
                     'access_token': token,
                 }
             }
-            requests_mock.get('http://iceprod.test/users/username/credentials', status_code=200, json=ret)
-            s.cred_client.request.return_value = ret
-            requests_mock.get('http://iceprod.test/groups/simprod/credentials', status_code=200, json={})
+            req_mock.add_mock('/users/username/credentials', ret)
+            req_mock.add_mock('/groups/simprod/credentials', {})
+            self.req_mock = req_mock
 
             self.token_cookie = create_signed_value(cookie_secret, 'iceprod_username', token_data['preferred_username'])
-            logging.debug('Request cookie_secret: %r', cfg['webserver']['cookie_secret'].encode())
+            logging.debug('Request cookie_secret: %r', cookie_secret)
 
         async def request(self, method, path, args=None):
             async with httpx.AsyncClient(timeout=self.timeout) as client:
+                logging.debug('website request %s %s', method, path)
                 kwargs = {'headers': {'Cookie': b'iceprod_username='+self.token_cookie}}
                 if args:
                     kwargs['params'] = args
@@ -114,30 +119,31 @@ async def server(monkeypatch, port, requests_mock):
         await s.stop()
 
 
-# async def test_website_root(server):
-    # client = server()
-    # await client.request('GET', '/')
+async def test_website_root(server):
+    client = server()
+    await client.request('GET', '/')
 
-# async def test_website_submit(server, requests_mock):
-    # client = server(username='username', roles=['user'], groups=['users', 'simprod'])
+async def test_website_submit(server, requests_mock):
+    client = server(username='username', roles=['user'], groups=['users', 'simprod'])
 
-    # ret = await client.request('GET', '/submit')
+    ret = await client.request('GET', '/submit')
 
-# async def test_website_config(server, requests_mock):
-    # client = server(username='username', roles=['user'], groups=['users', 'simprod'])
+async def test_website_config(server):
+    client = server(username='username', roles=['user'], groups=['users', 'simprod'])
 
-    # requests_mock.register_uri('GET', re.compile('localhost'), real_http=True)
-    # requests_mock.get('http://iceprod.test/datasets/123', status_code=200, json={})
-    # requests_mock.get('http://iceprod.test/config/123', status_code=200, json={})
+    #requests_mock.register_uri('GET', re.compile('localhost'), real_http=True)
+    client.req_mock.add_mock('/datasets/123', {})
+    client.req_mock.add_mock('/config/123', {})
+    #requests_mock.get('http://iceprod.test/datasets/123', status_code=200, json={})
+    #requests_mock.get('http://iceprod.test/config/123', status_code=200, json={})
 
-    # ret = await client.request('GET', '/config', {'dataset_id': '123'})
+    ret = await client.request('GET', '/config', {'dataset_id': '123'})
 
 
-# async def test_website_profile(server, requests_mock):
-    # client = server(username='username', roles=['user'], groups=['users', 'simprod'])
+async def test_website_profile(server):
+    client = server(username='username', roles=['user'], groups=['users', 'simprod'])
 
-    # requests_mock.register_uri('GET', re.compile('localhost'), real_http=True)
-    # ret = await client.request('GET', '/profile')
+    ret = await client.request('GET', '/profile')
 
 
 
@@ -748,9 +754,3 @@ async def server(monkeypatch, port, requests_mock):
             # self.assertTrue(rest.called)
             # self.assertIn(b'this is a log', r.body)
 
-
-# def load_tests(loader, tests, pattern):
-    # suite = unittest.TestSuite()
-    # alltests = glob_tests(loader.getTestCaseNames(website_test))
-    # suite.addTests(loader.loadTestsFromNames(alltests,website_test))
-    # return suite

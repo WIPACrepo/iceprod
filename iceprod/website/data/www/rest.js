@@ -2,7 +2,6 @@
  * Helper functions that use REST API
  */
 
-var rest_api = 'https://iceprod2-api.icecube.wisc.edu';
 async function fetch_json(method, url, json, passkey) {
     if (method == 'GET' && json != null) {
         throw "fetch_json(): arument json must be null if method == GET";

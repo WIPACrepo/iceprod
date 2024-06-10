@@ -43,6 +43,7 @@
 <script type="text/javascript" src="/static/fetch.js"></script>
 <script type="text/javascript" src="/static/rest.js"></script>
 <script type="text/javascript">
+var rest_api = '{{ rest_api }}';
 const passkey = "{{ passkey }}";
 const dataset_id = "{{ list(jobs.values())[0]['dataset_id'] if jobs else '' }}";
 const job_ids_on_page = [

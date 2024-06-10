@@ -219,6 +219,7 @@ class PublicHandler(TokenStorageMixin, RestHandler):
         namespace['section'] = self.request.uri.lstrip('/').split('?')[0].split('/')[0]
         namespace['json_encode'] = json_encode
         namespace['states'] = iceprod.server.states
+        namespace['rest_api'] = self.rest_api
         return namespace
 
     async def get_current_user_async(self):

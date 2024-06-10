@@ -43,6 +43,7 @@
 <script type="text/javascript" src="/static/fetch.js"></script>
 <script type="text/javascript" src="/static/rest.js"></script>
 <script type="text/javascript">
+var rest_api = '{{ rest_api }}';
 const passkey = "{{ passkey }}";
 const dataset_id = "{{ list(tasks.values())[0]['dataset_id'] if tasks else '' }}";
 const task_ids_on_page = [
