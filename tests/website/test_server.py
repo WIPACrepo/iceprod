@@ -15,7 +15,6 @@ import requests.exceptions
 from tornado.web import create_signed_value
 
 from iceprod.rest.auth import ROLES, GROUPS
-#from iceprod.server.modules import website
 from iceprod.website.server import Server
 
 
