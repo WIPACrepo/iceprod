@@ -69,6 +69,7 @@
 </div>
 <div class="task_completion">
     <h2>Task Status by Task Name</h2>
+    {% if task_info %}
     <table>
         <tr>
             {% for key in list(task_info.values())[0] %}
@@ -83,6 +84,7 @@
         </tr>
         {% end %}
     </table>
+    {% end %}
     <h3>Completion Statistics</h3>
     <table>
         <tr>
