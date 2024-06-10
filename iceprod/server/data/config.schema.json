@@ -32,6 +32,10 @@
           "type": "string",
           "default": "condor"
         },
+        "site": {
+          "description": "Site name",
+          "type": "string"
+        },
         "description": {
           "type": "string",
           "default": "generic grid plugin"
@@ -152,6 +156,14 @@
           "description": "OAuth provider url",
           "type": "string",
           "default": "https://keycloak.icecube.wisc.edu/auth/realms/IceCube"
+        },
+        "oauth_client_id": {
+          "description": "OAuth client id",
+          "type": "string"
+        },
+        "oauth_client_secret": {
+          "description": "OAuth client secret",
+          "type": "string"
         }
       },
       "additionalProperties": true

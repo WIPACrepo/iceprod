@@ -103,6 +103,28 @@ class Queue:
             'rest_client': None,
             'cred_client': None,
         }
+
+        if ('rest_api' in self.cfg and 'url' in self.cfg['rest_api']
+                and 'oauth_url' in self.cfg['rest_api']
+                and 'oauth_client_id' in self.cfg['rest_api']
+                and 'oauth_client_secret' in self.cfg['rest_api']):
+            try:
+                kwargs['rest_client'] = ClientCredentialsAuth(
+                    address=self.cfg['rest_api']['url'],
+                    token_url=self.cfg['rest_api']['oauth_url'],
+                    client_id=self.cfg['rest_api']['oauth_client_id'],
+                    client_secret=self.cfg['rest_api']['oauth_client_secret'],
+                )
+                kwargs['cred_client']= ClientCredentialsAuth(
+                    address=self.cfg['rest_api']['cred_url'],
+                    token_url=self.cfg['rest_api']['oauth_url'],
+                    client_id=self.cfg['rest_api']['oauth_client_id'],
+                    client_secret=self.cfg['rest_api']['oauth_client_secret'],
+                )
+            except Exception:
+                logger.warning('failed to connect to rest api: %r',
+                               self.cfg['rest_api'].get('url',''), exc_info=True)
+
         try:
             return getattr(plugin_module, 'Grid')(**kwargs)
         except Exception:
