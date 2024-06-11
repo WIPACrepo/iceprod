@@ -23,6 +23,7 @@ jobs:
           ghcr.io/WIPACRepo/iceprod
         tags: |
             type=ref,event=branch
+            type=sha,prefix={{branch}}-,event=branch,enable=${{ github.ref_type == 'branch' }}
             type=semver,pattern={{major}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}.{{minor}}.{{patch}}
