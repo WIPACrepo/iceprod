@@ -1,7 +1,7 @@
 """
 Queue tasks.
 
-Move task statuses from waiting to queued, for a certain number of
+Move task statuses from idle to waiting, for a certain number of
 tasks.  Also uses priority for ordering.
 """
 
@@ -30,18 +30,18 @@ async def run(rest_client, ntasks=NTASKS, ntasks_per_cycle=NTASKS_PER_CYCLE, deb
         num_tasks_waiting = 0
         num_tasks_queued = 0
         tasks = await rest_client.request('GET', '/task_counts/status')
+        if 'idle' in tasks:
+            num_tasks_waiting = tasks['idle']
         if 'waiting' in tasks:
-            num_tasks_waiting = tasks['waiting']
-        if 'queued' in tasks:
-            num_tasks_queued = tasks['queued']
+            num_tasks_queued = tasks['waiting']
         tasks_to_queue = min(num_tasks_waiting, ntasks - num_tasks_queued, ntasks_per_cycle)
-        logger.warning(f'num tasks waiting: {num_tasks_waiting}')
-        logger.warning(f'num tasks queued: {num_tasks_queued}')
-        logger.warning(f'tasks to queue: {tasks_to_queue}')
+        logger.warning(f'num tasks idle: {num_tasks_waiting}')
+        logger.warning(f'num tasks waiting: {num_tasks_queued}')
+        logger.warning(f'tasks to waiting: {tasks_to_queue}')
 
         if tasks_to_queue > 0:
             args = {
-                'status': 'waiting',
+                'status': 'idle',
                 'keys': 'task_id|depends',
                 'sort': 'priority=-1',
                 'limit': 5*tasks_to_queue,
@@ -98,9 +98,14 @@ async def run(rest_client, ntasks=NTASKS, ntasks_per_cycle=NTASKS_PER_CYCLE, deb
                         queue_tasks.append(task['task_id'])
 
             logger.warning('queueing %d tasks', len(queue_tasks))
-            if queue_tasks:
-                args = {'tasks': queue_tasks}
-                await rest_client.request('POST', '/task_actions/bulk_status/queued', args)
+            count = 0
+            while queue_tasks:
+                task_ids = queue_tasks[:100]
+                queue_tasks = queue_tasks[100:]
+                args = {'task_ids': task_ids}
+                ret = await rest_client.request('POST', '/task_actions/waiting', args)
+                count += ret['waiting']
+            logger.warning('queued %d tasks', count)
 
     except Exception:
         logger.error('error queueing tasks', exc_info=True)

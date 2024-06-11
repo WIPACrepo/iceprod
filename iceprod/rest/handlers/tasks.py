@@ -651,34 +651,27 @@ class TasksActionsWaitingHandler(APIBase):
     @authorization(roles=['admin', 'system'])
     async def post(self):
         """
-        Take a number of waiting tasks and queue them.
-
-        Order by priority.
+        Take a list of task_ids and move them to waiting.
 
         Body args (json):
-            num_tasks: int
+            task_ids: list
 
         Returns:
             dict: {waiting: num tasks waiting}
         """
         data = json.loads(self.request.body)
-        num_tasks = data.get('num_tasks', 100)
+        task_ids = data.get('task_ids', [])
+        if len(task_ids) > 100:
+            raise tornado.web.HTTPError(400, reason=f'too many tasks. must be <= 100')
 
-        query = {'status': 'idle'}
+        query = {
+            'status': 'idle',
+            'task_id': {'$in': task_ids},
+        }
         val = {'$set': {'status': 'waiting'}}
 
-        waiting = 0
-        while waiting < num_tasks:
-            ret = await self.db.tasks.find_one_and_update(
-                query,
-                val,
-                projection={'_id': False, 'task_id': True},
-                sort=[('priority', -1)]
-            )
-            if not ret:
-                logger.debug('no more tasks to queue')
-                break
-            waiting += 1
+        ret = await self.db.tasks.update_many(query, val)
+        waiting = ret.modified_count
         logger.info(f'waiting {waiting} tasks')
         self.write({'waiting': waiting})
 

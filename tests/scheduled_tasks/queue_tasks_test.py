@@ -15,14 +15,14 @@ async def test_200_run():
     rc = MagicMock()
     async def client(method, url, args=None):
         if url == '/datasets/foo':
-            return {'priority':2}
+            return {'priority': 2}
         elif url == '/task_counts/status':
-            return {'waiting':100,'queued':2}
+            return {'idle': 100, 'waiting': 2}
         elif url == '/tasks':
             return {'tasks': [{'task_id': 'task1'}]}
-        elif url == '/task_actions/bulk_status/queued' and method == 'POST':
+        elif url == '/task_actions/waiting' and method == 'POST':
             client.called = True
-            return {}
+            return {'waiting': 98}
         else:
             raise Exception()
     client.called = False
@@ -33,9 +33,9 @@ async def test_200_run():
     async def client(method, url, args=None):
         if url == '/task_counts/status':
             return {}
-        elif url == '/task_actions/bulk_status/queued' and method == 'POST':
+        elif url == '/task_actions/waiting' and method == 'POST':
             client.called = True
-            return {}
+            return {'waiting': 0}
         else:
             raise Exception()
     client.called = False
@@ -45,12 +45,12 @@ async def test_200_run():
     
     async def client(method, url, args=None):
         if url == '/datasets/foo':
-            return {'priority':2}
+            return {'priority': 2}
         elif url.startswith('/task_counts/status'):
             return {}
-        elif url == '/task_actions/bulk_status/queued' and method == 'POST':
+        elif url == '/task_actions/waiting' and method == 'POST':
             client.called = True
-            return {}
+            return {'waiting': 0}
         else:
             raise Exception()
     client.called = False
@@ -60,14 +60,14 @@ async def test_200_run():
 
     async def client(method, url, args=None):
         if url == '/datasets/foo':
-            return {'priority':2}
+            return {'priority': 2}
         elif url.startswith('/task_counts/status'):
-            return {'waiting':100,'queued':100000}
+            return {'idle': 100,'waiting': 100000}
         elif url == '/tasks':
             return {'tasks': []}
-        elif url == '/task_actions/bulk_status/queued' and method == 'POST':
+        elif url == '/task_actions/waiting' and method == 'POST':
             client.called = True
-            return {}
+            return {'waiting': 0}
         else:
             raise Exception()
     client.called = False
@@ -81,7 +81,7 @@ async def test_300_run():
     async def client(method, url, args=None):
         if url.startswith('/task_counts/status'):
             client.called = True
-            return {'waiting':100,'queued':100000}
+            return {'idle': 100, 'waiting': 100000}
         else:
             raise Exception()
     client.called = False

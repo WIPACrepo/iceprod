@@ -310,7 +310,7 @@ async def test_rest_tasks_dataset_stats(server):
         assert s in ret['bar']
 
 
-async def test_rest_tasks_actions_waiting_prio(server):
+async def test_rest_tasks_actions_waiting(server):
     client = server(roles=['system'])
 
     data = {
@@ -339,7 +339,7 @@ async def test_rest_tasks_actions_waiting_prio(server):
     ret = await client.request('POST', '/tasks', data)
     task_id2 = ret['result']
 
-    ret = await client.request('POST', '/task_actions/waiting', {'num_tasks': 1})
+    ret = await client.request('POST', '/task_actions/waiting', {'task_ids': [task_id2]})
     assert 'waiting' in ret
     assert ret['waiting'] == 1
 
