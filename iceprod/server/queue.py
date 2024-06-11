@@ -9,6 +9,8 @@ from pathlib import Path
 import pkgutil
 import time
 
+from rest_tools.client import ClientCredentialsAuth
+
 from iceprod.server.globus import SiteGlobusProxy
 
 
@@ -115,7 +117,7 @@ class Queue:
                     client_id=self.cfg['rest_api']['oauth_client_id'],
                     client_secret=self.cfg['rest_api']['oauth_client_secret'],
                 )
-                kwargs['cred_client']= ClientCredentialsAuth(
+                kwargs['cred_client'] = ClientCredentialsAuth(
                     address=self.cfg['rest_api']['cred_url'],
                     token_url=self.cfg['rest_api']['oauth_url'],
                     client_id=self.cfg['rest_api']['oauth_client_id'],

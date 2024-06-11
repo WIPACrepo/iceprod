@@ -662,7 +662,7 @@ class TasksActionsWaitingHandler(APIBase):
         data = json.loads(self.request.body)
         task_ids = data.get('task_ids', [])
         if len(task_ids) > 100:
-            raise tornado.web.HTTPError(400, reason=f'too many tasks. must be <= 100')
+            raise tornado.web.HTTPError(400, reason='too many tasks. must be <= 100')
 
         query = {
             'status': 'idle',
