@@ -30,9 +30,9 @@
 
 {% if (current_user) %}
 <div class="action">
-    <button onclick='set_tasks_and_jobs_status(dataset_id, ["{{ task['task_id'] }}"], "reset", "{{ passkey }}");'>Reset</button></td>
-    <button onclick='set_tasks_status(dataset_id, ["{{ task['task_id'] }}"], "suspended", "{{ passkey }}");'>Suspend</button></td>
-    <button onclick='delete_task_logs(dataset_id, ["{{ task['task_id'] }}"], "{{ passkey }}");'>Delete Logs</button></td>
+    <button onclick='task_reset();'>Reset</button></td>
+    <button onclick='task_suspend();'>Suspend</button></td>
+    <button onclick='delete_task_logs();'>Delete Logs</button></td>
 </div>
 {% end %}
 
@@ -190,6 +190,22 @@ async function task_suspend() {
     try {
         const url = '/datasets/' + dataset_id + '/task_actions/bulk_suspend';
         const ret = await fetch_json('POST', url, {'tasks': [task_id]}, passkey);
+        if ('error' in ret) {
+            message_alert('error - '+ret['error']);
+            return false;
+        }
+    } catch(err) {
+        message_alert('error - '+err);
+        return false;
+    }
+    reload();
+    return true;
+}
+
+async function delete_task_logs() {
+    try {
+        const url = '/datasets/' + dataset_id + '/task/' + task_id + '/logs';
+        const ret = await fetch_json('DELETE', url, {}, passkey);
         if ('error' in ret) {
             message_alert('error - '+ret['error']);
             return false;
