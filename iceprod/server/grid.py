@@ -162,6 +162,7 @@ class BaseGrid:
             job=j,
             task_id=task['task_id'],
             task_index=task['task_index'],
+            instance_id=task['instance_id'],
             name=task['name'],
             depends=task['depends'],
             requirements=task['requirements'],
