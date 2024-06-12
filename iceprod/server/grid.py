@@ -127,7 +127,7 @@ class BaseGrid:
         futures = set()
         for tasks_queued in range(num):
             try:
-                ret = await self.rest_client.request('GET', '/task_actions/queue', args)
+                ret = await self.rest_client.request('POST', '/task_actions/queue', args)
             except requests.exceptions.HTTPError as e:
                 if e.response.status_code == 404:
                     break
