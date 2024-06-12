@@ -14,11 +14,11 @@ attrs==23.2.0
     #   referencing
 beautifulsoup4==4.12.3
     # via iceprod (setup.py)
-boto3==1.34.123
+boto3==1.34.124
     # via
     #   iceprod (setup.py)
     #   moto
-botocore==1.34.123
+botocore==1.34.124
     # via
     #   boto3
     #   moto
