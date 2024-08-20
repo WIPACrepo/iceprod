@@ -245,10 +245,8 @@ class CondorSubmit:
         jel_dir = jel.parent
         transfer_plugin_str = ';'.join(f'{k}={v}' for k,v in self.transfer_plugins.items())
         submitfile = f"""
-initialdir = $(dir)
-executable = $(exe)
-output = $(dir)/condor.out
-error = $(dir)/condor.err
+output = $(initialdir)/condor.out
+error = $(initialdir)/condor.err
 log = {jel}
 
 notification = never
@@ -282,12 +280,13 @@ PreArguments = $(prea)
 transfer_output_files = replaceall(" ", outfiles, ", ")
 transfer_output_remaps = outremaps
 
-queue datasetid,dataset,jobid,jobindex,taskid,taskname,taskinstance,dir,exe,cpus,gpus,memory,disk,time,reqs,prec,prea,infiles,outfiles,outremaps from (
+queue datasetid,dataset,jobid,jobindex,taskid,taskname,taskinstance,initialdir,executable,cpus,gpus,memory,disk,time,reqs,prec,prea,infiles,outfiles,outremaps from (
 """
         for task in tasks:
             submit_dir = self.create_submit_dir(task, jel_dir)
             s = WriteToScript(task=task, workdir=submit_dir)
             executable = await s.convert()
+            logger.debug('running task with exe %r', executable)
 
             ads = self.AD_DEFAULTS.copy()
             ads.update(self.condor_infiles(s.infiles))
@@ -304,6 +303,8 @@ queue datasetid,dataset,jobid,jobindex,taskid,taskname,taskinstance,dir,exe,cpus
             submitfile += f'"{ads["transfer_output_files"]}", "{ads["transfer_output_remaps"]}"\n'
 
         submitfile += ')\n'
+
+        logger.debug("submitfile:\n%r", submitfile)
 
         s = htcondor.Submit(submitfile)
         self.condor_schedd.submit(s)
