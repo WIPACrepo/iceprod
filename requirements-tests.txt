@@ -8,41 +8,41 @@ anyio==4.4.0
     # via httpx
 asyncache==0.3.1
     # via iceprod (setup.py)
-attrs==23.2.0
+attrs==24.2.0
     # via
     #   jsonschema
     #   referencing
 beautifulsoup4==4.12.3
     # via iceprod (setup.py)
-boto3==1.34.124
+boto3==1.35.1
     # via
     #   iceprod (setup.py)
     #   moto
-botocore==1.34.124
+botocore==1.35.1
     # via
     #   boto3
     #   moto
     #   s3transfer
-cachetools==5.3.3
+cachetools==5.5.0
     # via
     #   asyncache
     #   iceprod (setup.py)
     #   wipac-rest-tools
-certifi==2024.6.2
+certifi==2024.7.4
     # via
     #   httpcore
     #   httpx
     #   iceprod (setup.py)
     #   requests
-cffi==1.16.0
+cffi==1.17.0
     # via cryptography
 charset-normalizer==3.3.2
     # via requests
-coverage[toml]==7.5.3
+coverage[toml]==7.6.1
     # via
     #   iceprod (setup.py)
     #   pytest-cov
-cryptography==42.0.8
+cryptography==43.0.0
     # via
     #   iceprod (setup.py)
     #   moto
@@ -50,17 +50,17 @@ cryptography==42.0.8
     #   pyopenssl
 dnspython==2.6.1
     # via pymongo
-exceptiongroup==1.2.1
+exceptiongroup==1.2.2
     # via
     #   anyio
     #   pytest
-flake8==7.0.0
+flake8==7.1.1
     # via iceprod (setup.py)
 flexmock==0.12.1
     # via iceprod (setup.py)
 h11==0.14.0
     # via httpcore
-htcondor==23.7.2
+htcondor==23.9.6
     # via iceprod (setup.py)
 httpcore==1.0.5
     # via httpx
@@ -81,7 +81,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-jsonschema==4.22.0
+jsonschema==4.23.0
     # via iceprod (setup.py)
 jsonschema-specifications==2023.12.1
     # via jsonschema
@@ -95,33 +95,33 @@ mccabe==0.7.0
     # via flake8
 mock==5.1.0
     # via iceprod (setup.py)
-moto[s3]==5.0.9
+moto[s3]==5.0.13
     # via iceprod (setup.py)
-motor==3.4.0
+motor==3.5.1
     # via iceprod (setup.py)
 packaging==24.1
     # via pytest
 pluggy==1.5.0
     # via pytest
-psutil==5.9.8
+psutil==6.0.0
     # via iceprod (setup.py)
 py-partiql-parser==0.5.5
     # via moto
 pyasn1==0.6.0
     # via ldap3
-pycodestyle==2.11.1
+pycodestyle==2.12.1
     # via flake8
 pycparser==2.22
     # via cffi
 pyflakes==3.2.0
     # via flake8
-pyjwt[crypto]==2.8.0
+pyjwt[crypto]==2.9.0
     # via wipac-rest-tools
-pymongo==4.7.3
+pymongo==4.8.0
     # via
     #   iceprod (setup.py)
     #   motor
-pyopenssl==24.1.0
+pyopenssl==24.2.1
     # via iceprod (setup.py)
 pypng==0.20220715.0
     # via qrcode
@@ -131,7 +131,7 @@ pytest==8.0.2
     #   pytest-asyncio
     #   pytest-cov
     #   pytest-mock
-pytest-asyncio==0.23.7
+pytest-asyncio==0.23.8
     # via iceprod (setup.py)
 pytest-cov==5.0.0
     # via iceprod (setup.py)
@@ -142,7 +142,7 @@ python-dateutil==2.9.0.post0
     #   botocore
     #   iceprod (setup.py)
     #   moto
-pyyaml==6.0.1
+pyyaml==6.0.2
     # via
     #   iceprod (setup.py)
     #   moto
@@ -171,15 +171,15 @@ requests-mock==1.12.1
     # via iceprod (setup.py)
 requests-toolbelt==1.0.0
     # via iceprod (setup.py)
-responses==0.25.2
+responses==0.25.3
     # via moto
 respx==0.21.1
     # via iceprod (setup.py)
-rpds-py==0.18.1
+rpds-py==0.20.0
     # via
     #   jsonschema
     #   referencing
-s3transfer==0.10.1
+s3transfer==0.10.2
     # via boto3
 setproctitle==1.3.3
     # via iceprod (setup.py)
@@ -189,7 +189,7 @@ sniffio==1.3.1
     # via
     #   anyio
     #   httpx
-soupsieve==2.5
+soupsieve==2.6
     # via beautifulsoup4
 statsd==4.0.1
     # via iceprod (setup.py)
@@ -201,9 +201,9 @@ tornado==6.4.1
     # via
     #   iceprod (setup.py)
     #   wipac-rest-tools
-types-cachetools==5.3.0.7
+types-cachetools==5.5.0.20240820
     # via iceprod (setup.py)
-types-requests==2.32.0.20240602
+types-requests==2.32.0.20240712
     # via iceprod (setup.py)
 typing-extensions==4.12.2
     # via
@@ -212,7 +212,7 @@ typing-extensions==4.12.2
     #   wipac-dev-tools
 unidecode==1.3.8
     # via iceprod (setup.py)
-urllib3==2.2.1
+urllib3==2.2.2
     # via
     #   botocore
     #   requests
@@ -221,11 +221,11 @@ urllib3==2.2.1
     #   wipac-rest-tools
 werkzeug==3.0.3
     # via moto
-wipac-dev-tools==1.10.6
+wipac-dev-tools==1.12.0
     # via
     #   iceprod (setup.py)
     #   wipac-rest-tools
-wipac-rest-tools==1.7.5
+wipac-rest-tools==1.7.8
     # via iceprod (setup.py)
 xmltodict==0.13.0
     # via moto
