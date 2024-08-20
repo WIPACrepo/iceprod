@@ -72,7 +72,7 @@ def test_CondorSubmit_condor_resource_reqs():
 
     ret = iceprod.server.plugins.condor.CondorSubmit.condor_resource_reqs(task)
     assert ret['request_cpus'] == 1
-    assert ret['request_memory'] == 1000
+    assert 'request_memory' not in ret
     assert 'request_gpus' not in ret
     assert 'requirements' not in ret
 
@@ -102,7 +102,7 @@ def test_CondorSubmit_condor_infiles(schedd):
     ]
 
     ret = sub.condor_infiles(infiles)
-    assert ret['transfer_input_files'] == 'http://foo.test/foo'
+    assert ret['transfer_input_files'] == ['http://foo.test/foo']
     assert 'PreCmd' not in ret
 
 
@@ -124,7 +124,7 @@ def test_CondorSubmit_condor_infiles_gsiftp(schedd):
     cfg['queue']['x509proxy'] = '/tmp/x509'
 
     ret = sub.condor_infiles(infiles)
-    assert ret['transfer_input_files'].split(',') == ['/tmp/x509', 'gsiftp://foo.test/foo']
+    assert ret['transfer_input_files'] == ['/tmp/x509', 'gsiftp://foo.test/foo']
     assert 'PreCmd' not in ret
 
 
@@ -145,7 +145,7 @@ def test_CondorSubmit_condor_precmd(schedd, i3prod_path):
 
     ret = sub.condor_infiles(infiles)
     logging.info('ret: %r', ret)
-    assert ret['transfer_input_files'].startswith('http://foo.test/foo')
+    assert ret['transfer_input_files'][0] == 'http://foo.test/foo'
     assert 'PreCmd' in ret
     assert 'PreArguments' in ret
     assert 'bar' in ret['PreArguments']
@@ -164,7 +164,7 @@ def test_CondorSubmit_condor_outfiles(schedd):
     ]
 
     ret = sub.condor_outfiles(outfiles)
-    assert ret['transfer_output_files'] == 'bar'
+    assert ret['transfer_output_files'] == ['bar']
     assert ret['transfer_output_remaps'] == 'bar = http://foo.test/foo'
 
 
@@ -175,7 +175,7 @@ async def test_CondorSubmit_submit(schedd):
     cred_dir = Path(os.path.expanduser(os.path.expandvars(cfg['queue']['credentials_dir'])))
 
     sub = iceprod.server.plugins.condor.CondorSubmit(cfg=cfg, submit_dir=submit_dir, credentials_dir=cred_dir)
-    sub.condor_schedd.submitMany = MagicMock(return_value=12345)
+    sub.condor_schedd.submit = MagicMock()
 
     task = Task(
         dataset=MagicMock(),
@@ -198,6 +198,8 @@ async def test_CondorSubmit_submit(schedd):
     await sub.submit(jobs, jel=jel)
 
     assert (submit_dir / 'today' / 'task').is_dir()
+
+    assert sub.condor_schedd.submit.call_count == 1
 
 
 async def test_Grid_save_load_timestamp(schedd, i3prod_path):

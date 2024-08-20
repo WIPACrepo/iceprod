@@ -110,6 +110,20 @@ class CondorJobId(NamedTuple):
 
 class CondorSubmit:
     """Factory for submitting HTCondor jobs"""
+    AD_DEFAULTS = {
+        'request_cpus': 1,
+        'request_gpus': 'UNDEFINED',
+        'request_memory': 1000,
+        'request_disk': 1000000,
+        '+OriginalTime': 3600,
+        'requirements': '',
+        'PreCmd': 'UNDEFINED',
+        'PreArguments': 'UNDEFINED',
+        'transfer_input_files': [],
+        'transfer_output_files': [],
+        'transfer_output_remaps': [],
+    }
+
     def __init__(self, cfg: IceProdConfig, submit_dir: Path, credentials_dir: Path):
         self.cfg = cfg
         self.submit_dir = submit_dir
@@ -157,13 +171,10 @@ class CondorSubmit:
             requirements.append('GPUs_Capability >= 6.1')
         if 'memory' in task.requirements and task.requirements['memory']:
             ads['request_memory'] = int(task.requirements['memory']*1000)
-        else:
-            ads['request_memory'] = 1000
         if 'disk' in task.requirements and task.requirements['disk']:
             ads['request_disk'] = int(task.requirements['disk']*1000000)
         if 'time' in task.requirements and task.requirements['time']:
             ads['+OriginalTime'] = int(task.requirements['time']*3600)
-            ads['+TargetTime'] = '(!isUndefined(Target.PYGLIDEIN_TIME_TO_LIVE) ? Target.PYGLIDEIN_TIME_TO_LIVE : Target.TimeToLive)'
             requirements.append('TargetTime > OriginalTime')
         if 'os' in task.requirements and task.requirements['os']:
             if len(task.requirements['os']) == 1:
@@ -194,7 +205,7 @@ class CondorSubmit:
             ads['PreArguments'] = ' '.join(f"'{k}'='{v}'" for k,v in mapping)
             files.append(str(self.precmd))
         if files:
-            ads['transfer_input_files'] = ','.join(files)
+            ads['transfer_input_files'] = files
         return ads
 
     def condor_outfiles(self, outfiles):
@@ -205,7 +216,7 @@ class CondorSubmit:
             files.append(outfile.local)
             mapping.append((outfile.local,outfile.url))
         ads = {}
-        ads['transfer_output_files'] = ','.join(files)
+        ads['transfer_output_files'] = files
         ads['transfer_output_remaps'] = ';'.join(f'{name} = {url}' for name,url in mapping)
         return ads
 
@@ -233,43 +244,69 @@ class CondorSubmit:
         """
         jel_dir = jel.parent
         transfer_plugin_str = ';'.join(f'{k}={v}' for k,v in self.transfer_plugins.items())
-        cluster_ad = {
-            'log': str(jel),
-            'notification': 'never',
-            '+IsIceProdJob': True,
-            '+IceProdSite': self.cfg['queue'].get('site', 'unknown'),
-            'transfer_plugins': transfer_plugin_str,
-            'when_to_transfer_output': 'ON_EXIT',
-            'should_transfer_files': 'YES',
-            'job_ad_information_attrs': 'Iwd, IceProdDatasetId, IceProdTaskId, IceProdTaskInstanceId, CommittedTime, RemotePool',
-            'batch_name': f'Dataset {tasks[0].dataset.dataset_num}',
-        }
-        proc_ads = []
+        submitfile = f"""
+initialdir = $(dir)
+executable = $(exe)
+output = $(dir)/condor.out
+error = $(dir)/condor.err
+log = {jel}
+
+notification = never
+job_ad_information_attrs = Iwd IceProdDatasetId IceProdTaskId IceProdTaskInstanceId CommittedTime RemotePool RemoteMachine
+batch_name = Dataset {tasks[0].dataset.dataset_num}
+
++IsIceProdJob = True
++IceProdSite = {self.cfg["queue"].get("site", "unknown")}
++IceProdDatasetId = $(datasetid)
++IceProdDataset = $(dataset)
++IceProdJobId = $(jobid)
++IceProdJobIndex = $(jobindex)
++IceProdTaskId = $(taskid)
++IceProdTaskName = $(taskname)
++IceProdTaskInstanceId = $(taskinstance)
+
+request_cpus = $(cpus)
+request_gpus = $(gpus)
+request_memory = $(memory)
+request_disk = $(disk)
++OriginalTime = $(otime)
++TargetTime = (!isUndefined(Target.PYGLIDEIN_TIME_TO_LIVE) ? Target.PYGLIDEIN_TIME_TO_LIVE : Target.TimeToLive)
+requirements = $(reqs)
+
+transfer_plugins = {transfer_plugin_str}
+when_to_transfer_output = ON_EXIT
+should_transfer_files = YES
+transfer_input_files = replaceall(" ", infiles, ", ")
+PreCmd = $(prec)
+PreArguments = $(prea)
+transfer_output_files = replaceall(" ", outfiles, ", ")
+transfer_output_remaps = outremaps
+
+queue datasetid,dataset,jobid,jobindex,taskid,taskname,taskinstance,dir,exe,cpus,gpus,memory,disk,time,reqs,prec,prea,infiles,outfiles,outremaps from (
+"""
         for task in tasks:
             submit_dir = self.create_submit_dir(task, jel_dir)
             s = WriteToScript(task=task, workdir=submit_dir)
             executable = await s.convert()
 
-            proc_ad = {
-                '+IceProdDatasetId': task.dataset.dataset_id,
-                '+IceProdDataset': task.dataset.dataset_num,
-                '+IceProdJobId': task.job.job_id,
-                '+IceProdJobIndex': task.job.job_index,
-                '+IceProdTaskId': task.task_id,
-                '+IceProdTaskName': task.name,
-                '+IceProdTaskInstanceId': task.instance_id if task.instance_id else '',
-                'initialdir': str(submit_dir),
-                'executable': str(executable),
-                'output': str(submit_dir / 'condor.out'),
-                'error': str(submit_dir / 'condor.err'),
-            }
+            ads = self.AD_DEFAULTS.copy()
+            ads.update(self.condor_infiles(s.infiles))
+            ads.update(self.condor_outfiles(s.outfiles))
+            ads.update(self.condor_resource_reqs(task))
 
-            proc_ad.update(self.condor_infiles(s.infiles))
-            proc_ad.update(self.condor_outfiles(s.outfiles))
-            proc_ad.update(self.condor_resource_reqs(task))
-            proc_ads.append((proc_ad, 1))
+            submitfile += f'  "{task.dataset.dataset_id}", {task.dataset.dataset_num}, '
+            submitfile += f'"{task.job.job_id}", {task.job.job_index}, "{task.task_id}", '
+            submitfile += f'"{task.name}", "{task.instance_id if task.instance_id else ""}", '
+            submitfile += f'"{submit_dir}", "{executable}", {ads["request_cpus"]}, '
+            submitfile += f'{ads["request_gpus"]}, {ads["request_memory"]}, {ads["request_disk"]}, '
+            submitfile += f'{ads["+OriginalTime"]}, {ads["requirements"]}, "{ads["PreCmd"]}", '
+            submitfile += f'"{ads["PreArguments"]}", "{" ".join(ads["transfer_input_files"])}", '
+            submitfile += f'"{ads["transfer_output_files"]}", "{ads["transfer_output_remaps"]}"\n'
 
-        self.condor_schedd.submitMany(cluster_ad, proc_ads)
+        submitfile += ')\n'
+
+        s = htcondor.Submit(submitfile)
+        self.condor_schedd.submit(s)
 
     def remove(self, job_id: str | CondorJob, reason: str | None = None):
         self.condor_schedd.act(htcondor.JobAction.Remove, str(job_id), reason=reason)
