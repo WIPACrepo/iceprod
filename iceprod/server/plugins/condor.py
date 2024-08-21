@@ -274,11 +274,11 @@ requirements = $($(reqs))
 transfer_plugins = {transfer_plugin_str}
 when_to_transfer_output = ON_EXIT
 should_transfer_files = YES
-infiles_expr = replaceall("|", infiles, ",")
+infiles_expr = replaceall(";", $(infiles), ",")
 transfer_input_files = $STRING(infiles_expr)
 +PreCmd = $(prec)
 +PreArguments = $(prea)
-outfiles_expr = replaceall("|", outfiles, ",")
+outfiles_expr = replaceall(";", $(outfiles), ",")
 transfer_output_files = $STRING(outfiles_expr)
 transfer_output_remaps = $(outremaps)
 
@@ -315,9 +315,9 @@ transfer_output_remaps = $(outremaps)
                 'reqs': f'reqs{task.task_id}',
                 'prec': f'{ads["PreCmd"]}',
                 'prea': f'{ads["PreArguments"]}',
-                'infiles': f'"{"|".join(ads["transfer_input_files"])}"',
-                'outfiles': f'"{"|".join(ads["transfer_output_files"])}"',
-                'outremaps': f'"{ads["transfer_output_remaps"]}',
+                'infiles': f'"{";".join(ads["transfer_input_files"])}"',
+                'outfiles': f'"{";".join(ads["transfer_output_files"])}"',
+                'outremaps': f'"{ads["transfer_output_remaps"]}"',
             })
 
         submitfile += '\n\nqueue '+','.join(jobset[0].keys())+' from (\n'
@@ -325,7 +325,7 @@ transfer_output_remaps = $(outremaps)
             submitfile += '  '+','.join(job.values())+'\n'
         submitfile += ')\n'
 
-        logger.debug("submitfile:\n%r", submitfile)
+        logger.debug("submitfile:\n%s", submitfile)
 
         s = htcondor.Submit(submitfile)
         self.condor_schedd.submit(s)
