@@ -201,8 +201,8 @@ class CondorSubmit:
                 mapping.append((basename,infile.local))
         ads = {}
         if mapping:
-            ads['PreCmd'] = self.precmd.name
-            ads['PreArguments'] = ' '.join(f"'{k}'='{v}'" for k,v in mapping)
+            ads['PreCmd'] = f'"{self.precmd.name}"'
+            ads['PreArguments'] = '"'+' '.join(f"'{k}'='{v}'" for k,v in mapping)+'"'
             files.append(str(self.precmd))
         if files:
             ads['transfer_input_files'] = files
@@ -267,21 +267,23 @@ request_cpus = $(cpus)
 request_gpus = $(gpus)
 request_memory = $(memory)
 request_disk = $(disk)
-+OriginalTime = $(otime)
++OriginalTime = $(time)
 +TargetTime = (!isUndefined(Target.PYGLIDEIN_TIME_TO_LIVE) ? Target.PYGLIDEIN_TIME_TO_LIVE : Target.TimeToLive)
-requirements = $(reqs)
+requirements = $($(reqs))
 
 transfer_plugins = {transfer_plugin_str}
 when_to_transfer_output = ON_EXIT
 should_transfer_files = YES
-transfer_input_files = replaceall(" ", infiles, ", ")
-PreCmd = $(prec)
-PreArguments = $(prea)
-transfer_output_files = replaceall(" ", outfiles, ", ")
-transfer_output_remaps = outremaps
+infiles_expr = replaceall("|", infiles, ",")
+transfer_input_files = $STRING(infiles_expr)
++PreCmd = $(prec)
++PreArguments = $(prea)
+outfiles_expr = replaceall("|", outfiles, ",")
+transfer_output_files = $STRING(outfiles_expr)
+transfer_output_remaps = $(outremaps)
 
-queue datasetid,dataset,jobid,jobindex,taskid,taskname,taskinstance,initialdir,executable,cpus,gpus,memory,disk,time,reqs,prec,prea,infiles,outfiles,outremaps from (
 """
+        jobset = []
         for task in tasks:
             submit_dir = self.create_submit_dir(task, jel_dir)
             s = WriteToScript(task=task, workdir=submit_dir)
@@ -293,15 +295,34 @@ queue datasetid,dataset,jobid,jobindex,taskid,taskname,taskinstance,initialdir,e
             ads.update(self.condor_outfiles(s.outfiles))
             ads.update(self.condor_resource_reqs(task))
 
-            submitfile += f'  "{task.dataset.dataset_id}", {task.dataset.dataset_num}, '
-            submitfile += f'"{task.job.job_id}", {task.job.job_index}, "{task.task_id}", '
-            submitfile += f'"{task.name}", "{task.instance_id if task.instance_id else ""}", '
-            submitfile += f'"{submit_dir}", "{executable}", {ads["request_cpus"]}, '
-            submitfile += f'{ads["request_gpus"]}, {ads["request_memory"]}, {ads["request_disk"]}, '
-            submitfile += f'{ads["+OriginalTime"]}, {ads["requirements"]}, "{ads["PreCmd"]}", '
-            submitfile += f'"{ads["PreArguments"]}", "{" ".join(ads["transfer_input_files"])}", '
-            submitfile += f'"{ads["transfer_output_files"]}", "{ads["transfer_output_remaps"]}"\n'
+            submitfile += f'reqs{task.task_id} = {ads["requirements"]}\n'
+            # stringify everything, quoting the real strings
+            jobset.append({
+                'datasetid': f'"{task.dataset.dataset_id}"',
+                'dataset': f'{task.dataset.dataset_num}',
+                'jobid': f'"{task.job.job_id}"',
+                'jobindex': f'{task.job.job_index}',
+                'taskid': f'"{task.task_id}"',
+                'taskname': f'"{task.name}"',
+                'taskinstance': f'"{task.instance_id if task.instance_id else ""}"',
+                'initialdir': f'{submit_dir}',
+                'executable': f'{executable}',
+                'cpus': f'{ads["request_cpus"]}',
+                'gpus': f'{ads["request_gpus"]}',
+                'memory': f'{ads["request_memory"]}',
+                'disk': f'{ads["request_disk"]}',
+                'time': f'{ads["+OriginalTime"]}',
+                'reqs': f'reqs{task.task_id}',
+                'prec': f'{ads["PreCmd"]}',
+                'prea': f'{ads["PreArguments"]}',
+                'infiles': f'"{"|".join(ads["transfer_input_files"])}"',
+                'outfiles': f'"{"|".join(ads["transfer_output_files"])}"',
+                'outremaps': f'"{ads["transfer_output_remaps"]}',
+            })
 
+        submitfile += '\n\nqueue '+','.join(jobset[0].keys())+' from (\n'
+        for job in jobset:
+            submitfile += '  '+','.join(job.values())+'\n'
         submitfile += ')\n'
 
         logger.debug("submitfile:\n%r", submitfile)
