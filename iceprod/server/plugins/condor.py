@@ -135,6 +135,7 @@ class CondorSubmit:
         self.precmd.write_text((importlib.resources.files('iceprod.server')/'data'/'condor_input_precmd.py').read_text())
         self.precmd.chmod(0o777)
         self.transfer_plugins = self.condor_plugin_discovery()
+        logger.info('transfer plugins installed: %s', list(self.transfer_plugins.keys()))
 
     def condor_plugin_discovery(self):
         """Find all available HTCondor transfer plugins, and copy them to the submit_dir"""
