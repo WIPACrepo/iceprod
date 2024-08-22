@@ -580,14 +580,20 @@ class Grid(grid.BaseGrid):
         job = self.jobs[job_id]
         logger.info('finish for condor=%s iceprod=%s.%s', job_id, job.dataset_id, job.task_id)
 
+        stdout = None
+        stderr = None
+        if job.submit_dir and job.submit_dir.is_dir():
+            stdout = job.submit_dir / 'condor.out'
+            stderr = job.submit_dir / 'condor.err'
+
         # do global actions
         try:
             if success:
-                await self.task_success(job, stats=stats)
+                await self.task_success(job, stats=stats, stdout=stdout, stderr=stderr)
             else:
                 if reason:
                     stats['error_summary'] = reason
-                await self.task_failure(job, stats=stats, reason=reason)
+                await self.task_failure(job, stats=stats, reason=reason, stdout=stdout, stderr=stderr)
         except Exception:
             logger.warning('failed to update REST', exc_info=True)
 
