@@ -146,9 +146,11 @@ class CondorSubmit:
             ret = {}
             for p in dest_dir.iterdir():
                 p.chmod(0o777)
-                for line in subprocess.run([str(p), '-classad'], capture_output=True, text=True, check=True).stdout:
+                logger.debug('transfer plugin %s', p)
+                for line in subprocess.run([str(p), '-classad'], capture_output=True, text=True, check=True).stdout.split('\n'):
+                    logger.debug('transfer plugin output: %s', line)
                     if line.startswith('SupportedMethods'):
-                        ret[line.split('=')[-1].strip()] = str(p)
+                        ret[line.split('=')[-1].strip(' "')] = str(p)
         return ret
 
     @staticmethod
@@ -329,7 +331,7 @@ transfer_output_remaps = $(outremaps)
         logger.debug("submitfile:\n%s", submitfile)
 
         s = htcondor.Submit(submitfile)
-        self.condor_schedd.submit(s)
+        self.condor_schedd.submit(s, count=1, itemdata=s.itemdata())
 
     def remove(self, job_id: str | CondorJob, reason: str | None = None):
         self.condor_schedd.act(htcondor.JobAction.Remove, str(job_id), reason=reason)
