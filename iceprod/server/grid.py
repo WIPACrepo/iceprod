@@ -390,7 +390,7 @@ class BaseGrid:
                 args['time_used'] = resources['time']*3600.
 
         try:
-            await self.rest_client.request('GET', f'/tasks/{task.task_id}/task_actions/complete', args)
+            await self.rest_client.request('POST', f'/tasks/{task.task_id}/task_actions/complete', args)
         except requests.exceptions.HTTPError as e:
             if e.response.status_code != 404:
                 raise
