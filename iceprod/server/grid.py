@@ -222,7 +222,7 @@ class BaseGrid:
         args = {
             'dataset_id': task.dataset_id,
             'task_id': task.task_id,
-            'name': 'stdlog',
+            'name': name,
             'data': data,
         }
         try:
