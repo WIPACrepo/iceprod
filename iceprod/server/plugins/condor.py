@@ -334,6 +334,7 @@ transfer_output_remaps = $(outremaps)
         self.condor_schedd.submit(s, count=1, itemdata=s.itemdata())
 
     def remove(self, job_id: str | CondorJob, reason: str | None = None):
+        logger.info('removing job %s', job_id)
         self.condor_schedd.act(htcondor.JobAction.Remove, str(job_id), reason=reason)
 
 
@@ -342,7 +343,7 @@ class Grid(grid.BaseGrid):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.jobs = {}
-        self.jels = {filename: htcondor.JobEventLog(str(filename)).events(0) for filename in self.submit_dir.glob('*/*.jel')}
+        self.jels = {str(filename): htcondor.JobEventLog(str(filename)).events(0) for filename in self.submit_dir.glob('*/*.jel')}
         self.submitter = CondorSubmit(self.cfg, submit_dir=self.submit_dir, credentials_dir=self.credentials_dir)
 
         # save last event.timestamp, on restart only process >= timestamp
@@ -366,6 +367,8 @@ class Grid(grid.BaseGrid):
             await self.wait(timeout=0, reload_jobs=True)
         except Exception:
             logger.warning('failed to wait', exc_info=True)
+
+        logger.info('active JELs: %r', list(self.jels.keys()))
 
         check_time = time.monotonic()
         while True:
