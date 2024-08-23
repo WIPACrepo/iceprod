@@ -253,7 +253,7 @@ error = $(initialdir)/condor.err
 log = {jel}
 
 notification = never
-job_ad_information_attrs = Iwd IceProdDatasetId IceProdTaskId IceProdTaskInstanceId CommittedTime RemotePool RemoteMachine
+job_ad_information_attrs = Iwd IceProdDatasetId IceProdTaskId IceProdTaskInstanceId CommittedTime RemotePool RemoteHost MATCH_EXP_JOBGLIDEIN_ResourceName
 batch_name = Dataset {tasks[0].dataset.dataset_num}
 
 +IsIceProdJob = True

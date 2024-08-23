@@ -123,6 +123,7 @@ class GridftpPlugin:
                 '/cvmfs/icecube.opensciencegrid.org/iceprod/v2.7.1/env-shell.sh',
                 'globus-url-copy',
                 '-cd',
+                '-rst',
                 inpath,
                 outpath,
             ], stderr=subprocess.STDOUT)
