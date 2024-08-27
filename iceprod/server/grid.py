@@ -137,18 +137,11 @@ class BaseGrid:
         logging.info('got %d tasks to queue', tasks_queued)
 
         tasks = []
-        while futures:
-            done, futures = await asyncio.wait(futures)
-            for f in done:
-                task = await f
-                tasks.append(task)
-
-        if not tasks:
-            return []
-
-        # add default resource requirements
-        for task in tasks:
+        for f in asyncio.as_completed(futures):
+            task = await f
+            # add default resource requirements
             task.requirements = self._get_resources(task)
+            tasks.append(task)
 
         return tasks
 
@@ -169,7 +162,9 @@ class BaseGrid:
             status=task['status'],
             site=self.site,
             stats={},
+            task_files=[],
         )
+        await t.load_tasK_files_from_api(self.rest_client)
         return t
 
     @staticmethod

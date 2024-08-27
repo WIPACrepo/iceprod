@@ -245,6 +245,8 @@ def test_task_dataclasses():
     assert t.status == 'waiting'
     assert t.site == ''
     assert t.stats == {}
+    assert not t.task_files
+    assert not t.instance_id
 
 
 def test_task_config():
@@ -324,3 +326,27 @@ async def test_task_load_stats(requests_mock):
     await t.load_stats_from_api(r)
 
     assert t.stats == stat_data
+
+
+async def test_task_load_task_files(requests_mock):
+    d = Dataset('did123', 123, 2, 1, 1, 'processing', 0.5, 'grp', 'usr', False, {'tasks':[1,2,3]})
+    j = Job(d, 'j123', 1, 'processing')
+    t = Task(d, j, 't123', 0, 'foo', [], {}, 'waiting', '', {})
+
+    data = [{
+        'local': 'foo.txt',
+        'remote': 'https://foo.bar.baz/foo.txt',
+    }]
+    requests_mock.get(
+        f'http://test.iceprod/datasets/did123/files/t123',
+        json={'files': data},
+    )
+
+    r = RestClient('http://test.iceprod')
+    await t.load_tasK_files_from_api(r)
+
+    assert len(t.task_files) == len(data)
+    assert t.task_files[0]['local'] == data[0]['local']
+    assert t.task_files[0]['remote'] == data[0]['remote']
+    assert t.task_files[0]['type'] == 'permanent'
+    assert t.task_files[0]['movement'] == 'input'

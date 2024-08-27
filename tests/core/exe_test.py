@@ -463,6 +463,52 @@ async def test_write_to_script_data(tmp_path):
     assert lines == ['python foo.py']
 
 
+async def test_write_to_script_data_task_files(tmp_path):
+    t = get_task({
+        'options': {
+            'job_temp': 'https://foo.bar',
+        },
+        'tasks': [{
+            'name': 'foo',
+            'trays': [{
+                'modules': [{
+                    'env_clear': False,
+                    'src': 'foo.py'
+                }]
+            }],
+            'data': [{
+                'movement': 'input',
+                'type': 'permanent',
+                'remote': 'https://foo.bar/baz',
+            }, {
+                'movement': 'output',
+                'type': 'job_temp',
+                'local': '1234',
+            }]
+        }]
+    })
+    t.task_files = [{
+        'movement': 'input',
+        'type': 'permanent',
+        'remote': 'https://foo.bar/blah',
+        'local': '',
+        'transfer': True,
+    }, {
+        'movement': 'output',
+        'type': 'job_temp',
+        'remote': '',
+        'local': 'abcde',
+        'transfer': True,
+    }]
+
+    ws = iceprod.core.exe.WriteToScript(t, workdir=tmp_path, logger=logger)
+    scriptpath = await ws.convert()
+
+    assert ws.infiles == {Data('https://foo.bar/baz', 'baz'), Data('https://foo.bar/blah', 'blah')}
+    assert ws.outfiles == {Data('https://foo.bar/1234', '1234'), Data('https://foo.bar/abcde', 'abcde')}
+    script = open(scriptpath).read()
+
+
 async def test_write_to_script_data_dups(tmp_path):
     t = get_task({
         'options': {

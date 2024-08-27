@@ -371,6 +371,8 @@ class WriteToScript:
             print('', file=f)
             with scope_env(self.cfgparser, self.task.dataset.config['steering'], logger=self.logger) as globalenv:
                 task = self.task.get_task_config()
+                if self.task.task_files:
+                    task['data'].extend(self.task.task_files)
                 self.logger.debug('converting task %s', self.task.name)
                 with scope_env(self.cfgparser, task, globalenv, logger=self.logger) as taskenv:
                     for i, tray in enumerate(task['trays']):

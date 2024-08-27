@@ -124,9 +124,11 @@ async def test_grid_convert_to_task():
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
     rc = MagicMock()
+    rc.request = AsyncMock()
     g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
 
     TASK = MagicMock()
+    TASK.load_task_files_from_api = AsyncMock()
     DATASET = MagicMock()
     g.dataset_lookup = AsyncMock(return_value=DATASET)
 

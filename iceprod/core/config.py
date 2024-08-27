@@ -14,6 +14,8 @@ from rest_tools.client import RestClient
 
 CONFIG_SCHEMA = json.loads((importlib.resources.files('iceprod.core')/'data'/'dataset.schema.json').read_text())
 
+DATA_DEFAULTS = {key: value.get('default', None) for key,value in CONFIG_SCHEMA['$defs']['data']['items']['properties'].items()}
+
 
 @dataclass
 class Dataset:
@@ -116,6 +118,7 @@ class Task:
     status: str
     site: str
     stats: dict
+    task_files: list | None = None
     instance_id: str | None = None
 
     @classmethod
@@ -137,6 +140,7 @@ class Task:
             status=task['status'],
             site=task['site'],
             stats={},
+            task_files=[],
             instance_id=task.get('instance_id', '')
         )
 
@@ -146,6 +150,15 @@ class Task:
             raise Exception('No stats to load!')
         # get first (only) result in ret
         self.stats = next(iter(ret.values()))
+
+    async def load_tasK_files_from_api(self, rest_client: RestClient):
+        ret = await rest_client.request('GET', f'/datasets/{self.dataset.dataset_id}/files/{self.task_id}', {})
+        data = []
+        for r in ret['files']:
+            d = DATA_DEFAULTS.copy()
+            d.update(r)
+            data.append(d)
+        self.task_files = data
 
     def get_task_config(self):
         return self.dataset.config['tasks'][self.task_index]
