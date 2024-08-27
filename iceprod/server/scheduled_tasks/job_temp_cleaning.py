@@ -150,9 +150,8 @@ async def run(rest_client, temp_dir, list_dirs, rmtree, dataset=None, debug=Fals
                     logger.info('cleaning site_temp %r', dagtemp)
                     futures.add(asyncio.create_task(rmtree(dagtemp)))
 
-            while futures:
-                done, futures = await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED)
-                for f in futures:
+            if futures:
+                for f in asyncio.as_completed(futures):
                     try:
                         await f
                     except Exception:
