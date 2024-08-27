@@ -108,8 +108,9 @@ async def test_credentials_groups_s3(server):
     await client.request('POST', f'/groups/{GROUP}/credentials', data3)
 
     ret = await client.request('GET', f'/groups/{GROUP}/credentials')
-    data3['groupname'] = GROUP
-    assert ret == {data['url']: data3, data2['url']: data2}
+    data3_out = data3.copy()
+    data3_out['groupname'] = GROUP
+    assert ret == {data['url']: data3_out, data2['url']: data2}
 
     await client.request('DELETE', f'/groups/{GROUP}/credentials', {'url': 'http://foo'})
 
@@ -270,8 +271,9 @@ async def test_credentials_users_s3(server):
     await client.request('POST', f'/users/{USER}/credentials', data3)
 
     ret = await client.request('GET', f'/users/{USER}/credentials')
-    data3['username'] = USER
-    assert ret == {data['url']: data3, data2['url']: data2}
+    data3_out = data3.copy()
+    data3_out['username'] = USER
+    assert ret == {data['url']: data3_out, data2['url']: data2}
 
     await client.request('DELETE', f'/users/{USER}/credentials', {'url': 'http://foo'})
 
