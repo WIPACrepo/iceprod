@@ -66,12 +66,19 @@ class MaterializationService:
                 kwargs['num'] = ret['num']
             if 'set_status' in ret and ret['set_status']:
                 kwargs['set_status'] = ret['set_status']
-            await self.materialize.run_once(**kwargs)
+            ret = await self.materialize.run_once(**kwargs)
 
-            await self.db.materialization.update_one(
-                {'materialization_id': ret['materialization_id']},
-                {'$set': {'status': 'complete'}},
-            )
+            if ret:
+                await self.db.materialization.update_one(
+                    {'materialization_id': ret['materialization_id']},
+                    {'$set': {'status': 'complete'}},
+                )
+            else:
+                logger.warning(f'materialization request {ret["materialization_id"]} took too long, bumping to end of queue for another run')
+                await self.db.materialization.update_one(
+                    {'materialization_id': ret['materialization_id']},
+                    {'$set': {'modify_timestamp': nowstr()}},
+                )
             self.last_success_time = time.time()
         except Exception:
             logger.error('error running materialization', exc_info=True)

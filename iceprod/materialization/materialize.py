@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import logging
+import time
 
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 from iceprod.core.parser import ExpParser
@@ -9,6 +10,8 @@ from iceprod.server.priority import Priority
 from iceprod.server.states import TASK_STATUS
 
 logger = logging.getLogger('materialize')
+
+DATASET_CYCLE_TIMEOUT = 120
 
 
 class Materialize:
@@ -32,6 +35,8 @@ class Materialize:
         self.config_cache = {}  # clear config cache
         self.prio = Priority(self.rest_client)  # clear priority cache
 
+        ret = True
+
         if only_dataset:
             datasets = [only_dataset]
         else:
@@ -40,6 +45,7 @@ class Materialize:
 
         for dataset_id in datasets:
             try:
+                start_time = time.time()
                 dataset = await self.rest_client.request('GET', '/datasets/{}'.format(dataset_id))
                 if dataset.get('truncated', False) and not only_dataset:
                     logger.info('ignoring truncated dataset %s', dataset_id)
@@ -77,10 +83,17 @@ class Materialize:
                         for i in range(jobs_to_buffer):
                             await self.buffer_job(dataset, job_index, set_status=set_status, dryrun=dryrun)
                             job_index += 1
+
+                            if only_dataset is None and time.time() - start_time > DATASET_CYCLE_TIMEOUT:
+                                logger.warning('dataset cycle timeout for dataset %s', dataset_id)
+                                ret = False
+                                break
             except Exception:
                 logger.error('error buffering dataset %s', dataset_id, exc_info=True)
                 if only_dataset:
                     raise
+
+        return ret
 
     async def buffer_job(self, dataset, job_index, job_id=None, tasks=None, set_status=None, dryrun=False):
         """
