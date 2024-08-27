@@ -2,6 +2,13 @@
 
 <!--next-version-placeholder-->
 
+## v2.7.14 (2024-08-27)
+
+### Other
+
+* Update credentials to use new rest-tools syntax ([#373](https://github.com/WIPACrepo/iceprod/issues/373)) ([`c4bcb01`](https://github.com/WIPACrepo/iceprod/commit/c4bcb01c5590a0a32756822000aefb8d4fbd6d67))
+* Fixes for materialization and job temp cleaning ([`2fddba2`](https://github.com/WIPACrepo/iceprod/commit/2fddba249db43bf3d390424120711ea5bab9f47d))
+
 ## v2.7.13 (2024-03-14)
 
 ### Other
