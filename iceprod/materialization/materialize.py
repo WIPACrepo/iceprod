@@ -17,7 +17,7 @@ class Materialize:
         self.config_cache = {}
         self.prio = None
 
-    async def run_once(self, only_dataset=None, set_status=None, num=20000, dryrun=False):
+    async def run_once(self, only_dataset=None, set_status=None, num=10000, dryrun=False):
         """
         Actual materialization work.
 
