@@ -12,7 +12,7 @@ import requests.exceptions
 
 from iceprod.core.resources import Resources
 from iceprod.core.config import Dataset, Job, Task
-from iceprod.core.exe import Data
+from iceprod.core.exe import Data, Transfer
 import iceprod.server.config
 import iceprod.server.grid
 import iceprod.server.plugins.condor
@@ -98,11 +98,28 @@ def test_CondorSubmit_condor_infiles(schedd):
     sub = iceprod.server.plugins.condor.CondorSubmit(cfg=cfg, submit_dir=submit_dir, credentials_dir=cred_dir)
 
     infiles = [
-        Data(url='http://foo.test/foo', local='foo')
+        Data(url='http://foo.test/foo', local='foo', transfer=Transfer.TRUE)
     ]
 
     ret = sub.condor_infiles(infiles)
     assert ret['transfer_input_files'] == ['http://foo.test/foo']
+    assert 'PreCmd' not in ret
+
+
+def test_CondorSubmit_condor_infiles_maybe(schedd):
+    override = ['queue.type=condor']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+    submit_dir = Path(os.path.expanduser(os.path.expandvars(cfg['queue']['submit_dir'])))
+    cred_dir = Path(os.path.expanduser(os.path.expandvars(cfg['queue']['credentials_dir'])))
+
+    sub = iceprod.server.plugins.condor.CondorSubmit(cfg=cfg, submit_dir=submit_dir, credentials_dir=cred_dir)
+
+    infiles = [
+        Data(url='http://foo.test/foo', local='foo', transfer=Transfer.Maybe)
+    ]
+
+    ret = sub.condor_infiles(infiles)
+    assert ret['transfer_input_files'] == ['iceprod://maybe-http://foo.test/foo']
     assert 'PreCmd' not in ret
 
 
@@ -115,7 +132,7 @@ def test_CondorSubmit_condor_infiles_gsiftp(schedd):
     sub = iceprod.server.plugins.condor.CondorSubmit(cfg=cfg, submit_dir=submit_dir, credentials_dir=cred_dir)
 
     infiles = [
-        Data(url='gsiftp://foo.test/foo', local='foo')
+        Data(url='gsiftp://foo.test/foo', local='foo', transfer=Transfer.TRUE)
     ]
 
     with pytest.raises(RuntimeError, match='x509 proxy'):
@@ -138,7 +155,7 @@ def test_CondorSubmit_condor_precmd(schedd, i3prod_path):
     sub = iceprod.server.plugins.condor.CondorSubmit(cfg=cfg, submit_dir=submit_dir, credentials_dir=cred_dir)
 
     infiles = [
-        Data(url='http://foo.test/foo', local='bar')
+        Data(url='http://foo.test/foo', local='bar', transfer=Transfer.TRUE)
     ]
 
     logging.info('cfg: %r', cfg)
@@ -160,12 +177,29 @@ def test_CondorSubmit_condor_outfiles(schedd):
     sub = iceprod.server.plugins.condor.CondorSubmit(cfg=cfg, submit_dir=submit_dir, credentials_dir=cred_dir)
 
     outfiles = [
-        Data(url='http://foo.test/foo', local='bar')
+        Data(url='http://foo.test/foo', local='bar', transfer=Transfer.TRUE)
     ]
 
     ret = sub.condor_outfiles(outfiles)
     assert ret['transfer_output_files'] == ['bar']
     assert ret['transfer_output_remaps'] == 'bar = http://foo.test/foo'
+
+
+def test_CondorSubmit_condor_outfiles_maybe(schedd):
+    override = ['queue.type=condor']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+    submit_dir = Path(os.path.expanduser(os.path.expandvars(cfg['queue']['submit_dir'])))
+    cred_dir = Path(os.path.expanduser(os.path.expandvars(cfg['queue']['credentials_dir'])))
+
+    sub = iceprod.server.plugins.condor.CondorSubmit(cfg=cfg, submit_dir=submit_dir, credentials_dir=cred_dir)
+
+    outfiles = [
+        Data(url='http://foo.test/foo', local='bar', transfer=Transfer.Maybe)
+    ]
+
+    ret = sub.condor_outfiles(outfiles)
+    assert ret['transfer_output_files'] == ['bar']
+    assert ret['transfer_output_remaps'] == 'bar = iceprod://maybe-http://foo.test/foo'
 
 
 async def test_CondorSubmit_submit(schedd):
