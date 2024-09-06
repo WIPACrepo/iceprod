@@ -115,7 +115,7 @@ def test_CondorSubmit_condor_infiles_maybe(schedd):
     sub = iceprod.server.plugins.condor.CondorSubmit(cfg=cfg, submit_dir=submit_dir, credentials_dir=cred_dir)
 
     infiles = [
-        Data(url='http://foo.test/foo', local='foo', transfer=Transfer.Maybe)
+        Data(url='http://foo.test/foo', local='foo', transfer=Transfer.MAYBE)
     ]
 
     ret = sub.condor_infiles(infiles)
@@ -194,7 +194,7 @@ def test_CondorSubmit_condor_outfiles_maybe(schedd):
     sub = iceprod.server.plugins.condor.CondorSubmit(cfg=cfg, submit_dir=submit_dir, credentials_dir=cred_dir)
 
     outfiles = [
-        Data(url='http://foo.test/foo', local='bar', transfer=Transfer.Maybe)
+        Data(url='http://foo.test/foo', local='bar', transfer=Transfer.MAYBE)
     ]
 
     ret = sub.condor_outfiles(outfiles)
