@@ -229,7 +229,7 @@
             "description": "movement of data"
           },
           "transfer": {
-            "anyOf": [{"type": "string"}, {"type": "boolean"}],
+            "anyOf": [{"type": "string"}, {"type": "integer"}, {"type": "boolean"}],
             "default": true,
             "description": "should the data be transferred"
           }
