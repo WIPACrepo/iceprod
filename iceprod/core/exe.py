@@ -28,6 +28,7 @@ Data movement should be defined at the task level.
 from contextlib import contextmanager
 import copy
 from dataclasses import dataclass
+from enum import StrEnum
 import logging
 import os
 from pathlib import Path
@@ -190,6 +191,12 @@ def scope_env(cfg: ConfigParser, obj: dict, upperenv: Optional[Env] = None, logg
     yield env
 
 
+class Transfer(StrEnum):
+    TRUE = 'true'
+    MAYBE = 'maybe'
+    FALSE = 'false'
+
+
 @dataclass(frozen=True, slots=True)
 class Data:
     """
@@ -198,9 +205,11 @@ class Data:
     Args:
         url: url location
         local: local filename
+        transfer: whether to transfer file (true | maybe | false)
     """
     url: str
     local: str
+    transfer: Transfer
 
 
 def storage_location(data: dict, config: dict = {}) -> str:
@@ -228,23 +237,26 @@ def storage_location(data: dict, config: dict = {}) -> str:
         raise ConfigError(f'{type_} not defined in config["options"]')
 
 
-def do_transfer(data: dict) -> bool:
+def do_transfer(data: dict) -> Transfer:
     """
     Test if we should actually transfer the file.
 
     Args:
         data: data config object
     """
-    ret = True
+    ret = Transfer.TRUE
     if isinstance(data['transfer'], bool):
-        ret = data['transfer']
+        ret = Transfer.TRUE if data['transfer'] else Transfer.FALSE
     elif isinstance(data['transfer'], str):
         t = data['transfer'].lower()
         if t in ('n', 'no', 'not', 'f', 'false'):
-            ret = False
+            ret = Transfer.FALSE
+        elif t in ('y', 'yes', 't', 'true'):
+            ret = Transfer.TRUE
+        else:
+            ret = Transfer(t)
     elif isinstance(data['transfer'], (int, float)):
-        if data['transfer'] == 0:
-            ret = False
+        ret = Transfer.FALSE if data['transfer'] == 0 else Transfer.TRUE
     return ret
 
 
@@ -274,15 +286,15 @@ def downloadData(data: dict, cfg: ConfigParser, logger=None) -> Optional[Data]:
     else:
         url = os.path.join(remote_base, remote)
 
-    execute = do_transfer(data)
-    if execute is False:
+    transfer = do_transfer(data)
+    if transfer == Transfer.FALSE:
         logger.info('not transferring file %s', url)
         return
 
     if not local:
         local = os.path.basename(remote)
 
-    return Data(url, local)
+    return Data(url, local, transfer)
 
 
 def uploadData(data: dict, cfg: ConfigParser, logger=None) -> Optional[Data]:
@@ -314,12 +326,12 @@ def uploadData(data: dict, cfg: ConfigParser, logger=None) -> Optional[Data]:
     if not local:
         local = os.path.basename(remote)
 
-    execute = do_transfer(data)
-    if execute is False:
+    transfer = do_transfer(data)
+    if transfer == Transfer.FALSE:
         logger.info('not transferring file %s', local)
         return
 
-    return Data(url, local)
+    return Data(url, local, transfer)
 
 
 # Run Functions #

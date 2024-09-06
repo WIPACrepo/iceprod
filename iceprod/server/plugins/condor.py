@@ -22,7 +22,7 @@ from typing import NamedTuple
 import htcondor  # type: ignore
 
 from iceprod.core.config import Task
-from iceprod.core.exe import WriteToScript
+from iceprod.core.exe import WriteToScript, Transfer
 from iceprod.server.config import IceProdConfig
 from iceprod.server import grid
 
@@ -131,7 +131,7 @@ class CondorSubmit:
         self.condor_schedd = htcondor.Schedd()
 
         submit_dir.mkdir(parents=True, exist_ok=True)
-        self.precmd = submit_dir / 'pre.sh'
+        self.precmd = submit_dir / 'pre.py'
         self.precmd.write_text((importlib.resources.files('iceprod.server')/'data'/'condor_input_precmd.py').read_text())
         self.precmd.chmod(0o777)
         self.transfer_plugins = self.condor_plugin_discovery()
@@ -198,7 +198,11 @@ class CondorSubmit:
         for infile in infiles:
             if infile.url.startswith('gsiftp:') and not x509_proxy:
                 raise RuntimeError('need x509 proxy for gridftp!')
-            files.append(infile.url)
+            if infile.transfer == Transfer.MAYBE:
+                url = 'iceprod://maybe-' + infile.url
+            else:
+                url = infile.url
+            files.append(url)
             basename = Path(infile.url).name
             if basename != infile.local:
                 mapping.append((basename,infile.local))
@@ -217,7 +221,11 @@ class CondorSubmit:
         mapping = []
         for outfile in outfiles:
             files.append(outfile.local)
-            mapping.append((outfile.local,outfile.url))
+            if outfile.transfer == Transfer.MAYBE:
+                url = 'iceprod://maybe-' + outfile.url
+            else:
+                url = outfile.url
+            mapping.append((outfile.local, url))
         ads = {}
         ads['transfer_output_files'] = files
         ads['transfer_output_remaps'] = ';'.join(f'{name} = {url}' for name,url in mapping)
@@ -286,6 +294,18 @@ transfer_output_files = $STRING(outfiles_expr)
 transfer_output_remaps = $(outremaps)
 
 """
+
+        for k,v in tasks[0].get_task_config()['batchsys'].get('condor', {}):
+            if k.lower() != 'requirements':
+                submitfile += f'+{k} = {v}\n'
+
+        reqs = ''
+        for k,v in self.cfg['queue'].get('batchopts', {}).items():
+            if k.lower() == 'requirements':
+                reqs = v
+            else:
+                submitfile += f'+{k} = {v}\n'
+
         jobset = []
         for task in tasks:
             submit_dir = self.create_submit_dir(task, jel_dir)
@@ -298,6 +318,14 @@ transfer_output_remaps = $(outremaps)
             ads.update(self.condor_outfiles(s.outfiles))
             ads.update(self.condor_resource_reqs(task))
 
+            reqs2 = reqs
+            for k,v in tasks[0].get_task_config()['batchsys'].get('condor', {}):
+                if k.lower() == 'requirements':
+                    reqs2 = f'({reqs}) && ({v})' if reqs else v
+                    break
+
+            if reqs2:
+                ads["requirements"] = f'({ads["requirements"]}) && ({reqs2})'
             submitfile += f'reqs{task.task_id} = {ads["requirements"]}\n'
             # stringify everything, quoting the real strings
             jobset.append({
@@ -403,20 +431,20 @@ class Grid(grid.BaseGrid):
         tasks = await self.get_tasks_to_queue(num_to_submit)
         cur_jel = self.get_current_JEL()
 
-        # split into datasets
+        # split into datasets and task types
         tasks_by_dataset = defaultdict(list)
         for task in tasks:
-            tasks_by_dataset[task.dataset.dataset_num].append(task)
-        for dataset_num in tasks_by_dataset:
-            tasks = tasks_by_dataset[dataset_num]
+            tasks_by_dataset[f'{task.dataset.dataset_num}-{task.name}'].append(task)
+        for key in tasks_by_dataset:
+            tasks = tasks_by_dataset[key]
             try:
                 await self.submitter.submit(tasks, cur_jel)
-            except Exception:
-                logger.warning('submit failed for dataset %r', dataset_num, exc_info=True)
+            except Exception as e:
+                logger.warning('submit failed for dataset %s', key, exc_info=True)
                 async with asyncio.TaskGroup() as tg:
                     for task in tasks:
                         j = CondorJob(dataset_id=task.dataset.dataset_id, task_id=task.task_id, instance_id=task.instance_id)
-                        tg.create_task(self.task_reset(j, reason='HTCondor submit failed'))
+                        tg.create_task(self.task_reset(j, reason=f'HTCondor submit failed: {e}'))
 
     def get_queue_num(self) -> int:
         """Determine how many tasks to queue."""
