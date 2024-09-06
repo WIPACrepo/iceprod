@@ -14,11 +14,11 @@ attrs==24.2.0
     #   referencing
 beautifulsoup4==4.12.3
     # via iceprod (setup.py)
-boto3==1.35.7
+boto3==1.35.14
     # via
     #   iceprod (setup.py)
     #   moto
-botocore==1.35.7
+botocore==1.35.14
     # via
     #   boto3
     #   moto
@@ -28,13 +28,13 @@ cachetools==5.5.0
     #   asyncache
     #   iceprod (setup.py)
     #   wipac-rest-tools
-certifi==2024.7.4
+certifi==2024.8.30
     # via
     #   httpcore
     #   httpx
     #   iceprod (setup.py)
     #   requests
-cffi==1.17.0
+cffi==1.17.1
     # via cryptography
 charset-normalizer==3.3.2
     # via requests
@@ -42,7 +42,7 @@ coverage[toml]==7.6.1
     # via
     #   iceprod (setup.py)
     #   pytest-cov
-cryptography==43.0.0
+cryptography==43.0.1
     # via
     #   iceprod (setup.py)
     #   moto
@@ -203,7 +203,7 @@ tornado==6.4.1
     #   wipac-rest-tools
 types-cachetools==5.5.0.20240820
     # via iceprod (setup.py)
-types-requests==2.32.0.20240712
+types-requests==2.32.0.20240905
     # via iceprod (setup.py)
 typing-extensions==4.12.2
     # via
