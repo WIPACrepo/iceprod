@@ -7,7 +7,7 @@ import pytest
 
 import iceprod.core.config
 import iceprod.core.exe
-from iceprod.core.exe import Data
+from iceprod.core.exe import Data, Transfer
 from iceprod.core.defaults import add_default_options
 
 
@@ -67,8 +67,8 @@ def test_scope_env():
 
         # test parsing data
         with iceprod.core.exe.scope_env(c, t.dataset.config['tasks'][0], env) as tenv:
-            assert tenv['input_files'] == {Data('https://foo.bar/baz', 'baz')}
-        assert env['input_files'] == {Data('https://foo.bar/baz', 'baz')}
+            assert tenv['input_files'] == {Data('https://foo.bar/baz', 'baz', Transfer.TRUE)}
+        assert env['input_files'] == {Data('https://foo.bar/baz', 'baz', Transfer.TRUE)}
 
 
 def test_download_data():
@@ -88,7 +88,49 @@ def test_download_data():
 
     c = iceprod.core.exe.ConfigParser(t.dataset, logger=logger)
     ret = iceprod.core.exe.downloadData(data, c, logger=logger)
-    assert ret == Data('https://foo.bar/baz', 'baz')
+    assert ret == Data('https://foo.bar/baz', 'baz', Transfer.TRUE)
+
+
+def test_download_data_false():
+    data = {
+        'movement': 'input',
+        'remote': 'https://foo.bar/baz',
+        'transfer': 0,
+    }
+    t = get_task({
+        'tasks': [{
+            'name': 'foo',
+            'trays': [{
+                'modules': [{}]
+            }],
+            'data': [data],
+        }]
+    })
+
+    c = iceprod.core.exe.ConfigParser(t.dataset, logger=logger)
+    ret = iceprod.core.exe.downloadData(data, c, logger=logger)
+    assert not ret
+
+
+def test_download_data_maybe():
+    data = {
+        'movement': 'input',
+        'remote': 'https://foo.bar/baz',
+        'transfer': 'maybe',
+    }
+    t = get_task({
+        'tasks': [{
+            'name': 'foo',
+            'trays': [{
+                'modules': [{}]
+            }],
+            'data': [data],
+        }]
+    })
+
+    c = iceprod.core.exe.ConfigParser(t.dataset, logger=logger)
+    ret = iceprod.core.exe.downloadData(data, c, logger=logger)
+    assert ret == Data('https://foo.bar/baz', 'baz', Transfer.MAYBE)
 
 
 def test_download_data_invalid():
@@ -153,7 +195,7 @@ def test_download_data_job_temp():
 
     c = iceprod.core.exe.ConfigParser(t.dataset, logger=logger)
     ret = iceprod.core.exe.downloadData(data, c, logger=logger)
-    assert ret == Data('https://foo.bar/baz', 'baz')
+    assert ret == Data('https://foo.bar/baz', 'baz', Transfer.TRUE)
 
 
 def test_upload_data():
@@ -173,7 +215,7 @@ def test_upload_data():
 
     c = iceprod.core.exe.ConfigParser(t.dataset, logger=logger)
     ret = iceprod.core.exe.uploadData(data, c, logger=logger)
-    assert ret == Data('https://foo.bar/baz', 'baz')
+    assert ret == Data('https://foo.bar/baz', 'baz', Transfer.TRUE)
 
 
 def test_upload_data_invalid():
@@ -238,7 +280,7 @@ def test_upload_data_job_temp():
 
     c = iceprod.core.exe.ConfigParser(t.dataset, logger=logger)
     ret = iceprod.core.exe.uploadData(data, c, logger=logger)
-    assert ret == Data('https://foo.bar/baz', 'baz')
+    assert ret == Data('https://foo.bar/baz', 'baz', Transfer.TRUE)
 
 
 async def test_write_to_script_no_module(tmp_path):
@@ -456,8 +498,8 @@ async def test_write_to_script_data(tmp_path):
     ws = iceprod.core.exe.WriteToScript(t, workdir=tmp_path, logger=logger)
     scriptpath = await ws.convert()
 
-    assert ws.infiles == {Data('https://foo.bar/baz', 'baz')}
-    assert ws.outfiles == {Data('https://foo.bar/1234', '1234')}
+    assert ws.infiles == {Data('https://foo.bar/baz', 'baz', Transfer.TRUE)}
+    assert ws.outfiles == {Data('https://foo.bar/1234', '1234', Transfer.TRUE)}
     script = open(scriptpath).read()
     lines = [line for line in script.split('\n') if not (not line.strip() or line.startswith('#') or line.startswith('set '))]
     assert lines == ['python foo.py']
@@ -504,8 +546,8 @@ async def test_write_to_script_data_task_files(tmp_path):
     ws = iceprod.core.exe.WriteToScript(t, workdir=tmp_path, logger=logger)
     scriptpath = await ws.convert()
 
-    assert ws.infiles == {Data('https://foo.bar/baz', 'baz'), Data('https://foo.bar/blah', 'blah')}
-    assert ws.outfiles == {Data('https://foo.bar/1234', '1234'), Data('https://foo.bar/abcde', 'abcde')}
+    assert ws.infiles == {Data('https://foo.bar/baz', 'baz', Transfer.TRUE), Data('https://foo.bar/blah', 'blah', Transfer.TRUE)}
+    assert ws.outfiles == {Data('https://foo.bar/1234', '1234', Transfer.TRUE), Data('https://foo.bar/abcde', 'abcde', Transfer.TRUE)}
     script = open(scriptpath).read()
 
 
@@ -547,8 +589,8 @@ async def test_write_to_script_data_dups(tmp_path):
     ws = iceprod.core.exe.WriteToScript(t, workdir=tmp_path, logger=logger)
     scriptpath = await ws.convert()
 
-    assert ws.infiles == {Data('https://foo.bar/baz', 'baz')}
-    assert ws.outfiles == {Data('https://foo.bar/1234', '1234')}
+    assert ws.infiles == {Data('https://foo.bar/baz', 'baz', Transfer.TRUE)}
+    assert ws.outfiles == {Data('https://foo.bar/1234', '1234', Transfer.TRUE)}
     script = open(scriptpath).read()
     lines = [line for line in script.split('\n') if not (not line.strip() or line.startswith('#') or line.startswith('set '))]
     assert lines == ['python foo.py']
