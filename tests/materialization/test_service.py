@@ -57,7 +57,7 @@ async def test_materialization_service_run_error(mocker):
     assert mat_mock.run_once.called
     assert db.materialization.update_one.called
     assert db.materialization.update_one.call_args.args[1] == {'$set': {'status': 'error'}}
-    assert ms.last_success_time != None
+    assert ms.last_success_time is None
 
 async def test_materialization_service_run_too_long(mocker):
     db = AsyncMock()
