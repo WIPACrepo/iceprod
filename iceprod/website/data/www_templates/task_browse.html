@@ -13,7 +13,7 @@
         <th>Failures</th>
         {% if (current_user) %}
         <th><button class="set_status" onclick='task_reset(task_ids_on_page);'>Reset All</button></th>
-        <th><button class="set_status" onclick='task_reset(task_ids_on_page);'>Hard Reset All</button></th>
+        <th><button class="set_status" onclick='task_hard_reset(task_ids_on_page);'>Hard Reset All</button></th>
         <th><button class="set_status" onclick='task_suspend(task_ids_on_page);'>Suspend All</button></th>
         {% end %}
     </tr>
