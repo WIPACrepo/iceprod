@@ -21,13 +21,13 @@ class Priority:
     async def _populate_dataset_cache(self):
         args = {
             'keys': 'dataset_id|priority|jobs_submitted|tasks_submitted|group|username',
-            'status': 'processing|truncated',
+            'status': 'processing',
         }
         self.dataset_cache = await self.rest_client.request('GET', '/datasets', args)
         dataset_ids = list(self.dataset_cache)
         args = {
             'keys': 'task_id|dataset_id|job_index|task_index',
-            'status': 'waiting|queued|processing|reset',
+            'status': 'idle|waiting|queued|processing',
         }
         futures = set()
         while dataset_ids:
@@ -209,7 +209,7 @@ class Priority:
         """
         try:
             dataset = await self._get_dataset(dataset_id)
-        except KeyError:
+        except Exception:
             logger.warning(f'cannot find dataset {dataset_id}', exc_info=True)
             return 0.
         if dataset['tasks_submitted'] < 1:

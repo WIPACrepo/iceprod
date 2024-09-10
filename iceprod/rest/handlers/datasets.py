@@ -289,7 +289,7 @@ class DatasetStatusHandler(APIBase):
             ret = await self.db.datasets.find_one({'dataset_id': dataset_id})
             if not ret:
                 self.send_error(404, reason="Dataset not found")
-            else:
+            elif ret['status'] != data['status']:
                 self.send_error(400, reason="Bad state transition for status")
         else:
             self.write({})

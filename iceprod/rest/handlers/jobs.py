@@ -280,7 +280,7 @@ class DatasetJobsStatusHandler(APIBase):
             ret = await self.db.jobs.find_one({'job_id': job_id, 'dataset_id': dataset_id})
             if not ret:
                 self.send_error(404, reason="Job not found")
-            else:
+            elif ret['status'] != data['status']:
                 self.send_error(400, reason="Bad state transition for status")
         else:
             self.write({})
