@@ -282,9 +282,9 @@ class DatasetJobsStatusHandler(APIBase):
                 self.send_error(404, reason="Job not found")
             elif ret['status'] != data['status']:
                 self.send_error(400, reason="Bad state transition for status")
-        else:
-            self.write({})
-            self.finish()
+
+        self.write({})
+        self.finish()
 
 
 class DatasetJobBulkStatusHandler(APIBase):
