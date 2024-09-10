@@ -397,11 +397,12 @@ class DatasetHardResetHandler(APIBase):
         Returns:
             dict: empty dict
         """
-        ret = await self.db.datasets.update_one(
+        ret = await self.db.datasets.find_one_and_update(
             {'dataset_id': dataset_id},
-            {'$set': {'status': DATASET_STATUS_START}}
+            {'$set': {'status': DATASET_STATUS_START}},
+            projection=['_id']
         )
-        if (not ret) or ret.modified_count < 1:
+        if not ret:
             self.send_error(404, reason="Dataset not found")
         else:
             self.write({})
@@ -421,15 +422,20 @@ class DatasetTruncateHandler(APIBase):
         Returns:
             dict: empty dict
         """
-        ret = await self.db.datasets.update_one(
+        ret = await self.db.datasets.find_one_and_update(
             {'dataset_id': dataset_id, 'status': {'$ne': 'complete'}},
-            {'$set': {'truncated': True}}
+            {'$set': {'truncated': True}},
+            projection=['_id']
         )
-        if (not ret) or ret.matched_count < 1:
-            self.send_error(404, reason="Dataset not found")
-        else:
-            self.write({})
-            self.finish()
+        if not ret:
+            ret = await self.db.datasets.find_one({'dataset_id': dataset_id})
+            if not ret:
+                self.send_error(404, reason="Dataset not found")
+            elif ret['status'] == 'complete':
+                self.send_error(400, reason="Cannot truncate complete dataset")
+
+        self.write({})
+        self.finish()
 
 
 class DatasetSummariesStatusHandler(APIBase):
