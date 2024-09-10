@@ -83,7 +83,7 @@ packaging==24.1
     # via sphinx
 psutil==6.0.0
     # via iceprod (setup.py)
-pyasn1==0.6.0
+pyasn1==0.6.1
     # via ldap3
 pycparser==2.22
     # via cffi
