@@ -34,6 +34,48 @@ async def test_materialization_service_run(mocker):
 
     await ms._run_once()
 
-    mat_mock.run_once.assert_called()
+    assert mat_mock.run_once.called
+    assert db.materialization.update_one.called
+    assert db.materialization.update_one.call_args.args[1] == {'$set': {'status': 'complete'}}
     assert ms.last_success_time != None
-    
+
+async def test_materialization_service_run_error(mocker):
+    db = AsyncMock()
+    mat_mock = mocker.patch('iceprod.materialization.service.Materialize', autospec=True).return_value
+    mat_mock.run_once = AsyncMock(side_effect=Exception())
+    ms = MaterializationService(db, MagicMock())
+
+    db.materialization.find_one_and_update.return_value = {
+        'materialization_id': '0123',
+        'dataset_id': 'foo',
+        'num': 10,
+        'set_status': 'waiting',
+    }
+
+    await ms._run_once()
+
+    assert mat_mock.run_once.called
+    assert db.materialization.update_one.called
+    assert db.materialization.update_one.call_args.args[1] == {'$set': {'status': 'error'}}
+    assert ms.last_success_time != None
+
+async def test_materialization_service_run_too_long(mocker):
+    db = AsyncMock()
+    mat_mock = mocker.patch('iceprod.materialization.service.Materialize', autospec=True).return_value
+    mat_mock.run_once = AsyncMock(return_value=None)
+    ms = MaterializationService(db, MagicMock())
+
+    db.materialization.find_one_and_update.return_value = {
+        'materialization_id': '0123',
+        'dataset_id': 'foo',
+        'num': 10,
+        'set_status': 'waiting',
+    }
+
+    await ms._run_once()
+
+    assert mat_mock.run_once.called
+    assert db.materialization.update_one.called
+    assert db.materialization.update_one.call_args.args[1] != {'$set': {'status': 'complete'}}
+    assert db.materialization.update_one.call_args.args[1] != {'$set': {'status': 'error'}}
+    assert ms.last_success_time != None
