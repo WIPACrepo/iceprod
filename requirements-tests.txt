@@ -107,7 +107,7 @@ psutil==6.0.0
     # via iceprod (setup.py)
 py-partiql-parser==0.5.6
     # via moto
-pyasn1==0.6.0
+pyasn1==0.6.1
     # via ldap3
 pycodestyle==2.12.1
     # via flake8
