@@ -112,6 +112,8 @@ async function submit() {
     var submit_data = parse_json($("#submit_box").val());
     if (submit_data == null)
         return;
+    if ('dataset' in submit_data)
+        delete submit_data['dataset'];
     var tasks_per_job = get_num_tasks(submit_data);
     var ntasks = tasks_per_job * njobs;
     if (ntasks < 0)
@@ -132,15 +134,6 @@ async function submit() {
         return;
     }
     dataset_id = response['result'].split('/')[2];
-
-    // set dataset number in config
-    //response = await fetch_json('GET', '/datasets/' + dataset_id, null, passkey);
-    //if (submit_data['dataset']) {
-    //    submit_data['parent_id'] = submit_data['dataset'];
-    //}
-    //submit_data['dataset'] = response['dataset'];
-    if ('dataset' in submit_data)
-        delete submit_data['dataset'];
 
     // upload config
     response = await fetch_json('PUT', '/config/' + dataset_id,

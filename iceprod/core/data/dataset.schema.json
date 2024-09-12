@@ -106,7 +106,7 @@
                         "anyOf": [
                           { "type": "string" },
                           { "type": "array", "items": { "type": "string" } },
-                          { "type": "object", "additionalProperties": { "type": "string" } }
+                          { "type": "object" }
                         ],
                         "default": "",
                         "description": "args to give to a class or script"
