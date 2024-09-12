@@ -14,11 +14,11 @@ attrs==24.2.0
     #   referencing
 beautifulsoup4==4.12.3
     # via iceprod (setup.py)
-boto3==1.35.16
+boto3==1.35.18
     # via
     #   iceprod (setup.py)
     #   moto
-botocore==1.35.16
+botocore==1.35.18
     # via
     #   boto3
     #   moto
@@ -212,7 +212,7 @@ typing-extensions==4.12.2
     #   wipac-dev-tools
 unidecode==1.3.8
     # via iceprod (setup.py)
-urllib3==2.2.2
+urllib3==2.2.3
     # via
     #   botocore
     #   requests
@@ -225,7 +225,7 @@ wipac-dev-tools==1.12.0
     # via
     #   iceprod (setup.py)
     #   wipac-rest-tools
-wipac-rest-tools==1.7.8
+wipac-rest-tools==1.7.9
     # via iceprod (setup.py)
 xmltodict==0.13.0
     # via moto
