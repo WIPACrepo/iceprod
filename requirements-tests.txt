@@ -4,7 +4,7 @@
 #
 #    pip-compile --extra=tests --output-file=requirements-tests.txt
 #
-anyio==4.4.0
+anyio==4.5.0
     # via httpx
 asyncache==0.3.1
     # via iceprod (setup.py)
@@ -14,11 +14,11 @@ attrs==24.2.0
     #   referencing
 beautifulsoup4==4.12.3
     # via iceprod (setup.py)
-boto3==1.35.18
+boto3==1.35.24
     # via
     #   iceprod (setup.py)
     #   moto
-botocore==1.35.18
+botocore==1.35.24
     # via
     #   boto3
     #   moto
@@ -68,7 +68,7 @@ httpx==0.27.2
     # via
     #   iceprod (setup.py)
     #   respx
-idna==3.8
+idna==3.10
     # via
     #   anyio
     #   httpx
@@ -97,7 +97,7 @@ mock==5.1.0
     # via iceprod (setup.py)
 moto[s3]==5.0.14
     # via iceprod (setup.py)
-motor==3.5.1
+motor==3.6.0
     # via iceprod (setup.py)
 packaging==24.1
     # via pytest
@@ -117,7 +117,7 @@ pyflakes==3.2.0
     # via flake8
 pyjwt[crypto]==2.9.0
     # via wipac-rest-tools
-pymongo==4.8.0
+pymongo==4.9.1
     # via
     #   iceprod (setup.py)
     #   motor
@@ -203,7 +203,7 @@ tornado==6.4.1
     #   wipac-rest-tools
 types-cachetools==5.5.0.20240820
     # via iceprod (setup.py)
-types-requests==2.32.0.20240907
+types-requests==2.32.0.20240914
     # via iceprod (setup.py)
 typing-extensions==4.12.2
     # via
@@ -221,7 +221,7 @@ urllib3==2.2.3
     #   wipac-rest-tools
 werkzeug==3.0.4
     # via moto
-wipac-dev-tools==1.12.0
+wipac-dev-tools==1.12.1
     # via
     #   iceprod (setup.py)
     #   wipac-rest-tools
