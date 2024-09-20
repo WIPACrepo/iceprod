@@ -102,6 +102,12 @@
                         "default": "",
                         "description": "a script or executable file"
                       },
+                      "running_class": {
+                        "type": "string",
+                        "default": "",
+                        "description": "an iceprod v1 python class",
+                        "deprecated": true
+                      },
                       "args": {
                         "anyOf": [
                           { "type": "string" },
@@ -230,6 +236,7 @@
           },
           "transfer": {
             "anyOf": [{"type": "string"}, {"type": "integer"}, {"type": "boolean"}],
+            "enum": [true, false, "maybe", "yes", "no", "y", "n", "1", "0", 1, 0],
             "default": true,
             "description": "should the data be transferred"
           }

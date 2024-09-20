@@ -405,6 +405,7 @@ class WriteToScript:
                 self.infiles = globalenv['input_files']
                 self.outfiles = globalenv['output_files']
 
+        scriptname.chmod(scriptname.stat().st_mode | 0o700)
         return scriptname
 
     async def _write_module(self, module, env, file):
@@ -416,6 +417,10 @@ class WriteToScript:
                 env['input_files'][module_src] = path
                 module_src = path
             self.logger.info('running module %r with src %s', module['name'], module_src)
+        elif module['running_class']:
+            module_src = None
+            module_class = self.cfgparser.parseValue(module['running_class'], env)
+            self.logger.info('running module %r with class %s', module['name'], module_class)
         else:
             self.logger.error('module is missing src')
             raise ConfigError('error running module - need "src"')
@@ -440,39 +445,51 @@ class WriteToScript:
 
         # set up the args
         args = module['args']
-        if args is not None and args != '':
-            self.logger.warning('args=%s', args)
-            if args and isinstance(args, str) and args[0] in ('{', '['):
-                args = json_decode(args)
-            if args and isinstance(args, dict) and set(args) == {'args', 'kwargs'}:
-                args = self.cfgparser.parseObject(args, env)
-            elif isinstance(args, str):
-                args = {"args": [self.cfgparser.parseValue(x, env) for x in args.split()], "kwargs": {}}
-            elif isinstance(args, list):
-                args = {"args": [self.cfgparser.parseValue(x, env) for x in args], "kwargs": {}}
-            elif isinstance(args, dict):
-                args = {"args": [], "kwargs": self.cfgparser.parseObject(args, env)}
+        if module_src:
+            if args is not None and args != '':
+                self.logger.warning('args=%s', args)
+                if args and isinstance(args, str) and args[0] in ('{', '['):
+                    args = json_decode(args)
+                if args and isinstance(args, dict) and set(args) == {'args', 'kwargs'}:
+                    args = self.cfgparser.parseObject(args, env)
+                elif isinstance(args, str):
+                    args = {"args": [self.cfgparser.parseValue(x, env) for x in args.split()], "kwargs": {}}
+                elif isinstance(args, list):
+                    args = {"args": [self.cfgparser.parseValue(x, env) for x in args], "kwargs": {}}
+                elif isinstance(args, dict):
+                    args = {"args": [], "kwargs": self.cfgparser.parseObject(args, env)}
+                else:
+                    args = {"args": [str(args)], "kwargs": {}}
+
+                # convert to cmdline args
+                def splitter(a,b):
+                    ret = ('-%s' if len(str(a)) <= 1 else '--%s')%str(a)
+                    if b is None:
+                        return ret
+                    else:
+                        return ret+'='+str(b)
+                args = args['args'] + [splitter(a, args['kwargs'][a]) for a in args['kwargs']]
+
+                # force args to string
+                def toStr(a):
+                    if isinstance(a,(bytes,str)):
+                        return a
+                    else:
+                        return str(a)
+                args = [toStr(a) for a in args]
             else:
-                args = {"args": [str(args)], "kwargs": {}}
-
-            # convert to cmdline args
-            def splitter(a,b):
-                ret = ('-%s' if len(str(a)) <= 1 else '--%s')%str(a)
-                if b is None:
-                    return ret
-                else:
-                    return ret+'='+str(b)
-            args = args['args'] + [splitter(a, args['kwargs'][a]) for a in args['kwargs']]
-
-            # force args to string
-            def toStr(a):
-                if isinstance(a,(bytes,str)):
-                    return a
-                else:
-                    return str(a)
-            args = [toStr(a) for a in args]
+                args = []
         else:
-            args = []
+            # construct a python file to call the class
+            parsed_args = self.cfgparser.parseObject(args, env)
+            pymodule, class_ = module_class.rsplit('.', 1)
+            args = f"""import json
+from {pymodule} import {class_}
+args = json.loads('''{json_encode(parsed_args)}''')
+obj = {class_}()
+for k,v in args.items():
+    obj.SetParameter(k, v)
+obj.Execute({{}})"""
 
         # set up the environment
         cmd = []
@@ -488,7 +505,9 @@ class WriteToScript:
                 env['input_files'][str(self.workdir / filename)] = filename
 
         # run the module
-        if module_src[-3:] == '.py':
+        if (not module_src):
+            cmd.extend(['python', '-', "<<'____HERE'\n" + args + '\n____HERE\n'])
+        elif module_src[-3:] == '.py':
             # call as python script
             cmd.extend(['python', module_src] + args)
         elif module_src[-3:] == '.sh':

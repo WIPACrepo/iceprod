@@ -31,6 +31,7 @@ async def run(args):
         logger.info('Testing mode: dataset %d job %d task %s', args.dataset_num, args.job_index, args.task)
         with open(args.config) as f:
             cfg = json.load(f)
+        task_names = [t['name'] for t in cfg['tasks']]
 
         d = iceprod.core.config.Dataset(
             dataset_id='datasetid',
@@ -49,7 +50,7 @@ async def run(args):
             dataset=d,
             job=iceprod.core.config.Job(d, '', args.job_index, 'processing'),
             task_id='taskid',
-            task_index=-1,
+            task_index=task_names.index(args.task),
             name=args.task,
             depends=[],
             requirements={},
@@ -64,12 +65,14 @@ async def run(args):
     ws = iceprod.core.exe.WriteToScript(task, workdir=Path.cwd(), logger=logger)
     scriptpath = await ws.convert()
     logger.info('running script %s', scriptpath)
-    subprocess.run([scriptpath], check=True)
+    if not args.dry_run:
+        subprocess.run([scriptpath], check=True)
 
 
 async def main():
     parser = argparse.ArgumentParser(description='IceProd Core')
     parser.add_argument('--log-level', default='info', help='log level')
+    parser.add_argument('-n', '--dry-run', action='store_true', default=False, help='Dry run')
     add_auth_to_argparse(parser)
 
     real = parser.add_argument_group('Real Dataset', 'Download from IceProd server')

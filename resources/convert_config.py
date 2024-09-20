@@ -26,47 +26,6 @@ from iceprod.core.config import Dataset
 notbool = lambda x: not x
 strcommalist = lambda x: ','.join(x)
 
-"""
-for each module:
-  src: the new src script
-  args: a mapping from existing args to new args
-"""
-CLASS_TO_SRC = {
-    'icecube.simprod.modules.IceCube': {
-        'src': 'simprod-scripts/resources/scripts/detector.py',
-        'args': {
-            'execute': {'type': 'args', 'name': '--no-execute', 'use': notbool},
-            'gcdfile': {'type': 'kwargs', 'name': 'gcdfile', 'mapper': str},
-            'inputfile': {'type': 'kwargs', 'name': 'inputfile', 'mapper': str},
-            'outputfile': {'type': 'kwargs', 'name': 'outputfile', 'mapper': str},
-            'seed': {'type': 'kwargs', 'name': 'seed', 'mapper': str},
-            'procnum': {'type': 'kwargs', 'name': 'procnum', 'mapper': str},
-            'nproc': {'type': 'kwargs', 'name': 'nproc', 'mapper': str},
-            'summaryfile': {'type': 'kwargs', 'name': 'SummaryFile', 'mapper': str},
-            'histogramfilename': {'type': 'kwargs', 'name': 'HistogramFilename', 'mapper': str},
-            'enablehistogram': {'type': 'args', 'name': '--EnableHistogram', 'use': bool},
-
-            'mctype': {'type': 'kwargs', 'name': 'MCType', 'mapper': str},
-            'uselineartree': {'type': 'args', 'name': '--MCType', 'use': bool},
-            'mcprescale': {'type': 'kwargs', 'name': 'MCPrescale', 'mapper': str},
-            'icetop': {'type': 'args', 'name': '--IceTop', 'use': bool}, # only add if value is True
-            'genie': {'type': 'args', 'name': '--Genie', 'use': bool}, # only add if value is True
-            'filtertrigger': {'type': 'args', 'name': '--no-FilterTrigger', 'use': notbool}, # only add if value is False
-            'trigger': {'type': 'args', 'name': '--no-Trigger', 'use': notbool}, # only add if value is False
-            'lowmem': {'type': 'args', 'name': '--LowMem', 'use': bool},
-            'beaconlaunches': {'type': 'args', 'name': '--no-BeaconLaunches', 'use': notbool}, # only add if value is False
-            'timeshiftskipkeys': {'type': 'kwargs', 'name': 'TimeShiftSkipKeys', 'mapper': strcommalist},
-            'sampleefficiency': {'type': 'kwargs', 'name': 'SampleEfficiency', 'mapper': str},
-            'generatedefficiency': {'type': 'kwargs', 'name': 'GeneratedEfficiency', 'mapper': str},
-            'runid': {'type': 'kwargs', 'name': 'RunID', 'mapper': str},
-            'mcpeseriesname': {'type': 'kwargs', 'name': 'MCPESeriesName', 'mapper': str},
-            'detectorname': {'type': 'kwargs', 'name': 'DetectorName', 'mapper': str},
-            'skipkeys': {'type': 'kwargs', 'name': 'SkipKeys', 'mapper': strcommalist},
-            'usegslrng': {'type': 'args', 'name': '--UseGSLRNG', 'use': bool},
-        }
-    },
-}
-
 
 def convert(config):
     logging.info('Now converting config')
@@ -96,6 +55,8 @@ def convert(config):
                         raise Exception('unknown data type')
                     if 'compression' in d:
                         del d['compression']
+                    if d.get('transfer') == 'exists':
+                        d['transfer'] = 'maybe'
                     ret.append(d)
             del obj['data']
         if 'classes' in obj:
@@ -113,45 +74,6 @@ def convert(config):
             data.extend(data_cleaner(tray))
             for module in tray.get('modules', []):
                 data.extend(data_cleaner(module))
-                if 'running_class' in module:
-                    rc = module['running_class']
-                    del module['running_class']
-                    if rc:
-                        logging.warning('converting running_class %s', rc)
-                        if rc not in CLASS_TO_SRC:
-                            continue
-                            raise Exception('unknown running_class')
-                        converter = CLASS_TO_SRC[rc]
-
-                        env_shell = module.get('env_shell', '')
-                        if not env_shell:
-                            raise Exception('no env_shell to base running_class off of')
-                        env, meta = env_shell.split(' ')
-                        if meta.startswith('/'):
-                            base = Path(meta)
-                        else:
-                            base = Path(env).parent / 'metaprojects' / meta
-                        src = base / converter['src']
-                        logging.info('new src: %s', src)
-                        module['src'] = str(src)
-
-                        if isinstance(oldargs := module.get('args', None), dict):
-                            args = {'args': [], 'kwargs': {}}
-                            for k,v in oldargs.items():
-                                k = k.lower()
-                                if k not in converter['args']:
-                                    raise Exception(f'unknown arg: {k}')
-                                c = converter['args'][k]
-                                if (exe := c.get('use')) and not exe(v):
-                                    continue
-                                if c['type'] == 'args':
-                                    args['args'].append(c['name'])
-                                elif c['type'] == 'kwargs':
-                                    args['kwargs'][c['name']] = c.get('mapper', lambda x: x)(v)
-                                else:
-                                    raise Exception('unknown type in converter')
-                            module['args'] = args
-
         task['data'] = data
 
     return config
