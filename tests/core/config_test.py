@@ -343,7 +343,7 @@ async def test_task_load_task_files(requests_mock):
     )
 
     r = RestClient('http://test.iceprod')
-    await t.load_tasK_files_from_api(r)
+    await t.load_task_files_from_api(r)
 
     assert len(t.task_files) == len(data)
     assert t.task_files[0]['local'] == data[0]['local']

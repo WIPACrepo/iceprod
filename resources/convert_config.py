@@ -99,7 +99,7 @@ def main():
     d.validate()
 
     if args.output == '-':
-        pprint(new_config)
+        print(json.dumps(d.config, indent=2, sort_keys=True))
     else:
         with open(args.output, 'w') as f:
             json.dump(d.config, f, indent=2, sort_keys=True)

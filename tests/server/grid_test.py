@@ -130,12 +130,13 @@ async def test_grid_convert_to_task():
     TASK = MagicMock()
     TASK.load_task_files_from_api = AsyncMock()
     DATASET = MagicMock()
+    DATASET.config = {'options':{}}
     g.dataset_lookup = AsyncMock(return_value=DATASET)
 
     ret = await g._convert_to_task(TASK)
 
     assert ret.dataset == DATASET
-
+    assert ret.dataset.config['options']['job_temp']
 
     
 def test_grid_get_resources(i3prod_path):

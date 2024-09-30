@@ -18,8 +18,9 @@ from cachetools import TTLCache
 from cachetools.func import ttl_cache
 import requests.exceptions
 
-from iceprod.core.config import Task, Job, Dataset
 from iceprod.core import functions
+from iceprod.core.config import Task, Job, Dataset
+from iceprod.core.defaults import add_default_options
 from iceprod.core.resources import Resources
 from iceprod.server.states import JOB_STATUS_START
 
@@ -164,7 +165,14 @@ class BaseGrid:
             stats={},
             task_files=[],
         )
-        await t.load_tasK_files_from_api(self.rest_client)
+        await t.load_task_files_from_api(self.rest_client)
+
+        # load some config defaults
+        config = t.dataset.config
+        if (not config['options'].get('site_temp','')) and self.cfg['queue'].get('site_temp', ''):
+            config['options']['site_temp'] = self.cfg['queue']['site_temp']
+        add_default_options(config['options'])
+
         return t
 
     @staticmethod
@@ -598,40 +606,6 @@ class BaseGrid:
         except Exception:
             logger.error('Error generating submit file',exc_info=True)
             raise
-
-    def create_config(self, task):
-        if 'config' in task and task['config']:
-            config = serialization.dict_to_dataclasses(task['config'])
-        else:
-            config = dataclasses.Job()
-
-        # add server options
-        config['options']['task_id'] = task['task_id']
-        config['options']['task'] = task['name']
-        if 'job' in task:
-            config['options']['job'] = task['job']
-        if 'jobs_submitted' in task:
-            config['options']['jobs_submitted'] = task['jobs_submitted']
-        if 'dataset_id' in task:
-            config['options']['dataset_id'] = task['dataset_id']
-        if 'dataset' in task:
-            config['options']['dataset'] = task['dataset']
-        config['options']['stillrunninginterval'] = self.queue_cfg['ping_interval']
-        config['options']['debug'] = task['debug']
-        config['options']['upload'] = 'logging'
-        config['options']['gridspec'] = self.gridspec
-        if (not config['options'].get('site_temp','')) and 'site_temp' in self.cfg['queue']:
-            config['options']['site_temp'] = self.cfg['queue']['site_temp']
-        if ('download' in self.cfg and 'http_username' in self.cfg['download']
-                and self.cfg['download']['http_username']):
-            config['options']['username'] = self.cfg['download']['http_username']
-        if ('download' in self.cfg and 'http_password' in self.cfg['download']
-                and self.cfg['download']['http_password']):
-            config['options']['password'] = self.cfg['download']['http_password']
-
-        add_default_options(config['options'])
-
-        return config
 
     def write_cfg(self, task):
         """Write the config file for a task-like object"""

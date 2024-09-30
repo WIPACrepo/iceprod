@@ -151,7 +151,7 @@ class Task:
         # get first (only) result in ret
         self.stats = next(iter(ret.values()))
 
-    async def load_tasK_files_from_api(self, rest_client: RestClient):
+    async def load_task_files_from_api(self, rest_client: RestClient):
         ret = await rest_client.request('GET', f'/datasets/{self.dataset.dataset_id}/files/{self.task_id}', {})
         data = []
         for r in ret['files']:
