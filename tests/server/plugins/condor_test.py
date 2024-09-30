@@ -203,7 +203,7 @@ def test_CondorSubmit_condor_outfiles_maybe(schedd):
 
 
 async def test_CondorSubmit_submit(schedd):
-    override = ['queue.type=condor']
+    override = ['queue.type=condor', 'queue.site_temp=http://foo.bar']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
     submit_dir = Path(os.path.expanduser(os.path.expandvars(cfg['queue']['submit_dir'])))
     cred_dir = Path(os.path.expanduser(os.path.expandvars(cfg['queue']['credentials_dir'])))
@@ -211,9 +211,49 @@ async def test_CondorSubmit_submit(schedd):
     sub = iceprod.server.plugins.condor.CondorSubmit(cfg=cfg, submit_dir=submit_dir, credentials_dir=cred_dir)
     sub.condor_schedd.submit = MagicMock()
 
+    dataset = MagicMock()
+    dataset.dataset_id = 'dataset'
+    dataset.dataset_num = 0
+    dataset.config = {
+        'options': {
+            'site_temp': 'http://foo.bar',
+        },
+        'steering': {
+            'parameters': {},
+        },
+        'tasks': [{
+            'name': 'generate',
+            'batchsys': {},
+            'requirements': {},
+            'trays': [{
+                'iterations': 1,
+                'modules': [{
+                    'name': 'foo',
+                    'src': 'foo.py',
+                    'args': '',
+                    'env_shell': None,
+                    'env_clear': True,
+                    'configs': None,
+                }]
+            }],
+            'data': [{
+                'movement': 'output',
+                'local': 'foo.tgz',
+                'remote': '',
+                'type': 'job_temp',
+                'transfer': True,
+            }]
+        }]
+    }
+    job = Job(
+        dataset=dataset,
+        job_id='job',
+        job_index=1,
+        status='processing',
+    )
     task = Task(
-        dataset=MagicMock(),
-        job=MagicMock(),
+        dataset=dataset,
+        job=job,
         task_id='task',
         task_index=0,
         name='generate',
@@ -234,6 +274,9 @@ async def test_CondorSubmit_submit(schedd):
     assert (submit_dir / 'today' / 'task').is_dir()
 
     assert sub.condor_schedd.submit.call_count == 1
+    itemdata = list(sub.condor_schedd.submit.call_args.kwargs['itemdata'])[0]
+    logging.info('itemdata: %r', itemdata)
+    assert itemdata['outremaps'].strip('"') == 'foo.tgz = http://foo.bar/0/1/foo.tgz'
 
 
 async def test_Grid_save_load_timestamp(schedd, i3prod_path):

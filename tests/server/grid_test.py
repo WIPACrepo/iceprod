@@ -120,7 +120,7 @@ async def test_grid_submit_none():
 
 
 async def test_grid_convert_to_task():
-    override = ['queue.type=test', 'queue.check_time=0']
+    override = ['queue.type=test', 'queue.check_time=0', 'queue.site_temp=http://foo.bar']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
     rc = MagicMock()
@@ -136,7 +136,7 @@ async def test_grid_convert_to_task():
     ret = await g._convert_to_task(TASK)
 
     assert ret.dataset == DATASET
-    assert ret.dataset.config['options']['job_temp']
+    assert ret.dataset.config['options']['site_temp'] == 'http://foo.bar'
 
     
 def test_grid_get_resources(i3prod_path):

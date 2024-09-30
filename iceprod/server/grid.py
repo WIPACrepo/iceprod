@@ -23,6 +23,7 @@ from iceprod.core.config import Task, Job, Dataset
 from iceprod.core.defaults import add_default_options
 from iceprod.core.resources import Resources
 from iceprod.server.states import JOB_STATUS_START
+from iceprod.server.util import nowstr
 
 
 logger = logging.getLogger('grid')
@@ -148,7 +149,7 @@ class BaseGrid:
 
     async def _convert_to_task(self, task):
         """Convert from basic task dict to a Task object"""
-        d = await self.dataset_lookup(task['dataset_id'])
+        d = deepcopy(await self.dataset_lookup(task['dataset_id']))
         # don't bother looking up the job status - trust that if we got a task, we're in processing
         j = Job(dataset=d, job_id=task['job_id'], job_index=task['job_index'], status=JOB_STATUS_START)
         t = Task(
@@ -255,7 +256,7 @@ class BaseGrid:
             'site': site,
             'resources': stats_cp.pop('resources', {}),
             'task_stats': stats_cp,
-            'time': datetime.utcnow().isoformat(),
+            'time': nowstr(),
         }
         try:
             await self.rest_client.request('POST', f'/tasks/{task.task_id}/task_stats', args)

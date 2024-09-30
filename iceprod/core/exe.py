@@ -81,8 +81,9 @@ class ConfigParser:
             the parsed value
         """
         if isinstance(value, str):
-            self.logger.debug('parse before:%r| env=%r', value, env)
-            value = self.parser.parse(value, self.config, env)
+            self.logger.debug('parse before:%r| env=%r| options=%r', value, env, self.config.get('options'))
+            while value != (ret := self.parser.parse(value, self.config, env)):
+                value = ret
             if isinstance(value, str):
                 value = os.path.expandvars(value)
             self.logger.debug('parse after:%r', value)
@@ -147,9 +148,6 @@ def scope_env(cfg: ConfigParser, obj: dict, upperenv: Optional[Env] = None, logg
         upperenv: previous scope's env output
         logger: a logger object, for localized logging
     """
-    if not obj:
-        raise util.NoncriticalError('object to load environment from is empty')
-
     env: Env = {'parameters': {}, 'input_files': set(), 'output_files': set()}
     if upperenv:
         env['parameters'].update(upperenv['parameters'])
@@ -212,25 +210,26 @@ class Data:
     transfer: Transfer
 
 
-def storage_location(data: dict, config: dict = {}) -> str:
+def storage_location(data: dict, parser: ConfigParser) -> str:
     """
     Get data storage location from the config.
 
     Args:
         data: data config object
-        config: dataset config
+        parser: config parser
 
     Returns:
         storage location
     """
+    config = parser.config
     type_ = data['type'].lower()
     if type_ not in ['permanent', 'job_temp', 'dataset_temp', 'site_temp']:
         raise ConfigError('data movement "type" is unknown')
     if 'options' in config and type_ in config['options']:
-        return str(config['options'][type_])
+        return parser.parseValue(config['options'][type_])
     elif type_ == 'permanent':
         if 'options' in config and 'data_url' in config['options']:
-            return str(config['options']['data_url'])
+            return parser.parseValue(config['options']['data_url'])
         else:
             raise ConfigError('"data_url" not defined in config["options"]')
     else:
@@ -273,7 +272,8 @@ def downloadData(data: dict, cfg: ConfigParser, logger=None) -> Optional[Data]:
     """
     if not logger:
         logger = logging
-    remote_base = storage_location(data, cfg.config)
+    remote_base = storage_location(data, cfg)
+    logger.debug('downloadData(): remote_base: %r', remote_base)
     remote = str(data['remote']) if data['remote'] is not None else ''
     local = str(data['local']) if data['local'] is not None else ''
 
@@ -310,7 +310,8 @@ def uploadData(data: dict, cfg: ConfigParser, logger=None) -> Optional[Data]:
     """
     if not logger:
         logger = logging
-    remote_base = storage_location(data, cfg.config)
+    remote_base = storage_location(data, cfg)
+    logger.debug('uploadData(): remote_base: %r', remote_base)
     remote = str(data['remote']) if data['remote'] is not None else ''
     local = str(data['local']) if data['local'] is not None else ''
 

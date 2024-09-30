@@ -1,5 +1,5 @@
 """Utility functions"""
-from datetime import datetime
+from datetime import datetime, UTC
 
 
 def datetime2str(dt):
@@ -9,7 +9,7 @@ def datetime2str(dt):
 
 def nowstr():
     """Get an ISO 8601 string of the current time in UTC"""
-    return datetime.utcnow().isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def str2datetime(st):

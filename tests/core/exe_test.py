@@ -178,6 +178,7 @@ def test_download_data_job_temp():
     data = {
         'movement': 'input',
         'local': 'baz',
+        'remote': '',
         'type': 'job_temp'
     }
     t = get_task({
