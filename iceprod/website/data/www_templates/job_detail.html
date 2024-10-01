@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% autoescape None %}
+
+{% block title %}Job {{ job['job_index'] }}, Dataset {{ dataset['dataset'] }} - IceProd{% end %}
+
+{% block page_title %}Job Details{% end %}
+
+{% block body %}
+
+<div class="task_details">
+{% for k in job %}
+<div class="key_value">
+  <div>{{ escape(k) }}</div>
+  <div>
+  {% if k == 'dataset_id' %}
+    <a href="/dataset/{{ url_escape(job[k]) }}">{{ escape(job[k]) }}</a>
+  {% elif k == 'tasks' %}
+  {% else %}
+    {{ job[k] }}
+  {% end %}
+  </div>
+</div>
+{% end %}
+
+{% if (current_user) %}
+<div class="action">
+    {% if job['status'] in states.job_prev_statuses(states.JOB_STATUS_START) %}
+    <button onclick='job_reset()'>Reset</button>
+    {% end %}
+    <button onclick='job_hard_reset()'>Hard Reset</button>
+    {% if job['status'] in states.job_prev_statuses('suspended') %}
+    <button onclick='job_suspend()'>Suspend</button>
+    {% end %}
+</div>
+{% end %}
+
+</div>
+
+<div class="task_completion">
+    <h2>Tasks</h2>
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Failures</th>
+            <th>Walltime</th>
+            <th>Walltime Err</th>
+        </tr>
+        {% for task in job['tasks'] %}
+        <tr>
+            <td><a href="/dataset/{{ url_escape(job['dataset_id']) }}/task/{{ url_escape(task['task_id']) }}">{{ task['name'] }}</a></td>
+            <td>{{ 'GPU' if 'gpu' in task['requirements'] and task['requirements']['gpu'] else 'CPU' }}</td>
+            <td>{{ task['status'] }}</td>
+            <td>{{ task['failures'] }}</td>
+            <td>{{ '{:.2f}'.format(task['walltime']/3600) }}</td>
+            <td>{{ '{:.2f}'.format(task['walltime_err']/3600) }}</td>
+        </tr>
+        {% end %}
+    </table>
+</div>
+
+{% end %}
+
+{% block body_scripts %}
+
+{% if (current_user) %}
+<script type="text/javascript" src="/static/fetch.js"></script>
+<script type="text/javascript" src="/static/rest.js"></script>
+<script>
+var rest_api = '{{ rest_api }}';
+const passkey = "{{ passkey }}";
+const dataset_id = "{{ job['dataset_id'] if job else '' }}";
+const job_id = "{{ job['job_id'] if job else '' }}";
+
+async function job_reset() {
+    try {
+        {
+            const url = '/datasets/' + dataset_id + '/task_actions/bulk_reset';
+            const ret = await fetch_json('POST', url, {'jobs': [job_id]}, passkey);
+            if ('error' in ret) {
+                message_alert('error - '+ret['error']);
+                return false;
+            }
+        }
+
+        {
+            const url = '/datasets/' + dataset_id + '/job_actions/bulk_reset';
+            const ret = await fetch_json('POST', url, {'jobs': [job_id]}, passkey);
+            if ('error' in ret) {
+                message_alert('error - '+ret['error']);
+                return false;
+            }
+        }
+    } catch(err) {
+        message_alert('error - '+err);
+        return false;
+    }
+    reload();
+    return true;
+}
+
+async function job_hard_reset() {
+    try {
+        {
+            const url = '/datasets/' + dataset_id + '/task_actions/bulk_hard_reset';
+            const ret = await fetch_json('POST', url, {'jobs': [job_id]}, passkey);
+            if ('error' in ret) {
+                message_alert('error - '+ret['error']);
+                return false;
+            }
+        }
+
+        {
+            const url = '/datasets/' + dataset_id + '/job_actions/bulk_hard_reset';
+            const ret = await fetch_json('POST', url, {'jobs': [job_id]}, passkey);
+            if ('error' in ret) {
+                message_alert('error - '+ret['error']);
+                return false;
+            }
+        }
+    } catch(err) {
+        message_alert('error - '+err);
+        return false;
+    }
+    reload();
+    return true;
+}
+
+async function job_suspend() {
+    try {
+        {
+            const url = '/datasets/' + dataset_id + '/task_actions/bulk_suspend';
+            const ret = await fetch_json('POST', url, {'jobs': [job_id]}, passkey);
+            if ('error' in ret) {
+                message_alert('error - '+ret['error']);
+                return false;
+            }
+        }
+
+        {
+            const url = '/datasets/' + dataset_id + '/job_actions/bulk_suspend';
+            const ret = await fetch_json('POST', url, {'jobs': [job_id]}, passkey);
+            if ('error' in ret) {
+                message_alert('error - '+ret['error']);
+                return false;
+            }
+        }
+    } catch(err) {
+        message_alert('error - '+err);
+        return false;
+    }
+    reload();
+    return true;
+}
+</script>
+{% end %}
+
+{% end %}

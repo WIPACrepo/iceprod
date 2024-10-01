@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% autoescape None %}
+
+{% block title %}IceProd{% end %}
+
+{% block head_scripts %}
+<link rel="stylesheet" href="/static/submit.css" media="all" type="text/css" />
+<link rel="stylesheet" href="/static/documentation.css" media="all" type="text/css" />
+{% end %}
+
+{% block page_title %}{% if dataset_id %}{% if edit %}Edit{% else %}View{% end %} Config{% else %}Submit{% end %}{% end %}
+
+{% block sidebar %}
+<div class="section macro_box">
+    <h3>Macros</h3>
+    <ul>
+        <li>
+            <h4>$(dataset_id)</h4>
+            <p class="macro_desc">The dataset_id string.</p>
+        </li>
+        <li>
+            <h4>$(dataset)</h4>
+            <p class="macro_desc">The dataset_id in numerical form.</p>
+        </li>
+        <li>
+            <h4>$(jobs_submitted)</h4>
+            <p class="macro_desc">The number of jobs in the dataset.</p>
+        </li>
+        <li>
+            <h4>$(job)</h4>
+            <p class="macro_desc">The job index within the dataset.</p>
+        </li>
+        <li>
+            <h4>$(task_id)</h4>
+            <p class="macro_desc">The task_id string.</p>
+        </li>
+        <li>
+            <h4>$(task)</h4>
+            <p class="macro_desc">The task name.</p>
+        </li>
+    </ul>
+</div>
+{% end %}
+
+{% block body %}
+<div id="submit_area">
+    <textarea id="submit_box" style="min-height: 400px">{{ json_encode(config, indent=2) }}</textarea>
+    <textarea id="description" placeholder="Description">{{ description }}</textarea>
+    <div class="submit_contents">
+        {% if dataset_id %}
+            {% if edit %}
+        <button id="submit_action" onclick="update()">Update</button>
+            {% end %}
+        {% else %}
+        Number of jobs:
+        <input id="number_jobs" value="1" min="1" step="1", type="number">
+        Group:
+        <select id="group">
+            {% for g in groups %}
+                <option value="{{ g }}">{{ g }}</option>
+            {% end %}
+        </select>
+        <button id="submit_action" onclick="submit()">Submit</button>
+        {% end %}
+    </div>
+</div>
+<div id="error"></div>
+{% end %}
+
+{% block body_scripts %}
+<script src="/static/fetch.js"></script>
+<script type="text/javascript" src="/static/rest.js"></script>
+<!--<script type="text/javascript" src="/static/dataclasses.js"></script>
+<script type="text/javascript" src="/static/jsviews.min.js"></script>
+<script type="text/javascript" src="/static/documentation.js"></script>
+<script type="text/javascript" src="/static/jsonlint.js"></script>-->
+<script type="text/javascript">
+var rest_api = '{{ rest_api }}';
+var passkey = '{{ passkey }}';
+var orig_config = {{ json_encode(config) }};
+var edit = {{ json_encode(edit) }};
+var dataset_id = '{{ dataset_id }}';
+function parse_json(config){
+    try {
+        return JSON.parse(config);
+    } catch (err) {
+        $('#error').text(err);
+        return null;
+    }
+}
+function get_num_tasks(config){
+    if (!("tasks" in config)) {
+        $('#error').text("'tasks' not in config");
+        return -1;
+    }
+    try {
+        return config["tasks"].length;
+    } catch (err) {
+        $('#error').text(err);
+        return -1;
+    }
+}
+async function submit() {
+    var description = $('#description').val();
+    var njobs = parseInt($('#number_jobs').val());
+    if ( njobs == null || njobs == undefined || isNaN(njobs)) {
+        $('#error').text('Must specify integer number of jobs');
+        return;
+    }
+    var group = $("#group").val();
+    var submit_data = parse_json($("#submit_box").val());
+    if (submit_data == null)
+        return;
+    if ('dataset' in submit_data)
+        delete submit_data['dataset'];
+    var tasks_per_job = get_num_tasks(submit_data);
+    var ntasks = tasks_per_job * njobs;
+    if (ntasks < 0)
+        return;
+
+    // create dataset
+    var response = await fetch_json('POST', '/datasets',
+        {'description': description,
+         'jobs_submitted': njobs,
+         'tasks_submitted': ntasks,
+         'tasks_per_job': tasks_per_job,
+         'group': group,
+        },
+        passkey
+    );
+    if ('error' in response) {
+        $('#error').text('error creating dataset: '+response['error']);
+        return;
+    }
+    dataset_id = response['result'].split('/')[2];
+
+    // upload config
+    response = await fetch_json('PUT', '/config/' + dataset_id,
+        submit_data, passkey
+    );
+    if ('error' in response) {
+        $('#error').text('error uploading config: '+response['error']);
+        return;
+    }
+    window.location = '/dataset/' + dataset_id;
+}
+async function update() {
+    var description = $('#description').val();
+    var submit_data = parse_json($("#submit_box").val());
+    if (submit_data == null)
+        return;
+    var response = await fetch_json('PUT', '/config/' + dataset_id,
+        submit_data, passkey
+    );
+    if ('error' in response) {
+        $('#error').text('error uploading config: '+response['error']);
+        return;
+    }
+    var name, reqs, orig_reqs, r, match;
+    for (var i=0;i<submit_data['tasks'].length;i++){
+        name = submit_data['tasks'][i]['name'];
+        reqs = submit_data['tasks'][i]['requirements']
+        if (name == orig_config['tasks'][i]['name']) {
+            orig_reqs = orig_config['tasks'][i]['requirements'];
+            match = true;
+            for(r in reqs){
+                if ((!(r in orig_reqs)) || reqs[r] != orig_reqs[r]) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match)
+                continue;
+        }
+        response = await fetch_json('PATCH', '/datasets/' + dataset_id + '/task_actions/bulk_requirements/' + name,
+            reqs, passkey
+        );
+        if ('error' in response) {
+            $('#error').text('error setting requirements for '+name+': '+response['error']);
+            return;
+        }
+    }
+    response = await fetch_json('PUT', '/datasets/' + dataset_id + '/description',
+        {'description':description}, passkey
+    );
+    if ('error' in response) {
+        $('#error').text('error setting description: '+response['error']);
+        return;
+    }
+    window.location = '/dataset/' + dataset_id;
+}
+</script>
+{% end %}

@@ -7,16 +7,17 @@ from wipac_dev_tools import from_environment
 def add_auth_to_argparse(parser):
     """Add auth args to argparse."""
     config = from_environment({
+        'API_URL': 'https://iceprod2-api.icecube.wisc.edu',
         'OAUTH_URL': 'https://keycloak.icecube.wisc.edu/auth/realms/IceCube',
         'OAUTH_CLIENT_ID': 'iceprod',
         'OAUTH_CLIENT_SECRET': '',
     })
     description = '''
         Use either user credentials or client credentials to authenticate.
-        Can also be specified via env variables: OAUTH_URL, OAUTH_CLIENT_ID,
-        and OAUTH_CLIENT_SECRET.
+        Can also be specified via env variables: API_URL, OAUTH_URL,
+        OAUTH_CLIENT_ID, and OAUTH_CLIENT_SECRET.
     '''
-    parser.add_argument('--rest-url', default='https://iceprod2-api.icecube.wisc.edu',
+    parser.add_argument('--rest-url', default=config['API_URL'],
                         help='URL for REST API (default: IceProd API)')
     group = parser.add_argument_group('OAuth', description)
     group.add_argument('--oauth-url', default=config['OAUTH_URL'],

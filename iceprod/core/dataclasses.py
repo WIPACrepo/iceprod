@@ -15,15 +15,11 @@ The `output` method of each class will create json with info on each
 dataclass, to be used in javascript.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import time
 
 from numbers import Number, Integral
-try:
-    String = basestring
-except NameError:
-    String = str
+String = str
+
 
 # pluralizations for keys that are not classes here
 _plurals = {
@@ -311,6 +307,7 @@ class Task(_TaskCommon):
         self['trays'] = []
         self['requirements'] = Requirement()
         self['task_files'] = False
+        self['container'] = None
         super(Task,self).__init__(*args,**kwargs)
 
     def output(self):
@@ -363,6 +360,7 @@ class Task(_TaskCommon):
                 and isinstance(self['requirements'],Requirement)
                 and self['requirements'].valid()
                 and isinstance(self['task_files'],bool)
+                and self['container'] is None or isinstance(self['container'], str)
             )
         except Exception:
             return False

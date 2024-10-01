@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Jobs - IceProd{% end %}
+
+{% block page_title %}Jobs{% end %}
+
+{% block body %}
+
+<table class='task_table'>
+    <tr>
+        <th>Job Index</th>
+        <th>Status</th>
+        <th>Status Changed</th>
+        {% if (current_user) %}
+        <th><button class="set_status" onclick='job_reset(job_ids_on_page);'>Reset All</button></th>
+        <th><button class="set_status" onclick='job_hard_reset(job_ids_on_page);'>Hard Reset All</button></th>
+        <th><button class="set_status" onclick='job_suspend(job_ids_on_page);'>Suspend All</button></th>
+        {% end %}
+    </tr>
+    {% for j in jobs %}
+    <tr>
+        <td><a href="/dataset/{{ url_escape(jobs[j]['dataset_id']) }}/job/{{ url_escape(jobs[j]['job_id']) }}">{{ jobs[j]['job_index'] }}</a></td>
+        <td>{{ jobs[j]['status'] }}</td>
+        <td>{{ jobs[j]['status_changed'] }}</td>
+        {% if (current_user) %}
+        <td>{% if jobs[j]['status'] in states.job_prev_statuses(states.JOB_STATUS_START) %}
+        <button class="set_status" onclick='job_reset(["{{ jobs[j]["job_id"] }}"]);'>Reset</button>
+        {% end %}</td>
+        <td><button class="set_status" onclick='job_hard_reset(["{{ jobs[j]["job_id"] }}"]);'>Hard Reset</button></td>
+        <td>{% if jobs[j]['status'] in states.job_prev_statuses('suspended') %}
+        <button class="set_status" onclick='job_suspend(["{{ jobs[j]["job_id"] }}"]);'>Suspend</button>
+        {% end %}</td>
+        {% end %}
+    </tr>
+    {% end %}
+</table>
+
+{% end %}
+
+{% block body_scripts %}
+
+{% if (current_user) %}
+<script type="text/javascript" src="/static/fetch.js"></script>
+<script type="text/javascript" src="/static/rest.js"></script>
+<script type="text/javascript">
+var rest_api = '{{ rest_api }}';
+const passkey = "{{ passkey }}";
+const dataset_id = "{{ list(jobs.values())[0]['dataset_id'] if jobs else '' }}";
+const job_ids_on_page = [
+    {% for j in jobs %}
+        "{{ jobs[j]['job_id'] }}", 
+    {% end %}
+    ];
+
+async function job_reset(job_ids) {
+    try {
+        {
+            const url = '/datasets/' + dataset_id + '/task_actions/bulk_reset';
+            const ret = await fetch_json('POST', url, {'jobs': job_ids}, passkey);
+            if ('error' in ret) {
+                message_alert('error - '+ret['error']);
+                return false;
+            }
+        }
+
+        {
+            const url = '/datasets/' + dataset_id + '/job_actions/bulk_reset';
+            const ret = await fetch_json('POST', url, {'jobs': job_ids}, passkey);
+            if ('error' in ret) {
+                message_alert('error - '+ret['error']);
+                return false;
+            }
+        }
+    } catch(err) {
+        message_alert('error - '+err);
+        return false;
+    }
+    reload();
+    return true;
+}
+
+async function job_hard_reset(job_ids) {
+    try {
+        {
+            const url = '/datasets/' + dataset_id + '/task_actions/bulk_hard_reset';
+            const ret = await fetch_json('POST', url, {'jobs': job_ids}, passkey);
+            if ('error' in ret) {
+                message_alert('error - '+ret['error']);
+                return false;
+            }
+        }
+
+        {
+            const url = '/datasets/' + dataset_id + '/job_actions/bulk_hard_reset';
+            const ret = await fetch_json('POST', url, {'jobs': job_ids}, passkey);
+            if ('error' in ret) {
+                message_alert('error - '+ret['error']);
+                return false;
+            }
+        }
+    } catch(err) {
+        message_alert('error - '+err);
+        return false;
+    }
+    reload();
+    return true;
+}
+
+async function job_suspend(job_ids) {
+    try {
+        {
+            const url = '/datasets/' + dataset_id + '/task_actions/bulk_suspend';
+            const ret = await fetch_json('POST', url, {'jobs': job_ids}, passkey);
+            if ('error' in ret) {
+                message_alert('error - '+ret['error']);
+                return false;
+            }
+        }
+
+        {
+            const url = '/datasets/' + dataset_id + '/job_actions/bulk_suspend';
+            const ret = await fetch_json('POST', url, {'jobs': job_ids}, passkey);
+            if ('error' in ret) {
+                message_alert('error - '+ret['error']);
+                return false;
+            }
+        }
+    } catch(err) {
+        message_alert('error - '+err);
+        return false;
+    }
+    reload();
+    return true;
+}
+{% end %}
+</script>
+{% end %}

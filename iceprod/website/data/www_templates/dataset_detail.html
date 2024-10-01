@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}Dataset {{ dataset_num }} - IceProd{% end %}
+
+{% block description %}{{ dataset["description"] }}{% end %}
+
+{% block sidebar %}
+<div class="section">
+    <h4><a href="/submit">Submit New Dataset</a></h4>
+    <div class="esc-separator"></div>
+    <h4><a href="/submit">Submit Dataset like Current</a></h4>
+</div>
+{% end %}
+
+{% block page_title %}Dataset {{ dataset_num }} Details{% end %}
+
+{% block body %}
+<div style="margin-bottom:1em">
+  <a href="/config?dataset_id={{ dataset_id }}">View Config</a><span style="width:2.5em;display:inline-block"> </span>
+  <a href="/config?edit=1&dataset_id={{ dataset_id }}">Edit Config</a>
+</div>
+<h2>Settings</h2>
+<table class="settings key_value">
+{% for k in dataset %}
+<tr>
+    <td class="key">{{ k }}</td>
+    <td class="value">
+    {% if (k == "priority") %}
+        <input id="dataset_priority" value="{{ dataset[k] }}" /><button onclick='dataset_priority()'>Update</button>
+    {% else %}{{ dataset[k] }}{% end %}</td>
+</tr>
+{% end %}
+</table>
+
+{% if (current_user) %}
+<div class="action">
+    <button onclick='dataset_reset()'>Reset</button>
+    <button onclick='dataset_hard_reset()'>Hard Reset</button>
+    <button onclick='dataset_suspend()'>Suspend</button>
+    <button onclick='dataset_truncate()'>Truncate</button>
+    <button onclick='dataset_delete_logs()'>Delete Logs</button>
+</div>
+{% end %}
+
+<h2>Jobs</h2>
+
+<div class="jobs">
+{% for s in jobs %}
+<div>
+  <div style="display:inline;width:40px"><a href="/dataset/{{ url_escape(dataset_id) }}/job?status={{ url_escape(s) }}">{{ s }}</a></div>
+  <div style="display:inline;width:40px">{{ jobs[s] }}</div>
+</div>
+{% end %}
+</div>
+
+<h2>Tasks</h2>
+
+<div class="tasks">
+{% for s in tasks %}
+<div>
+  <div style="display:inline;width:40px"><a href="/dataset/{{ url_escape(dataset_id) }}/task?status={{ url_escape(s) }}">{{ s }}</a></div>
+  <div style="display:inline;width:40px">{{ tasks[s] }}</div>
+</div>
+{% end %}
+</div>
+<div class="task_completion">
+    <h2>Task Status by Task Name</h2>
+    {% if task_info %}
+    <table>
+        <tr>
+            {% for key in list(task_info.values())[0] %}
+            <th>{{ key.capitalize() }}</th>
+            {% end %}
+        </tr>
+        {% for t in task_info %}
+        <tr>
+            {% for value in task_info[t].values() %}
+            <td>{{ value }}</td>
+            {% end %}
+        </tr>
+        {% end %}
+    </table>
+    {% end %}
+    <h3>Completion Statistics</h3>
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Avg/stddev (hours)</th>
+            <th>Max/min (hours)</th>
+            <th>Eff</th>
+        </tr>
+        {% for t in task_stats %}
+          {% if 'avg_hrs' in task_stats[t] and task_stats[t]['avg_hrs'] is not None and 'stddev_hrs' in task_stats[t] and task_stats[t]['stddev_hrs'] is not None %}
+        <tr>
+            <td>{{ t }}</td>
+            <td>{{ '{:0.2f}'.format(task_stats[t]['avg_hrs']) }} / {{ '{:0.2f}'.format(task_stats[t]['stddev_hrs']) }}</td>
+            <td>{{ '{:0.2f}'.format(task_stats[t]['max_hrs']) }} / {{ '{:0.2f}'.format(task_stats[t]['min_hrs']) }}</td>
+            <td>{{ '{:d}'.format(int(task_stats[t]['efficiency']*100)) }}%</td>
+        </tr>
+          {% end %}
+        {% end %}
+    </table>
+</div>
+{% end %}
+
+{% block body_scripts %}
+
+{% if (current_user) %}
+<script type="text/javascript" src="/static/fetch.js"></script>
+<script type="text/javascript" src="/static/rest.js"></script>
+<script type="text/javascript">
+var rest_api = '{{ rest_api }}';
+const passkey = "{{ passkey }}";
+const dataset_id = "{{ dataset_id }}";
+
+async function dataset_priority() {
+    try {
+        const val = parseFloat($("#dataset_priority").val());
+        
+        const url = '/datasets/' + dataset_id + '/priority';
+        const ret = await fetch_json('PUT', url, {'priority': val}, passkey);
+        if ('error' in ret) {
+            message_alert('error - '+ret['error']);
+            return false;
+        }
+    } catch(err) {
+        message_alert('error - '+err);
+        return false;
+    }
+    return true;
+}
+
+async function dataset_reset() {
+    try {
+        {
+            const url = '/datasets/' + dataset_id + '/task_actions/bulk_reset';
+            const ret = await fetch_json('POST', url, {}, passkey);
+            if ('error' in ret) {
+                message_alert('error - '+ret['error']);
+                return false;
+            }
+        }
+
+        {
+            const url = '/datasets/' + dataset_id + '/job_actions/bulk_reset';
+            const ret = await fetch_json('POST', url, {}, passkey);
+            if ('error' in ret) {
+                message_alert('error - '+ret['error']);
+                return false;
+            }
+        }
+
+        {
+            const url = '/datasets/' + dataset_id + '/status';
+            const ret = await fetch_json('PUT', url, {'status': '{{ states.DATASET_STATUS_START }}'}, passkey);
+            if ('error' in ret) {
+                message_alert('error - '+ret['error']);
+                return false;
+            }
+        }
+    } catch(err) {
+        message_alert('error - '+err);
+        return false;
+    }
+    reload();
+    return true;
+}
+
+async function dataset_hard_reset() {
+    try {
+        {
+            const url = '/datasets/' + dataset_id + '/task_actions/bulk_hard_reset';
+            const ret = await fetch_json('POST', url, {}, passkey);
+            if ('error' in ret) {
+                message_alert('error - '+ret['error']);
+                return false;
+            }
+        }
+
+        {
+            const url = '/datasets/' + dataset_id + '/job_actions/bulk_hard_reset';
+            const ret = await fetch_json('POST', url, {}, passkey);
+            if ('error' in ret) {
+                message_alert('error - '+ret['error']);
+                return false;
+            }
+        }
+
+        {
+            const url = '/datasets/' + dataset_id + '/dataset_actions/hard_reset';
+            const ret = await fetch_json('POST', url, {}, passkey);
+            if ('error' in ret) {
+                message_alert('error - '+ret['error']);
+                return false;
+            }
+        }
+    } catch(err) {
+        message_alert('error - '+err);
+        return false;
+    }
+    reload();
+    return true;
+}
+
+async function dataset_suspend() {
+    try {
+        {
+            const url = '/datasets/' + dataset_id + '/task_actions/bulk_suspend';
+            const ret = await fetch_json('POST', url, {}, passkey);
+            if ('error' in ret) {
+                message_alert('error - '+ret['error']);
+                return false;
+            }
+        }
+
+        {
+            const url = '/datasets/' + dataset_id + '/job_actions/bulk_suspend';
+            const ret = await fetch_json('POST', url, {}, passkey);
+            if ('error' in ret) {
+                message_alert('error - '+ret['error']);
+                return false;
+            }
+        }
+
+        {
+            const url = '/datasets/' + dataset_id + '/status';
+            const ret = await fetch_json('PUT', url, {'status': 'suspended'}, passkey);
+            if ('error' in ret) {
+                message_alert('error - '+ret['error']);
+                return false;
+            }
+        }
+    } catch(err) {
+        message_alert('error - '+err);
+        return false;
+    }
+    reload();
+    return true;
+}
+
+async function dataset_truncate() {
+    try {
+        const url = '/datasets/' + dataset_id + '/dataset_actions/truncate';
+        const ret = await fetch_json('POST', url, {}, passkey);
+        if ('error' in ret) {
+            message_alert('error - '+ret['error']);
+            return false;
+        }
+    } catch(err) {
+        message_alert('error - '+err);
+        return false;
+    }
+    reload();
+    return true;
+}
+
+async function dataset_deconste_logs(dataset_id, passkey) {
+    message("Deconsting logs... 0% compconste");
+    try {
+        const url = '/datasets/' + dataset_id + '/logs';
+        for await (const ret of fetch_json('DELETE', url, {}, passkey)) {;
+            if ('error' in ret) {
+                message_alert('error - '+ret['error']);
+                return false;
+            } else if ('percent_compconste' in ret) {
+                message('Deconsting logs... ' + ret['percent_compconste'].toFixed(2) + '% compconste');
+            }
+            if ('status' in ret && ret['status'] == 'compconste') {
+                break;
+            }
+        }
+    } catch(err) {
+        message_alert('error - '+err);
+        return false;
+    }
+    message_close();
+    return true;
+}
+</script>
+{% end %}
+
+{% end %}

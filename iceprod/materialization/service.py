@@ -34,7 +34,7 @@ class MaterializationService:
                 await asyncio.sleep(60)
 
     async def _run_once(self):
-        ret = None
+        materialization_id = None
         try:
             self.last_run_time = time.time()
             now = nowstr()
@@ -58,7 +58,8 @@ class MaterializationService:
                 return 'sleep'
 
             # run materialization
-            logger.warning(f'running materialization request {ret["materialization_id"]}')
+            materialization_id = ret["materialization_id"]
+            logger.warning(f'running materialization request {materialization_id}')
             kwargs = {}
             if 'dataset_id' in ret and ret['dataset_id']:
                 kwargs['only_dataset'] = ret['dataset_id']
@@ -66,17 +67,24 @@ class MaterializationService:
                 kwargs['num'] = ret['num']
             if 'set_status' in ret and ret['set_status']:
                 kwargs['set_status'] = ret['set_status']
-            await self.materialize.run_once(**kwargs)
+            ret = await self.materialize.run_once(**kwargs)
 
-            await self.db.materialization.update_one(
-                {'materialization_id': ret['materialization_id']},
-                {'$set': {'status': 'complete'}},
-            )
+            if ret:
+                await self.db.materialization.update_one(
+                    {'materialization_id': materialization_id},
+                    {'$set': {'status': 'complete'}},
+                )
+            else:
+                logger.warning(f'materialization request {materialization_id} took too long, bumping to end of queue for another run')
+                await self.db.materialization.update_one(
+                    {'materialization_id': materialization_id},
+                    {'$set': {'modify_timestamp': nowstr()}},
+                )
             self.last_success_time = time.time()
         except Exception:
             logger.error('error running materialization', exc_info=True)
-            if ret:
+            if materialization_id:
                 await self.db.materialization.update_one(
-                    {'materialization_id': ret['materialization_id']},
+                    {'materialization_id': materialization_id},
                     {'$set': {'status': 'error'}},
                 )

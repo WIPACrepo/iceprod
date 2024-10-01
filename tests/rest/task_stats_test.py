@@ -65,6 +65,8 @@ async def test_rest_task_stats_get(server):
         'bar': 1.23456,
         'baz': [1,2,3,4],
     }
+    data_stat = data.copy()
+    del data_stat['dataset_id']
     ret = await client.request('POST', f'/tasks/{task_id}/task_stats', data)
     task_stat_id = ret['result']
     ret = await client.request('POST', f'/tasks/{task_id}/task_stats', data)
@@ -76,14 +78,14 @@ async def test_rest_task_stats_get(server):
     assert task_stat_id2 in ret
     assert 'task_id' in ret[task_stat_id]
     assert task_id == ret[task_stat_id]['task_id']
-    assert data == ret[task_stat_id]['stats']
+    assert data_stat == ret[task_stat_id]['stats']
 
     ret = await client.request('GET', f'/datasets/{data["dataset_id"]}/tasks/{task_id}/task_stats', {'last': 'true'})
     assert len(ret) == 1
     assert task_stat_id2 in ret
     assert 'task_id' in ret[task_stat_id2]
     assert task_id == ret[task_stat_id2]['task_id']
-    assert data == ret[task_stat_id2]['stats']
+    assert data_stat == ret[task_stat_id2]['stats']
 
     ret = await client.request('GET', f'/datasets/{data["dataset_id"]}/tasks/{task_id}/task_stats', {'last': 'true', 'keys': 'task_id'})
     assert len(ret) == 1
@@ -102,10 +104,12 @@ async def test_rest_task_stats_get_details(server):
         'bar': 1.23456,
         'baz': [1,2,3,4],
     }
+    data_stat = data.copy()
+    del data_stat['dataset_id']
     ret = await client.request('POST', f'/tasks/{task_id}/task_stats', data)
     task_stat_id = ret['result']
 
     ret = await client.request('GET', f'/datasets/{data["dataset_id"]}/tasks/{task_id}/task_stats/{task_stat_id}')
     assert task_stat_id == ret['task_stat_id']
     assert task_id == ret['task_id']
-    assert data == ret['stats']
+    assert data_stat == ret['stats']

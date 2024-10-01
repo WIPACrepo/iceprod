@@ -1,0 +1,1349 @@
+000 (110828038.000.000) 2024-03-12 16:26:46Z Job submitted from host: <128.104.8.70:9618?addrs=128.104.8.70-9618&alias=sub-2.icecube.wisc.edu&noUDP&sock=schedd_1333803_7ed9>
+...
+028 (110828038.000.000) 2024-03-12 16:26:46Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:26:46.546Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd8"
+IceProdTaskId = "lnk3f"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "SubmitEvent"
+Proc = 0
+SubmitHost = "<128.104.8.70:9618?addrs=128.104.8.70-9618&alias=sub-2.icecube.wisc.edu&noUDP&sock=schedd_1333803_7ed9>"
+Subproc = 0
+TriggerEventTypeName = "ULOG_SUBMIT"
+TriggerEventTypeNumber = 0
+...
+000 (110828038.001.000) 2024-03-12 16:26:46Z Job submitted from host: <128.104.8.70:9618?addrs=128.104.8.70-9618&alias=sub-2.icecube.wisc.edu&noUDP&sock=schedd_1333803_7ed9>
+...
+028 (110828038.001.000) 2024-03-12 16:26:46Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:26:46.546Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd8"
+IceProdTaskId = "lnk3g"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "SubmitEvent"
+Proc = 1
+SubmitHost = "<128.104.8.70:9618?addrs=128.104.8.70-9618&alias=sub-2.icecube.wisc.edu&noUDP&sock=schedd_1333803_7ed9>"
+Subproc = 0
+TriggerEventTypeName = "ULOG_SUBMIT"
+TriggerEventTypeNumber = 0
+...
+000 (110828038.002.000) 2024-03-12 16:26:46Z Job submitted from host: <128.104.8.70:9618?addrs=128.104.8.70-9618&alias=sub-2.icecube.wisc.edu&noUDP&sock=schedd_1333803_7ed9>
+...
+028 (110828038.002.000) 2024-03-12 16:26:46Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:26:46.547Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd9"
+IceProdTaskId = "lnk3e"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "SubmitEvent"
+Proc = 2
+SubmitHost = "<128.104.8.70:9618?addrs=128.104.8.70-9618&alias=sub-2.icecube.wisc.edu&noUDP&sock=schedd_1333803_7ed9>"
+Subproc = 0
+TriggerEventTypeName = "ULOG_SUBMIT"
+TriggerEventTypeNumber = 0
+...
+000 (110828038.003.000) 2024-03-12 16:26:46Z Job submitted from host: <128.104.8.70:9618?addrs=128.104.8.70-9618&alias=sub-2.icecube.wisc.edu&noUDP&sock=schedd_1333803_7ed9>
+...
+028 (110828038.003.000) 2024-03-12 16:26:46Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:26:46.547Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd9"
+IceProdTaskId = "lnk3h"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "SubmitEvent"
+Proc = 3
+SubmitHost = "<128.104.8.70:9618?addrs=128.104.8.70-9618&alias=sub-2.icecube.wisc.edu&noUDP&sock=schedd_1333803_7ed9>"
+Subproc = 0
+TriggerEventTypeName = "ULOG_SUBMIT"
+TriggerEventTypeNumber = 0
+...
+000 (110828038.004.000) 2024-03-12 16:26:46Z Job submitted from host: <128.104.8.70:9618?addrs=128.104.8.70-9618&alias=sub-2.icecube.wisc.edu&noUDP&sock=schedd_1333803_7ed9>
+...
+028 (110828038.004.000) 2024-03-12 16:26:46Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:26:46.547Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd9"
+IceProdTaskId = "lnk3j"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "SubmitEvent"
+Proc = 4
+SubmitHost = "<128.104.8.70:9618?addrs=128.104.8.70-9618&alias=sub-2.icecube.wisc.edu&noUDP&sock=schedd_1333803_7ed9>"
+Subproc = 0
+TriggerEventTypeName = "ULOG_SUBMIT"
+TriggerEventTypeNumber = 0
+...
+000 (110828038.005.000) 2024-03-12 16:26:46Z Job submitted from host: <128.104.8.70:9618?addrs=128.104.8.70-9618&alias=sub-2.icecube.wisc.edu&noUDP&sock=schedd_1333803_7ed9>
+...
+028 (110828038.005.000) 2024-03-12 16:26:46Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:26:46.548Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksf0"
+IceProdTaskId = "lnk3k"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "SubmitEvent"
+Proc = 5
+SubmitHost = "<128.104.8.70:9618?addrs=128.104.8.70-9618&alias=sub-2.icecube.wisc.edu&noUDP&sock=schedd_1333803_7ed9>"
+Subproc = 0
+TriggerEventTypeName = "ULOG_SUBMIT"
+TriggerEventTypeNumber = 0
+...
+000 (110828038.006.000) 2024-03-12 16:26:46Z Job submitted from host: <128.104.8.70:9618?addrs=128.104.8.70-9618&alias=sub-2.icecube.wisc.edu&noUDP&sock=schedd_1333803_7ed9>
+...
+028 (110828038.006.000) 2024-03-12 16:26:46Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:26:46.548Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksf0"
+IceProdTaskId = "lnk3l"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "SubmitEvent"
+Proc = 6
+SubmitHost = "<128.104.8.70:9618?addrs=128.104.8.70-9618&alias=sub-2.icecube.wisc.edu&noUDP&sock=schedd_1333803_7ed9>"
+Subproc = 0
+TriggerEventTypeName = "ULOG_SUBMIT"
+TriggerEventTypeNumber = 0
+...
+009 (110828038.006.000) 2024-03-12 16:27:04Z Job was aborted.
+	via condor_rm (by user dschultz)
+...
+028 (110828038.006.000) 2024-03-12 16:27:04Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:27:04.935Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksf0"
+IceProdTaskId = "lnk3l"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "JobAbortedEvent"
+Proc = 6
+Reason = "via condor_rm (by user dschultz)"
+Subproc = 0
+TriggerEventTypeName = "ULOG_JOB_ABORTED"
+TriggerEventTypeNumber = 9
+...
+040 (110828038.000.000) 2024-03-12 16:27:45Z Started transferring input files
+	Transferring to host: <128.105.68.162:9618?addrs=128.105.68.162-9618+[fde1-53ba-e9a0-de11-bcef-d3b-5e94-41be]-9618&alias=parabyte2000.chtc.wisc.edu&noUDP&sock=backfill2_68_191183_77f7_48749>
+...
+028 (110828038.000.000) 2024-03-12 16:27:45Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:27:45.014Z"
+EventTypeNumber = 28
+Host = "<128.105.68.162:9618?addrs=128.105.68.162-9618+[fde1-53ba-e9a0-de11-bcef-d3b-5e94-41be]-9618&alias=parabyte2000.chtc.wisc.edu&noUDP&sock=backfill2_68_191183_77f7_48749>"
+IceProdDatasetId = "4ksd8"
+IceProdTaskId = "lnk3f"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "FileTransferEvent"
+Proc = 0
+Subproc = 0
+TriggerEventTypeName = "ULOG_FILE_TRANSFER"
+TriggerEventTypeNumber = 40
+Type = 2
+...
+040 (110828038.002.000) 2024-03-12 16:27:45Z Started transferring input files
+	Transferring to host: <128.105.68.22:9618?addrs=128.105.68.22-9618&alias=oconnor2006.chtc.wisc.edu&noUDP&sock=backfill2_7_190714_0404_52766>
+...
+028 (110828038.002.000) 2024-03-12 16:27:45Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:27:45.308Z"
+EventTypeNumber = 28
+Host = "<128.105.68.22:9618?addrs=128.105.68.22-9618&alias=oconnor2006.chtc.wisc.edu&noUDP&sock=backfill2_7_190714_0404_52766>"
+IceProdDatasetId = "4ksd9"
+IceProdTaskId = "lnk3e"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "FileTransferEvent"
+Proc = 2
+Subproc = 0
+TriggerEventTypeName = "ULOG_FILE_TRANSFER"
+TriggerEventTypeNumber = 40
+Type = 2
+...
+040 (110828038.003.000) 2024-03-12 16:27:45Z Started transferring input files
+	Transferring to host: <128.105.69.30:9618?addrs=128.105.69.30-9618&alias=e2352.chtc.wisc.edu&noUDP&sock=slot1_8_17620_a246_27458>
+...
+028 (110828038.003.000) 2024-03-12 16:27:45Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:27:45.464Z"
+EventTypeNumber = 28
+Host = "<128.105.69.30:9618?addrs=128.105.69.30-9618&alias=e2352.chtc.wisc.edu&noUDP&sock=slot1_8_17620_a246_27458>"
+IceProdDatasetId = "4ksd9"
+IceProdTaskId = "lnk3h"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "FileTransferEvent"
+Proc = 3
+Subproc = 0
+TriggerEventTypeName = "ULOG_FILE_TRANSFER"
+TriggerEventTypeNumber = 40
+Type = 2
+...
+040 (110828038.001.000) 2024-03-12 16:27:46Z Started transferring input files
+	Transferring to host: <128.104.101.133:9618?addrs=128.104.101.133-9618+[2607-f388-107c-501-4603-a7ff-fe29-a983]-9618&alias=e133.chtc.wisc.edu&noUDP&sock=slot1_3_11959_f27f_27188>
+...
+028 (110828038.001.000) 2024-03-12 16:27:46Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:27:46.030Z"
+EventTypeNumber = 28
+Host = "<128.104.101.133:9618?addrs=128.104.101.133-9618+[2607-f388-107c-501-4603-a7ff-fe29-a983]-9618&alias=e133.chtc.wisc.edu&noUDP&sock=slot1_3_11959_f27f_27188>"
+IceProdDatasetId = "4ksd8"
+IceProdTaskId = "lnk3g"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "FileTransferEvent"
+Proc = 1
+Subproc = 0
+TriggerEventTypeName = "ULOG_FILE_TRANSFER"
+TriggerEventTypeNumber = 40
+Type = 2
+...
+040 (110828038.004.000) 2024-03-12 16:27:46Z Started transferring input files
+	Transferring to host: <128.105.69.49:9618?addrs=128.105.69.49-9618&alias=e2373.chtc.wisc.edu&noUDP&sock=slot1_24_18740_c673_25683>
+...
+028 (110828038.004.000) 2024-03-12 16:27:46Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:27:46.196Z"
+EventTypeNumber = 28
+Host = "<128.105.69.49:9618?addrs=128.105.69.49-9618&alias=e2373.chtc.wisc.edu&noUDP&sock=slot1_24_18740_c673_25683>"
+IceProdDatasetId = "4ksd9"
+IceProdTaskId = "lnk3j"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "FileTransferEvent"
+Proc = 4
+Subproc = 0
+TriggerEventTypeName = "ULOG_FILE_TRANSFER"
+TriggerEventTypeNumber = 40
+Type = 2
+...
+040 (110828038.005.000) 2024-03-12 16:27:46Z Started transferring input files
+	Transferring to host: <128.104.58.202:9618?addrs=128.104.58.202-9618+[2607-f388-1086-0-5287-89ff-feb7-2cc2]-9618&alias=e458.chtc.wisc.edu&noUDP&sock=slot1_13_18246_b51f_25096>
+...
+028 (110828038.005.000) 2024-03-12 16:27:46Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:27:46.357Z"
+EventTypeNumber = 28
+Host = "<128.104.58.202:9618?addrs=128.104.58.202-9618+[2607-f388-1086-0-5287-89ff-feb7-2cc2]-9618&alias=e458.chtc.wisc.edu&noUDP&sock=slot1_13_18246_b51f_25096>"
+IceProdDatasetId = "4ksf0"
+IceProdTaskId = "lnk3k"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "FileTransferEvent"
+Proc = 5
+Subproc = 0
+TriggerEventTypeName = "ULOG_FILE_TRANSFER"
+TriggerEventTypeNumber = 40
+Type = 2
+...
+001 (110828038.000.000) 2024-03-12 16:27:47Z Job executing on host: <128.105.68.162:9618?addrs=128.105.68.162-9618+[fde1-53ba-e9a0-de11-bcef-d3b-5e94-41be]-9618&alias=parabyte2000.chtc.wisc.edu&noUDP&sock=startd_14425_edbc>
+...
+028 (110828038.000.000) 2024-03-12 16:27:47Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:27:47.829Z"
+EventTypeNumber = 28
+ExecuteHost = "<128.105.68.162:9618?addrs=128.105.68.162-9618+[fde1-53ba-e9a0-de11-bcef-d3b-5e94-41be]-9618&alias=parabyte2000.chtc.wisc.edu&noUDP&sock=startd_14425_edbc>"
+IceProdDatasetId = "4ksd8"
+IceProdTaskId = "lnk3f"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "ExecuteEvent"
+Proc = 0
+Subproc = 0
+TriggerEventTypeName = "ULOG_EXECUTE"
+TriggerEventTypeNumber = 1
+...
+040 (110828038.000.000) 2024-03-12 16:27:47Z Finished transferring input files
+...
+028 (110828038.000.000) 2024-03-12 16:27:47Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:27:47.830Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd8"
+IceProdTaskId = "lnk3f"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "FileTransferEvent"
+Proc = 0
+Subproc = 0
+TriggerEventTypeName = "ULOG_FILE_TRANSFER"
+TriggerEventTypeNumber = 40
+Type = 3
+...
+001 (110828038.002.000) 2024-03-12 16:27:48Z Job executing on host: <128.105.68.22:9618?addrs=128.105.68.22-9618&alias=oconnor2006.chtc.wisc.edu&noUDP&sock=startd_14680_d662>
+...
+028 (110828038.002.000) 2024-03-12 16:27:48Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:27:48.014Z"
+EventTypeNumber = 28
+ExecuteHost = "<128.105.68.22:9618?addrs=128.105.68.22-9618&alias=oconnor2006.chtc.wisc.edu&noUDP&sock=startd_14680_d662>"
+IceProdDatasetId = "4ksd9"
+IceProdTaskId = "lnk3e"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "ExecuteEvent"
+Proc = 2
+Subproc = 0
+TriggerEventTypeName = "ULOG_EXECUTE"
+TriggerEventTypeNumber = 1
+...
+040 (110828038.002.000) 2024-03-12 16:27:48Z Finished transferring input files
+...
+028 (110828038.002.000) 2024-03-12 16:27:48Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:27:48.015Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd9"
+IceProdTaskId = "lnk3e"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "FileTransferEvent"
+Proc = 2
+Subproc = 0
+TriggerEventTypeName = "ULOG_FILE_TRANSFER"
+TriggerEventTypeNumber = 40
+Type = 3
+...
+001 (110828038.003.000) 2024-03-12 16:27:48Z Job executing on host: <128.105.69.30:9618?addrs=128.105.69.30-9618&alias=e2352.chtc.wisc.edu&noUDP&sock=startd_7816_b451>
+...
+028 (110828038.003.000) 2024-03-12 16:27:48Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:27:48.310Z"
+EventTypeNumber = 28
+ExecuteHost = "<128.105.69.30:9618?addrs=128.105.69.30-9618&alias=e2352.chtc.wisc.edu&noUDP&sock=startd_7816_b451>"
+IceProdDatasetId = "4ksd9"
+IceProdTaskId = "lnk3h"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "ExecuteEvent"
+Proc = 3
+Subproc = 0
+TriggerEventTypeName = "ULOG_EXECUTE"
+TriggerEventTypeNumber = 1
+...
+040 (110828038.003.000) 2024-03-12 16:27:48Z Finished transferring input files
+...
+028 (110828038.003.000) 2024-03-12 16:27:48Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:27:48.310Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd9"
+IceProdTaskId = "lnk3h"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "FileTransferEvent"
+Proc = 3
+Subproc = 0
+TriggerEventTypeName = "ULOG_FILE_TRANSFER"
+TriggerEventTypeNumber = 40
+Type = 3
+...
+001 (110828038.001.000) 2024-03-12 16:27:49Z Job executing on host: <128.104.101.133:9618?addrs=128.104.101.133-9618+[2607-f388-107c-501-4603-a7ff-fe29-a983]-9618&alias=e133.chtc.wisc.edu&noUDP&sock=startd_7875_2c67>
+...
+028 (110828038.001.000) 2024-03-12 16:27:49Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:27:49.380Z"
+EventTypeNumber = 28
+ExecuteHost = "<128.104.101.133:9618?addrs=128.104.101.133-9618+[2607-f388-107c-501-4603-a7ff-fe29-a983]-9618&alias=e133.chtc.wisc.edu&noUDP&sock=startd_7875_2c67>"
+IceProdDatasetId = "4ksd8"
+IceProdTaskId = "lnk3g"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "ExecuteEvent"
+Proc = 1
+Subproc = 0
+TriggerEventTypeName = "ULOG_EXECUTE"
+TriggerEventTypeNumber = 1
+...
+040 (110828038.001.000) 2024-03-12 16:27:49Z Finished transferring input files
+...
+028 (110828038.001.000) 2024-03-12 16:27:49Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:27:49.381Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd8"
+IceProdTaskId = "lnk3g"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "FileTransferEvent"
+Proc = 1
+Subproc = 0
+TriggerEventTypeName = "ULOG_FILE_TRANSFER"
+TriggerEventTypeNumber = 40
+Type = 3
+...
+001 (110828038.004.000) 2024-03-12 16:27:49Z Job executing on host: <128.105.69.49:9618?addrs=128.105.69.49-9618&alias=e2373.chtc.wisc.edu&noUDP&sock=startd_7566_39a4>
+...
+028 (110828038.004.000) 2024-03-12 16:27:49Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:27:49.382Z"
+EventTypeNumber = 28
+ExecuteHost = "<128.105.69.49:9618?addrs=128.105.69.49-9618&alias=e2373.chtc.wisc.edu&noUDP&sock=startd_7566_39a4>"
+IceProdDatasetId = "4ksd9"
+IceProdTaskId = "lnk3j"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "ExecuteEvent"
+Proc = 4
+Subproc = 0
+TriggerEventTypeName = "ULOG_EXECUTE"
+TriggerEventTypeNumber = 1
+...
+040 (110828038.004.000) 2024-03-12 16:27:49Z Finished transferring input files
+...
+028 (110828038.004.000) 2024-03-12 16:27:49Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:27:49.383Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd9"
+IceProdTaskId = "lnk3j"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "FileTransferEvent"
+Proc = 4
+Subproc = 0
+TriggerEventTypeName = "ULOG_FILE_TRANSFER"
+TriggerEventTypeNumber = 40
+Type = 3
+...
+001 (110828038.005.000) 2024-03-12 16:27:49Z Job executing on host: <128.104.58.202:9618?addrs=128.104.58.202-9618+[2607-f388-1086-0-5287-89ff-feb7-2cc2]-9618&alias=e458.chtc.wisc.edu&noUDP&sock=startd_7700_2355>
+...
+028 (110828038.005.000) 2024-03-12 16:27:49Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:27:49.595Z"
+EventTypeNumber = 28
+ExecuteHost = "<128.104.58.202:9618?addrs=128.104.58.202-9618+[2607-f388-1086-0-5287-89ff-feb7-2cc2]-9618&alias=e458.chtc.wisc.edu&noUDP&sock=startd_7700_2355>"
+IceProdDatasetId = "4ksf0"
+IceProdTaskId = "lnk3k"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "ExecuteEvent"
+Proc = 5
+Subproc = 0
+TriggerEventTypeName = "ULOG_EXECUTE"
+TriggerEventTypeNumber = 1
+...
+040 (110828038.005.000) 2024-03-12 16:27:49Z Finished transferring input files
+...
+028 (110828038.005.000) 2024-03-12 16:27:49Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:27:49.596Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksf0"
+IceProdTaskId = "lnk3k"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "FileTransferEvent"
+Proc = 5
+Subproc = 0
+TriggerEventTypeName = "ULOG_FILE_TRANSFER"
+TriggerEventTypeNumber = 40
+Type = 3
+...
+006 (110828038.002.000) 2024-03-12 16:27:56Z Image size of job updated: 1
+	0  -  MemoryUsage of job (MB)
+	0  -  ResidentSetSize of job (KB)
+...
+028 (110828038.002.000) 2024-03-12 16:27:56Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:27:56.062Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd9"
+IceProdTaskId = "lnk3e"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MemoryUsage = 0
+MyType = "JobImageSizeEvent"
+Proc = 2
+ResidentSetSize = 0
+Size = 1
+Subproc = 0
+TriggerEventTypeName = "ULOG_IMAGE_SIZE"
+TriggerEventTypeNumber = 6
+...
+006 (110828038.000.000) 2024-03-12 16:27:56Z Image size of job updated: 1
+	0  -  MemoryUsage of job (MB)
+	0  -  ResidentSetSize of job (KB)
+...
+028 (110828038.000.000) 2024-03-12 16:27:56Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:27:56.104Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd8"
+IceProdTaskId = "lnk3f"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MemoryUsage = 0
+MyType = "JobImageSizeEvent"
+Proc = 0
+ResidentSetSize = 0
+Size = 1
+Subproc = 0
+TriggerEventTypeName = "ULOG_IMAGE_SIZE"
+TriggerEventTypeNumber = 6
+...
+006 (110828038.003.000) 2024-03-12 16:27:56Z Image size of job updated: 1
+	0  -  MemoryUsage of job (MB)
+	0  -  ResidentSetSize of job (KB)
+...
+028 (110828038.003.000) 2024-03-12 16:27:56Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:27:56.352Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd9"
+IceProdTaskId = "lnk3h"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MemoryUsage = 0
+MyType = "JobImageSizeEvent"
+Proc = 3
+ResidentSetSize = 0
+Size = 1
+Subproc = 0
+TriggerEventTypeName = "ULOG_IMAGE_SIZE"
+TriggerEventTypeNumber = 6
+...
+006 (110828038.005.000) 2024-03-12 16:27:56Z Image size of job updated: 1
+	0  -  MemoryUsage of job (MB)
+	0  -  ResidentSetSize of job (KB)
+...
+028 (110828038.005.000) 2024-03-12 16:27:56Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:27:56.978Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksf0"
+IceProdTaskId = "lnk3k"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MemoryUsage = 0
+MyType = "JobImageSizeEvent"
+Proc = 5
+ResidentSetSize = 0
+Size = 1
+Subproc = 0
+TriggerEventTypeName = "ULOG_IMAGE_SIZE"
+TriggerEventTypeNumber = 6
+...
+006 (110828038.004.000) 2024-03-12 16:27:57Z Image size of job updated: 1
+	0  -  MemoryUsage of job (MB)
+	0  -  ResidentSetSize of job (KB)
+...
+028 (110828038.004.000) 2024-03-12 16:27:57Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:27:57.422Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd9"
+IceProdTaskId = "lnk3j"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MemoryUsage = 0
+MyType = "JobImageSizeEvent"
+Proc = 4
+ResidentSetSize = 0
+Size = 1
+Subproc = 0
+TriggerEventTypeName = "ULOG_IMAGE_SIZE"
+TriggerEventTypeNumber = 6
+...
+006 (110828038.001.000) 2024-03-12 16:27:57Z Image size of job updated: 384
+	1  -  MemoryUsage of job (MB)
+	144  -  ResidentSetSize of job (KB)
+...
+028 (110828038.001.000) 2024-03-12 16:27:57Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:27:57.477Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd8"
+IceProdTaskId = "lnk3g"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MemoryUsage = 1
+MyType = "JobImageSizeEvent"
+Proc = 1
+ResidentSetSize = 144
+Size = 384
+Subproc = 0
+TriggerEventTypeName = "ULOG_IMAGE_SIZE"
+TriggerEventTypeNumber = 6
+...
+004 (110828038.005.000) 2024-03-12 16:27:59Z Job was evicted.
+	(0) CPU times
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Local Usage
+	0  -  Run Bytes Sent By Job
+	589  -  Run Bytes Received By Job
+	Partitionable Resources :    Usage  Request Allocated 
+	   Cpus                 :                 1         1 
+	   Disk (KB)            :       19  1000000   1299068 
+	   GPUs                 :                           0 
+	   IoHeavy              :                           0 
+	   Memory (MB)          :        0     1000      1024 
+...
+028 (110828038.005.000) 2024-03-12 16:27:59Z Job ad information event triggered.
+Checkpointed = false
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:27:59.005Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksf0"
+IceProdTaskId = "lnk3k"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "JobEvictedEvent"
+Proc = 5
+ReceivedBytes = 589.0
+RunLocalUsage = "Usr 0 00:00:00, Sys 0 00:00:00"
+RunRemoteUsage = "Usr 0 00:00:00, Sys 0 00:00:00"
+SentBytes = 0.0
+Subproc = 0
+TerminatedAndRequeued = false
+TerminatedNormally = false
+TriggerEventTypeName = "ULOG_JOB_EVICTED"
+TriggerEventTypeNumber = 4
+...
+040 (110828038.005.000) 2024-03-12 16:28:20Z Started transferring input files
+	Transferring to host: <169.228.132.166:32839?CCBID=128.105.244.51:9618%3faddrs%3d128.105.244.51-9618%26alias%3dglidein-cm3000.chtc.wisc.edu%26noUDP%26sock%3dcollector2#11464802&PrivNet=sdsc-67.t2.ucsd.edu&addrs=169.228.132.166-32839&alias=sdsc-67.t2.ucsd.edu&noUDP>
+...
+028 (110828038.005.000) 2024-03-12 16:28:20Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:28:20.813Z"
+EventTypeNumber = 28
+Host = "<169.228.132.166:32839?CCBID=128.105.244.51:9618%3faddrs%3d128.105.244.51-9618%26alias%3dglidein-cm3000.chtc.wisc.edu%26noUDP%26sock%3dcollector2#11464802&PrivNet=sdsc-67.t2.ucsd.edu&addrs=169.228.132.166-32839&alias=sdsc-67.t2.ucsd.edu&noUDP>"
+IceProdDatasetId = "4ksf0"
+IceProdTaskId = "lnk3k"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+LastRemoteWallClockTime = 18.0
+MyType = "FileTransferEvent"
+Proc = 5
+Subproc = 0
+TriggerEventTypeName = "ULOG_FILE_TRANSFER"
+TriggerEventTypeNumber = 40
+Type = 2
+...
+001 (110828038.005.000) 2024-03-12 16:28:20Z Job executing on host: <169.228.132.166:38475?CCBID=128.105.244.51:9618%3faddrs%3d128.105.244.51-9618%26alias%3dglidein-cm3000.chtc.wisc.edu%26noUDP%26sock%3dcollector7#11441884&PrivNet=sdsc-67.t2.ucsd.edu&addrs=169.228.132.166-38475&alias=sdsc-67.t2.ucsd.edu&noUDP>
+...
+028 (110828038.005.000) 2024-03-12 16:28:20Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:28:20.934Z"
+EventTypeNumber = 28
+ExecuteHost = "<169.228.132.166:38475?CCBID=128.105.244.51:9618%3faddrs%3d128.105.244.51-9618%26alias%3dglidein-cm3000.chtc.wisc.edu%26noUDP%26sock%3dcollector7#11441884&PrivNet=sdsc-67.t2.ucsd.edu&addrs=169.228.132.166-38475&alias=sdsc-67.t2.ucsd.edu&noUDP>"
+IceProdDatasetId = "4ksf0"
+IceProdTaskId = "lnk3k"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+LastRemoteWallClockTime = 18.0
+MyType = "ExecuteEvent"
+Proc = 5
+Subproc = 0
+TriggerEventTypeName = "ULOG_EXECUTE"
+TriggerEventTypeNumber = 1
+...
+040 (110828038.005.000) 2024-03-12 16:28:20Z Finished transferring input files
+...
+028 (110828038.005.000) 2024-03-12 16:28:20Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:28:20.934Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksf0"
+IceProdTaskId = "lnk3k"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+LastRemoteWallClockTime = 18.0
+MyType = "FileTransferEvent"
+Proc = 5
+Subproc = 0
+TriggerEventTypeName = "ULOG_FILE_TRANSFER"
+TriggerEventTypeNumber = 40
+Type = 3
+...
+006 (110828038.005.000) 2024-03-12 16:28:29Z Image size of job updated: 0
+	6  -  MemoryUsage of job (MB)
+	5268  -  ResidentSetSize of job (KB)
+...
+028 (110828038.005.000) 2024-03-12 16:28:29Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:28:29.285Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksf0"
+IceProdTaskId = "lnk3k"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+LastRemoteWallClockTime = 18.0
+MemoryUsage = 6
+MyType = "JobImageSizeEvent"
+Proc = 5
+ResidentSetSize = 5268
+Size = 0
+Subproc = 0
+TriggerEventTypeName = "ULOG_IMAGE_SIZE"
+TriggerEventTypeNumber = 6
+...
+008 (110828038.002.000) 2024-03-12 16:28:48Z Hello from job 3
+...
+006 (110828038.000.000) 2024-03-12 16:28:48Z Image size of job updated: 496
+	1  -  MemoryUsage of job (MB)
+	200  -  ResidentSetSize of job (KB)
+...
+028 (110828038.000.000) 2024-03-12 16:28:48Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:28:48.231Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd8"
+IceProdTaskId = "lnk3f"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MemoryUsage = 1
+MyType = "JobImageSizeEvent"
+Proc = 0
+ResidentSetSize = 200
+Size = 496
+Subproc = 0
+TriggerEventTypeName = "ULOG_IMAGE_SIZE"
+TriggerEventTypeNumber = 6
+...
+006 (110828038.003.000) 2024-03-12 16:28:48Z Image size of job updated: 128
+	1  -  MemoryUsage of job (MB)
+	124  -  ResidentSetSize of job (KB)
+...
+028 (110828038.003.000) 2024-03-12 16:28:48Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:28:48.347Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd9"
+IceProdTaskId = "lnk3h"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MemoryUsage = 1
+MyType = "JobImageSizeEvent"
+Proc = 3
+ResidentSetSize = 124
+Size = 128
+Subproc = 0
+TriggerEventTypeName = "ULOG_IMAGE_SIZE"
+TriggerEventTypeNumber = 6
+...
+006 (110828038.001.000) 2024-03-12 16:28:49Z Image size of job updated: 8376
+	8  -  MemoryUsage of job (MB)
+	8096  -  ResidentSetSize of job (KB)
+...
+028 (110828038.001.000) 2024-03-12 16:28:49Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:28:49.643Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd8"
+IceProdTaskId = "lnk3g"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MemoryUsage = 8
+MyType = "JobImageSizeEvent"
+Proc = 1
+ResidentSetSize = 8096
+Size = 8376
+Subproc = 0
+TriggerEventTypeName = "ULOG_IMAGE_SIZE"
+TriggerEventTypeNumber = 6
+...
+040 (110828038.003.000) 2024-03-12 16:28:50Z Started transferring output files
+...
+028 (110828038.003.000) 2024-03-12 16:28:50Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:28:50.222Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd9"
+IceProdTaskId = "lnk3h"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "FileTransferEvent"
+Proc = 3
+Subproc = 0
+TriggerEventTypeName = "ULOG_FILE_TRANSFER"
+TriggerEventTypeNumber = 40
+Type = 5
+...
+006 (110828038.004.000) 2024-03-12 16:28:50Z Image size of job updated: 1048576
+	1  -  MemoryUsage of job (MB)
+	124  -  ResidentSetSize of job (KB)
+...
+028 (110828038.004.000) 2024-03-12 16:28:50Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:28:50.524Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd9"
+IceProdTaskId = "lnk3j"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MemoryUsage = 1
+MyType = "JobImageSizeEvent"
+Proc = 4
+ResidentSetSize = 124
+Size = 1048576
+Subproc = 0
+TriggerEventTypeName = "ULOG_IMAGE_SIZE"
+TriggerEventTypeNumber = 6
+...
+007 (110828038.004.000) 2024-03-12 16:28:50Z Shadow exception!
+	Error from slot1_24@e2373.chtc.wisc.edu: Job has gone over cgroup memory limit of 1024 megabytes. Peak usage: 1024 megabytes.  Consider resubmitting with a higher request_memory.
+	0  -  Run Bytes Sent By Job
+	589  -  Run Bytes Received By Job
+...
+040 (110828038.000.000) 2024-03-12 16:28:50Z Started transferring output files
+...
+028 (110828038.000.000) 2024-03-12 16:28:50Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:28:50.799Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd8"
+IceProdTaskId = "lnk3f"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "FileTransferEvent"
+Proc = 0
+Subproc = 0
+TriggerEventTypeName = "ULOG_FILE_TRANSFER"
+TriggerEventTypeNumber = 40
+Type = 5
+...
+040 (110828038.003.000) 2024-03-12 16:28:51Z Finished transferring output files
+...
+028 (110828038.003.000) 2024-03-12 16:28:51Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:28:51.029Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd9"
+IceProdTaskId = "lnk3h"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "FileTransferEvent"
+Proc = 3
+Subproc = 0
+TriggerEventTypeName = "ULOG_FILE_TRANSFER"
+TriggerEventTypeNumber = 40
+Type = 6
+...
+040 (110828038.001.000) 2024-03-12 16:28:51Z Started transferring output files
+...
+028 (110828038.001.000) 2024-03-12 16:28:51Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:28:51.435Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd8"
+IceProdTaskId = "lnk3g"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "FileTransferEvent"
+Proc = 1
+Subproc = 0
+TriggerEventTypeName = "ULOG_FILE_TRANSFER"
+TriggerEventTypeNumber = 40
+Type = 5
+...
+040 (110828038.000.000) 2024-03-12 16:28:51Z Finished transferring output files
+...
+028 (110828038.000.000) 2024-03-12 16:28:51Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:28:51.678Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd8"
+IceProdTaskId = "lnk3f"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "FileTransferEvent"
+Proc = 0
+Subproc = 0
+TriggerEventTypeName = "ULOG_FILE_TRANSFER"
+TriggerEventTypeNumber = 40
+Type = 6
+...
+040 (110828038.001.000) 2024-03-12 16:28:52Z Finished transferring output files
+...
+028 (110828038.001.000) 2024-03-12 16:28:52Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:28:52.271Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd8"
+IceProdTaskId = "lnk3g"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "FileTransferEvent"
+Proc = 1
+Subproc = 0
+TriggerEventTypeName = "ULOG_FILE_TRANSFER"
+TriggerEventTypeNumber = 40
+Type = 6
+...
+012 (110828038.004.000) 2024-03-12 16:28:52Z Job was held.
+	Error from slot1_24@e2373.chtc.wisc.edu: Job has gone over cgroup memory limit of 1024 megabytes. Peak usage: 1024 megabytes.  Consider resubmitting with a higher request_memory.
+	Code 34 Subcode 0
+...
+028 (110828038.004.000) 2024-03-12 16:28:52Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:28:52.674Z"
+EventTypeNumber = 28
+HoldReason = "Error from slot1_24@e2373.chtc.wisc.edu: Job has gone over cgroup memory limit of 1024 megabytes. Peak usage: 1024 megabytes.  Consider resubmitting with a higher request_memory."
+HoldReasonCode = 34
+HoldReasonSubCode = 0
+IceProdDatasetId = "4ksd9"
+IceProdTaskId = "lnk3j"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+LastRemoteWallClockTime = 70.0
+MyType = "JobHeldEvent"
+Proc = 4
+Subproc = 0
+TriggerEventTypeName = "ULOG_JOB_HELD"
+TriggerEventTypeNumber = 12
+...
+005 (110828038.003.000) 2024-03-12 16:28:55Z Job terminated.
+	(1) Normal termination (return value 1)
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Local Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Total Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Total Local Usage
+	1152  -  Run Bytes Sent By Job
+	589  -  Run Bytes Received By Job
+	1152  -  Total Bytes Sent By Job
+	589  -  Total Bytes Received By Job
+	Partitionable Resources :    Usage  Request Allocated 
+	   Cpus                 :        0        1         1 
+	   Disk (KB)            :       28  1000000   1265266 
+	   GPUs                 :                           0 
+	   IoHeavy              :                           0 
+	   Memory (MB)          :        1     1000      1024 
+
+	Job terminated of its own accord at 2024-03-12T21:28:48Z with exit-code 1.
+...
+028 (110828038.003.000) 2024-03-12 16:28:55Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 72
+Cpus = 1
+CpusUsage = 0.0
+Disk = 1265266
+DiskUsage = 28
+EventTime = "2024-03-12T16:28:55.424Z"
+EventTypeNumber = 28
+GPUs = 0
+IceProdDatasetId = "4ksd9"
+IceProdTaskId = "lnk3h"
+IoHeavy = 0
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+Memory = 1024
+MemoryUsage = 1
+MyType = "JobTerminatedEvent"
+Proc = 3
+ReceivedBytes = 589.0
+RequestCpus = 1
+RequestDisk = 1000000
+RequestMemory = 1000
+ReturnValue = 1
+RunLocalUsage = "Usr 0 00:00:00, Sys 0 00:00:00"
+RunRemoteUsage = "Usr 0 00:00:00, Sys 0 00:00:00"
+SentBytes = 1152.0
+Subproc = 0
+TerminatedNormally = true
+ToE = [ How = "OF_ITS_OWN_ACCORD"; Who = "itself"; ExitBySignal = false; When = 1710278928; HowCode = 0; ExitCode = 1 ]
+TotalLocalUsage = "Usr 0 00:00:00, Sys 0 00:00:00"
+TotalReceivedBytes = 589.0
+TotalRemoteUsage = "Usr 0 00:00:00, Sys 0 00:00:00"
+TotalSentBytes = 1152.0
+TriggerEventTypeName = "ULOG_JOB_TERMINATED"
+TriggerEventTypeNumber = 5
+...
+005 (110828038.000.000) 2024-03-12 16:28:55Z Job terminated.
+	(1) Normal termination (return value 0)
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Local Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Total Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Total Local Usage
+	83173  -  Run Bytes Sent By Job
+	589  -  Run Bytes Received By Job
+	83173  -  Total Bytes Sent By Job
+	589  -  Total Bytes Received By Job
+	Partitionable Resources :    Usage  Request Allocated 
+	   Cpus                 :                 1         1 
+	   Disk (KB)            :       99  1000000   3486705 
+	   GPUs                 :                           0 
+	   IoHeavy              :                           0 
+	   Memory (MB)          :        1     1000      1024 
+
+	Job terminated of its own accord at 2024-03-12T21:28:48Z with exit-code 0.
+...
+028 (110828038.000.000) 2024-03-12 16:28:55Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 74
+Cpus = 1
+Disk = 3486705
+DiskUsage = 99
+EventTime = "2024-03-12T16:28:55.982Z"
+EventTypeNumber = 28
+GPUs = 0
+IceProdDatasetId = "4ksd8"
+IceProdTaskId = "lnk3f"
+IoHeavy = 0
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+Memory = 1024
+MemoryUsage = 1
+MyType = "JobTerminatedEvent"
+Proc = 0
+ReceivedBytes = 589.0
+RequestCpus = 1
+RequestDisk = 1000000
+RequestMemory = 1000
+ReturnValue = 0
+RunLocalUsage = "Usr 0 00:00:00, Sys 0 00:00:00"
+RunRemoteUsage = "Usr 0 00:00:00, Sys 0 00:00:00"
+SentBytes = 83173.0
+Subproc = 0
+TerminatedNormally = true
+ToE = [ How = "OF_ITS_OWN_ACCORD"; Who = "itself"; ExitBySignal = false; When = 1710278928; HowCode = 0; ExitCode = 0 ]
+TotalLocalUsage = "Usr 0 00:00:00, Sys 0 00:00:00"
+TotalReceivedBytes = 589.0
+TotalRemoteUsage = "Usr 0 00:00:00, Sys 0 00:00:00"
+TotalSentBytes = 83173.0
+TriggerEventTypeName = "ULOG_JOB_TERMINATED"
+TriggerEventTypeNumber = 5
+...
+005 (110828038.001.000) 2024-03-12 16:28:56Z Job terminated.
+	(1) Normal termination (return value 0)
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Local Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Total Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Total Local Usage
+	8287352  -  Run Bytes Sent By Job
+	8286797  -  Run Bytes Received By Job
+	8287352  -  Total Bytes Sent By Job
+	8286797  -  Total Bytes Received By Job
+	Partitionable Resources :    Usage  Request Allocated 
+	   Cpus                 :                 1         1 
+	   Disk (KB)            :    16203  1000000   3365458 
+	   GPUs                 :                           0 
+	   IoHeavy              :                           0 
+	   Memory (MB)          :        8     1000      1024 
+
+	Job terminated of its own accord at 2024-03-12T21:28:49Z with exit-code 0.
+...
+028 (110828038.001.000) 2024-03-12 16:28:56Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 73
+Cpus = 1
+Disk = 3365458
+DiskUsage = 16203
+EventTime = "2024-03-12T16:28:56.373Z"
+EventTypeNumber = 28
+GPUs = 0
+IceProdDatasetId = "4ksd8"
+IceProdTaskId = "lnk3g"
+IoHeavy = 0
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+Memory = 1024
+MemoryUsage = 8
+MyType = "JobTerminatedEvent"
+Proc = 1
+ReceivedBytes = 8286797.0
+RequestCpus = 1
+RequestDisk = 1000000
+RequestMemory = 1000
+ReturnValue = 0
+RunLocalUsage = "Usr 0 00:00:00, Sys 0 00:00:00"
+RunRemoteUsage = "Usr 0 00:00:00, Sys 0 00:00:00"
+SentBytes = 8287352.0
+Subproc = 0
+TerminatedNormally = true
+ToE = [ How = "OF_ITS_OWN_ACCORD"; Who = "itself"; ExitBySignal = false; When = 1710278929; HowCode = 0; ExitCode = 0 ]
+TotalLocalUsage = "Usr 0 00:00:00, Sys 0 00:00:00"
+TotalReceivedBytes = 8286797.0
+TotalRemoteUsage = "Usr 0 00:00:00, Sys 0 00:00:00"
+TotalSentBytes = 8287352.0
+TriggerEventTypeName = "ULOG_JOB_TERMINATED"
+TriggerEventTypeNumber = 5
+...
+006 (110828038.005.000) 2024-03-12 16:29:21Z Image size of job updated: 1780496
+	43  -  MemoryUsage of job (MB)
+	43944  -  ResidentSetSize of job (KB)
+...
+028 (110828038.005.000) 2024-03-12 16:29:21Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:29:21.434Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksf0"
+IceProdTaskId = "lnk3k"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+LastRemoteWallClockTime = 18.0
+MemoryUsage = 43
+MyType = "JobImageSizeEvent"
+Proc = 5
+ResidentSetSize = 43944
+Size = 1780496
+Subproc = 0
+TriggerEventTypeName = "ULOG_IMAGE_SIZE"
+TriggerEventTypeNumber = 6
+...
+040 (110828038.005.000) 2024-03-12 16:29:23Z Started transferring output files
+...
+028 (110828038.005.000) 2024-03-12 16:29:23Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:29:23.819Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksf0"
+IceProdTaskId = "lnk3k"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+LastRemoteWallClockTime = 18.0
+MyType = "FileTransferEvent"
+Proc = 5
+Subproc = 0
+TriggerEventTypeName = "ULOG_FILE_TRANSFER"
+TriggerEventTypeNumber = 40
+Type = 5
+...
+040 (110828038.005.000) 2024-03-12 16:29:24Z Finished transferring output files
+...
+028 (110828038.005.000) 2024-03-12 16:29:24Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:29:24.345Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksf0"
+IceProdTaskId = "lnk3k"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+LastRemoteWallClockTime = 18.0
+MyType = "FileTransferEvent"
+Proc = 5
+Subproc = 0
+TriggerEventTypeName = "ULOG_FILE_TRANSFER"
+TriggerEventTypeNumber = 40
+Type = 6
+...
+005 (110828038.005.000) 2024-03-12 16:29:28Z Job terminated.
+	(1) Normal termination (return value 0)
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Local Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Total Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Total Local Usage
+	10020  -  Run Bytes Sent By Job
+	589  -  Run Bytes Received By Job
+	10020  -  Total Bytes Sent By Job
+	1178  -  Total Bytes Received By Job
+	Partitionable Resources :    Usage  Request Allocated 
+	   Cpus                 :                 1         1 
+	   Disk (KB)            :       37  1000000   1105070 
+	   Memory (MB)          :       43     1000      1024 
+
+	Job terminated of its own accord at 2024-03-12T21:29:21Z with exit-code 0.
+...
+028 (110828038.005.000) 2024-03-12 16:29:28Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 67
+Cpus = 1
+Disk = 1105070
+DiskUsage = 37
+EventTime = "2024-03-12T16:29:28.967Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksf0"
+IceProdTaskId = "lnk3k"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+LastRemoteWallClockTime = 18.0
+Memory = 1024
+MemoryUsage = 43
+MyType = "JobTerminatedEvent"
+Proc = 5
+ReceivedBytes = 589.0
+RequestCpus = 1
+RequestDisk = 1000000
+RequestMemory = 1000
+ReturnValue = 0
+RunLocalUsage = "Usr 0 00:00:00, Sys 0 00:00:00"
+RunRemoteUsage = "Usr 0 00:00:00, Sys 0 00:00:00"
+SentBytes = 10020.0
+Subproc = 0
+TerminatedNormally = true
+ToE = [ How = "OF_ITS_OWN_ACCORD"; Who = "itself"; ExitBySignal = false; When = 1710278961; HowCode = 0; ExitCode = 0 ]
+TotalLocalUsage = "Usr 0 00:00:00, Sys 0 00:00:00"
+TotalReceivedBytes = 1178.0
+TotalRemoteUsage = "Usr 0 00:00:00, Sys 0 00:00:00"
+TotalSentBytes = 10020.0
+TriggerEventTypeName = "ULOG_JOB_TERMINATED"
+TriggerEventTypeNumber = 5
+...
+006 (110828038.002.000) 2024-03-12 16:29:48Z Image size of job updated: 456
+	0  -  MemoryUsage of job (MB)
+	0  -  ResidentSetSize of job (KB)
+...
+028 (110828038.002.000) 2024-03-12 16:29:48Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:29:48.078Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd9"
+IceProdTaskId = "lnk3e"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MemoryUsage = 0
+MyType = "JobImageSizeEvent"
+Proc = 2
+ResidentSetSize = 0
+Size = 456
+Subproc = 0
+TriggerEventTypeName = "ULOG_IMAGE_SIZE"
+TriggerEventTypeNumber = 6
+...
+040 (110828038.002.000) 2024-03-12 16:29:52Z Started transferring output files
+...
+028 (110828038.002.000) 2024-03-12 16:29:52Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:29:52.468Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd9"
+IceProdTaskId = "lnk3e"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "FileTransferEvent"
+Proc = 2
+Subproc = 0
+TriggerEventTypeName = "ULOG_FILE_TRANSFER"
+TriggerEventTypeNumber = 40
+Type = 5
+...
+040 (110828038.002.000) 2024-03-12 16:29:54Z Finished transferring output files
+...
+028 (110828038.002.000) 2024-03-12 16:29:54Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 0
+EventTime = "2024-03-12T16:29:54.954Z"
+EventTypeNumber = 28
+IceProdDatasetId = "4ksd9"
+IceProdTaskId = "lnk3e"
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+MyType = "FileTransferEvent"
+Proc = 2
+Subproc = 0
+TriggerEventTypeName = "ULOG_FILE_TRANSFER"
+TriggerEventTypeNumber = 40
+Type = 6
+...
+005 (110828038.002.000) 2024-03-12 16:30:03Z Job terminated.
+	(1) Normal termination (return value 0)
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Local Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Total Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Total Local Usage
+	1229  -  Run Bytes Sent By Job
+	589  -  Run Bytes Received By Job
+	1229  -  Total Bytes Sent By Job
+	589  -  Total Bytes Received By Job
+	Partitionable Resources :    Usage  Request Allocated 
+	   Cpus                 :        0        1         1 
+	   Disk (KB)            :       27  1000000   3483624 
+	   GPUs                 :                           0 
+	   IoHeavy              :                           0 
+	   Memory (MB)          :        0     1000      1024 
+
+	Job terminated of its own accord at 2024-03-12T21:29:48Z with exit-code 0.
+...
+028 (110828038.002.000) 2024-03-12 16:30:03Z Job ad information event triggered.
+Cluster = 110828038
+CommittedTime = 139
+Cpus = 1
+CpusUsage = 0.0
+Disk = 3483624
+DiskUsage = 27
+EventTime = "2024-03-12T16:30:03.077Z"
+EventTypeNumber = 28
+GPUs = 0
+IceProdDatasetId = "4ksd9"
+IceProdTaskId = "lnk3e"
+IoHeavy = 0
+IceProdTaskInstanceId = ""
+Iwd = "/scratch/dschultz"
+Memory = 1024
+MemoryUsage = 0
+MyType = "JobTerminatedEvent"
+Proc = 2
+ReceivedBytes = 589.0
+RequestCpus = 1
+RequestDisk = 1000000
+RequestMemory = 1000
+ReturnValue = 0
+RunLocalUsage = "Usr 0 00:00:00, Sys 0 00:00:00"
+RunRemoteUsage = "Usr 0 00:00:00, Sys 0 00:00:00"
+SentBytes = 1229.0
+Subproc = 0
+TerminatedNormally = true
+ToE = [ How = "OF_ITS_OWN_ACCORD"; Who = "itself"; ExitBySignal = false; When = 1710278988; HowCode = 0; ExitCode = 0 ]
+TotalLocalUsage = "Usr 0 00:00:00, Sys 0 00:00:00"
+TotalReceivedBytes = 589.0
+TotalRemoteUsage = "Usr 0 00:00:00, Sys 0 00:00:00"
+TotalSentBytes = 1229.0
+TriggerEventTypeName = "ULOG_JOB_TERMINATED"
+TriggerEventTypeNumber = 5
+...
