@@ -790,7 +790,7 @@ class TasksActionsProcessingHandler(APIBase):
         )
         if not ret:
             logger.info('filter_query: %r', filter_query)
-            ret = await self.db.tasks.find_one({'task_id': task_id, 'instance_id': data['instance_id']},  projection={'_id': False})
+            ret = await self.db.tasks.find_one({'task_id': task_id, 'instance_id': data['instance_id']}, projection={'_id': False})
             if not ret:
                 self.send_error(404, reason="Task not found")
                 return
@@ -908,7 +908,7 @@ class TasksActionsErrorHandler(APIBase):
         )
         if not ret:
             logger.info('filter_query: %r', filter_query)
-            ret = await self.db.tasks.find_one({'task_id': task_id, 'instance_id': data['instance_id']},  projection={'_id': False})
+            ret = await self.db.tasks.find_one({'task_id': task_id, 'instance_id': data['instance_id']}, projection={'_id': False})
             if not ret:
                 self.send_error(404, reason="Task not found")
                 return
@@ -976,7 +976,7 @@ class TasksActionsCompleteHandler(APIBase):
         )
         if not ret:
             logger.info('filter_query: %r', filter_query)
-            ret = await self.db.tasks.find_one({'task_id': task_id, 'instance_id': data['instance_id']},  projection={'_id': False})
+            ret = await self.db.tasks.find_one({'task_id': task_id, 'instance_id': data['instance_id']}, projection={'_id': False})
             if not ret:
                 self.send_error(404, reason="Task not found")
                 return
