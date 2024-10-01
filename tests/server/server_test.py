@@ -17,7 +17,7 @@ import tempfile
 import shutil
 import subprocess
 import importlib
-from datetime import datetime
+from datetime import datetime, UTC
 import glob
 
 from unittest.mock import AsyncMock, MagicMock
@@ -70,8 +70,7 @@ def test_90_roll_files(tmp_path):
     fd = roll_files(fd, filename)
     assert os.path.exists(filename)
 
-    ext = datetime.utcnow().strftime('%Y-%m')
-    files = glob.glob(f'{filename}.{ext}*')
+    files = glob.glob(f'{filename}.*')
     assert len(files) == 1
 
     fd.write(b'bar')

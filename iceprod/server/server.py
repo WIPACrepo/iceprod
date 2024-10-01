@@ -7,7 +7,7 @@ Run the iceprod server.
 
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 import logging
 import os
 import sys
@@ -59,7 +59,7 @@ class Server(object):
 
 
 def roll_files(fd, filename, num_files=5):
-    d = datetime.utcnow()
+    d = datetime.now(UTC)
     ext = (d-timedelta(days=num_files-1)).strftime('%Y-%m-%d')
     newfile = f'{filename}.{ext}'
     if os.path.exists(newfile):  # delete last file
