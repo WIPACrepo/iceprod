@@ -2,6 +2,19 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.0 (2024-10-01)
+
+### Breaking
+
+* This release removes support for IceProd pilots, and instead relies on HTCondor file transfer and running the module code directly in the HTCondor job. As a consequence, we are able to fully support running in containers via HTCondor. ([`3c3681e`](https://github.com/WIPACrepo/iceprod/commit/3c3681e3eec318f6c41c1b81f3cb69bc28b41ab0))
+* Breaking changes:     Data transfer now happens at the task level. Other file transfer is deprecated, and will be merged with the task.     Dataset config removals:         Module running_class support has been removed. Use the src attribute instead.         Data compression support has been removed.         Resources have been removed - use data in permanent input mode.         Steering/system has been removed.     The debugging pilot has limited support, and all data transfer has been removed.     The dataset truncated status has been moved to an attribute.     Tasks start at idle instead of waiting.     Task status waiting is now "ready to queue" and status queued is "on the HTCondor queue" with processing actually being processing in HTCondor.     The task reset status has been removed, and tasks will now directly go to idle. ([`3c3681e`](https://github.com/WIPACrepo/iceprod/commit/3c3681e3eec318f6c41c1b81f3cb69bc28b41ab0))
+
+### Other
+
+* <bot> update requirements.txt ([`71013dd`](https://github.com/WIPACrepo/iceprod/commit/71013dd43a0d9d8ea58bd358b1af5ace722ffc0a))
+* <bot> update requirements-tests.txt ([`723afb6`](https://github.com/WIPACrepo/iceprod/commit/723afb61914459afbae7baab1c06ca8dd3086491))
+* <bot> update requirements-docs.txt ([`3200b3a`](https://github.com/WIPACrepo/iceprod/commit/3200b3a4519f9c7b8b414f9cc636679f5eab86b0))
+
 ## v2.7.14 (2024-08-27)
 
 ### Other
