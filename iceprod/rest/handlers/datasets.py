@@ -289,8 +289,10 @@ class DatasetStatusHandler(APIBase):
             ret = await self.db.datasets.find_one({'dataset_id': dataset_id})
             if not ret:
                 self.send_error(404, reason="Dataset not found")
+                return
             elif ret['status'] != data['status']:
                 self.send_error(400, reason="Bad state transition for status")
+                return
 
         self.write({})
         self.finish()
@@ -431,8 +433,10 @@ class DatasetTruncateHandler(APIBase):
             ret = await self.db.datasets.find_one({'dataset_id': dataset_id})
             if not ret:
                 self.send_error(404, reason="Dataset not found")
+                return
             elif ret['status'] == 'complete':
                 self.send_error(400, reason="Cannot truncate complete dataset")
+                return
 
         self.write({})
         self.finish()

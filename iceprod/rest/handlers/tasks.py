@@ -297,8 +297,10 @@ class TasksStatusHandler(APIBase):
             ret = await self.db.tasks.find_one({'task_id': task_id})
             if not ret:
                 self.send_error(404, reason="Task not found")
+                return
             elif ret['status'] != status:
                 self.send_error(400, reason="Bad state transition for status")
+                return
 
         self.write({})
         self.finish()
@@ -456,8 +458,10 @@ class DatasetTasksStatusHandler(APIBase):
             ret = await self.db.tasks.find_one({'task_id': task_id, 'dataset_id': dataset_id})
             if not ret:
                 self.send_error(404, reason="Task not found")
+                return
             elif ret['status'] != data['status']:
                 self.send_error(400, reason="Bad state transition for status")
+                return
 
         self.write({})
         self.finish()
@@ -786,11 +790,13 @@ class TasksActionsProcessingHandler(APIBase):
         )
         if not ret:
             logger.info('filter_query: %r', filter_query)
-            ret = await self.db.tasks.find_one({'task_id': task_id, 'instance_id': data['instance_id']})
+            ret = await self.db.tasks.find_one({'task_id': task_id, 'instance_id': data['instance_id']},  projection={'_id': False})
             if not ret:
                 self.send_error(404, reason="Task not found")
+                return
             elif ret['status'] != 'processing':
                 self.send_error(400, reason="Bad state transition for status")
+                return
 
         self.write(ret)
         self.finish()
@@ -902,11 +908,13 @@ class TasksActionsErrorHandler(APIBase):
         )
         if not ret:
             logger.info('filter_query: %r', filter_query)
-            ret = await self.db.tasks.find_one({'task_id': task_id, 'instance_id': data['instance_id']})
+            ret = await self.db.tasks.find_one({'task_id': task_id, 'instance_id': data['instance_id']},  projection={'_id': False})
             if not ret:
                 self.send_error(404, reason="Task not found")
+                return
             elif ret['status'] != self.final_status:
                 self.send_error(400, reason="Bad state transition for status")
+                return
 
         self.write(ret)
         self.finish()
@@ -968,11 +976,13 @@ class TasksActionsCompleteHandler(APIBase):
         )
         if not ret:
             logger.info('filter_query: %r', filter_query)
-            ret = await self.db.tasks.find_one({'task_id': task_id, 'instance_id': data['instance_id']})
+            ret = await self.db.tasks.find_one({'task_id': task_id, 'instance_id': data['instance_id']},  projection={'_id': False})
             if not ret:
                 self.send_error(404, reason="Task not found")
+                return
             elif ret['status'] != 'complete':
                 self.send_error(400, reason="Bad state transition for status")
+                return
 
         self.write(ret)
         self.finish()
