@@ -55,9 +55,11 @@ jobs:
       with:
         images: |
           ghcr.io/WIPACRepo/iceprod
+        flavor: |
+          latest=false
         tags: |
-            type=sha,prefix={{branch}}-,event=branch,enable=${{ github.ref_type == 'branch' }}
-            type=semver,pattern={{major}}.{{minor}}.{{patch}},enable=${{ github.ref_type == 'tag' }}
+          type=sha,prefix={{branch}}-,event=branch,enable=${{ github.ref_type == 'branch' }}
+          type=semver,pattern={{major}}.{{minor}}.{{patch}},enable=${{ github.ref_type == 'tag' }}
     - uses: WIPACrepo/build-singularity-cvmfs-action@v1.2
       with:
         github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
