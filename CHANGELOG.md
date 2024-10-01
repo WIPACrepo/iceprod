@@ -2,6 +2,13 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.1 (2024-10-01)
+
+### Other
+
+* Remove latest tag from cvmfs ([`4a42c8a`](https://github.com/WIPACrepo/iceprod/commit/4a42c8a3693c929b104bf526522bf3824e4a9b9e))
+* Add some spare disk for stdout/err, other misc files ([`6e97f18`](https://github.com/WIPACrepo/iceprod/commit/6e97f1824a17378aa448aeaf30cd99f5b53945ac))
+
 ## v3.0.0 (2024-10-01)
 
 ### Breaking
