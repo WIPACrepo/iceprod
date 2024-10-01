@@ -175,7 +175,8 @@ class CondorSubmit:
         if 'memory' in task.requirements and task.requirements['memory']:
             ads['request_memory'] = int(task.requirements['memory']*1000)
         if 'disk' in task.requirements and task.requirements['disk']:
-            ads['request_disk'] = int(task.requirements['disk']*1000000)
+            # add 1G spare for log files and other misc
+            ads['request_disk'] = int(task.requirements['disk']*1000000+1000000)
         if 'time' in task.requirements and task.requirements['time']:
             ads['+OriginalTime'] = int(task.requirements['time']*3600)
             requirements.append('TargetTime > OriginalTime')
