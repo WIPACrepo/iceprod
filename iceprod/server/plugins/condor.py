@@ -295,7 +295,7 @@ transfer_output_remaps = $(outremaps)
 
 """
 
-        for k,v in tasks[0].get_task_config()['batchsys'].get('condor', {}):
+        for k,v in tasks[0].get_task_config()['batchsys'].get('condor', {}).items():
             if k.lower() != 'requirements':
                 submitfile += f'+{k} = {v}\n'
 
@@ -319,7 +319,7 @@ transfer_output_remaps = $(outremaps)
             ads.update(self.condor_resource_reqs(task))
 
             reqs2 = reqs
-            for k,v in tasks[0].get_task_config()['batchsys'].get('condor', {}):
+            for k,v in tasks[0].get_task_config()['batchsys'].get('condor', {}).items():
                 if k.lower() == 'requirements':
                     reqs2 = f'({reqs}) && ({v})' if reqs else v
                     break
