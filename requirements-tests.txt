@@ -14,11 +14,11 @@ attrs==24.2.0
     #   referencing
 beautifulsoup4==4.12.3
     # via iceprod (setup.py)
-boto3==1.35.29
+boto3==1.35.30
     # via
     #   iceprod (setup.py)
     #   moto
-botocore==1.35.29
+botocore==1.35.30
     # via
     #   boto3
     #   moto
@@ -62,7 +62,7 @@ h11==0.14.0
     # via httpcore
 htcondor==23.9.6
     # via iceprod (setup.py)
-httpcore==1.0.5
+httpcore==1.0.6
     # via httpx
 httpx==0.27.2
     # via
@@ -123,8 +123,6 @@ pymongo==4.9.1
     #   motor
 pyopenssl==24.2.1
     # via iceprod (setup.py)
-pypng==0.20220715.0
-    # via qrcode
 pytest==8.0.2
     # via
     #   iceprod (setup.py)
@@ -147,7 +145,7 @@ pyyaml==6.0.2
     #   iceprod (setup.py)
     #   moto
     #   responses
-qrcode==7.4.2
+qrcode==8.0
     # via wipac-rest-tools
 referencing==0.35.1
     # via
@@ -208,7 +206,6 @@ types-requests==2.32.0.20240914
 typing-extensions==4.12.2
     # via
     #   anyio
-    #   qrcode
     #   wipac-dev-tools
 unidecode==1.3.8
     # via iceprod (setup.py)
