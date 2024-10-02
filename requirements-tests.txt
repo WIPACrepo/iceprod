@@ -14,11 +14,11 @@ attrs==24.2.0
     #   referencing
 beautifulsoup4==4.12.3
     # via iceprod (setup.py)
-boto3==1.35.30
+boto3==1.35.31
     # via
     #   iceprod (setup.py)
     #   moto
-botocore==1.35.30
+botocore==1.35.31
     # via
     #   boto3
     #   moto
@@ -191,7 +191,7 @@ soupsieve==2.6
     # via beautifulsoup4
 statsd==4.0.1
     # via iceprod (setup.py)
-tomli==2.0.1
+tomli==2.0.2
     # via
     #   coverage
     #   pytest
