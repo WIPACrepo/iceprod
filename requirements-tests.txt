@@ -117,7 +117,7 @@ pyflakes==3.2.0
     # via flake8
 pyjwt[crypto]==2.9.0
     # via wipac-rest-tools
-pymongo==4.9.1
+pymongo==4.9.2
     # via
     #   iceprod (setup.py)
     #   motor
