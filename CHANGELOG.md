@@ -2,6 +2,14 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.3 (2024-10-02)
+
+### Other
+
+* <bot> update requirements.txt ([`7b2df75`](https://github.com/WIPACrepo/iceprod/commit/7b2df7548e729cae67957fa19e7e7def1d545c98))
+* <bot> update requirements-tests.txt ([`4b4151c`](https://github.com/WIPACrepo/iceprod/commit/4b4151c1dcb0054c304cfcf2af6d388e572af0f0))
+* <bot> update requirements-docs.txt ([`00b2d75`](https://github.com/WIPACrepo/iceprod/commit/00b2d75f1b030211120fc1ff371518e30fd722cc))
+
 ## v3.0.2 (2024-10-02)
 
 ### Other
