@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.4 (2024-10-02)
+
+### Other
+
+* Reset reasons ([#374](https://github.com/WIPACrepo/iceprod/issues/374)) ([`064cf31`](https://github.com/WIPACrepo/iceprod/commit/064cf317446bfe4aee70b051801f16bb4a5fad7c))
+
 ## v3.0.3 (2024-10-02)
 
 ### Other
