@@ -2,6 +2,15 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.2 (2024-10-02)
+
+### Other
+
+* <bot> update requirements.txt ([`63c8841`](https://github.com/WIPACrepo/iceprod/commit/63c8841fcab1ac2fe67b8afdc26dd3f1cc71b0d5))
+* <bot> update requirements-tests.txt ([`373825c`](https://github.com/WIPACrepo/iceprod/commit/373825c8380ef95640801c335b3b70ddf8372f9e))
+* <bot> update requirements-docs.txt ([`b5501e5`](https://github.com/WIPACrepo/iceprod/commit/b5501e53877fe368d3b5d9a96f4aa124ddcca1f2))
+* Update dataset schema to be looser ([`9197849`](https://github.com/WIPACrepo/iceprod/commit/919784994aa2b8be290b6701a38e5dd9c7efccd0))
+
 ## v3.0.1 (2024-10-01)
 
 ### Other
