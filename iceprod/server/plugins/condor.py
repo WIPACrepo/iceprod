@@ -7,7 +7,7 @@ Note: Condor was renamed to HTCondor in 2012.
 import asyncio
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, UTC
 import enum
 import importlib
 import logging
@@ -67,6 +67,14 @@ JOB_EVENT_STATUS_TRANSITIONS = {
     htcondor.JobEventType.JOB_SUSPENDED: JobStatus.FAILED,
     htcondor.JobEventType.JOB_ABORTED: JobStatus.FAILED,
 }
+
+
+RESET_REASONS = [
+    'SIGTERM',
+    'killed',
+    'Transfer input files failure',
+    'Transfer output files failure',
+]
 
 
 def parse_usage(usage: str) -> int:
@@ -469,7 +477,7 @@ class Grid(grid.BaseGrid):
         Returns:
             Path: filename to current JEL
         """
-        day = datetime.utcnow().date().isoformat()
+        day = datetime.now(UTC).date().isoformat()
         day_submit_dir = self.submit_dir / day
         if not day_submit_dir.exists():
             day_submit_dir.mkdir(mode=0o700, parents=True)
@@ -623,9 +631,16 @@ class Grid(grid.BaseGrid):
             if success:
                 await self.task_success(job, stats=stats, stdout=stdout, stderr=stderr)
             else:
+                future = None
                 if reason:
                     stats['error_summary'] = reason
-                await self.task_failure(job, stats=stats, reason=reason, stdout=stdout, stderr=stderr)
+                    for text in RESET_REASONS:
+                        if text in reason:
+                            future = self.task_reset(job, reason=reason)
+                            break
+                if future is None:
+                    future = self.task_failure(job, stats=stats, reason=reason, stdout=stdout, stderr=stderr)
+                await future
         except Exception:
             logger.warning('failed to update REST', exc_info=True)
 

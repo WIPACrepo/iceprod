@@ -674,3 +674,63 @@ async def test_Grid_check_oldjob(schedd, i3prod_path):
     assert dirs == {daydir.name: [p]}
     assert g.submitter.remove.call_count == 1
 
+async def test_reset_task(schedd, i3prod_path):
+    override = ['queue.type=htcondor', 'queue.max_task_queued_time=10', 'queue.max_task_processing_time=10', 'queue.suspend_submit_dir_time=10']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+
+    rc = MagicMock()
+    g = iceprod.server.plugins.condor.Grid(cfg=cfg, rest_client=rc, cred_client=None)
+
+    g.submitter.remove = MagicMock()
+
+    jel = g.get_current_JEL()
+    daydir = jel.parent
+    p = daydir / 'olddir'
+    p.mkdir()
+    t = time.time() - 25
+    os.utime(p, (t, t))
+    logging.info('set time to %d', t)
+
+    JobStatus = iceprod.server.plugins.condor.JobStatus
+    CondorJob = iceprod.server.plugins.condor.CondorJob
+    CondorJobId = iceprod.server.plugins.condor.CondorJobId
+
+    # normal failure
+    jobid = CondorJobId(cluster_id=1, proc_id=0)
+    g.jobs[jobid] = CondorJob(status=JobStatus.IDLE, submit_dir=p)
+
+    g.task_success = AsyncMock()
+    g.task_reset = AsyncMock()
+    g.task_failure = AsyncMock()
+
+    await g.finish(jobid, success=False)
+    
+    assert g.task_success.call_count == 0
+    assert g.task_reset.call_count == 0
+    assert g.task_failure.call_count == 1
+
+    # success
+    g.jobs[jobid] = CondorJob(status=JobStatus.IDLE, submit_dir=p)
+
+    g.task_success = AsyncMock()
+    g.task_reset = AsyncMock()
+    g.task_failure = AsyncMock()
+
+    await g.finish(jobid, success=True)
+    
+    assert g.task_success.call_count == 1
+    assert g.task_reset.call_count == 0
+    assert g.task_failure.call_count == 0
+
+    # success
+    g.jobs[jobid] = CondorJob(status=JobStatus.IDLE, submit_dir=p)
+
+    g.task_success = AsyncMock()
+    g.task_reset = AsyncMock()
+    g.task_failure = AsyncMock()
+
+    await g.finish(jobid, success=False, reason=iceprod.server.plugins.condor.RESET_REASONS[0])
+
+    assert g.task_success.call_count == 0
+    assert g.task_reset.call_count == 1
+    assert g.task_failure.call_count == 0
