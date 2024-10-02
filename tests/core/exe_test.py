@@ -595,3 +595,41 @@ async def test_write_to_script_data_dups(tmp_path):
     script = open(scriptpath).read()
     lines = [line for line in script.split('\n') if not (not line.strip() or line.startswith('#') or line.startswith('set '))]
     assert lines == ['python foo.py']
+
+
+async def test_write_to_script_data_iterations(tmp_path):
+    t = get_task({
+        'options': {
+            'job_temp': 'https://foo.bar',
+        },
+        'steering': {
+            'parameters': {
+                'foo0': 'baz',
+                'test': 'foo_bar_$steering(foo$(iter))',
+                'remote': 'https://foo.bar',
+            }
+        },
+        'tasks': [{
+            'name': 'foo',
+            'trays': [{
+                'modules': [{
+                    'env_clear': False,
+                    'src': 'foo.py'
+                }],
+                'data': [{
+                    'movement': 'input',
+                    'type': 'permanent',
+                    'remote': '$steering(remote)/$steering(test)',
+                }]
+            }]
+        }]
+    })
+
+    ws = iceprod.core.exe.WriteToScript(t, workdir=tmp_path, logger=logger)
+    scriptpath = await ws.convert()
+
+    assert ws.infiles == {Data('https://foo.bar/foo_bar_baz', 'foo_bar_baz', Transfer.TRUE)}
+    assert ws.outfiles == set()
+    script = open(scriptpath).read()
+    lines = [line for line in script.split('\n') if not (not line.strip() or line.startswith('#') or line.startswith('set '))]
+    assert lines == ['python foo.py']
