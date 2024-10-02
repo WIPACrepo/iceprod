@@ -116,6 +116,11 @@ class GridftpPlugin:
         proxies = glob.glob(os.path.join(os.getcwd(), 'x509up_*'))
         if proxies:
             os.environ['X509_USER_PROXY'] = proxies[0]
+        else:
+            raise RuntimeError('X509_USER_PROXY does not exist')
+
+        if not os.path.exists('/cvmfs/icecube.opensciencegrid.org/iceprod/v2.7.1/env-shell.sh'):
+            raise RuntimeError('CVMFS does not exist')
 
     def _do_transfer(self, inpath, outpath):
         try:
@@ -129,9 +134,11 @@ class GridftpPlugin:
             ], stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
             if e.output:
-                for line in e.output.decode('utf-8').split('\n'):
+                output = e.output.decode('utf-8')
+                for line in output.split('\n'):
                     if line.lower().startswith('error'):
                         raise RuntimeError('globus-url-copy failed: '+line)
+                raise RuntimeError('Generic subprocess failure: '+output)
             raise
 
     def download_file(self, url, local_file_path):
