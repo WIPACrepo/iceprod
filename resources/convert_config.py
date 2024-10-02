@@ -14,12 +14,14 @@ IceProd Dataset Migration:
 """
 
 import argparse
+from getpass import getpass
 import json
 import jsonschema
 import logging
 from pathlib import Path
 from pprint import pprint
 
+from pymongo import MongoClient
 from iceprod.core.config import Dataset
 
 
@@ -30,7 +32,7 @@ strcommalist = lambda x: ','.join(x)
 def convert(config):
     logging.info('Now converting config')
 
-    if 'system' in config.get('steering', {}):
+    if (steering := config.get('steering', {})) and steering.get('system', None):
         del config['steering']['system']
 
     def data_cleaner(obj):
@@ -48,8 +50,8 @@ def convert(config):
                     ret.append(r)
             del obj['resources']
         if 'data' in obj:
-            if obj['data']:
-                for d in obj['data']:
+            if (data := obj['data']) and isinstance(data, list):
+                for d in data:
                     if d.get('type', 'permanent') not in ('permanent', 'job_temp', 'dataset_temp', 'site_temp'):
                         logging.warning('%r', d)
                         raise Exception('unknown data type')
@@ -60,14 +62,28 @@ def convert(config):
                     ret.append(d)
             del obj['data']
         if 'classes' in obj:
-            if obj['classes']:
-                raise Exception('classes not allowed')
+            for cl in obj['classes']:
+                if cl.get('libs'):
+                    raise Exception('classes with libs not allowed')
+                ret.append({
+                    'type': 'permanent',
+                    'movement': 'input',
+                    'remote': cl['src'],
+                })
             del obj['classes']
+        if 'system' in obj:
+            del obj['system']
         return ret
 
-    base_data = data_cleaner(config.get('steering', {}))
+    if steering := config.get('steering', {}):
+        base_data = data_cleaner(steering)
+    else:
+        base_data = []
+        config['steering'] = {}
 
-    for task in config.get('tasks', []):
+    for i,task in enumerate(config.get('tasks', [])):
+        if 'name' not in task:
+            task['name'] = f'Task{i}'
         data = base_data.copy()
         data.extend(data_cleaner(task))
         for tray in task.get('trays', []):
@@ -76,34 +92,85 @@ def convert(config):
                 data.extend(data_cleaner(module))
         task['data'] = data
 
+    config['version'] = 3.1
     return config
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-o', '--output', default='-', help='output config json file (default stdout)')
-    parser.add_argument('config', help='config json file')
-    args = parser.parse_args()
-
-    logging.basicConfig(level=logging.INFO)
-
-    logging.info('Opening config at %s', args.config)
-    with open(args.config) as f:
-        config = json.load(f)
-
+def conversion(config, output=None):
+    logging.info('Converting config')
     new_config = convert(config)
-
     logging.info('Validating config')
     d = Dataset('', 1, 1, 1, 1, 'processing', 1., 'group', 'user', False, new_config)
     d.fill_defaults()
     d.validate()
+    logging.info('Config validated!')
 
-    if args.output == '-':
+    if output == '-':
         print(json.dumps(d.config, indent=2, sort_keys=True))
-    else:
-        with open(args.output, 'w') as f:
+    elif output:
+        with open(output, 'w') as f:
             json.dump(d.config, f, indent=2, sort_keys=True)
+    return d.config
 
+
+def do_mongo(server, output=None, dryrun=False):
+    username = input('MongoDB Username:')
+    password = getpass('MongoDB Password:')
+
+    port = 27017
+    if ':' in server:
+        server,port = server.split(':')
+        port = int(port)
+    if server.startswith('mongodb://'):
+        server = server[10:]
+    client = MongoClient(server, port, username=username, password=password)
+    db = client.config
+
+    datasets = {}
+    for d in client.datasets.datasets.find({}, projection={"_id": False, "dataset_id": True, "dataset": True, "status": True}):
+        if d['dataset'] > 22000 or d['status'] == 'processing':
+            datasets[d['dataset_id']] = d
+
+    for config in db.config.find({}, projection={'_id': False}):
+        if config['dataset_id'] not in datasets:
+            continue
+        dataset = datasets[config['dataset_id']]
+        try:
+            logging.warning('Processing %r', dataset['dataset'])
+            new_config = conversion(config, output=output)
+        except jsonschema.exceptions.ValidationError:
+            if dataset['status'] != 'processing' and not config['tasks'][0].get('trays'):
+                logging.info('skipping dataset %r due to errors', dataset['dataset'])
+                continue
+            print(json.dumps(config, indent=2, sort_keys=True))
+            raise
+        except Exception:
+            print(json.dumps(config, indent=2, sort_keys=True))
+            raise
+        assert config['dataset_id'] == new_config['dataset_id']
+        if not dryrun:
+            db.config.find_one_and_replace({'dataset_id': config['dataset_id']}, new_config)
+        logging.warning('Completed %r', dataset['dataset'])
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('-c', '--config', help='config json file')
+    group.add_argument('--mongo-server', default=None, help='mongodb server address')
+    parser.add_argument('-o', '--output', default=None, help='output config json to file (or "-" for stdout)')
+    parser.add_argument('--dry-run', action='store_true', default=False, help='do a dry run (for mongo)')
+    args = parser.parse_args()
+
+    logging.basicConfig(level=logging.INFO)
+
+    if args.config:
+        logging.info('Opening config at %s', args.config)
+        with open(args.config) as f:
+            config = json.load(f)
+        conversion(config, output=args.output)
+    elif args.mongo_server:
+        do_mongo(args.mongo_server, output=args.output, dryrun=args.dry_run)
 
 if __name__ == '__main__':
     main()

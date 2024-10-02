@@ -183,22 +183,26 @@
           "description": "GPUs required"
         },
         "memory": {
-          "type": "number",
+          "anyOf": [{"type": "string"}, {"type": "number"}],
           "default": 1.0,
           "description": "Memory required in GB"
         },
         "disk": {
-          "type": "number",
+          "anyOf": [{"type": "string"}, {"type": "number"}],
           "default": 1.0,
           "description": "Disk required in GB"
         },
         "time": {
-          "type": "number",
+          "anyOf": [{"type": "string"}, {"type": "number"}],
           "default": 1.0,
           "description": "Time required in hours"
         },
         "os": {
-          "type": "string",
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
           "description": "OS required in CVMFS format"
         },
         "site": {
