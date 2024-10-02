@@ -305,11 +305,9 @@ class BaseGrid:
         """
         Tell IceProd API a task should be reset back to the "waiting" status.
 
-        This is for non-payload errors.
-
         Args:
             task: IceProd task info
-            reason: A reason for resetting
+            reason: A reason for failure
         """
         if not task.task_id or not task.instance_id:
             raise RuntimeError("Either task_id or instance_id is empty")
@@ -324,6 +322,9 @@ class BaseGrid:
         except requests.exceptions.HTTPError as e:
             if e.response.status_code != 404:
                 raise
+        else:
+            if reason:
+                await self._upload_log(task, 'stdlog', reason)
 
     async def task_failure(self, task: GridTask, reason: str | None = None, stats: dict | None = None, stdout: Path | None = None, stderr: Path | None = None):
         """
