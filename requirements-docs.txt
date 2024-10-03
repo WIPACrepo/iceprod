@@ -50,7 +50,7 @@ exceptiongroup==1.2.2
     # via anyio
 h11==0.14.0
     # via httpcore
-htcondor==23.9.6
+htcondor==23.10.1
     # via iceprod (setup.py)
 httpcore==1.0.6
     # via httpx
