@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.7 (2024-10-03)
+
+### Other
+
+* Fix non-standard input files ([#377](https://github.com/WIPACrepo/iceprod/issues/377)) ([`8cbdffb`](https://github.com/WIPACrepo/iceprod/commit/8cbdffb85d39a053a23806aa098113b150125db9))
+
 ## v3.0.6 (2024-10-03)
 
 ### Other
