@@ -415,7 +415,11 @@ class WriteToScript:
             module_src = self.cfgparser.parseValue(module['src'], env)
             if functions.isurl(module_src):
                 path = os.path.basename(module_src).split('?', 0)[0].split('#', 0)[0]
-                env['input_files'][module_src] = path
+                env['input_files'].add(Data(
+                    url=module_src,
+                    local=path,
+                    transfer=Transfer.TRUE,
+                ))
                 module_src = path
             self.logger.info('running module %r with src %s', module['name'], module_src)
         elif module['running_class']:
@@ -441,7 +445,11 @@ class WriteToScript:
             env_shell = module['env_shell'].split()
             if functions.isurl(env_shell[0]):
                 path = os.path.basename(env_shell[0]).split('?', 0)[0].split('#', 0)[0]
-                env['input_files'][env_shell[0]] = path
+                env['input_files'].add(Data(
+                    url=env_shell[0],
+                    local=path,
+                    transfer=Transfer.TRUE,
+                ))
                 env_shell[0] = f'./{path}'
 
         # set up the args
@@ -503,7 +511,11 @@ obj.Execute({{}})"""
                 self.logger.info('creating config %r', filename)
                 with open(self.workdir / filename, 'w') as f:
                     f.write(json_encode(module['configs'][filename]))
-                env['input_files'][str(self.workdir / filename)] = filename
+                env['input_files'].add(Data(
+                    url=str(self.workdir / filename),
+                    local=filename,
+                    transfer=Transfer.TRUE,
+                ))
 
         # run the module
         if (not module_src):

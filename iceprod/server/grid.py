@@ -126,6 +126,7 @@ class BaseGrid:
             'query_params': self.site_query_params,
         }
         futures = set()
+        tasks_queued = 0
         for tasks_queued in range(num):
             try:
                 ret = await self.rest_client.request('POST', '/task_actions/queue', args)
