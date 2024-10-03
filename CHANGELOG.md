@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.6 (2024-10-03)
+
+### Other
+
+* Do gridftp env setup within try/except ([#376](https://github.com/WIPACrepo/iceprod/issues/376)) ([`b465fa5`](https://github.com/WIPACrepo/iceprod/commit/b465fa54ff90780261b8582446bb59a01b0b9258))
+
 ## v3.0.5 (2024-10-03)
 
 ### Other
