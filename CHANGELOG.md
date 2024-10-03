@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.5 (2024-10-03)
+
+### Other
+
+* Fix unknown jobs ([#375](https://github.com/WIPACrepo/iceprod/issues/375)) ([`fd1d56b`](https://github.com/WIPACrepo/iceprod/commit/fd1d56bc773a8031973e71029ecab9509f4d9cee))
+
 ## v3.0.4 (2024-10-02)
 
 ### Other
