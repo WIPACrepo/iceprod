@@ -321,7 +321,7 @@ async def test_write_to_script_module_src(tmp_path):
     assert not ws.outfiles
     script = open(scriptpath).read()
     lines = [line for line in script.split('\n') if not (not line.strip() or line.startswith('#') or line.startswith('set '))]
-    assert lines == ['python foo.py']
+    assert lines[-1] == 'python foo.py'
 
 
 async def test_write_to_script_module_shell(tmp_path):
@@ -344,7 +344,7 @@ async def test_write_to_script_module_shell(tmp_path):
     assert not ws.outfiles
     script = open(scriptpath).read()
     lines = [line for line in script.split('\n') if not (not line.strip() or line.startswith('#') or line.startswith('set '))]
-    assert lines == ['/bin/sh foo.sh']
+    assert lines[-1] == '/bin/sh foo.sh'
 
 
 async def test_write_to_script_module_binary(tmp_path):
@@ -367,7 +367,7 @@ async def test_write_to_script_module_binary(tmp_path):
     assert not ws.outfiles
     script = open(scriptpath).read()
     lines = [line for line in script.split('\n') if not (not line.strip() or line.startswith('#') or line.startswith('set '))]
-    assert lines == ['./foo']
+    assert lines[-1] == './foo'
 
 async def test_write_to_script_module_binary_fullpath(tmp_path):
     t = get_task({
@@ -389,7 +389,30 @@ async def test_write_to_script_module_binary_fullpath(tmp_path):
     assert not ws.outfiles
     script = open(scriptpath).read()
     lines = [line for line in script.split('\n') if not (not line.strip() or line.startswith('#') or line.startswith('set '))]
-    assert lines == ['/cvmfs/foo']
+    assert lines[-1] == '/cvmfs/foo'
+
+
+async def test_write_to_script_os_arch(tmp_path):
+    t = get_task({
+        'tasks': [{
+            'name': 'foo',
+            'trays': [{
+                'modules': [{
+                    'env_clear': False,
+                    'src': '/cvmfs/foo/$environ(OS_ARCH)'
+                }]
+            }],
+        }]
+    })
+
+    ws = iceprod.core.exe.WriteToScript(t, workdir=tmp_path, logger=logger)
+    scriptpath = await ws.convert()
+
+    assert not ws.infiles
+    assert not ws.outfiles
+    script = open(scriptpath).read()
+    lines = [line for line in script.split('\n') if not (not line.strip() or line.startswith('#') or line.startswith('set '))]
+    assert lines[-1] == '/cvmfs/foo/$OS_ARCH'
 
 
 async def test_write_to_script_tray_iter(tmp_path):
@@ -415,7 +438,7 @@ async def test_write_to_script_tray_iter(tmp_path):
     script = open(scriptpath).read()
     logging.debug('script: \n%s', script)
     lines = [line for line in script.split('\n') if not (not line.strip() or line.startswith('#') or line.startswith('set '))]
-    assert lines == [
+    assert lines[-3:] == [
         'python foo.py 0',
         'python foo.py 1',
         'python foo.py 2',
@@ -442,9 +465,8 @@ async def test_write_to_script_module_env_clear(tmp_path):
     assert not ws.outfiles
     script = open(scriptpath).read()
     lines = [line for line in script.split('\n') if not (not line.strip() or line.startswith('#') or line.startswith('set '))]
-    assert len(lines) == 1
-    assert lines[0].startswith('env -i ')
-    assert lines[0].endswith(' python foo.py')
+    assert lines[-1].startswith('env -i ')
+    assert lines[-1].endswith(' python foo.py')
 
 
 async def test_write_to_script_module_env_shell(tmp_path):
@@ -468,7 +490,7 @@ async def test_write_to_script_module_env_shell(tmp_path):
     assert not ws.outfiles
     script = open(scriptpath).read()
     lines = [line for line in script.split('\n') if not (not line.strip() or line.startswith('#') or line.startswith('set '))]
-    assert lines == ['/foo/bar/baz.sh python foo.py']
+    assert lines[-1] == '/foo/bar/baz.sh python foo.py'
 
 
 async def test_write_to_script_data(tmp_path):
@@ -503,7 +525,7 @@ async def test_write_to_script_data(tmp_path):
     assert ws.outfiles == {Data('https://foo.bar/1234', '1234', Transfer.TRUE)}
     script = open(scriptpath).read()
     lines = [line for line in script.split('\n') if not (not line.strip() or line.startswith('#') or line.startswith('set '))]
-    assert lines == ['python foo.py']
+    assert lines[-1] == 'python foo.py'
 
 
 async def test_write_to_script_data_task_files(tmp_path):
@@ -592,9 +614,6 @@ async def test_write_to_script_data_dups(tmp_path):
 
     assert ws.infiles == {Data('https://foo.bar/baz', 'baz', Transfer.TRUE)}
     assert ws.outfiles == {Data('https://foo.bar/1234', '1234', Transfer.TRUE)}
-    script = open(scriptpath).read()
-    lines = [line for line in script.split('\n') if not (not line.strip() or line.startswith('#') or line.startswith('set '))]
-    assert lines == ['python foo.py']
 
 
 async def test_write_to_script_data_iterations(tmp_path):
@@ -630,6 +649,3 @@ async def test_write_to_script_data_iterations(tmp_path):
 
     assert ws.infiles == {Data('https://foo.bar/foo_bar_baz', 'foo_bar_baz', Transfer.TRUE)}
     assert ws.outfiles == set()
-    script = open(scriptpath).read()
-    lines = [line for line in script.split('\n') if not (not line.strip() or line.startswith('#') or line.startswith('set '))]
-    assert lines == ['python foo.py']

@@ -148,7 +148,14 @@ def scope_env(cfg: ConfigParser, obj: dict, upperenv: Optional[Env] = None, logg
         upperenv: previous scope's env output
         logger: a logger object, for localized logging
     """
-    env: Env = {'parameters': {}, 'input_files': set(), 'output_files': set()}
+    env: Env = {
+        'parameters': {},
+        'input_files': set(),
+        'output_files': set(),
+        'environment': {
+            'OS_ARCH': '$OS_ARCH',
+        }
+    }
     if upperenv:
         env['parameters'].update(upperenv['parameters'])
         env['input_files'] = upperenv['input_files']
@@ -381,6 +388,9 @@ class WriteToScript:
             print('# Options:', file=f)
             for field in self.options:
                 print(f'# {field}={self.options[field]}', file=f)
+            print('', file=f)
+            print('# set some env vars for expansion', file=f)
+            print('OS_ARCH=$(/cvmfs/icecube.opensciencegrid.org/py3-v4.3.0/os_arch.sh)', file=f)
             print('', file=f)
             with scope_env(self.cfgparser, self.task.dataset.config['steering'], logger=self.logger) as globalenv:
                 task = self.task.get_task_config()
