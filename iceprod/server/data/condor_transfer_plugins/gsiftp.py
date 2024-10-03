@@ -6,7 +6,6 @@ In this example, it transfers files described by a gridftp://path/to/file URL
 by copying them from the path indicated to a job's working directory.
 """
 
-import classad
 import glob
 import os
 import sys
@@ -19,6 +18,12 @@ PLUGIN_VERSION = '1.0.0'
 EXIT_SUCCESS = 0
 EXIT_FAILURE = 1
 EXIT_AUTHENTICATION_REFRESH = 2
+EXIT_IMPORT_ERROR = 3
+
+try:
+    import classad
+except ImportError:
+    sys.exit(EXIT_IMPORT_ERROR)
 
 
 def print_help(stream=sys.stderr):
