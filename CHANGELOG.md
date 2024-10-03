@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.8 (2024-10-03)
+
+### Other
+
+* Set environ(OS_ARCH) ([#378](https://github.com/WIPACrepo/iceprod/issues/378)) ([`0b0012a`](https://github.com/WIPACrepo/iceprod/commit/0b0012ab55f6ab13d59ec8aa09eda0532a1632dc))
+
 ## v3.0.7 (2024-10-03)
 
 ### Other
