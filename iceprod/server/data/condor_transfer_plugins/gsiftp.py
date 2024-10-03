@@ -203,7 +203,6 @@ if __name__ == '__main__':
         sys.exit(EXIT_FAILURE)
 
     gridftp_plugin = GridftpPlugin()
-    gridftp_plugin.setup_env()
 
     # Parse in the classads stored in the input file.
     # Each ad represents a single file to be transferred.
@@ -223,6 +222,7 @@ if __name__ == '__main__':
         with open(args['outfile'], 'w') as outfile:
             for ad in infile_ads:
                 try:
+                    gridftp_plugin.setup_env()
                     if not args['upload']:
                         outfile_dict = gridftp_plugin.download_file(ad['Url'], ad['LocalFileName'])
                     else:
