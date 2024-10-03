@@ -401,7 +401,7 @@ class Grid(grid.BaseGrid):
     async def run(self, forever=True):
         # initial job load from JELs
         try:
-            await self.wait(timeout=0, reload_jobs=True)
+            await self.wait(timeout=0)
         except Exception:
             logger.warning('failed to wait', exc_info=True)
 
@@ -491,13 +491,12 @@ class Grid(grid.BaseGrid):
 
     # JEL processing #
 
-    async def wait(self, timeout, reload_jobs=False):
+    async def wait(self, timeout):
         """
         Wait for jobs to complete from the Job Event Logs.
 
         Args:
             timeout: wait up to N seconds
-            reload_jobs: accept unknown jobs
         """
         start = time.monotonic()
 
@@ -516,13 +515,10 @@ class Grid(grid.BaseGrid):
                     if event.type == htcondor.JobEventType.SUBMIT:
                         self.jobs[job_id] = CondorJob()
                         continue
-                    elif reload_jobs and job_id not in self.jobs:
+                    elif job_id not in self.jobs:
                         logger.debug('reloaded job %s', job_id)
                         self.jobs[job_id] = CondorJob()
 
-                    if job_id not in self.jobs:
-                        logger.warning('unknown job: %s', job_id)
-                        continue
                     job = self.jobs[job_id]
 
                     if event.type == htcondor.JobEventType.JOB_AD_INFORMATION:
