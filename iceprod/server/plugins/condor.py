@@ -145,7 +145,7 @@ class CondorSubmit:
         self.transfer_plugins = self.condor_plugin_discovery()
         logger.info('transfer plugins installed: %s', list(self.transfer_plugins.keys()))
 
-        self.default_container = self.cfg.['queue'].get('default_container', 'Undefined')
+        self.default_container = self.cfg['queue'].get('default_container', 'Undefined')
 
     def condor_plugin_discovery(self):
         """Find all available HTCondor transfer plugins, and copy them to the submit_dir"""
