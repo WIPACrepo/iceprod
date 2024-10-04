@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.11 (2024-10-04)
+
+### Other
+
+* Only use a single os for container selection ([`00238e4`](https://github.com/WIPACrepo/iceprod/commit/00238e48ac592125291441dabf2138d945e0d3a0))
+
 ## v3.0.10 (2024-10-04)
 
 ### Other
