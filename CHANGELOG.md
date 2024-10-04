@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.10 (2024-10-04)
+
+### Other
+
+* Convert OS requirement to a container requirement ([#380](https://github.com/WIPACrepo/iceprod/issues/380)) ([`f44ddf2`](https://github.com/WIPACrepo/iceprod/commit/f44ddf2b2dca023b78a2ff35c2753a598eafa5e2))
+
 ## v3.0.9 (2024-10-04)
 
 ### Other
