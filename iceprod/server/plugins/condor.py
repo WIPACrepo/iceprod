@@ -164,13 +164,14 @@ class CondorSubmit:
         return ret
 
     @staticmethod
-    def condor_os_reqs(os_arch):
-        """Convert from OS_ARCH to Condor OS requirements"""
+    def condor_os_container(os_arch):
+        """Convert from OS_ARCH to container image"""
         os_arch = os_arch.rsplit('_',2)[0].rsplit('.',1)[0]
-        reqs = 'OpSysAndVer =?= "{}"'.format(os_arch.replace('RHEL','CentOS').replace('_',''))
-        reqs = reqs + '|| OpSysAndVer =?= "{}"'.format(os_arch.replace('RHEL','SL').replace('_',''))
-        reqs = 'isUndefined(OSGVO_OS_STRING) ? ('+reqs+') : OSGVO_OS_STRING =?= "{}"'.format(os_arch.replace('_',' '))
-        return reqs
+        if 'RHEL' not in os_arch:
+            raise Exception('unknown OS_ARCH specified')
+        version = os_arch.split('_')[-1]
+        container = f'/cvmfs/singularity.opensciencegrid.org/opensciencegrid/osgvo-el{version}:latest'
+        return container
 
     @staticmethod
     def condor_resource_reqs(task: Task):
@@ -190,11 +191,6 @@ class CondorSubmit:
         if 'time' in task.requirements and task.requirements['time']:
             ads['+OriginalTime'] = int(task.requirements['time']*3600)
             requirements.append('TargetTime > OriginalTime')
-        if 'os' in task.requirements and task.requirements['os']:
-            if len(task.requirements['os']) == 1:
-                requirements.append(CondorSubmit.condor_os_reqs(task.requirements['os'][0]))
-            else:
-                requirements.append('('+')||('.join(CondorSubmit.condor_os_reqs(os) for os in task.requirements['os'])+')')
         if requirements:
             ads['requirements'] = '('+')&&('.join(requirements)+')'
         return ads
@@ -330,7 +326,12 @@ transfer_output_remaps = $(outremaps)
             ads.update(self.condor_outfiles(s.outfiles))
             ads.update(self.condor_resource_reqs(task))
 
-            container = task.get_task_config().get('container', self.default_container)
+            container = task.get_task_config().get('container')
+            if not container:
+                if os_arch := task.requirements.get('os'):
+                    container = self.condor_os_container(os_arch)
+                else:
+                    container = self.default_container
             if container != 'Undefined':
                 container = f'"{container}"'
 

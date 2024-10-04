@@ -50,10 +50,9 @@ def test_CondorSubmit_init(schedd):
     set(sub.transfer_plugins.keys()) == {'gsiftp'}
 
 
-def test_CondorSubmit_condor_os_reqs():
-    ret = iceprod.server.plugins.condor.CondorSubmit.condor_os_reqs('RHEL_6_x86_64')
-    assert 'OpSysAndVer' in ret
-    assert 'OSGVO_OS_STRING' in ret
+def test_CondorSubmit_condor_os_container():
+    ret = iceprod.server.plugins.condor.CondorSubmit.condor_os_container('RHEL_6_x86_64')
+    assert 'el6' in ret
 
 
 def test_CondorSubmit_condor_resource_reqs():
@@ -81,12 +80,6 @@ def test_CondorSubmit_condor_resource_reqs():
     }
     ret = iceprod.server.plugins.condor.CondorSubmit.condor_resource_reqs(task)
     assert ret['request_gpus'] == 1
-
-    task.requirements = {
-        'os': ['RHEL_7_x86_64'],
-    }
-    ret = iceprod.server.plugins.condor.CondorSubmit.condor_resource_reqs(task)
-    assert 'RHEL' in ret['requirements']
 
 
 def test_CondorSubmit_condor_infiles(schedd):
