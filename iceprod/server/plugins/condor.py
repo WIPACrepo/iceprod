@@ -145,6 +145,8 @@ class CondorSubmit:
         self.transfer_plugins = self.condor_plugin_discovery()
         logger.info('transfer plugins installed: %s', list(self.transfer_plugins.keys()))
 
+        self.default_container = self.cfg['queue'].get('default_container', 'Undefined')
+
     def condor_plugin_discovery(self):
         """Find all available HTCondor transfer plugins, and copy them to the submit_dir"""
         src_dir = importlib.resources.files('iceprod.server')/'data'/'condor_transfer_plugins'
@@ -290,6 +292,7 @@ request_disk = $(disk)
 +OriginalTime = $(time)
 +TargetTime = (!isUndefined(Target.PYGLIDEIN_TIME_TO_LIVE) ? Target.PYGLIDEIN_TIME_TO_LIVE : Target.TimeToLive)
 requirements = $($(reqs))
++SingularityImage= $(container)
 
 transfer_plugins = {transfer_plugin_str}
 when_to_transfer_output = ON_EXIT
@@ -327,6 +330,10 @@ transfer_output_remaps = $(outremaps)
             ads.update(self.condor_outfiles(s.outfiles))
             ads.update(self.condor_resource_reqs(task))
 
+            container = task.get_task_config().get('container', self.default_container)
+            if container != 'Undefined':
+                container = f'"{container}"'
+
             reqs2 = reqs
             for k,v in tasks[0].get_task_config()['batchsys'].get('condor', {}).items():
                 if k.lower() == 'requirements':
@@ -353,6 +360,7 @@ transfer_output_remaps = $(outremaps)
                 'disk': f'{ads["request_disk"]}',
                 'time': f'{ads["+OriginalTime"]}',
                 'reqs': f'reqs{task.task_id}',
+                'container': f'{container}',
                 'prec': f'{ads["PreCmd"]}',
                 'prea': f'{ads["PreArguments"]}',
                 'infiles': f'"{";".join(ads["transfer_input_files"])}"',
