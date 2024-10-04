@@ -529,7 +529,7 @@ obj.Execute({{}})"""
 
         # run the module
         if (not module_src):
-            cmd.extend(['python', '-', "<<'____HERE'\n" + args + '\n____HERE\n'])
+            cmd.extend(['python', '-', "<<____HERE\n" + args + '\n____HERE\n'])
         elif module_src[-3:] == '.py':
             # call as python script
             cmd.extend(['python', module_src] + args)
