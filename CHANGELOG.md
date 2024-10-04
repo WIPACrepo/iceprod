@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.9 (2024-10-04)
+
+### Other
+
+* Add container support ([#379](https://github.com/WIPACrepo/iceprod/issues/379)) ([`b8fa632`](https://github.com/WIPACrepo/iceprod/commit/b8fa632cf984ac9273c5786d6720d7a057074dd3))
+
 ## v3.0.8 (2024-10-03)
 
 ### Other
