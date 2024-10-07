@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.12 (2024-10-07)
+
+### Other
+
+* Fix exists transfers and classad import errors ([#381](https://github.com/WIPACrepo/iceprod/issues/381)) ([`646dba1`](https://github.com/WIPACrepo/iceprod/commit/646dba1ed0d57521fde8678589284acc107ad5ff))
+
 ## v3.0.11 (2024-10-04)
 
 ### Other
