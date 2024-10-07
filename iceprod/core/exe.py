@@ -259,8 +259,10 @@ def do_transfer(data: dict) -> Transfer:
             ret = Transfer.FALSE
         elif t in ('y', 'yes', 't', 'true'):
             ret = Transfer.TRUE
+        elif t in ('maybe', 'exists'):
+            ret = Transfer.MAYBE
         else:
-            ret = Transfer(t)
+            raise Exception('unknown transfer type')
     elif isinstance(data['transfer'], (int, float)):
         ret = Transfer.FALSE if data['transfer'] == 0 else Transfer.TRUE
     return ret

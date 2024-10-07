@@ -21,9 +21,28 @@ EXIT_AUTHENTICATION_REFRESH = 2
 EXIT_IMPORT_ERROR = 3
 
 try:
-    import classad
+    from classad import ClassAd, parseAds
 except ImportError:
-    sys.exit(EXIT_IMPORT_ERROR)
+    import re
+    import json
+
+    class ClassAd(dict):
+        def printOld(self):
+            ret = []
+            for k,v in self.items():
+                if isinstance(v, str):
+                    v = '"{0}"'.format(v)
+                ret.append('{0} = {1}'.format(k, v))
+            return '[\n' + ';\n'.join(ret) + '\n]\n'
+
+    def parseAds(data):
+        ret = []
+        for ad in re.findall(r'\s*?\[([\w\W]*?)\]', data):
+            ad_ret = {}
+            for k,v in re.findall(r'\s*?(\w+) += +([^;\n]+);?', ad):
+                ad_ret[k] = json.loads(v)
+            ret.append(ad_ret)
+        return ret
 
 
 def print_help(stream=sys.stderr):
@@ -49,7 +68,7 @@ def print_capabilities():
         'SupportedMethods': 'gsiftp',
         'Version': PLUGIN_VERSION,
     }
-    sys.stdout.write(classad.ClassAd(capabilities).printOld())
+    sys.stdout.write(ClassAd(capabilities).printOld())
 
 
 def parse_args():
@@ -212,12 +231,12 @@ if __name__ == '__main__':
     # Parse in the classads stored in the input file.
     # Each ad represents a single file to be transferred.
     try:
-        infile_ads = classad.parseAds(open(args['infile'], 'r'))
+        infile_ads = parseAds(open(args['infile'], 'r'))
     except Exception as err:
         try:
             with open(args['outfile'], 'w') as outfile:
                 outfile_dict = get_error_dict(err)
-                outfile.write(str(classad.ClassAd(outfile_dict)))
+                outfile.write(str(ClassAd(outfile_dict)))
         except Exception:
             pass
         sys.exit(EXIT_FAILURE)
@@ -233,12 +252,12 @@ if __name__ == '__main__':
                     else:
                         outfile_dict = gridftp_plugin.upload_file(ad['Url'], ad['LocalFileName'])
 
-                    outfile.write(str(classad.ClassAd(outfile_dict)))
+                    outfile.write(str(ClassAd(outfile_dict)))
 
                 except Exception as err:
                     try:
                         outfile_dict = get_error_dict(err, url=ad['Url'])
-                        outfile.write(str(classad.ClassAd(outfile_dict)))
+                        outfile.write(str(ClassAd(outfile_dict)))
                     except Exception:
                         pass
                     sys.exit(EXIT_FAILURE)
