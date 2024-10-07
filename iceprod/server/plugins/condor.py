@@ -215,7 +215,7 @@ class CondorSubmit:
             basename = Path(infile.url).name
             if basename != infile.local:
                 url += '?mapping='+infile.local
-                #mapping.append((basename,infile.local))
+                # mapping.append((basename,infile.local))
         ads = {}
         if mapping:
             ads['PreCmd'] = f'"{self.precmd.name}"'
