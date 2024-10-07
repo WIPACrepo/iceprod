@@ -42,7 +42,7 @@ cryptography==43.0.1
     #   iceprod (setup.py)
     #   pyjwt
     #   pyopenssl
-dnspython==2.6.1
+dnspython==2.7.0
     # via pymongo
 docutils==0.21.2
     # via sphinx
