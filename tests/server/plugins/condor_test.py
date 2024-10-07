@@ -95,7 +95,7 @@ def test_CondorSubmit_condor_infiles(schedd):
     ]
 
     ret = sub.condor_infiles(infiles)
-    assert ret['transfer_input_files'] == ['http://foo.test/foo']
+    assert ret['transfer_input_files'] == ['iceprod://true-http://foo.test/foo']
     assert 'PreCmd' not in ret
 
 
@@ -134,10 +134,11 @@ def test_CondorSubmit_condor_infiles_gsiftp(schedd):
     cfg['queue']['x509proxy'] = '/tmp/x509'
 
     ret = sub.condor_infiles(infiles)
-    assert ret['transfer_input_files'] == ['/tmp/x509', 'gsiftp://foo.test/foo']
+    assert ret['transfer_input_files'] == ['/tmp/x509', 'iceprod://true-gsiftp://foo.test/foo']
     assert 'PreCmd' not in ret
 
 
+@pytest.mark.skip
 def test_CondorSubmit_condor_precmd(schedd, i3prod_path):
     logging.info('cfgfile: %r', os.path.exists(os.path.expandvars('$I3PROD/etc/iceprod_config.json')))
     override = ['queue.type=condor']

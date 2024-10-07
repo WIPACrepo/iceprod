@@ -142,10 +142,15 @@ def get_error_dict(error, url=''):
 class IceProdPlugin:
 
     def setup_env(self):
-        # if an X509 proxy exists, use it for GridFTP
+        # if a proxy exists, use it
         proxies = glob.glob(os.path.join(os.getcwd(), 'x509up_*'))
         if proxies:
             os.environ['X509_USER_PROXY'] = proxies[0]
+        else:
+            raise RuntimeError('X509_USER_PROXY does not exist')
+
+        if not os.path.exists('/cvmfs/icecube.opensciencegrid.org/iceprod/v2.7.1/env-shell.sh'):
+            raise RuntimeError('CVMFS does not exist')
 
     def _split_url(self, url):
         # strip off iceprod:// prefix
@@ -153,13 +158,19 @@ class IceProdPlugin:
         # split url
         method = url.split('://')[0]
         transfer = 'true'
+        mapping = None
         if '-' in method:
             transfer, method = method.split('-',1)
             url = url.split('-',1)[-1]
+        if '?' in url:
+            url, args = url.split('?',1)
+            args = {x.split('=')[0]: x.split('=',1)[-1] for x in args[1:].split('&')}
+            mapping = args.get('mapping')
         return {
             'method': method,
             'url': url,
             'transfer': transfer,
+            'mapping': mapping,
         }
 
     def _do_globus_transfer(self, inpath, outpath):
@@ -189,6 +200,7 @@ class IceProdPlugin:
         url = ret['url']
         method = ret['method']
         transfer = ret['transfer']
+        mapping = ret['mapping']
 
         if transfer in ('true', 'maybe'):
             if method == 'gsiftp':
@@ -222,6 +234,9 @@ class IceProdPlugin:
 
             else:
                 raise Exception('unknown protocol "{0}"'.format(method))
+
+            if mapping and os.path.exists(local_file_path):
+                os.symlink(local_file_path, mapping)
 
         end_time = time.time()
 

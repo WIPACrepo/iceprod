@@ -210,11 +210,12 @@ class CondorSubmit:
             if infile.transfer == Transfer.MAYBE:
                 url = 'iceprod://maybe-' + infile.url
             else:
-                url = infile.url
+                url = 'iceprod://true-' + infile.url
             files.append(url)
             basename = Path(infile.url).name
             if basename != infile.local:
-                mapping.append((basename,infile.local))
+                url += '?mapping='+infile.local
+                #mapping.append((basename,infile.local))
         ads = {}
         if mapping:
             ads['PreCmd'] = f'"{self.precmd.name}"'
