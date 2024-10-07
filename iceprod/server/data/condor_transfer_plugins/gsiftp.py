@@ -25,6 +25,7 @@ try:
 except ImportError:
     import re
     import json
+
     class ClassAd(dict):
         def printOld(self):
             ret = []
@@ -33,6 +34,7 @@ except ImportError:
                     v = '"{0}"'.format(v)
                 ret.append('{0} = {1}'.format(k, v))
             return '[\n' + ';\n'.join(ret) + '\n]\n'
+
     def parseAds(data):
         ret = []
         for ad in re.findall(r'\s*?\[([\w\W]*?)\]', data):
