@@ -211,9 +211,9 @@ class CondorSubmit:
                 url = infile.url
             else:
                 if infile.transfer == Transfer.MAYBE:
-                    url = 'iceprod://maybe-' + infile.url
+                    url = 'iceprod-plugin://maybe-' + infile.url
                 else:
-                    url = 'iceprod://true-' + infile.url
+                    url = 'iceprod-plugin://true-' + infile.url
                 basename = Path(infile.url).name
                 if basename != infile.local:
                     url += '?mapping='+infile.local
@@ -235,7 +235,7 @@ class CondorSubmit:
         for outfile in outfiles:
             files.append(outfile.local)
             if outfile.transfer == Transfer.MAYBE:
-                url = 'iceprod://maybe-' + outfile.url
+                url = 'iceprod-plugin://maybe-' + outfile.url
             else:
                 url = outfile.url
             mapping.append((outfile.local, url))

@@ -3,7 +3,7 @@
 """
 This is a custom HTCondor file transfer plugin for IceProd.
 In this example, it transfers files described by a
-iceprod://transfer+proto://path/to/file metadata+URL,
+iceprod-plugin://transfer-proto://path/to/file?mapping=filename metadata-URL,
 by copying them from the path indicated to a job's working directory.
 """
 
@@ -82,7 +82,7 @@ def print_capabilities():
         'MultipleFileSupport': True,
         'PluginType': 'FileTransfer',
         # SupportedMethods indicates which URL methods/types this plugin supports
-        'SupportedMethods': 'iceprod',
+        'SupportedMethods': 'iceprod-plugin',
         'Version': PLUGIN_VERSION,
     }
     sys.stdout.write(ClassAd(capabilities).printOld())
@@ -164,10 +164,10 @@ class IceProdPlugin:
             raise RuntimeError('CVMFS does not exist')
 
     def _split_url(self, url):
-        # strip off iceprod:// prefix
-        url = url[10:]
+        # strip off iceprod-plugin:// prefix
+        url = url.split('://',1)[-1]
         # split url
-        method = url.split('://')[0]
+        method = url.split('://',1)[0]
         transfer = 'true'
         mapping = None
         if '-' in method:

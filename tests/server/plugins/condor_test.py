@@ -95,7 +95,7 @@ def test_CondorSubmit_condor_infiles(schedd):
     ]
 
     ret = sub.condor_infiles(infiles)
-    assert ret['transfer_input_files'] == ['iceprod://true-http://foo.test/foo']
+    assert ret['transfer_input_files'] == ['iceprod-plugin://true-http://foo.test/foo']
     assert 'PreCmd' not in ret
 
 
@@ -112,7 +112,7 @@ def test_CondorSubmit_condor_infiles_maybe(schedd):
     ]
 
     ret = sub.condor_infiles(infiles)
-    assert ret['transfer_input_files'] == ['iceprod://maybe-http://foo.test/foo']
+    assert ret['transfer_input_files'] == ['iceprod-plugin://maybe-http://foo.test/foo']
     assert 'PreCmd' not in ret
 
 
@@ -134,7 +134,7 @@ def test_CondorSubmit_condor_infiles_gsiftp(schedd):
     cfg['queue']['x509proxy'] = '/tmp/x509'
 
     ret = sub.condor_infiles(infiles)
-    assert ret['transfer_input_files'] == ['/tmp/x509', 'iceprod://true-gsiftp://foo.test/foo']
+    assert ret['transfer_input_files'] == ['/tmp/x509', 'iceprod-plugin://true-gsiftp://foo.test/foo']
     assert 'PreCmd' not in ret
 
 
@@ -193,7 +193,7 @@ def test_CondorSubmit_condor_outfiles_maybe(schedd):
 
     ret = sub.condor_outfiles(outfiles)
     assert ret['transfer_output_files'] == ['bar']
-    assert ret['transfer_output_remaps'] == 'bar = iceprod://maybe-http://foo.test/foo'
+    assert ret['transfer_output_remaps'] == 'bar = iceprod-plugin://maybe-http://foo.test/foo'
 
 
 async def test_CondorSubmit_submit(schedd):

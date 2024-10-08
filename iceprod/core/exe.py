@@ -395,6 +395,7 @@ class WriteToScript:
                     ]
                     print(f'# Input: {data}', file=f)
                     print(' '.join(cmd), file=f)
+                    print('', file=f)
                 else:
                     self.infiles.add(data)
         else:
@@ -419,6 +420,7 @@ class WriteToScript:
                         cmd = cmd_core
                     print(f'# Output: {data}', file=f)
                     print(' '.join(cmd), file=f)
+                    print('', file=f)
                 else:
                     self.outfiles.add(data)
         else:
