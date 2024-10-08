@@ -10,9 +10,15 @@ by copying them from the path indicated to a job's working directory.
 import glob
 import os
 import sys
+import io
 import subprocess
 import time
-import requests
+import traceback
+
+try:
+    import requests
+except ImportError:
+    requests = None
 
 try:
     from classad import ClassAd, parseAds
@@ -30,6 +36,8 @@ except ImportError:
             return '[\n' + ';\n'.join(ret) + '\n]\n'
 
     def parseAds(data):
+        if isinstance(data, io.IOBase):
+            data = data.read()
         ret = []
         for ad in re.findall(r'\s*?\[([\w\W]*?)\]', data):
             ad_ret = {}
@@ -45,6 +53,9 @@ PLUGIN_VERSION = '1.0.0'
 EXIT_SUCCESS = 0
 EXIT_FAILURE = 1
 EXIT_AUTHENTICATION_REFRESH = 2
+EXIT_ARGPARSE = 3
+EXIT_INFILES = 4
+EXIT_APP = 10
 
 
 class GridFTPError(RuntimeError):
@@ -306,7 +317,9 @@ if __name__ == '__main__':
     try:
         args = parse_args()
     except Exception:
-        sys.exit(EXIT_FAILURE)
+        with open('_condor_stdout', 'w') as f:
+            traceback.print_exc(file=f)
+        sys.exit(EXIT_ARGPARSE)
 
     iceprod_plugin = IceProdPlugin()
     iceprod_plugin.setup_env()
@@ -316,13 +329,15 @@ if __name__ == '__main__':
     try:
         infile_ads = parseAds(open(args['infile'], 'r'))
     except Exception as err:
+        with open('_condor_stdout', 'w') as f:
+            traceback.print_exc(file=f)
         try:
             with open(args['outfile'], 'w') as outfile:
                 outfile_dict = get_error_dict(err)
                 outfile.write(str(ClassAd(outfile_dict)))
         except Exception:
             pass
-        sys.exit(EXIT_FAILURE)
+        sys.exit(EXIT_INFILES)
 
     # Now iterate over the list of classads and perform the transfers.
     try:
@@ -337,12 +352,16 @@ if __name__ == '__main__':
                     outfile.write(str(ClassAd(outfile_dict)))
 
                 except Exception as err:
+                    with open('_condor_stdout', 'w') as f:
+                        traceback.print_exc(file=f)
                     try:
                         outfile_dict = get_error_dict(err, url=ad['Url'])
                         outfile.write(str(ClassAd(outfile_dict)))
                     except Exception:
                         pass
-                    sys.exit(EXIT_FAILURE)
+                    sys.exit(EXIT_APP)
 
     except Exception:
+        with open('_condor_stdout', 'w') as f:
+            traceback.print_exc(file=f)
         sys.exit(EXIT_FAILURE)
