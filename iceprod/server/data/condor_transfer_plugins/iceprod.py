@@ -185,8 +185,14 @@ class IceProdPlugin:
         }
 
     def _do_globus_transfer(self, inpath, outpath):
+        apptainer = []
         try:
-            subprocess.check_output([
+            apptainer_location = subprocess.check_output('which apptainer', shell=True).decode('utf-8').strip()
+            apptainer = [apptainer_location, 'run', '-B/cvmfs', '/cvmfs/singularity.opensciencegrid.org/opensciencegrid/osgvo-el7:latest']
+        except Exception:
+            apptainer = []
+        try:
+            subprocess.check_output(apptainer + [
                 '/cvmfs/icecube.opensciencegrid.org/iceprod/v2.7.1/env-shell.sh',
                 'globus-url-copy',
                 '-cd',
@@ -247,7 +253,7 @@ class IceProdPlugin:
                 raise Exception('unknown protocol "{0}"'.format(method))
 
             if mapping and os.path.exists(local_file_path):
-                os.symlink(os.path.basename(local_file_path), mapping)
+                os.rename(os.path.basename(local_file_path), mapping)
 
         end_time = time.time()
 
@@ -264,6 +270,8 @@ class IceProdPlugin:
             'ConnectionTimeSeconds': end_time - start_time,
             'TransferUrl': url,
         }
+        if mapping:
+            transfer_stats['MappedFileName'] = mapping
 
         return transfer_stats
 
