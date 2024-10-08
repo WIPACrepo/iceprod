@@ -207,7 +207,9 @@ class CondorSubmit:
         for infile in infiles:
             if infile.url.startswith('gsiftp:') and not x509_proxy:
                 raise RuntimeError('need x509 proxy for gridftp!')
-            if infile.url[0] != '/':
+            if infile.url[0] == '/':
+                url = infile.url
+            else:
                 if infile.transfer == Transfer.MAYBE:
                     url = 'iceprod://maybe-' + infile.url
                 else:
