@@ -391,7 +391,7 @@ class WriteToScript:
                     cmd = [
                         '/cvmfs/icecube.opensciencegrid.org/iceprod/v2.7.1/env-shell.sh',
                         'python -c',
-                        f"""'from iceprod.core.gridftp import GridFTP;GridFTP.get("{data.url}","{data.local}")'""",
+                        f"""'from iceprod.core.gridftp import GridFTP;GridFTP.get("{data.url}",filename="{data.local}")'""",
                     ]
                     print(f'# Input: {data}', file=f)
                     print(' '.join(cmd), file=f)
@@ -409,7 +409,7 @@ class WriteToScript:
                     cmd_core = [
                         '/cvmfs/icecube.opensciencegrid.org/iceprod/v2.7.1/env-shell.sh',
                         'python -c',
-                        f"""'from iceprod.core.gridftp import GridFTP;GridFTP.get("{data.url}","{data.local}")'""",
+                        f"""'from iceprod.core.gridftp import GridFTP;GridFTP.put("{data.url}",filename="{data.local}")'""",
                     ]
                     if data.transfer is Transfer.MAYBE:
                         cmd = [f'if [ -f {data.local} ]; then ']
