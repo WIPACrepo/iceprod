@@ -164,7 +164,7 @@ class IceProdPlugin:
             url = url.split('-',1)[-1]
         if '?' in url:
             url, args = url.split('?',1)
-            args = {x.split('=')[0]: x.split('=',1)[-1] for x in args[1:].split('&')}
+            args = {x.split('=')[0]: x.split('=',1)[-1] for x in args.split('&')}
             mapping = args.get('mapping')
         return {
             'method': method,
@@ -236,7 +236,7 @@ class IceProdPlugin:
                 raise Exception('unknown protocol "{0}"'.format(method))
 
             if mapping and os.path.exists(local_file_path):
-                os.symlink(local_file_path, mapping)
+                os.symlink(os.path.basename(local_file_path), mapping)
 
         end_time = time.time()
 
