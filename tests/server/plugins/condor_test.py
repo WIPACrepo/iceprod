@@ -199,6 +199,7 @@ def test_CondorSubmit_condor_outfiles_maybe(schedd):
 async def test_CondorSubmit_submit(schedd):
     override = ['queue.type=condor', 'queue.site_temp=http://foo.bar']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+    cfg['queue']['x509proxy'] = '/tmp/x509'
     submit_dir = Path(os.path.expanduser(os.path.expandvars(cfg['queue']['submit_dir'])))
     cred_dir = Path(os.path.expanduser(os.path.expandvars(cfg['queue']['credentials_dir'])))
 
@@ -236,6 +237,12 @@ async def test_CondorSubmit_submit(schedd):
                 'remote': '',
                 'type': 'job_temp',
                 'transfer': True,
+            }, {
+                'movement': 'input',
+                'type': 'permanent',
+                'local': '',
+                'remote': 'gsiftp://foo.bar/baz',
+                'transfer': 'maybe',
             }]
         }]
     }
@@ -270,6 +277,7 @@ async def test_CondorSubmit_submit(schedd):
     assert sub.condor_schedd.submit.call_count == 1
     itemdata = list(sub.condor_schedd.submit.call_args.kwargs['itemdata'])[0]
     logging.info('itemdata: %r', itemdata)
+    assert itemdata['infiles'].strip('"') == '/tmp/x509'
     assert itemdata['outremaps'].strip('"') == 'foo.tgz = http://foo.bar/0/1/foo.tgz'
 
 

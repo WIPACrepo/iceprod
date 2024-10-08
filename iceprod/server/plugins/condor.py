@@ -324,7 +324,7 @@ transfer_output_remaps = $(outremaps)
         for task in tasks:
             submit_dir = self.create_submit_dir(task, jel_dir)
             s = WriteToScript(task=task, workdir=submit_dir)
-            executable = await s.convert()
+            executable = await s.convert(transfer=True)
             logger.debug('running task with exe %r', executable)
 
             ads = self.AD_DEFAULTS.copy()

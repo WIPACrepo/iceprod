@@ -68,7 +68,7 @@ def test_scope_env():
         # test parsing data
         with iceprod.core.exe.scope_env(c, t.dataset.config['tasks'][0], env) as tenv:
             assert tenv['input_files'] == {Data('https://foo.bar/baz', 'baz', Transfer.TRUE)}
-        assert env['input_files'] == {Data('https://foo.bar/baz', 'baz', Transfer.TRUE)}
+        assert env['input_files'] == set()
 
 
 def test_download_data():
@@ -646,6 +646,59 @@ async def test_write_to_script_data_iterations(tmp_path):
 
     ws = iceprod.core.exe.WriteToScript(t, workdir=tmp_path, logger=logger)
     scriptpath = await ws.convert()
+
+    assert ws.infiles == {Data('https://foo.bar/foo_bar_baz', 'foo_bar_baz', Transfer.TRUE)}
+    assert ws.outfiles == set()
+
+
+async def test_write_to_script_data_transfer(tmp_path):
+    t = get_task({
+        'options': {
+            'job_temp': 'https://foo.bar',
+        },
+        'steering': {
+            'parameters': {
+                'foo0': 'baz',
+                'test': 'foo_bar_$steering(foo$(iter))',
+                'remote': 'https://foo.bar',
+            }
+        },
+        'tasks': [{
+            'name': 'foo',
+            'trays': [{
+                'modules': [{
+                    'env_clear': False,
+                    'src': 'foo.py',
+                    'data': [{
+                        'movement': 'input',
+                        'type': 'permanent',
+                        'remote': 'gsiftp://foo.bar/baz',
+                        'local': 'foo_local',
+                    }, {
+                        'movement': 'output',
+                        'type': 'permanent',
+                        'transfer': 'maybe',
+                        'remote': 'gsiftp://foo.bar/stats',
+                        'local': 'stats',
+                    }]
+                }],
+                'data': [{
+                    'movement': 'input',
+                    'type': 'permanent',
+                    'remote': '$steering(remote)/$steering(test)',
+                }]
+            }]
+        }]
+    })
+
+    ws = iceprod.core.exe.WriteToScript(t, workdir=tmp_path, logger=logger)
+    scriptpath = await ws.convert(transfer=True)
+
+    script = open(scriptpath).read()
+    assert 'gsiftp://foo.bar/baz' in script
+    assert 'foo_local' in script
+    assert 'gsiftp://foo.bar/stats' in script
+    assert 'if [ -f stats' in script
 
     assert ws.infiles == {Data('https://foo.bar/foo_bar_baz', 'foo_bar_baz', Transfer.TRUE)}
     assert ws.outfiles == set()

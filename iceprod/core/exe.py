@@ -158,8 +158,6 @@ def scope_env(cfg: ConfigParser, obj: dict, upperenv: Optional[Env] = None, logg
     }
     if upperenv:
         env['parameters'].update(upperenv['parameters'])
-        env['input_files'] = upperenv['input_files']
-        env['output_files'] = upperenv['output_files']
 
     logger = logger if logger else logging.getLogger()
 
@@ -215,6 +213,9 @@ class Data:
     url: str
     local: str
     transfer: Transfer
+
+    def __str__(self):
+        return f"Data(url='{self.url}', local='{self.local}', transfer='{str(self.transfer)}')"
 
 
 def storage_location(data: dict, parser: ConfigParser) -> str:
@@ -381,7 +382,53 @@ class WriteToScript:
         self.options['task'] = self.task.name
         self.options['debug'] = self.task.dataset.debug
 
-    async def convert(self):
+    def _add_input_files(self, files, f=None):
+        if f:
+            for data in files:
+                if data.transfer is Transfer.FALSE:
+                    continue
+                if data.url.startswith('gsiftp://'):
+                    cmd = [
+                        '/cvmfs/icecube.opensciencegrid.org/iceprod/v2.7.1/env-shell.sh'
+                        'python -c',
+                        f"""'from iceprod.core.gridftp import GridFTP;GridFTP.get("{data.url}","{data.local}")'""",
+                    ]
+                    print(f'# Input: {data}', file=f)
+                    print(' '.join(cmd), file=f)
+                else:
+                    self.infiles.add(data)
+        else:
+            self.infiles.update(files)
+
+    def _add_output_files(self, files, f=None):
+        if f:
+            for data in files:
+                if data.transfer is Transfer.FALSE:
+                    continue
+                if data.url.startswith('gsiftp://'):
+                    cmd_core = [
+                        '/cvmfs/icecube.opensciencegrid.org/iceprod/v2.7.1/env-shell.sh'
+                        'python -c',
+                        f"""'from iceprod.core.gridftp import GridFTP;GridFTP.get("{data.url}","{data.local}")'""",
+                    ]
+                    if data.transfer is Transfer.MAYBE:
+                        cmd = [f'if [ -f {data.local} ]; then ']
+                        cmd.extend(cmd_core)
+                        cmd += ['; fi']
+                    print(f'# Output: {data}', file=f)
+                    print(' '.join(cmd), file=f)
+                else:
+                    self.outfiles.add(data)
+        else:
+            self.outfiles.update(files)
+
+    async def convert(self, transfer=False):
+        """
+        Convert to bash script.
+
+        Args:
+            transfer: embed the file transfer into the script (default False)
+        """
         scriptname = self.workdir / 'task_runner.sh'
         with open(scriptname, 'w') as f:
             print('#!/bin/sh', file=f)
@@ -402,8 +449,10 @@ class WriteToScript:
                 task = self.task.get_task_config()
                 if self.task.task_files:
                     task['data'].extend(self.task.task_files)
+                self._add_input_files(globalenv['input_files'], f=(f if transfer else None))
                 self.logger.debug('converting task %s', self.task.name)
                 with scope_env(self.cfgparser, task, globalenv, logger=self.logger) as taskenv:
+                    self._add_input_files(taskenv['input_files'], f=(f if transfer else None))
                     for i, tray in enumerate(task['trays']):
                         trayname = tray['name'] if tray.get('name', '') else i
                         for iteration in range(tray['iterations']):
@@ -411,16 +460,19 @@ class WriteToScript:
                             self.logger.debug('converting tray %r iter %d', trayname, iteration)
                             print(f'# running tray {trayname}, iter {iteration}', file=f)
                             with scope_env(self.cfgparser, tray, taskenv, logger=self.logger) as trayenv:
+                                self._add_input_files(trayenv['input_files'], f=(f if transfer else None))
                                 for j, module in enumerate(tray['modules']):
                                     modulename = module['name'] if module.get('name', '') else j
                                     self.logger.debug('converting module %r', modulename)
                                     print(f'# running module {modulename}', file=f)
                                     with scope_env(self.cfgparser, module, trayenv, logger=self.logger) as moduleenv:
+                                        self._add_input_files(moduleenv['input_files'], f=(f if transfer else None))
                                         await self._write_module(module, moduleenv, file=f)
+                                        self._add_output_files(moduleenv['output_files'], f=(f if transfer else None))
                                     print('', file=f)
-
-                self.infiles = globalenv['input_files']
-                self.outfiles = globalenv['output_files']
+                                self._add_output_files(trayenv['output_files'], f=(f if transfer else None))
+                    self._add_output_files(taskenv['output_files'], f=(f if transfer else None))
+                self._add_output_files(globalenv['output_files'], f=(f if transfer else None))
 
         scriptname.chmod(scriptname.stat().st_mode | 0o700)
         return scriptname
