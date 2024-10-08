@@ -389,7 +389,7 @@ class WriteToScript:
                     continue
                 if data.url.startswith('gsiftp://'):
                     cmd = [
-                        '/cvmfs/icecube.opensciencegrid.org/iceprod/v2.7.1/env-shell.sh'
+                        '/cvmfs/icecube.opensciencegrid.org/iceprod/v2.7.1/env-shell.sh',
                         'python -c',
                         f"""'from iceprod.core.gridftp import GridFTP;GridFTP.get("{data.url}","{data.local}")'""",
                     ]
@@ -407,7 +407,7 @@ class WriteToScript:
                     continue
                 if data.url.startswith('gsiftp://'):
                     cmd_core = [
-                        '/cvmfs/icecube.opensciencegrid.org/iceprod/v2.7.1/env-shell.sh'
+                        '/cvmfs/icecube.opensciencegrid.org/iceprod/v2.7.1/env-shell.sh',
                         'python -c',
                         f"""'from iceprod.core.gridftp import GridFTP;GridFTP.get("{data.url}","{data.local}")'""",
                     ]
