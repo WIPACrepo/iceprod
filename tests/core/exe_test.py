@@ -680,6 +680,12 @@ async def test_write_to_script_data_transfer(tmp_path):
                         'transfer': 'maybe',
                         'remote': 'gsiftp://foo.bar/stats',
                         'local': 'stats',
+                    }, {
+                        'movement': 'output',
+                        'type': 'permanent',
+                        'transfer': True,
+                        'remote': 'gsiftp://foo.bar/stats2',
+                        'local': 'stats2',
                     }]
                 }],
                 'data': [{
@@ -698,7 +704,9 @@ async def test_write_to_script_data_transfer(tmp_path):
     assert 'gsiftp://foo.bar/baz' in script
     assert 'foo_local' in script
     assert 'gsiftp://foo.bar/stats' in script
-    assert 'if [ -f stats' in script
+    assert 'if [ -f stats ' in script
+    assert 'gsiftp://foo.bar/stats2' in script
+    assert 'if [ -f stats2 ' not in script
 
     assert ws.infiles == {Data('https://foo.bar/foo_bar_baz', 'foo_bar_baz', Transfer.TRUE)}
     assert ws.outfiles == set()

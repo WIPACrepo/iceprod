@@ -415,6 +415,8 @@ class WriteToScript:
                         cmd = [f'if [ -f {data.local} ]; then ']
                         cmd.extend(cmd_core)
                         cmd += ['; fi']
+                    else:
+                        cmd = cmd_core
                     print(f'# Output: {data}', file=f)
                     print(' '.join(cmd), file=f)
                 else:
