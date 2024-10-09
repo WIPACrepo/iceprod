@@ -388,10 +388,10 @@ class WriteToScript:
                 if data.transfer is Transfer.FALSE:
                     continue
                 if data.url.startswith('gsiftp://'):
+                    python_cmd = f'from iceprod.core.gridftp import GridFTP\nGridFTP.get("{data.url}", filename="$PWD/{data.local}")'
                     cmd = [
                         '/cvmfs/icecube.opensciencegrid.org/iceprod/v2.7.1/env-shell.sh',
-                        'python -c',
-                        f"""'from iceprod.core.gridftp import GridFTP;GridFTP.get("{data.url}",filename="{data.local}")'""",
+                        'python', '-', "<<____HERE\n" + python_cmd + '\n____HERE\n',
                     ]
                     print(f'# Input: {data}', file=f)
                     print(' '.join(cmd), file=f)
@@ -407,15 +407,15 @@ class WriteToScript:
                 if data.transfer is Transfer.FALSE:
                     continue
                 if data.url.startswith('gsiftp://'):
+                    python_cmd = f'from iceprod.core.gridftp import GridFTP\nGridFTP.put("{data.url}", filename="$PWD/{data.local}")'
                     cmd_core = [
                         '/cvmfs/icecube.opensciencegrid.org/iceprod/v2.7.1/env-shell.sh',
-                        'python -c',
-                        f"""'from iceprod.core.gridftp import GridFTP;GridFTP.put("{data.url}",filename="{data.local}")'""",
+                        'python', '-', "<<____HERE\n" + python_cmd + '\n____HERE\n',
                     ]
                     if data.transfer is Transfer.MAYBE:
-                        cmd = [f'if [ -f {data.local} ]; then ']
+                        cmd = [f'if [ -f {data.local} ]; then\n']
                         cmd.extend(cmd_core)
-                        cmd += ['; fi']
+                        cmd += ['fi']
                     else:
                         cmd = cmd_core
                     print(f'# Output: {data}', file=f)
