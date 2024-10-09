@@ -300,11 +300,11 @@ transfer_plugins = {transfer_plugin_str}
 when_to_transfer_output = ON_EXIT
 should_transfer_files = YES
 infiles_expr = replaceall(";", $(infiles), ",")
-transfer_input_files = $STRING(infiles_expr)
++TransferInput = $STRING(infiles_expr)
 +PreCmd = $(prec)
 +PreArguments = $(prea)
 outfiles_expr = replaceall(";", $(outfiles), ",")
-transfer_output_files = $STRING(outfiles_expr)
++TransferOutput = $STRING(outfiles_expr)
 transfer_output_remaps = $(outremaps)
 
 """
