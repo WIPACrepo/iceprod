@@ -12,9 +12,9 @@ attrs==24.2.0
     # via
     #   jsonschema
     #   referencing
-boto3==1.35.36
+boto3==1.35.37
     # via iceprod (setup.py)
-botocore==1.35.36
+botocore==1.35.37
     # via
     #   boto3
     #   s3transfer
@@ -137,9 +137,9 @@ urllib3==2.2.3
     #   botocore
     #   requests
     #   wipac-rest-tools
-wipac-dev-tools==1.12.1
+wipac-dev-tools==1.13.0
     # via
     #   iceprod (setup.py)
     #   wipac-rest-tools
-wipac-rest-tools==1.7.9
+wipac-rest-tools==1.8.0
     # via iceprod (setup.py)
