@@ -2,6 +2,15 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.14 (2024-10-09)
+
+### Other
+
+* <bot> update requirements.txt ([`163330e`](https://github.com/WIPACrepo/iceprod/commit/163330edd47167b78bb405e0fda531fdccbbfb1e))
+* <bot> update requirements-tests.txt ([`2f3e505`](https://github.com/WIPACrepo/iceprod/commit/2f3e505e855d8c38f252f90192050bbac7523928))
+* <bot> update requirements-docs.txt ([`9b254cc`](https://github.com/WIPACrepo/iceprod/commit/9b254cc0e511e5c04d39447aff5d82c11d8174c1))
+* Move back to running gridftp transfers inside the condor job ([#382](https://github.com/WIPACrepo/iceprod/issues/382)) ([`64957b1`](https://github.com/WIPACrepo/iceprod/commit/64957b18920ac5f353210d0b2baf1bd6a06c5fd7))
+
 ## v3.0.13 (2024-10-07)
 
 ### Other
