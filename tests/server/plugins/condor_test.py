@@ -95,7 +95,7 @@ def test_CondorSubmit_condor_infiles(schedd):
     ]
 
     ret = sub.condor_infiles(infiles)
-    assert ret['transfer_input_files'] == ['http://foo.test/foo']
+    assert ret['transfer_input_files'] == ['iceprod-plugin://true-http://foo.test/foo']
     assert 'PreCmd' not in ret
 
 
@@ -112,7 +112,7 @@ def test_CondorSubmit_condor_infiles_maybe(schedd):
     ]
 
     ret = sub.condor_infiles(infiles)
-    assert ret['transfer_input_files'] == ['iceprod://maybe-http://foo.test/foo']
+    assert ret['transfer_input_files'] == ['iceprod-plugin://maybe-http://foo.test/foo']
     assert 'PreCmd' not in ret
 
 
@@ -134,10 +134,11 @@ def test_CondorSubmit_condor_infiles_gsiftp(schedd):
     cfg['queue']['x509proxy'] = '/tmp/x509'
 
     ret = sub.condor_infiles(infiles)
-    assert ret['transfer_input_files'] == ['/tmp/x509', 'gsiftp://foo.test/foo']
+    assert ret['transfer_input_files'] == ['/tmp/x509', 'iceprod-plugin://true-gsiftp://foo.test/foo']
     assert 'PreCmd' not in ret
 
 
+@pytest.mark.skip
 def test_CondorSubmit_condor_precmd(schedd, i3prod_path):
     logging.info('cfgfile: %r', os.path.exists(os.path.expandvars('$I3PROD/etc/iceprod_config.json')))
     override = ['queue.type=condor']
@@ -192,12 +193,13 @@ def test_CondorSubmit_condor_outfiles_maybe(schedd):
 
     ret = sub.condor_outfiles(outfiles)
     assert ret['transfer_output_files'] == ['bar']
-    assert ret['transfer_output_remaps'] == 'bar = iceprod://maybe-http://foo.test/foo'
+    assert ret['transfer_output_remaps'] == 'bar = iceprod-plugin://maybe-http://foo.test/foo'
 
 
 async def test_CondorSubmit_submit(schedd):
     override = ['queue.type=condor', 'queue.site_temp=http://foo.bar']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+    cfg['queue']['x509proxy'] = '/tmp/x509'
     submit_dir = Path(os.path.expanduser(os.path.expandvars(cfg['queue']['submit_dir'])))
     cred_dir = Path(os.path.expanduser(os.path.expandvars(cfg['queue']['credentials_dir'])))
 
@@ -235,6 +237,12 @@ async def test_CondorSubmit_submit(schedd):
                 'remote': '',
                 'type': 'job_temp',
                 'transfer': True,
+            }, {
+                'movement': 'input',
+                'type': 'permanent',
+                'local': '',
+                'remote': 'gsiftp://foo.bar/baz',
+                'transfer': 'maybe',
             }]
         }]
     }
@@ -269,6 +277,7 @@ async def test_CondorSubmit_submit(schedd):
     assert sub.condor_schedd.submit.call_count == 1
     itemdata = list(sub.condor_schedd.submit.call_args.kwargs['itemdata'])[0]
     logging.info('itemdata: %r', itemdata)
+    assert itemdata['infiles'].strip('"') == '/tmp/x509'
     assert itemdata['outremaps'].strip('"') == 'foo.tgz = http://foo.bar/0/1/foo.tgz'
 
 

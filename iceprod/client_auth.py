@@ -7,7 +7,7 @@ from wipac_dev_tools import from_environment
 def add_auth_to_argparse(parser):
     """Add auth args to argparse."""
     config = from_environment({
-        'API_URL': 'https://iceprod2-api.icecube.wisc.edu',
+        'API_URL': 'https://api.iceprod.icecube.aq',
         'OAUTH_URL': 'https://keycloak.icecube.wisc.edu/auth/realms/IceCube',
         'OAUTH_CLIENT_ID': 'iceprod',
         'OAUTH_CLIENT_SECRET': '',

@@ -207,14 +207,18 @@ class CondorSubmit:
         for infile in infiles:
             if infile.url.startswith('gsiftp:') and not x509_proxy:
                 raise RuntimeError('need x509 proxy for gridftp!')
-            if infile.transfer == Transfer.MAYBE:
-                url = 'iceprod://maybe-' + infile.url
-            else:
+            if infile.url[0] == '/':
                 url = infile.url
+            else:
+                if infile.transfer == Transfer.MAYBE:
+                    url = 'iceprod-plugin://maybe-' + infile.url
+                else:
+                    url = 'iceprod-plugin://true-' + infile.url
+                basename = Path(infile.url).name
+                if basename != infile.local:
+                    url += '?mapping='+infile.local
+                    # mapping.append((basename,infile.local))
             files.append(url)
-            basename = Path(infile.url).name
-            if basename != infile.local:
-                mapping.append((basename,infile.local))
         ads = {}
         if mapping:
             ads['PreCmd'] = f'"{self.precmd.name}"'
@@ -231,7 +235,7 @@ class CondorSubmit:
         for outfile in outfiles:
             files.append(outfile.local)
             if outfile.transfer == Transfer.MAYBE:
-                url = 'iceprod://maybe-' + outfile.url
+                url = 'iceprod-plugin://maybe-' + outfile.url
             else:
                 url = outfile.url
             mapping.append((outfile.local, url))
@@ -320,7 +324,7 @@ transfer_output_remaps = $(outremaps)
         for task in tasks:
             submit_dir = self.create_submit_dir(task, jel_dir)
             s = WriteToScript(task=task, workdir=submit_dir)
-            executable = await s.convert()
+            executable = await s.convert(transfer=True)
             logger.debug('running task with exe %r', executable)
 
             ads = self.AD_DEFAULTS.copy()

@@ -3,16 +3,22 @@
 """
 This is a custom HTCondor file transfer plugin for IceProd.
 In this example, it transfers files described by a
-iceprod://transfer+proto://path/to/file metadata+URL,
+iceprod-plugin://transfer-proto://path/to/file?mapping=filename metadata-URL,
 by copying them from the path indicated to a job's working directory.
 """
 
 import glob
 import os
 import sys
+import io
 import subprocess
 import time
-import requests
+import traceback
+
+try:
+    import requests
+except ImportError:
+    requests = None
 
 try:
     from classad import ClassAd, parseAds
@@ -30,6 +36,8 @@ except ImportError:
             return '[\n' + ';\n'.join(ret) + '\n]\n'
 
     def parseAds(data):
+        if isinstance(data, io.IOBase):
+            data = data.read()
         ret = []
         for ad in re.findall(r'\s*?\[([\w\W]*?)\]', data):
             ad_ret = {}
@@ -45,6 +53,9 @@ PLUGIN_VERSION = '1.0.0'
 EXIT_SUCCESS = 0
 EXIT_FAILURE = 1
 EXIT_AUTHENTICATION_REFRESH = 2
+EXIT_ARGPARSE = 3
+EXIT_INFILES = 4
+EXIT_APP = 10
 
 
 class GridFTPError(RuntimeError):
@@ -71,7 +82,7 @@ def print_capabilities():
         'MultipleFileSupport': True,
         'PluginType': 'FileTransfer',
         # SupportedMethods indicates which URL methods/types this plugin supports
-        'SupportedMethods': 'iceprod',
+        'SupportedMethods': 'iceprod-plugin',
         'Version': PLUGIN_VERSION,
     }
     sys.stdout.write(ClassAd(capabilities).printOld())
@@ -142,29 +153,46 @@ def get_error_dict(error, url=''):
 class IceProdPlugin:
 
     def setup_env(self):
-        # if an X509 proxy exists, use it for GridFTP
+        # if a proxy exists, use it
         proxies = glob.glob(os.path.join(os.getcwd(), 'x509up_*'))
         if proxies:
             os.environ['X509_USER_PROXY'] = proxies[0]
+        else:
+            raise RuntimeError('X509_USER_PROXY does not exist')
+
+        if not os.path.exists('/cvmfs/icecube.opensciencegrid.org/iceprod/v2.7.1/env-shell.sh'):
+            raise RuntimeError('CVMFS does not exist')
 
     def _split_url(self, url):
-        # strip off iceprod:// prefix
-        url = url[10:]
+        # strip off iceprod-plugin:// prefix
+        url = url.split('://',1)[-1]
         # split url
-        method = url.split('://')[0]
+        method = url.split('://',1)[0]
         transfer = 'true'
+        mapping = None
         if '-' in method:
             transfer, method = method.split('-',1)
             url = url.split('-',1)[-1]
+        if '?' in url:
+            url, args = url.split('?',1)
+            args = {x.split('=')[0]: x.split('=',1)[-1] for x in args.split('&')}
+            mapping = args.get('mapping')
         return {
             'method': method,
             'url': url,
             'transfer': transfer,
+            'mapping': mapping,
         }
 
     def _do_globus_transfer(self, inpath, outpath):
+        apptainer = []
         try:
-            subprocess.check_output([
+            apptainer_location = subprocess.check_output('which apptainer', shell=True).decode('utf-8').strip()
+            apptainer = [apptainer_location, 'run', '-B/cvmfs', '/cvmfs/singularity.opensciencegrid.org/opensciencegrid/osgvo-el7:latest']
+        except Exception:
+            apptainer = []
+        try:
+            subprocess.check_output(apptainer + [
                 '/cvmfs/icecube.opensciencegrid.org/iceprod/v2.7.1/env-shell.sh',
                 'globus-url-copy',
                 '-cd',
@@ -189,6 +217,7 @@ class IceProdPlugin:
         url = ret['url']
         method = ret['method']
         transfer = ret['transfer']
+        mapping = ret['mapping']
 
         if transfer in ('true', 'maybe'):
             if method == 'gsiftp':
@@ -223,6 +252,9 @@ class IceProdPlugin:
             else:
                 raise Exception('unknown protocol "{0}"'.format(method))
 
+            if mapping and os.path.exists(local_file_path):
+                os.rename(os.path.basename(local_file_path), mapping)
+
         end_time = time.time()
 
         # Get transfer statistics
@@ -238,6 +270,8 @@ class IceProdPlugin:
             'ConnectionTimeSeconds': end_time - start_time,
             'TransferUrl': url,
         }
+        if mapping:
+            transfer_stats['MappedFileName'] = mapping
 
         return transfer_stats
 
@@ -291,7 +325,9 @@ if __name__ == '__main__':
     try:
         args = parse_args()
     except Exception:
-        sys.exit(EXIT_FAILURE)
+        with open('_condor_stdout', 'w') as f:
+            traceback.print_exc(file=f)
+        sys.exit(EXIT_ARGPARSE)
 
     iceprod_plugin = IceProdPlugin()
     iceprod_plugin.setup_env()
@@ -301,13 +337,15 @@ if __name__ == '__main__':
     try:
         infile_ads = parseAds(open(args['infile'], 'r'))
     except Exception as err:
+        with open('_condor_stdout', 'w') as f:
+            traceback.print_exc(file=f)
         try:
             with open(args['outfile'], 'w') as outfile:
                 outfile_dict = get_error_dict(err)
                 outfile.write(str(ClassAd(outfile_dict)))
         except Exception:
             pass
-        sys.exit(EXIT_FAILURE)
+        sys.exit(EXIT_INFILES)
 
     # Now iterate over the list of classads and perform the transfers.
     try:
@@ -322,12 +360,16 @@ if __name__ == '__main__':
                     outfile.write(str(ClassAd(outfile_dict)))
 
                 except Exception as err:
+                    with open('_condor_stdout', 'w') as f:
+                        traceback.print_exc(file=f)
                     try:
                         outfile_dict = get_error_dict(err, url=ad['Url'])
                         outfile.write(str(ClassAd(outfile_dict)))
                     except Exception:
                         pass
-                    sys.exit(EXIT_FAILURE)
+                    sys.exit(EXIT_APP)
 
     except Exception:
+        with open('_condor_stdout', 'w') as f:
+            traceback.print_exc(file=f)
         sys.exit(EXIT_FAILURE)

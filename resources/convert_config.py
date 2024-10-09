@@ -36,10 +36,10 @@ def convert(config):
         del config['steering']['system']
 
     def data_cleaner(obj):
+        ret = []
         if 'batchsys' in obj:
             if not obj['batchsys']:
                 obj['batchsys'] = {}
-        ret = []
         if 'resources' in obj:
             if obj['resources']:
                 for r in obj['resources']:
@@ -51,6 +51,7 @@ def convert(config):
             del obj['resources']
         if 'data' in obj:
             if (data := obj['data']) and isinstance(data, list):
+                mydata = []
                 for d in data:
                     if d.get('type', 'permanent') not in ('permanent', 'job_temp', 'dataset_temp', 'site_temp'):
                         logging.warning('%r', d)
@@ -59,8 +60,18 @@ def convert(config):
                         del d['compression']
                     if d.get('transfer') == 'exists':
                         d['transfer'] = 'maybe'
-                    ret.append(d)
-            del obj['data']
+                    add = True
+                    if d.get('type') == 'job_temp' and d.get('movement') == 'input':
+                        for dd in list(mydata):
+                            if dd.get('type') == 'job_temp' and dd.get('movement') == 'output' and d.get('local') == dd.get('local'):
+                                mydata.remove(dd)
+                                add = False
+                                break
+                    if add:
+                        mydata.append(d)
+                obj['data'] = mydata
+                ret.extend(mydata)
+            #del obj['data']
         if 'classes' in obj:
             for cl in obj['classes']:
                 if cl.get('libs'):
@@ -87,9 +98,9 @@ def convert(config):
         data = base_data.copy()
         data.extend(data_cleaner(task))
         for tray in task.get('trays', []):
-            data.extend(data_cleaner(tray))
+            data_cleaner(tray)
             for module in tray.get('modules', []):
-                data.extend(data_cleaner(module))
+                data_cleaner(module)
         task['data'] = data
 
     config['version'] = 3.1
@@ -113,7 +124,7 @@ def conversion(config, output=None):
     return d.config
 
 
-def do_mongo(server, output=None, dryrun=False):
+def do_mongo(server, dataset_id=None, output=None, dryrun=False):
     username = input('MongoDB Username:')
     password = getpass('MongoDB Password:')
 
@@ -127,11 +138,16 @@ def do_mongo(server, output=None, dryrun=False):
     db = client.config
 
     datasets = {}
-    for d in client.datasets.datasets.find({}, projection={"_id": False, "dataset_id": True, "dataset": True, "status": True}):
-        if d['dataset'] > 22000 or d['status'] == 'processing':
-            datasets[d['dataset_id']] = d
+    search = {}
+    if dataset_id:
+        datasets[dataset_id] = {'dataset': 'specifed'}
+        search = {'dataset_id': dataset_id}
+    else:
+        for d in client.datasets.datasets.find({}, projection={"_id": False, "dataset_id": True, "dataset": True, "status": True}):
+            if d['dataset'] > 22000 or d['status'] == 'processing':
+                datasets[d['dataset_id']] = d
 
-    for config in db.config.find({}, projection={'_id': False}):
+    for config in db.config.find(search, projection={'_id': False}):
         if config['dataset_id'] not in datasets:
             continue
         dataset = datasets[config['dataset_id']]
@@ -159,6 +175,7 @@ def main():
     group.add_argument('-c', '--config', help='config json file')
     group.add_argument('--mongo-server', default=None, help='mongodb server address')
     parser.add_argument('-o', '--output', default=None, help='output config json to file (or "-" for stdout)')
+    parser.add_argument('--dataset-id', default=None, help='dataset id (for mongo)')
     parser.add_argument('--dry-run', action='store_true', default=False, help='do a dry run (for mongo)')
     args = parser.parse_args()
 
@@ -170,7 +187,7 @@ def main():
             config = json.load(f)
         conversion(config, output=args.output)
     elif args.mongo_server:
-        do_mongo(args.mongo_server, output=args.output, dryrun=args.dry_run)
+        do_mongo(args.mongo_server, dataset_id=args.dataset_id, output=args.output, dryrun=args.dry_run)
 
 if __name__ == '__main__':
     main()

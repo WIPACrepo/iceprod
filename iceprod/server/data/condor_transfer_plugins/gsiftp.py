@@ -18,7 +18,6 @@ PLUGIN_VERSION = '1.0.0'
 EXIT_SUCCESS = 0
 EXIT_FAILURE = 1
 EXIT_AUTHENTICATION_REFRESH = 2
-EXIT_IMPORT_ERROR = 3
 
 try:
     from classad import ClassAd, parseAds
