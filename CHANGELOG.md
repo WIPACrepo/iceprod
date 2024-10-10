@@ -2,6 +2,17 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.15 (2024-10-10)
+
+### Other
+
+* <bot> update requirements.txt ([`2d93bd9`](https://github.com/WIPACrepo/iceprod/commit/2d93bd9e66e465e86ac6f1b50a53b896c9de3daf))
+* <bot> update requirements-tests.txt ([`25daca7`](https://github.com/WIPACrepo/iceprod/commit/25daca706c6fb70f8971cddd1feb11e4bbf117a7))
+* <bot> update requirements-docs.txt ([`65cb7c2`](https://github.com/WIPACrepo/iceprod/commit/65cb7c29c5aeeed948eb16b223816fa776876e18))
+* Only search for idle and waiting task counts when doing queue_tasks ([`3a60c7a`](https://github.com/WIPACrepo/iceprod/commit/3a60c7a86943e6ac1d2bd432cab95184b44bbc4b))
+* Separate idle and waiting tasks for dataset view ([`27fb372`](https://github.com/WIPACrepo/iceprod/commit/27fb3729693c918b57c1a8d8141c3e88cf55a52f))
+* Fix materialization end-of-queue ([`d60610d`](https://github.com/WIPACrepo/iceprod/commit/d60610d4d866306272539101f3768ce8c7e155a4))
+
 ## v3.0.14 (2024-10-09)
 
 ### Other
