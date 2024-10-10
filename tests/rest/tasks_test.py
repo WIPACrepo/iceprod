@@ -262,6 +262,9 @@ async def test_rest_tasks_dataset_counts_status(server):
     ret = await client.request('GET', f'/datasets/{data["dataset_id"]}/task_counts/status')
     assert ret == {states.TASK_STATUS_START: 1}
 
+    ret = await client.request('GET', f'/datasets/{data["dataset_id"]}/task_counts/status?status=complete')
+    assert ret == {}
+
 
 async def test_rest_tasks_dataset_counts_name_status(server):
     client = server(roles=['system'])

@@ -315,13 +315,28 @@ class TaskCountsStatusHandler(APIBase):
         """
         Get the task counts for all tasks, group by status.
 
+        Params (optional):
+            status: | separated list of task status to filter by
+
         Returns:
             dict: {<status>: num}
         """
-        ret = {}
-        for status in TASK_STATUS:
-            ret[status] = await self.db.tasks.count_documents({"status": status})
+        match = {}
+        status = self.get_argument('status', None)
+        if status:
+            status_list = status.split('|')
+            if any(s not in TASK_STATUS for s in status_list):
+                raise tornado.web.HTTPError(400, reaosn='Unknown task status')
+            match['status'] = {'$in': status_list}
 
+        ret = {}
+        cursor = self.db.tasks.aggregate([
+            {'$match': match},
+            {'$group': {'_id': '$status', 'total': {'$sum': 1}}},
+        ])
+        ret = {}
+        async for row in cursor:
+            ret[row['_id']] = row['total']
         ret2 = {}
         for k in sorted(ret, key=task_status_sort):
             ret2[k] = ret[k]
@@ -552,8 +567,17 @@ class DatasetTaskCountsStatusHandler(APIBase):
         Returns:
             dict: {<status>: num}
         """
+        match = {'dataset_id': dataset_id}
+        status = self.get_argument('status', None)
+        if status:
+            status_list = status.split('|')
+            if any(s not in TASK_STATUS for s in status_list):
+                raise tornado.web.HTTPError(400, reaosn='Unknown task status')
+            match['status'] = {'$in': status_list}
+
+        ret = {}
         cursor = self.db.tasks.aggregate([
-            {'$match': {'dataset_id': dataset_id}},
+            {'$match': match},
             {'$group': {'_id': '$status', 'total': {'$sum': 1}}},
         ])
         ret = {}

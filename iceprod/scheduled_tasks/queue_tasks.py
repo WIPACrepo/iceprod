@@ -33,7 +33,8 @@ async def run(rest_client, dataset_id=None, ntasks=NTASKS, ntasks_per_cycle=NTAS
             route = f'/datasets/{dataset_id}/task_counts/status'
         else:
             route = '/task_counts/status'
-        tasks = await rest_client.request('GET', route)
+        args = {'status': 'idle|waiting'}
+        tasks = await rest_client.request('GET', route, args)
         if 'idle' in tasks:
             num_tasks_waiting = tasks['idle']
         if 'waiting' in tasks:
