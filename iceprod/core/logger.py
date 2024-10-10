@@ -23,7 +23,7 @@ setlevel = {
 host = os.uname()[1].split(".")[0]
 
 
-def set_logger(loglevel='INFO', logfile=None, logsize=2**28, lognum=4):
+def set_logger(loglevel='INFO', logfile=None, timedrotate=True, logsize=2**28, lognum=6):
     """Add an output to the root logger"""
     logformat = '%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
 
@@ -41,9 +41,10 @@ def set_logger(loglevel='INFO', logfile=None, logsize=2**28, lognum=4):
         if logfile.endswith('.gz'):
             z_file = gzip.open(logfile, mode='wt', encoding='utf-8')
             fileHandler = logging.StreamHandler(z_file)
+        elif timedrotate:
+            fileHandler = logging.handlers.TimedRotatingFileHandler(logfile, when='midnight', backupCount=lognum, utc=True)
         else:
-            fileHandler = logging.handlers.RotatingFileHandler(logfile, 'a',
-                                                               logsize, lognum)
+            fileHandler = logging.handlers.RotatingFileHandler(logfile, mode='a', maxBytes=logsize, backupCount=lognum)
         formatter = logging.Formatter(logformat)
         formatter.converter = time.gmtime
         fileHandler.setFormatter(formatter)
