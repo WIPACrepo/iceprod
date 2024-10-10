@@ -70,10 +70,15 @@ JOB_EVENT_STATUS_TRANSITIONS = {
 
 
 RESET_REASONS = [
-    'SIGTERM',
+    'sigterm',
     'killed',
-    'Transfer input files failure',
-    'Transfer output files failure',
+    'transfer input files failure',
+    'transfer output files failure',
+    'cpu consumption limit exceeded',
+#    'memory limit exceeded',
+#    'local storage limit on worker node exceeded',
+#    'execution time limit exceeded',
+    'operation timed out',
 ]
 
 
@@ -645,8 +650,16 @@ class Grid(grid.BaseGrid):
                 future = None
                 if reason:
                     stats['error_summary'] = reason
+                    # check condor error for reset reason
                     for text in RESET_REASONS:
-                        if text in reason:
+                        if text.lower() in reason.lower():
+                            future = self.task_reset(job, reason=reason)
+                            break
+                if future is None and stderr and stderr.is_file():
+                    # check stderr for reset reason
+                    reason = stderr.open().read()
+                    for text in RESET_REASONS:
+                        if text.lower() in reason.lower():
                             future = self.task_reset(job, reason=reason)
                             break
                 if future is None:
