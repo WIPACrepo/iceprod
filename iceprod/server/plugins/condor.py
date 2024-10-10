@@ -75,11 +75,11 @@ RESET_REASONS = [
     'transfer input files failure',
     'transfer output files failure',
     'cpu consumption limit exceeded',
+    'operation timed out',
+]
 #    'memory limit exceeded',
 #    'local storage limit on worker node exceeded',
 #    'execution time limit exceeded',
-    'operation timed out',
-]
 
 
 def parse_usage(usage: str) -> int:
