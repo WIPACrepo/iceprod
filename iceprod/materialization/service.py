@@ -78,7 +78,7 @@ class MaterializationService:
                 logger.warning(f'materialization request {materialization_id} took too long, bumping to end of queue for another run')
                 await self.db.materialization.update_one(
                     {'materialization_id': materialization_id},
-                    {'$set': {'modify_timestamp': nowstr()}},
+                    {'$set': {'status': 'waiting', 'modify_timestamp': nowstr()}},
                 )
             self.last_success_time = time.time()
         except Exception:
