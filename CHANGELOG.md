@@ -2,6 +2,14 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.16 (2024-10-10)
+
+### Other
+
+* Make flake8 happy ([`c2b4316`](https://github.com/WIPACrepo/iceprod/commit/c2b4316e0b968e8b2dac0ad59de0e327e973a439))
+* Convert the logger to a daily rollover, with 1 week kept ([`d11d863`](https://github.com/WIPACrepo/iceprod/commit/d11d863bffea18ebdc768931c9b367490f9b3a3d))
+* Better handling for transient errors ([`87b8855`](https://github.com/WIPACrepo/iceprod/commit/87b88556f1b4350d187d5af8dec90b0ebab55c24))
+
 ## v3.0.15 (2024-10-10)
 
 ### Other
