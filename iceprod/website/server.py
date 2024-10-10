@@ -397,7 +397,8 @@ class Dataset(PublicHandler):
             task_info[t] = {
                 'name': t,
                 'type': type_,
-                'waiting': task_info[t].get('waiting', 0) + task_info[t].get('idle', 0),
+                'idle': task_info[t].get('idle', 0),
+                'waiting': task_info[t].get('waiting', 0),
                 'queued': task_info[t].get('queued', 0),
                 'running': task_info[t].get('processing', 0),
                 'complete': task_info[t].get('complete', 0),
