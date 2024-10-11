@@ -70,6 +70,7 @@ JOB_EVENT_STATUS_TRANSITIONS = {
 
 
 RESET_REASONS = [
+    '_condor_stdout: (errno 2) No such file',
     'sigterm',
     'killed',
     'transfer input files failure',

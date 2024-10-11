@@ -24,7 +24,7 @@ async def run(rest_client, dataset_id=None, debug=False):
     prio = Priority(rest_client)
     try:
         args = {
-            'status': 'waiting|queued|processing|reset',
+            'status': 'idle|waiting',
             'keys': 'task_id|depends|dataset_id',
         }
         if dataset_id:
