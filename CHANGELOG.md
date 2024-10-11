@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.17 (2024-10-11)
+
+### Other
+
+* Fix update_task_priority to operate on idle tasks ([#386](https://github.com/WIPACrepo/iceprod/issues/386)) ([`c7bbe0e`](https://github.com/WIPACrepo/iceprod/commit/c7bbe0ef7e7db6ad3e3e1db6acf79bd74f5d7fd0))
+
 ## v3.0.16 (2024-10-10)
 
 ### Other
