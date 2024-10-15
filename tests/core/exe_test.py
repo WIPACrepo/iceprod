@@ -710,3 +710,42 @@ async def test_write_to_script_data_transfer(tmp_path):
 
     assert ws.infiles == {Data('https://foo.bar/foo_bar_baz', 'foo_bar_baz', Transfer.TRUE)}
     assert ws.outfiles == set()
+
+
+async def test_write_to_script_configs(tmp_path):
+    t = get_task({
+        'options': {
+            'job_temp': 'https://foo.bar',
+        },
+        'steering': {
+            'parameters': {
+                'foo0': 'baz',
+                'test': 'foo_bar_$steering(foo$(iter))',
+                'remote': 'https://foo.bar',
+            }
+        },
+        'tasks': [{
+            'name': 'foo',
+            'trays': [{
+                'modules': [{
+                    'env_clear': False,
+                    'src': 'foo.py',
+                    'configs': {
+                        'snowstorm.json': {
+                            'foo': 1,
+                            'bar': 2,
+                            'baz': {'remote': '$steering(remote)'},
+                        },
+                    },
+                }]
+            }]
+        }]
+    })
+
+    ws = iceprod.core.exe.WriteToScript(t, workdir=tmp_path, logger=logger)
+    scriptpath = await ws.convert(transfer=True)
+
+    config_path = tmp_path / 'snowstorm.json'
+    assert config_path.exists()
+    assert ws.infiles == {Data(str(config_path), 'snowstorm.json', Transfer.TRUE)}
+    assert ws.outfiles == set()
