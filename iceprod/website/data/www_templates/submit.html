@@ -85,14 +85,14 @@ async function validator(config) {
         if (!ret.ok) {
             throw new Error('Response status: '+ret.status);
         }
-        const schema = await ret.json();
+        var schema = await ret.json();
     } catch (error) {
         $('#error').text('Error downloading json schema: '+error.message);
         return false;
     }
     try {
         const ajv = new ajv2020({useDefaults: true});
-        const validate = ajv.compile(schema);
+        var validate = ajv.compile(schema);
     } catch (error) {
         $('#error').text('Error setting up json validator: '+error);
         return false;
