@@ -10,7 +10,7 @@ def test_dataset_dataclasses():
     with pytest.raises(Exception):
         Dataset()
 
-    d = Dataset('did123', 123, 1, 2, 3, 'processing', 0.5, 'grp', 'usr', False, {})
+    d = Dataset('did123', 123, 1, 2, 3, 'processing', 0.5, 'grp', 'usr', False, config={})
     assert d.dataset_id == 'did123'
     assert d.dataset_num == 123
     assert d.jobs_submitted == 1

@@ -1,10 +1,13 @@
 import logging
 import json
+import copy
 
+from jsonschema.exceptions import ValidationError
 import tornado.web
 
 from ..base_handler import APIBase
 from ..auth import authorization, attr_auth
+from iceprod.core.config import Config
 
 logger = logging.getLogger('rest.config')
 
@@ -76,5 +79,14 @@ class ConfigHandler(APIBase):
             data['dataset_id'] = dataset_id
         elif data['dataset_id'] != dataset_id:
             raise tornado.web.HTTPError(400, reason='dataset_id mismatch')
+        try:
+            c = Config(copy.deepcopy(data))
+            c.fill_defaults()
+            c.validate()
+        except ValidationError as e:
+            raise tornado.web.HTTPError(400, reason=str(e).split('\n', 1)[0])
+        except Exception:
+            logger.warning('unknown config validation error', exc_info=True)
+            raise tornado.web.HTTPError(400, reason='unknown validation error')
         await self.db.config.replace_one({'dataset_id':dataset_id}, data, upsert=True)
         self.write({})

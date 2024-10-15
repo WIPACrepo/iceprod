@@ -583,11 +583,13 @@ obj.Execute({{}})"""
                 self.logger.info('creating config %r', filename)
                 with open(self.workdir / filename, 'w') as f:
                     f.write(json_encode(module['configs'][filename]))
-                env['input_files'].add(Data(
+                data = Data(
                     url=str(self.workdir / filename),
                     local=filename,
                     transfer=Transfer.TRUE,
-                ))
+                )
+                env['input_files'].add(data)
+                self.infiles.add(data)
 
         # run the module
         if (not module_src):

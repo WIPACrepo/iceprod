@@ -131,8 +131,7 @@
                         "type": "object",
                         "default": {},
                         "description": "any json config files that should be written in $PWD (format is {filename: data})",
-                        "properties": {},
-                        "additionalProperties": { "type": "string" }
+                        "properties": {}
                       }
                     },
                     "required": []
