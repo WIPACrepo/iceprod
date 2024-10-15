@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.20 (2024-10-15)
+
+### Other
+
+* Add validation for config json ([#389](https://github.com/WIPACrepo/iceprod/issues/389)) ([`6562371`](https://github.com/WIPACrepo/iceprod/commit/6562371171a5b0db6db6c54d7d931f6a0ea8204f))
+
 ## v3.0.19 (2024-10-15)
 
 ### Other
