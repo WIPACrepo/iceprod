@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.19 (2024-10-15)
+
+### Other
+
+* Fix sending configs with the condor job ([#388](https://github.com/WIPACrepo/iceprod/issues/388)) ([`bd8e248`](https://github.com/WIPACrepo/iceprod/commit/bd8e24848457f3c8ee85017d8a493f81f889c03e))
+
 ## v3.0.18 (2024-10-15)
 
 ### Other
