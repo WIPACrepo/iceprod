@@ -91,13 +91,11 @@ async def run(rpc, rpc_materialization, args):
     # make dataset config
     config = {
       "parent_id":0,
-      "version":3,
+      "version":3.1,
       "options":{},
       "steering":{
         "parameters":{},
-        "batchsys":None,
-        "system":{},
-        "resources":[],
+        "batchsys":{},
         "data":[]
       },
       "tasks":[
@@ -115,19 +113,13 @@ async def run(rpc, rpc_materialization, args):
                   "env_shell":args['env_shell'],
                   "env_clear":True,
                   "name":"",
-                  "resources":[],
                   "data":[],
-                  "classes":[],
-                  "parameters":{},
-                  "projects":[]
+                  "parameters":{}
                 }
               ],
               "name":"",
-              "resources":[],
               "data":[],
-              "classes":[],
-              "parameters":{},
-              "projects":[]
+              "parameters":{}
             }
           ],
           "requirements":{
@@ -137,11 +129,8 @@ async def run(rpc, rpc_materialization, args):
           },
           "name":"BasicSubmit",
           "task_files":True,
-          "resources":[],
           "data":[],
-          "classes":[],
-          "parameters":{},
-          "projects":[]
+          "parameters":{}
         }
       ],
       "difplus":None,
