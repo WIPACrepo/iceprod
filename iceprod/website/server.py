@@ -273,6 +273,7 @@ class Schemas(PublicHandler):
         else:
             raise tornado.web.HTTPError(404, reason='unknown schema')
 
+
 class Submit(PublicHandler):
     """Handle /submit urls"""
     @authenticated
