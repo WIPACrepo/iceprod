@@ -31,6 +31,8 @@ from wipac_dev_tools import from_environment
 
 import iceprod
 from iceprod.roles_groups import GROUPS
+from iceprod.core.config import CONFIG_SCHEMA as DATASET_SCHEMA
+from iceprod.server.config import CONFIG_SCHEMA as SERVER_SCHEMA
 import iceprod.core.functions
 from iceprod.server import documentation
 from iceprod.server.module import FakeStatsClient, StatsClientIgnoreErrors
@@ -258,6 +260,18 @@ class Default(PublicHandler):
         await self.get_current_user_async()
         self.statsd.incr('default')
         self.render('main.html')
+
+
+class Schemas(PublicHandler):
+    """Handle /schemas/v3/(.*) urls"""
+    @catch_error
+    async def get(self, schema):
+        if schema == 'dataset.schema.json':
+            self.write(DATASET_SCHEMA)
+        elif schema == 'config.schema.json':
+            self.write(SERVER_SCHEMA)
+        else:
+            raise tornado.web.HTTPError(404, reason='unknown schema')
 
 
 class Submit(PublicHandler):
@@ -790,6 +804,7 @@ class Server:
         server.add_route(r"/", Default, handler_args)
         server.add_route(r"/submit", Submit, handler_args)
         server.add_route(r"/config", Config, handler_args)
+        server.add_route(r"/schemas/v3/([\w\.]+)", Schemas, handler_args)
         server.add_route(r"/dataset", DatasetBrowse, handler_args)
         server.add_route(r"/dataset/(\w+)", Dataset, handler_args)
         server.add_route(r"/dataset/(\w+)/task", TaskBrowse, handler_args)

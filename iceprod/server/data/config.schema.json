@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://iceprod2.icecube.wisc.edu/static/config.schema.json",
+  "$id": "https://iceprod.icecube.aq/schemas/v3/config.schema.json",
   "title": "IceProd Server Config",
   "description": "The schema for an IceProd Server Config",
   "type": "object",
