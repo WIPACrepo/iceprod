@@ -483,7 +483,9 @@ class Grid(grid.BaseGrid):
             counts[job.status] += 1
 
         idle_jobs = counts[JobStatus.IDLE]
+        logger.info('idle jobs: %r', idle_jobs)
         processing_jobs = counts[JobStatus.RUNNING]
+        logger.info('processing jobs: %r', processing_jobs)
         queue_tot_max = self.cfg['queue']['max_total_tasks_on_queue'] - idle_jobs - processing_jobs
         queue_idle_max = self.cfg['queue']['max_idle_tasks_on_queue'] - idle_jobs
         queue_interval_max = self.cfg['queue']['max_tasks_per_submit']
