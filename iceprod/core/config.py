@@ -17,39 +17,7 @@ CONFIG_SCHEMA = json.loads((importlib.resources.files('iceprod.core')/'data'/'da
 DATA_DEFAULTS = {key: value.get('default', None) for key,value in CONFIG_SCHEMA['$defs']['data']['items']['properties'].items()}
 
 
-@dataclass
-class Dataset:
-    """IceProd Dataset config and basic attributes"""
-    dataset_id: str
-    dataset_num: int
-    jobs_submitted: int
-    tasks_submitted: int
-    tasks_per_job: int
-    status: str
-    priority: float
-    group: str
-    user: str
-    debug: bool
-    config: dict
-
-    @classmethod
-    async def load_from_api(cls, dataset_id: str, rest_client: RestClient) -> Self:
-        dataset = await rest_client.request('GET', f'/datasets/{dataset_id}')
-        config = await rest_client.request('GET', f'/config/{dataset_id}')
-        return cls(
-            dataset_id=dataset_id,
-            dataset_num=dataset['dataset'],
-            jobs_submitted=dataset['jobs_submitted'],
-            tasks_submitted=dataset['tasks_submitted'],
-            tasks_per_job=dataset['tasks_per_job'],
-            status=dataset['status'],
-            priority=dataset['priority'],
-            group=dataset['group'],
-            user=dataset['username'],
-            debug=dataset['debug'],
-            config=config,
-        )
-
+class _ConfigMixin:
     def fill_defaults(self):
         def _load_ref(schema_value):
             if '$ref' in list(schema_value.keys()):
@@ -90,6 +58,46 @@ class Dataset:
 
     def validate(self):
         jsonschema.validate(self.config, CONFIG_SCHEMA)
+
+
+@dataclass
+class Config(_ConfigMixin):
+    """IceProd Dataset config"""
+    config: dict
+
+
+@dataclass
+class Dataset(_ConfigMixin):
+    """IceProd Dataset config and basic attributes"""
+    dataset_id: str
+    dataset_num: int
+    jobs_submitted: int
+    tasks_submitted: int
+    tasks_per_job: int
+    status: str
+    priority: float
+    group: str
+    user: str
+    debug: bool
+    config: dict
+
+    @classmethod
+    async def load_from_api(cls, dataset_id: str, rest_client: RestClient) -> Self:
+        dataset = await rest_client.request('GET', f'/datasets/{dataset_id}')
+        config = await rest_client.request('GET', f'/config/{dataset_id}')
+        return cls(
+            dataset_id=dataset_id,
+            dataset_num=dataset['dataset'],
+            jobs_submitted=dataset['jobs_submitted'],
+            tasks_submitted=dataset['tasks_submitted'],
+            tasks_per_job=dataset['tasks_per_job'],
+            status=dataset['status'],
+            priority=dataset['priority'],
+            group=dataset['group'],
+            user=dataset['username'],
+            debug=dataset['debug'],
+            config=config,
+        )
 
 
 @dataclass
