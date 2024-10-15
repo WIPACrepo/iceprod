@@ -4,7 +4,7 @@
 #
 #    pip-compile --output-file=requirements.txt
 #
-anyio==4.6.0
+anyio==4.6.2.post1
     # via httpx
 asyncache==0.3.1
     # via iceprod (setup.py)
@@ -12,9 +12,9 @@ attrs==24.2.0
     # via
     #   jsonschema
     #   referencing
-boto3==1.35.38
+boto3==1.35.40
     # via iceprod (setup.py)
-botocore==1.35.38
+botocore==1.35.40
     # via
     #   boto3
     #   s3transfer
