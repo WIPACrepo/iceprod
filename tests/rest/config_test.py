@@ -1,6 +1,8 @@
 import pytest
 import requests.exceptions
 
+from iceprod.core.config import Config
+
 
 async def test_rest_config_err(server):
     client = server(roles=['system'])
@@ -14,7 +16,22 @@ async def test_rest_config(server):
     data = {
         'name': 'foo'
     }
-    await client.request('PUT', '/config/bar', data)
     
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('PUT', '/config/bar', data)
+    assert exc_info.value.response.status_code == 400
+    assert 'required property' in exc_info.value.response.text
+
+    data = {
+        'tasks': [{
+            'name': 'task',
+            'trays': [{
+                'modules': [{
+                }],
+            }],
+        }],
+    }
+    await client.request('PUT', '/config/bar', data)
+
     ret = await client.request('GET', '/config/bar')
     assert ret == data

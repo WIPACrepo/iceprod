@@ -1,5 +1,6 @@
 import logging
 import json
+import copy
 
 from jsonschema.exceptions import ValidationError
 import tornado.web
@@ -79,11 +80,11 @@ class ConfigHandler(APIBase):
         elif data['dataset_id'] != dataset_id:
             raise tornado.web.HTTPError(400, reason='dataset_id mismatch')
         try:
-            c = Config(data)
+            c = Config(copy.deepcopy(data))
             c.fill_defaults()
             c.validate()
         except ValidationError as e:
-            raise tornado.web.HTTPError(400, reason=str(e))
+            raise tornado.web.HTTPError(400, reason=str(e).split('\n', 1)[0])
         except Exception:
             logger.warning('unknown config validation error', exc_info=True)
             raise tornado.web.HTTPError(400, reason='unknown validation error')
