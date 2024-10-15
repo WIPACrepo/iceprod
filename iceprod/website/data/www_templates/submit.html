@@ -95,8 +95,7 @@ async function validator(config) {
         const validate = ajv.compile(schema);
         const valid = validate(config)
         if (!valid) {
-            $('#error').text('Error validating config: '+validate.errors);
-            return false;
+            throw new Error(validate.errors[0].instancePath+' - '+validate.errors[0].message);
         }
     } catch (error) {
         $('#error').text('Error validating config: '+error);
