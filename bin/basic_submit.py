@@ -101,7 +101,7 @@ async def run(rpc, rpc_materialization, args):
       "tasks":[
         {
           "depends":[],
-          "batchsys":None,
+          "batchsys":{},
           "trays":[
             {
               "iterations":1,
