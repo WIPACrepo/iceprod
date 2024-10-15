@@ -87,12 +87,17 @@ async function validator(config) {
         }
         const schema = await ret.json();
     } catch (error) {
-        $('#error').text('Error obtaining json schema: '+error.message);
+        $('#error').text('Error downloading json schema: '+error.message);
         return false;
     }
     try {
-        const ajv = new Ajv2020({useDefaults: true});
+        const ajv = new ajv2020({useDefaults: true});
         const validate = ajv.compile(schema);
+    } catch (error) {
+        $('#error').text('Error setting up json validator: '+error);
+        return false;
+    }
+    try {
         return validate(config)
     } catch (error) {
         $('#error').text('Error validating config: '+validate.errors);
