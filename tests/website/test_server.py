@@ -1,5 +1,6 @@
 import asyncio
 import binascii
+import json
 import logging
 import random
 import re
@@ -126,9 +127,11 @@ async def test_website_root(server):
 async def test_website_schemas(server):
     client = server()
     ret = await client.request('GET', '/schemas/v3/dataset.schema.json')
+    ret = json.loads(ret)
     assert ret['title'] == 'IceProd Dataset Config'
 
     ret = await client.request('GET', '/schemas/v3/config.schema.json')
+    ret = json.loads(ret)
     assert ret['title'] == 'IceProd Server Config'
 
 
