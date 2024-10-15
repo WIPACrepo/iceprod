@@ -4,7 +4,7 @@
 #
 #    pip-compile --extra=tests --output-file=requirements-tests.txt
 #
-anyio==4.6.0
+anyio==4.6.2.post1
     # via httpx
 asyncache==0.3.1
     # via iceprod (setup.py)
@@ -14,11 +14,11 @@ attrs==24.2.0
     #   referencing
 beautifulsoup4==4.12.3
     # via iceprod (setup.py)
-boto3==1.35.38
+boto3==1.35.40
     # via
     #   iceprod (setup.py)
     #   moto
-botocore==1.35.38
+botocore==1.35.40
     # via
     #   boto3
     #   moto
@@ -38,7 +38,7 @@ cffi==1.17.1
     # via cryptography
 charset-normalizer==3.4.0
     # via requests
-coverage[toml]==7.6.2
+coverage[toml]==7.6.3
     # via
     #   iceprod (setup.py)
     #   pytest-cov
@@ -95,7 +95,7 @@ mccabe==0.7.0
     # via flake8
 mock==5.1.0
     # via iceprod (setup.py)
-moto[s3]==5.0.16
+moto[s3]==5.0.17
     # via iceprod (setup.py)
 motor==3.6.0
     # via iceprod (setup.py)
