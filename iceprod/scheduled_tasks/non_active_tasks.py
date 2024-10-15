@@ -26,14 +26,22 @@ async def run(rest_client, debug=False):
     """
     try:
         datasets = await rest_client.request('GET', '/dataset_summaries/status')
-        dataset_ids = datasets.get('processing', [])
-
+        dataset_ids = []
+        if 'processing' in datasets:
+            dataset_ids.extend(datasets['processing'])
+        if 'truncated' in datasets:
+            dataset_ids.extend(datasets['truncated'])
+        pilots = await rest_client.request('GET', '/pilots', {'keys': 'pilot_id|tasks'})
+        task_ids_in_pilots = set()
+        for p in pilots.values():
+            if 'tasks' in p and p['tasks']:
+                task_ids_in_pilots.update(p['tasks'])
         dataset_tasks = {}
         for dataset_id in dataset_ids:
             dataset_tasks[dataset_id] = await rest_client.request('GET', '/datasets/{}/task_summaries/status'.format(dataset_id))
 
         async def reset(dataset_id, task_id):
-            args = {'status': 'waiting'}
+            args = {'status':'reset'}
             await rest_client.request('PUT', f'/datasets/{dataset_id}/tasks/{task_id}/status', args)
             data = {
                 'name': 'stdlog',
@@ -46,6 +54,13 @@ async def run(rest_client, debug=False):
             await rest_client.request('POST', '/logs', data)
             data.update({'name':'stderr', 'data': ''})
             await rest_client.request('POST', '/logs', data)
+
+        async def update_pilot(pilot_id, tasks):
+            args = {'tasks': tasks}
+            await rest_client.request('PATCH', '/pilots/{}'.format(pilot_id), args)
+
+        async def delete_pilot(pilot_id):
+            await rest_client.request('DELETE', '/pilots/{}'.format(pilot_id))
 
         awaitables = set()
         reset_pilots = set()
