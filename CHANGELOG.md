@@ -2,6 +2,13 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.18 (2024-10-15)
+
+### Other
+
+* Fix basic_submit batchsys ([`c7b6b74`](https://github.com/WIPACrepo/iceprod/commit/c7b6b74413886ce922c3cfd5bdb37cbbc12e5bdb))
+* Basic submit config fix ([#387](https://github.com/WIPACrepo/iceprod/issues/387)) ([`34dc1d7`](https://github.com/WIPACrepo/iceprod/commit/34dc1d7731c248289c84c72de7ef9a1b81340f00))
+
 ## v3.0.17 (2024-10-11)
 
 ### Other
