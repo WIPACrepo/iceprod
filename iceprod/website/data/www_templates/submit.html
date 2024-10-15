@@ -81,7 +81,7 @@ var dataset_id = '{{ dataset_id }}';
 
 async function validator(config) {
     try {
-        const ret = await fetch('/schemas/dataset.schema.json');
+        const ret = await fetch('/schemas/v3/dataset.schema.json');
         if (!response.ok) {
             throw new Error('Response status: '+response.status);
         }
