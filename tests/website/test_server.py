@@ -122,10 +122,21 @@ async def test_website_root(server):
     client = server()
     await client.request('GET', '/')
 
+
+async def test_website_schemas(server):
+    client = server()
+    ret = await client.request('GET', '/schemas/v3/dataset.schema.json')
+    assert ret['title'] == 'IceProd Dataset Config'
+
+    ret = await client.request('GET', '/schemas/v3/config.schema.json')
+    assert ret['title'] == 'IceProd Server Config'
+
+
 async def test_website_submit(server, requests_mock):
     client = server(username='username', roles=['user'], groups=['users', 'simprod'])
 
     ret = await client.request('GET', '/submit')
+
 
 async def test_website_config(server):
     client = server(username='username', roles=['user'], groups=['users', 'simprod'])
