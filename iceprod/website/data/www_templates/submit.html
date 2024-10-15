@@ -92,17 +92,17 @@ async function validator(config) {
     }
     try {
         const ajv = new ajv2020({useDefaults: true});
-        var validate = ajv.compile(schema);
+        const validate = ajv.compile(schema);
+        const valid = validate(config)
+        if (!valid) {
+            $('#error').text('Error validating config: '+validate.errors);
+            return false;
+        }
     } catch (error) {
-        $('#error').text('Error setting up json validator: '+error);
+        $('#error').text('Error validating config: '+error);
         return false;
     }
-    try {
-        return validate(config)
-    } catch (error) {
-        $('#error').text('Error validating config: '+validate.errors);
-        return false;
-    }
+    return true;
 }
 function parse_json(config){
     try {
