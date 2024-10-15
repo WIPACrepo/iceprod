@@ -73,15 +73,15 @@
 <script type="text/javascript" src="/static/rest.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ajv/8.17.1/ajv2020.bundle.min.js" integrity="sha512-mXlpzWzZB+t4DFFezQkpSiCbT8aW12t688aLsd6KGNbRWDOdCur5C6Fl0rDl75VruBy42GvWsd6F35VQcs3lwQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script type="text/javascript">
-var rest_api = '{{ rest_api }}';
-var passkey = '{{ passkey }}';
+const rest_api = '{{ rest_api }}';
+const passkey = '{{ passkey }}';
 var orig_config = {{ json_encode(config) }};
 var edit = {{ json_encode(edit) }};
 var dataset_id = '{{ dataset_id }}';
 
 async function validator(config) {
     try {
-        const ret = await fetch(rest_api + '/schemas/dataset.schema.json');
+        const ret = await fetch('/schemas/dataset.schema.json');
         if (!response.ok) {
             throw new Error('Response status: '+response.status);
         }
