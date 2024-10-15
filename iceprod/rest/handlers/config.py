@@ -1,7 +1,7 @@
 import logging
 import json
 
-from jsonschema.exceptions import ValidationError 
+from jsonschema.exceptions import ValidationError
 import tornado.web
 
 from ..base_handler import APIBase
