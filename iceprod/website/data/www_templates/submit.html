@@ -71,16 +71,34 @@
 {% block body_scripts %}
 <script src="/static/fetch.js"></script>
 <script type="text/javascript" src="/static/rest.js"></script>
-<!--<script type="text/javascript" src="/static/dataclasses.js"></script>
-<script type="text/javascript" src="/static/jsviews.min.js"></script>
-<script type="text/javascript" src="/static/documentation.js"></script>
-<script type="text/javascript" src="/static/jsonlint.js"></script>-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ajv/8.17.1/ajv2020.bundle.min.js" integrity="sha512-mXlpzWzZB+t4DFFezQkpSiCbT8aW12t688aLsd6KGNbRWDOdCur5C6Fl0rDl75VruBy42GvWsd6F35VQcs3lwQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script type="text/javascript">
 var rest_api = '{{ rest_api }}';
 var passkey = '{{ passkey }}';
 var orig_config = {{ json_encode(config) }};
 var edit = {{ json_encode(edit) }};
 var dataset_id = '{{ dataset_id }}';
+
+async function validator(config) {
+    try {
+        const ret = await fetch(rest_api + '/schemas/dataset.schema.json');
+        if (!response.ok) {
+            throw new Error('Response status: '+response.status);
+        }
+        const schema = await ret.json();
+    } catch (error) {
+        $('#error').text('Error obtaining json schema: '+error.message);
+        return false;
+    }
+    try {
+        const ajv = new Ajv2020({useDefaults: true});
+        const validate = ajv.compile(schema);
+        return validate(config)
+    } catch (error) {
+        $('#error').text('Error validating config: '+validate.errors);
+        return false;
+    }
+}
 function parse_json(config){
     try {
         return JSON.parse(config);
@@ -119,6 +137,12 @@ async function submit() {
     if (ntasks < 0)
         return;
 
+    // validate config
+    const ret = await validator(submit_data);
+    if (!ret) {
+        return;
+    }
+
     // create dataset
     var response = await fetch_json('POST', '/datasets',
         {'description': description,
@@ -141,6 +165,10 @@ async function submit() {
     );
     if ('error' in response) {
         $('#error').text('error uploading config: '+response['error']);
+        await fetch_json('PUT', '/datasets/' + dataset_id + '/status',
+            {'status': 'errors'},
+            passkey
+        );
         return;
     }
     window.location = '/dataset/' + dataset_id;
@@ -150,6 +178,13 @@ async function update() {
     var submit_data = parse_json($("#submit_box").val());
     if (submit_data == null)
         return;
+
+    // validate config
+    const ret = await validator(submit_data);
+    if (!ret) {
+        return;
+    }
+
     var response = await fetch_json('PUT', '/config/' + dataset_id,
         submit_data, passkey
     );

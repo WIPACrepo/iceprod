@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://iceprod2.icecube.wisc.edu/static/dataset.schema.json",
+  "$id": "https://iceprod.icecube.aq/schemas/v3/dataset.schema.json",
   "title": "IceProd Dataset Config",
   "description": "The schema for an IceProd Dataset Config",
   "type": "object",
