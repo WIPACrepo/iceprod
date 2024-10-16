@@ -400,11 +400,14 @@ class Dataset(PublicHandler):
         tasks = await self.rest_client.request('GET','/datasets/{}/task_counts/status'.format(dataset_id))
         task_info = await self.rest_client.request('GET','/datasets/{}/task_counts/name_status'.format(dataset_id))
         task_stats = await self.rest_client.request('GET','/datasets/{}/task_stats'.format(dataset_id))
-        config = await self.rest_client.request('GET','/config/{}'.format(dataset_id))
+        try:
+            config = await self.rest_client.request('GET','/config/{}'.format(dataset_id))
+        except Exception:
+            config = {}
         for t in task_info:
             logger.info('task_info[%s] = %r', t, task_info[t])
             type_ = 'UNK'
-            for task in config['tasks']:
+            for task in config.get('tasks', []):
                 if 'name' in task and task['name'] == t:
                     type_ = 'GPU' if 'requirements' in task and 'gpu' in task['requirements'] and task['requirements']['gpu'] else 'CPU'
                     break
