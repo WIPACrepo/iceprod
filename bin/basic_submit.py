@@ -265,7 +265,7 @@ def main():
         'filename': os.path.abspath(os.path.expandvars('$HOME/.iceprod-auth')),
         'client_id': 'iceprod-public',
     }
-    rpc = SavedDeviceGrantAuth('https://iceprod2-api.icecube.wisc.edu', **rpc_kwargs)
+    rpc = SavedDeviceGrantAuth('https://api.iceprod.icecube.aq', **rpc_kwargs)
     rpc_materialization = SavedDeviceGrantAuth('https://materialization.iceprod.icecube.aq', **rpc_kwargs)
 
     asyncio.run(run(rpc, rpc_materialization, args))
