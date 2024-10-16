@@ -39,6 +39,8 @@ class Server:
             'OPENID_URL': '',
             'OPENID_AUDIENCE': '',
             'DB_URL': 'mongodb://localhost/iceprod',
+            'DB_TIMEOUT': 60,
+            'DB_WRITE_CONCERN': 1,
             'STATSD_ADDRESS': '',
             'STATSD_PREFIX': 'rest_api',
             'S3_ADDRESS': '',
@@ -101,7 +103,11 @@ class Server:
         logging_url = config["DB_URL"].split('@')[-1] if '@' in config["DB_URL"] else config["DB_URL"]
         logging.info(f'DB: {logging_url}')
         db_url, db_name = config['DB_URL'].rsplit('/', 1)
-        self.db = motor.motor_asyncio.AsyncIOMotorClient(db_url)
+        self.db = motor.motor_asyncio.AsyncIOMotorClient(
+            db_url,
+            timeoutMS=config['DB_TIMEOUT']*1000,
+            w=config['DB_WRITE_CONCERN'],
+        )
         logging.info(f'DB name: {db_name}')
         self.indexes = defaultdict(partial(defaultdict, dict))
 
