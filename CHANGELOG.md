@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.21 (2024-10-16)
+
+### Other
+
+* Fix basic_submit url to api ([#390](https://github.com/WIPACrepo/iceprod/issues/390)) ([`8351af9`](https://github.com/WIPACrepo/iceprod/commit/8351af983f2b73785ffc1e7d42093aaee5535086))
+
 ## v3.0.20 (2024-10-15)
 
 ### Other
