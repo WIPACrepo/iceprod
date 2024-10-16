@@ -322,7 +322,7 @@ class Server:
         db_url, db_name = config['DB_URL'].rsplit('/', 1)
         db = motor.motor_asyncio.AsyncIOMotorClient(
             db_url,
-            timeoutMS=config['DB_TIMEOUT'],
+            timeoutMS=config['DB_TIMEOUT']*1000,
             w=config['DB_WRITE_CONCERN'],
         )
         logging.info(f'DB name: {db_name}')
