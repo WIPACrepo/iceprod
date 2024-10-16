@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.22 (2024-10-16)
+
+### Other
+
+* Set rest DB timeout and write concern ([#391](https://github.com/WIPACrepo/iceprod/issues/391)) ([`d4311cd`](https://github.com/WIPACrepo/iceprod/commit/d4311cdee161b7043b59774ca49921e43b6132d2))
+
 ## v3.0.21 (2024-10-16)
 
 ### Other
