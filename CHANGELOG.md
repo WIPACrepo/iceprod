@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.23 (2024-10-16)
+
+### Other
+
+* Ignore missing config for dataset details ([#392](https://github.com/WIPACrepo/iceprod/issues/392)) ([`0eecd15`](https://github.com/WIPACrepo/iceprod/commit/0eecd1538635e0aa541b2623530bea75b34feaf6))
+
 ## v3.0.22 (2024-10-16)
 
 ### Other
