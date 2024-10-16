@@ -425,6 +425,8 @@ class Server:
             'TOKEN_EXPIRE_BUFFER': 24.0,
             'TOKEN_SERVICE_CHECK_INTERVAL': 180,
             'DB_URL': 'mongodb://localhost/creds',
+            'DB_TIMEOUT': 60,
+            'DB_WRITE_CONCERN': 1,
             'STATSD_ADDRESS': '',
             'STATSD_PREFIX': 'credentials',
             'CI_TESTING': '',
@@ -466,7 +468,11 @@ class Server:
         logging_url = config["DB_URL"].split('@')[-1] if '@' in config["DB_URL"] else config["DB_URL"]
         logging.info(f'DB: {logging_url}')
         db_url, db_name = config['DB_URL'].rsplit('/', 1)
-        db = motor.motor_asyncio.AsyncIOMotorClient(db_url)
+        db = motor.motor_asyncio.AsyncIOMotorClient(
+            db_url,
+            timeoutMS=config['DB_TIMEOUT'],
+            w=config['DB_WRITE_CONCERN'],
+        )
         logging.info(f'DB name: {db_name}')
         self.db = db[db_name]
         self.indexes = {
