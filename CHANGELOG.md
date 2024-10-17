@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.24 (2024-10-17)
+
+### Other
+
+* Fix input/output options in basic_submit arguments ([#393](https://github.com/WIPACrepo/iceprod/issues/393)) ([`79813b0`](https://github.com/WIPACrepo/iceprod/commit/79813b03fcaa9e5381f080e8ebf6e91f32013fac))
+
 ## v3.0.23 (2024-10-16)
 
 ### Other
