@@ -538,7 +538,8 @@ async def test_write_to_script_data_task_files(tmp_path):
             'trays': [{
                 'modules': [{
                     'env_clear': False,
-                    'src': 'foo.py'
+                    'src': 'foo.py',
+                    'args': '--foo -b $(input) $(output)',
                 }]
             }],
             'data': [{
@@ -572,6 +573,8 @@ async def test_write_to_script_data_task_files(tmp_path):
     assert ws.infiles == {Data('https://foo.bar/baz', 'baz', Transfer.TRUE), Data('https://foo.bar/blah', 'blah', Transfer.TRUE)}
     assert ws.outfiles == {Data('https://foo.bar/1234', '1234', Transfer.TRUE), Data('https://foo.bar/abcde', 'abcde', Transfer.TRUE)}
     script = open(scriptpath).read()
+    lines = [line for line in script.split('\n') if not (not line.strip() or line.startswith('#') or line.startswith('set '))]
+    assert lines[-1] == 'python foo.py --foo -b baz blah 1234 abcde'
 
 
 async def test_write_to_script_data_dups(tmp_path):
