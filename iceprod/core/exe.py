@@ -455,10 +455,6 @@ class WriteToScript:
             print('# set some env vars for expansion', file=f)
             print('OS_ARCH=$(/cvmfs/icecube.opensciencegrid.org/py3-v4.3.0/os_arch.sh)', file=f)
             print('', file=f)
-            print('# debugging', file=f)
-            print('echo "dir contents:"', file=f)
-            print('ls -al', file=f)
-            print('', file=f)
             with scope_env(self.cfgparser, self.task.dataset.config['steering'], logger=self.logger) as globalenv:
                 task = self.task.get_task_config()
                 if self.task.task_files:
