@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.25 (2024-10-17)
+
+### Other
+
+* Ignore condor log error ([#394](https://github.com/WIPACrepo/iceprod/issues/394)) ([`57c96cd`](https://github.com/WIPACrepo/iceprod/commit/57c96cd1878dd4a5e8e21e932a0dd29678fb6b4e))
+
 ## v3.0.24 (2024-10-17)
 
 ### Other
