@@ -150,14 +150,18 @@ def scope_env(cfg: ConfigParser, obj: dict, upperenv: Optional[Env] = None, logg
     """
     env: Env = {
         'parameters': {},
-        'input_files': set(),
-        'output_files': set(),
+        'input_files': [],
+        'output_files': [],
+        'upper_input_files': [],
+        'upper_output_files': [],
         'environment': {
             'OS_ARCH': '$OS_ARCH',
         }
     }
     if upperenv:
         env['parameters'].update(upperenv['parameters'])
+        env['upper_input_files'] = upperenv['input_files'] + upperenv['upper_input_files']
+        env['upper_output_files'] = upperenv['output_files'] + upperenv['upper_output_files']
 
     logger = logger if logger else logging.getLogger()
 
@@ -179,11 +183,17 @@ def scope_env(cfg: ConfigParser, obj: dict, upperenv: Optional[Env] = None, logg
                 if d['movement'] in ('input','both'):
                     ret = downloadData(d, cfg=cfg, logger=logger)
                     if ret:
-                        env['input_files'].add(ret)
+                        env['input_files'].append(ret)
                 if d['movement'] in ('output','both'):
                     ret = uploadData(d, cfg=cfg, logger=logger)
                     if ret:
-                        env['output_files'].add(ret)
+                        env['output_files'].append(ret)
+
+        # add input and output to parseable options
+        cfg.config['options']['input'] = ' '.join(d.local for d in (env['input_files'] + env['upper_input_files']))
+        cfg.config['options']['output'] = ' '.join(d.local for d in (env['output_files'] + env['upper_output_files']))
+        logging.info('input: %r', cfg.config['options']['input'])
+        logging.info('output: %r', cfg.config['options']['output'])
 
     except util.NoncriticalError:
         logger.warning('Noncritical error when setting up environment', exc_info=True)
@@ -588,7 +598,7 @@ obj.Execute({{}})"""
                     local=filename,
                     transfer=Transfer.TRUE,
                 )
-                env['input_files'].add(data)
+                env['input_files'].append(data)
                 self.infiles.add(data)
 
         # run the module
