@@ -67,8 +67,8 @@ def test_scope_env():
 
         # test parsing data
         with iceprod.core.exe.scope_env(c, t.dataset.config['tasks'][0], env) as tenv:
-            assert tenv['input_files'] == {Data('https://foo.bar/baz', 'baz', Transfer.TRUE)}
-        assert env['input_files'] == set()
+            assert tenv['input_files'] == [Data('https://foo.bar/baz', 'baz', Transfer.TRUE)]
+        assert env['input_files'] == []
 
 
 def test_download_data():
