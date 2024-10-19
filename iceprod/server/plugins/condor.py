@@ -92,7 +92,9 @@ RESET_CONDOR_REASONS = [
 RESET_STDERR_REASONS = [
     'sigterm',
     'killed',
+    'bus error (core dumped)',
     'operation timed out',
+    'connection timed out',
 ]
 
 
