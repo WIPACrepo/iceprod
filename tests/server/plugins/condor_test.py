@@ -825,7 +825,7 @@ async def test_reset_task(schedd, i3prod_path, set_time):
     g.task_reset = AsyncMock()
     g.task_failure = AsyncMock()
 
-    await g.finish(jobid, success=False, reason=iceprod.server.plugins.condor.RESET_REASONS[0])
+    await g.finish(jobid, success=False, reason=iceprod.server.plugins.condor.RESET_CONDOR_REASONS[0])
 
     assert g.task_success.call_count == 0
     assert g.task_reset.call_count == 1
@@ -838,7 +838,7 @@ async def test_reset_task(schedd, i3prod_path, set_time):
     g.task_reset = AsyncMock()
     g.task_failure = AsyncMock()
 
-    (p / 'condor.err').open('w').write(iceprod.server.plugins.condor.RESET_REASONS[-1])
+    (p / 'condor.err').open('w').write(iceprod.server.plugins.condor.RESET_STDERR_REASONS[0])
 
     await g.finish(jobid, success=False)
 

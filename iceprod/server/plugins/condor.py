@@ -77,18 +77,23 @@ JOB_EVENT_STATUS_TRANSITIONS = {
 }
 
 
-RESET_REASONS = [
+RESET_CONDOR_REASONS = [
     '_condor_stdout: (errno 2) No such file',
-    'sigterm',
-    'killed',
     'transfer input files failure',
     'transfer output files failure',
     'cpu consumption limit exceeded',
+    'memory limit exceeded',
+    'cgroup memory limit',
+    'local storage limit on worker node exceeded',
+    'execution time limit exceeded',
+]
+
+
+RESET_STDERR_REASONS = [
+    'sigterm',
+    'killed',
     'operation timed out',
 ]
-#    'memory limit exceeded',
-#    'local storage limit on worker node exceeded',
-#    'execution time limit exceeded',
 
 
 def parse_usage(usage: str) -> int:
@@ -741,14 +746,14 @@ class Grid(grid.BaseGrid):
                 if reason:
                     stats['error_summary'] = reason
                     # check condor error for reset reason
-                    for text in RESET_REASONS:
+                    for text in RESET_CONDOR_REASONS:
                         if text.lower() in reason.lower():
                             future = self.task_reset(job, stats=stats, reason=reason)
                             break
                 if future is None and stderr and stderr.is_file():
                     # check stderr for reset reason
                     reason = stderr.open().read()
-                    for text in RESET_REASONS:
+                    for text in RESET_STDERR_REASONS:
                         if text.lower() in reason.lower():
                             future = self.task_reset(job, stats=stats, reason=reason)
                             break
