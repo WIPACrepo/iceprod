@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.26 (2024-10-19)
+
+### Other
+
+* Do cross-check with condor_q and condor_history ([#395](https://github.com/WIPACrepo/iceprod/issues/395)) ([`9ff909f`](https://github.com/WIPACrepo/iceprod/commit/9ff909f41069d2308be428eb2424ecf329ff419d))
+
 ## v3.0.25 (2024-10-17)
 
 ### Other
