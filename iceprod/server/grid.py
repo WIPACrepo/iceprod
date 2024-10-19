@@ -283,12 +283,13 @@ class BaseGrid:
             if e.response.status_code != 404:
                 raise
 
-    async def task_processing(self, task: GridTask):
+    async def task_processing(self, task: GridTask, site: str | None = None):
         """
         Tell IceProd API a task is now processing (put in the "processing" status).
 
         Args:
             task: IceProd task info
+            site: computing site the task is running at
         """
         if not task.task_id or not task.instance_id:
             raise RuntimeError("Either task_id or instance_id is empty")
@@ -296,18 +297,21 @@ class BaseGrid:
         args = {
             'instance_id': task.instance_id,
         }
+        if site:
+            args['site'] = site
         try:
             await self.rest_client.request('POST', f'/tasks/{task.task_id}/task_actions/processing', args)
         except requests.exceptions.HTTPError as e:
             if e.response.status_code != 404:
                 raise
 
-    async def task_reset(self, task: GridTask, reason: str | None = None):
+    async def task_reset(self, task: GridTask, reason: str | None = None, stats: dict | None = None):
         """
         Tell IceProd API a task should be reset back to the "waiting" status.
 
         Args:
             task: IceProd task info
+            stats: task resource statistics
             reason: A reason for failure
         """
         if not task.task_id or not task.instance_id:
@@ -316,6 +320,10 @@ class BaseGrid:
         args = {
             'instance_id': task.instance_id,
         }
+        if stats:
+            args['resources'] = stats.get('resources', {})
+            if site := stats.get('site'):
+                args['site'] = site
         if reason:
             args['reason'] = reason
         try:
@@ -354,6 +362,8 @@ class BaseGrid:
             args['reason'] = reason
         if stats:
             args['resources'] = stats.get('resources', {})
+            if site := stats.get('site'):
+                args['site'] = site
         try:
             await self.rest_client.request('POST', f'/tasks/{task.task_id}/task_actions/failed', args)
         except requests.exceptions.HTTPError as e:
@@ -391,6 +401,8 @@ class BaseGrid:
         }
         if stats:
             resources = stats.get('resources', {})
+            if site := stats.get('site'):
+                args['site'] = site
             if 'time' in resources:
                 args['time_used'] = resources['time']*3600.
 

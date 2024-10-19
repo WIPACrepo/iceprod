@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import logging
 from pathlib import Path
 import os
@@ -16,6 +17,7 @@ from iceprod.core.exe import Data, Transfer
 import iceprod.server.config
 import iceprod.server.grid
 import iceprod.server.plugins.condor
+from iceprod.server.plugins.condor import CondorJob, CondorJobId, JobStatus
 
 htcondor.enable_debug()
 
@@ -27,6 +29,18 @@ def schedd(monkeypatch):
     yield mock
 
 
+@pytest.fixture
+def set_time(monkeypatch):
+    now = datetime.datetime(2024, 10, 10, 10, 50, 0, 0, datetime.UTC)
+    mock = MagicMock()
+    mock.now = MagicMock(return_value=now)
+    monkeypatch.setattr(iceprod.server.plugins.condor, 'datetime', mock)
+    tnow = time.mktime(now.utctimetuple())
+    tmock = MagicMock(return_value=tnow)
+    monkeypatch.setattr(time, 'time', tmock)
+    yield now
+
+
 def test_grid_init(schedd):
     override = ['queue.type=condor']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
@@ -36,7 +50,7 @@ def test_grid_init(schedd):
 
 
 def test_CondorJobId():
-    j1 = iceprod.server.plugins.condor.CondorJobId(cluster_id=0, proc_id=0)
+    j1 = CondorJobId(cluster_id=0, proc_id=0)
     assert str(j1) == '0.0'
 
 
@@ -138,6 +152,7 @@ def test_CondorSubmit_condor_infiles_gsiftp(schedd):
     assert 'PreCmd' not in ret
 
 
+# skip this because we're using the iceprod transfer plugin
 @pytest.mark.skip
 def test_CondorSubmit_condor_precmd(schedd, i3prod_path):
     logging.info('cfgfile: %r', os.path.exists(os.path.expandvars('$I3PROD/etc/iceprod_config.json')))
@@ -310,7 +325,7 @@ async def test_Grid_run(schedd, i3prod_path):
     await g.run(forever=False)
     assert g.submit.call_count == 1
     assert g.wait.call_count == 2
-    assert g.check.call_count == 1
+    assert g.check.call_count == 2
 
 
 async def test_Grid_run_error(schedd, i3prod_path):
@@ -327,7 +342,7 @@ async def test_Grid_run_error(schedd, i3prod_path):
     await g.run(forever=False)
     assert g.submit.call_count == 1
     assert g.wait.call_count == 2
-    assert g.check.call_count == 1
+    assert g.check.call_count == 2
 
 
 async def test_Grid_submit(schedd, i3prod_path):
@@ -388,9 +403,6 @@ async def test_Grid_get_queue_num(schedd, i3prod_path):
     n = g.get_queue_num()
     assert n == 3
 
-    JobStatus = iceprod.server.plugins.condor.JobStatus
-    CondorJob = iceprod.server.plugins.condor.CondorJob
-    CondorJobId = iceprod.server.plugins.condor.CondorJobId
     g.jobs[CondorJobId(cluster_id=1, proc_id=0)] = CondorJob(status=JobStatus.IDLE)
     g.jobs[CondorJobId(cluster_id=2, proc_id=0)] = CondorJob(status=JobStatus.IDLE)
     g.jobs[CondorJobId(cluster_id=3, proc_id=0)] = CondorJob(status=JobStatus.IDLE)
@@ -426,19 +438,20 @@ async def test_Grid_get_queue_num(schedd, i3prod_path):
     assert n == 0
 
 
-async def test_Grid_get_current_JEL(schedd, i3prod_path):
+async def test_Grid_get_current_JEL(schedd, i3prod_path, set_time):
     override = ['queue.type=htcondor']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
     rc = MagicMock()
     g = iceprod.server.plugins.condor.Grid(cfg=cfg, rest_client=rc, cred_client=None)
 
-    g.get_current_JEL()
+    ret = g.get_current_JEL()
+    assert set_time.strftime('%Y-%m-%d') in str(ret) 
 
     assert len(g.jels) == 1
 
 
-async def test_Grid_wait_no_events(schedd, i3prod_path):
+async def test_Grid_wait_no_events(schedd, i3prod_path, set_time):
     override = ['queue.type=htcondor']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
@@ -448,7 +461,7 @@ async def test_Grid_wait_no_events(schedd, i3prod_path):
     await g.wait(timeout=0)
 
 
-async def test_Grid_wait_JEL(schedd, i3prod_path):
+async def test_Grid_wait_JEL(schedd, i3prod_path, set_time):
     override = ['queue.type=htcondor']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
@@ -474,11 +487,8 @@ async def test_Grid_wait_JEL(schedd, i3prod_path):
 
     await g.wait(timeout=0)
 
-    assert int(g.last_event_timestamp) == 1710261003
     assert len(g.jobs) == 7
 
-    JobStatus = iceprod.server.plugins.condor.JobStatus
-    CondorJobId = iceprod.server.plugins.condor.CondorJobId
     assert g.jobs[CondorJobId(cluster_id=110828038, proc_id=0)].dataset_id == '4ksd8'
     assert g.jobs[CondorJobId(cluster_id=110828038, proc_id=0)].task_id == 'lnk3f'
     assert g.jobs[CondorJobId(cluster_id=110828038, proc_id=0)].submit_dir == Path('/scratch/dschultz')
@@ -497,7 +507,7 @@ async def test_Grid_wait_JEL(schedd, i3prod_path):
     assert g.finish.call_count == 6
 
 
-async def test_Grid_wait_JEL_finish(schedd, i3prod_path):
+async def test_Grid_wait_JEL_finish(schedd, i3prod_path, set_time):
     override = ['queue.type=htcondor']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
@@ -516,10 +526,7 @@ async def test_Grid_wait_JEL_finish(schedd, i3prod_path):
 
     await g.wait(timeout=0)
 
-    assert int(g.last_event_timestamp) == 1710261003
     assert len(g.jobs) == 1
-
-    CondorJobId = iceprod.server.plugins.condor.CondorJobId
     assert list(g.jobs.keys()) == [CondorJobId(cluster_id=110828038, proc_id=4)]
 
     assert g.task_idle.call_count == 1
@@ -529,7 +536,7 @@ async def test_Grid_wait_JEL_finish(schedd, i3prod_path):
     assert g.task_success.call_count == 4
 
 
-async def test_Grid_wait_JEL_exception(schedd, i3prod_path):
+async def test_Grid_wait_JEL_exception(schedd, i3prod_path, set_time):
     override = ['queue.type=htcondor']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
@@ -548,11 +555,7 @@ async def test_Grid_wait_JEL_exception(schedd, i3prod_path):
 
     await g.wait(timeout=0)
 
-    assert int(g.last_event_timestamp) == 1710261003
     assert len(g.jobs) == 1
-
-    JobStatus = iceprod.server.plugins.condor.JobStatus
-    CondorJobId = iceprod.server.plugins.condor.CondorJobId
     assert list(g.jobs.keys()) == [CondorJobId(cluster_id=110828038, proc_id=4)]
 
     assert g.task_idle.call_count == 1
@@ -562,7 +565,7 @@ async def test_Grid_wait_JEL_exception(schedd, i3prod_path):
     assert g.task_success.call_count == 4
 
 
-async def test_Grid_wait_JEL_reprocess(schedd, i3prod_path):
+async def test_Grid_wait_JEL_reprocess(schedd, i3prod_path, set_time):
     override = ['queue.type=htcondor']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
@@ -586,33 +589,37 @@ async def test_Grid_wait_JEL_reprocess(schedd, i3prod_path):
     assert len(g.jobs) == 0
 
 
-async def test_Grid_check_empty(schedd, i3prod_path):
+async def test_Grid_check_empty(schedd, i3prod_path, set_time):
     override = ['queue.type=htcondor']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
     rc = MagicMock()
     g = iceprod.server.plugins.condor.Grid(cfg=cfg, rest_client=rc, cred_client=None)
 
+    g.submitter.get_jobs = MagicMock(return_value={})
+    g.submitter.get_history = MagicMock(return_value={})
     g.submitter.remove = MagicMock()
 
     await g.check()
 
-    dirs = {x.name: list(x.iterdir()) for x in g.submit_dir.glob('[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]')}
+    dirs = {x.name: list(x.iterdir()) for x in g.submit_dir.glob('[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]')}
     assert dirs == {}
 
 
-async def test_Grid_check_delete_day(schedd, i3prod_path):
+async def test_Grid_check_delete_day(schedd, i3prod_path, set_time):
     override = ['queue.type=htcondor', 'queue.max_task_queued_time=10', 'queue.max_task_processing_time=10', 'queue.suspend_submit_dir_time=10']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
     rc = MagicMock()
     g = iceprod.server.plugins.condor.Grid(cfg=cfg, rest_client=rc, cred_client=None)
 
+    g.submitter.get_jobs = MagicMock(return_value={})
+    g.submitter.get_history = MagicMock(return_value={})
     g.submitter.remove = MagicMock()
 
     jel = g.get_current_JEL()
     p = jel.parent
-    t = time.time() - 60
+    t = time.mktime(set_time.utctimetuple()) - 35  # must be older than all times added together
     os.utime(p, (t, t))
     logging.info('set time to %d', t)
     
@@ -620,63 +627,154 @@ async def test_Grid_check_delete_day(schedd, i3prod_path):
 
     await g.check()
 
-    dirs = {x.name: [x for x in x.iterdir() if x.is_dir()] for x in g.submit_dir.glob('[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]')}
+    dirs = {x.name: [x for x in x.iterdir() if x.is_dir()] for x in g.submit_dir.glob('[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]')}
     assert dirs == {}
     assert g.jels == {}
 
 
-async def test_Grid_check_old(schedd, i3prod_path):
+async def test_Grid_check_old(schedd, i3prod_path, set_time):
     override = ['queue.type=htcondor', 'queue.max_task_queued_time=10', 'queue.max_task_processing_time=10', 'queue.suspend_submit_dir_time=10']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
     rc = MagicMock()
     g = iceprod.server.plugins.condor.Grid(cfg=cfg, rest_client=rc, cred_client=None)
 
+    g.submitter.get_jobs = MagicMock(return_value={})
+    g.submitter.get_history = MagicMock(return_value={})
     g.submitter.remove = MagicMock()
 
     jel = g.get_current_JEL()
     daydir = jel.parent
     p = daydir / 'olddir'
     p.mkdir()
-    t = time.time() - 60
+    t = time.mktime(set_time.utctimetuple()) - 35  # must be older than all times added together
     os.utime(p, (t, t))
     logging.info('set time to %d', t)
 
     await g.check()
 
-    dirs = {x.name: [x for x in x.iterdir() if x.is_dir()] for x in g.submit_dir.glob('[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]')}
+    dirs = {x.name: [x for x in x.iterdir() if x.is_dir()] for x in g.submit_dir.glob('[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]')}
     assert dirs == {daydir.name: []}
 
 
-async def test_Grid_check_oldjob(schedd, i3prod_path):
+async def test_Grid_check_oldjob(schedd, i3prod_path, set_time):
     override = ['queue.type=htcondor', 'queue.max_task_queued_time=10', 'queue.max_task_processing_time=10', 'queue.suspend_submit_dir_time=10']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
     rc = MagicMock()
     g = iceprod.server.plugins.condor.Grid(cfg=cfg, rest_client=rc, cred_client=None)
 
+    jobs = {}
+    g.submitter.get_jobs = MagicMock(return_value=jobs)
+    g.submitter.get_history = MagicMock(return_value={})
     g.submitter.remove = MagicMock()
 
     jel = g.get_current_JEL()
     daydir = jel.parent
     p = daydir / 'olddir'
     p.mkdir()
-    t = time.time() - 25
+    t = time.mktime(set_time.utctimetuple()) - 25  # must be older than queued + processing time
     os.utime(p, (t, t))
     logging.info('set time to %d', t)
-    
-    JobStatus = iceprod.server.plugins.condor.JobStatus
-    CondorJob = iceprod.server.plugins.condor.CondorJob
-    CondorJobId = iceprod.server.plugins.condor.CondorJobId
-    g.jobs[CondorJobId(cluster_id=1, proc_id=0)] = CondorJob(status=JobStatus.IDLE, submit_dir=p)
+
+    jobs[CondorJobId(cluster_id=1, proc_id=0)] = CondorJob(status=JobStatus.IDLE, submit_dir=p)
 
     await g.check()
 
-    dirs = {x.name: [x for x in x.iterdir() if x.is_dir()] for x in g.submit_dir.glob('[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]')}
+    dirs = {x.name: [x for x in x.iterdir() if x.is_dir()] for x in g.submit_dir.glob('[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]')}
     assert dirs == {daydir.name: [p]}
     assert g.submitter.remove.call_count == 1
 
-async def test_reset_task(schedd, i3prod_path):
+
+@pytest.mark.parametrize('jel_jobs,queue_jobs,hist_jobs,remove_calls,finish_calls', [
+    ({(1,0): JobStatus.IDLE},
+     {(1,0): JobStatus.IDLE},
+     {},
+     0, 0
+    ),
+    ({(1,0): JobStatus.IDLE},
+     {},
+     {(1,0): JobStatus.COMPLETED},
+     0, 1
+    ),
+    ({(1,0): JobStatus.IDLE},
+     {(1,0): JobStatus.COMPLETED},
+     {(1,0): JobStatus.COMPLETED},
+     0, 1
+    ),
+    ({(1,0): JobStatus.IDLE},
+     {(1,0): JobStatus.FAILED},
+     {},
+     1, 0
+    ),
+    ({},
+     {(1,0): JobStatus.IDLE},
+     {},
+     0, 0
+    ),
+    ({},
+     {(1,0): JobStatus.RUNNING},
+     {},
+     0, 0
+    ),
+    ({},
+     {(1,0): JobStatus.FAILED},
+     {},
+     1, 0
+    ),
+    ({},
+     {(1,0): JobStatus.COMPLETED},
+     {},
+     0, 0
+    ),
+    ({},
+     {},
+     {(1,0): JobStatus.COMPLETED},
+     0, 1
+    ),
+    ({},
+     {},
+     {(1,0): JobStatus.FAILED},
+     0, 1
+    ),
+])
+async def test_Grid_check_queue_jel_mismatch(schedd, i3prod_path, set_time, jel_jobs, queue_jobs, hist_jobs, remove_calls, finish_calls):
+    override = ['queue.type=htcondor', 'queue.max_task_queued_time=10', 'queue.max_task_processing_time=10', 'queue.suspend_submit_dir_time=10']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+
+    rc = MagicMock()
+    g = iceprod.server.plugins.condor.Grid(cfg=cfg, rest_client=rc, cred_client=None)
+
+    qjobs = {}
+    hjobs = {}
+    g.submitter.get_jobs = MagicMock(return_value=qjobs)
+    g.submitter.get_history = MagicMock(return_value=hjobs)
+    g.submitter.remove = MagicMock()
+    g.finish = AsyncMock()
+
+    jel = g.get_current_JEL()
+    daydir = jel.parent
+    def mkdir(name):
+        p = daydir / name
+        if p.exists():
+            return p
+        p.mkdir()
+        return p
+
+    for (c,p), s in jel_jobs.items():
+        g.jobs[CondorJobId(cluster_id=c, proc_id=p)] = CondorJob(status=s, submit_dir=mkdir(f'{c}.{p}'))
+    for (c,p), s in queue_jobs.items():
+        qjobs[CondorJobId(cluster_id=c, proc_id=p)] = CondorJob(status=s, submit_dir=mkdir(f'{c}.{p}'))
+    for (c,p), s in hist_jobs.items():
+        hjobs[CondorJobId(cluster_id=c, proc_id=p)] = CondorJob(status=s, submit_dir=mkdir(f'{c}.{p}'))
+
+    await g.check()
+
+    assert g.submitter.remove.call_count == remove_calls
+    assert g.finish.call_count == finish_calls
+
+
+async def test_reset_task(schedd, i3prod_path, set_time):
     override = ['queue.type=htcondor', 'queue.max_task_queued_time=10', 'queue.max_task_processing_time=10', 'queue.suspend_submit_dir_time=10']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
@@ -692,10 +790,6 @@ async def test_reset_task(schedd, i3prod_path):
     t = time.time() - 25
     os.utime(p, (t, t))
     logging.info('set time to %d', t)
-
-    JobStatus = iceprod.server.plugins.condor.JobStatus
-    CondorJob = iceprod.server.plugins.condor.CondorJob
-    CondorJobId = iceprod.server.plugins.condor.CondorJobId
 
     # normal failure
     jobid = CondorJobId(cluster_id=1, proc_id=0)
@@ -731,7 +825,7 @@ async def test_reset_task(schedd, i3prod_path):
     g.task_reset = AsyncMock()
     g.task_failure = AsyncMock()
 
-    await g.finish(jobid, success=False, reason=iceprod.server.plugins.condor.RESET_REASONS[0])
+    await g.finish(jobid, success=False, reason=iceprod.server.plugins.condor.RESET_CONDOR_REASONS[0])
 
     assert g.task_success.call_count == 0
     assert g.task_reset.call_count == 1
@@ -744,7 +838,7 @@ async def test_reset_task(schedd, i3prod_path):
     g.task_reset = AsyncMock()
     g.task_failure = AsyncMock()
 
-    (p / 'condor.err').open('w').write(iceprod.server.plugins.condor.RESET_REASONS[-1])
+    (p / 'condor.err').open('w').write(iceprod.server.plugins.condor.RESET_STDERR_REASONS[0])
 
     await g.finish(jobid, success=False)
 
