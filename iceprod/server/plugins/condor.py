@@ -50,6 +50,14 @@ class JobStatus(enum.Enum):
     FAILED = enum.auto()     # job needs cleanup
     COMPLETED = enum.auto()  # job is out of the queue
 
+    @staticmethod
+    def from_condor_status(num):
+        match num:
+            case 0 | 1: return JobStatus.IDLE
+            case 2 | 6: return JobStatus.RUNNING
+            case 3 | 4: return JobStatus.COMPLETED
+            case _: return JobStatus.FAILED
+
 
 JOB_EVENT_STATUS_TRANSITIONS = {
     htcondor.JobEventType.SUBMIT: JobStatus.IDLE,
@@ -111,6 +119,7 @@ class CondorJob(grid.GridTask):
     instance_id: str | None = None
     submit_dir: Path | None = None
     status: JobStatus = JobStatus.IDLE
+    extra: dict | None = None
 
 
 class CondorJobId(NamedTuple):
@@ -137,6 +146,15 @@ class CondorSubmit:
         'transfer_output_files': [],
         'transfer_output_remaps': [],
     }
+
+    _GENERIC_ADS = ['Iwd', 'IceProdDatasetId', 'IceProdTaskId', 'IceProdTaskInstanceId', 'MATCH_EXP_JOBGLIDEIN_ResourceName']
+    AD_INFO = ['RemotePool', 'RemoteHost'] + _GENERIC_ADS
+    AD_PROJECTION_QUEUE = ['JobStatus'] + AD_INFO
+    AD_PROJECTION_HISTORY = [
+        'JobStatus', 'ExitCode', 'RemoveReason', 'LastHoldReason', 'CpusUsage', 'RemoteSysCpu', 'RemoteUserCpu',
+        'GpusUsage', 'ResidentSetSize_RAW', 'DiskUsage_RAW', 'LastRemoteWallClockTime',
+        'LastRemoteHost', 'LastRemotePool', 'MachineAttrGLIDEIN_Site0', 'MATCH_EXP_JOBGLIDEIN_ResourceName',
+    ] + _GENERIC_ADS
 
     def __init__(self, cfg: IceProdConfig, submit_dir: Path, credentials_dir: Path):
         self.cfg = cfg
@@ -280,11 +298,11 @@ error = $(initialdir)/condor.err
 log = {jel}
 
 notification = never
-job_ad_information_attrs = Iwd IceProdDatasetId IceProdTaskId IceProdTaskInstanceId CommittedTime RemotePool RemoteHost MATCH_EXP_JOBGLIDEIN_ResourceName
+job_ad_information_attrs = {" ".join(self.AD_INFO)}
 batch_name = Dataset {tasks[0].dataset.dataset_num}
 
 +IsIceProdJob = True
-+IceProdSite = {self.cfg["queue"].get("site", "unknown")}
++IceProdSite = "{self.cfg["queue"].get("site", "unknown")}"
 +IceProdDatasetId = $(datasetid)
 +IceProdDataset = $(dataset)
 +IceProdJobId = $(jobid)
@@ -391,7 +409,68 @@ transfer_output_remaps = $(outremaps)
         s = htcondor.Submit(submitfile)
         self.condor_schedd.submit(s, count=1, itemdata=s.itemdata())
 
-    def remove(self, job_id: str | CondorJob, reason: str | None = None):
+    def get_jobs(self) -> {CondorJobId: CondorJob}:
+        """
+        Get all jobs currently on the condor queue.
+        """
+        ret = {}
+        for ad in self.condor_schedd.query(
+            constraint=f'IceProdSite =?= "{self.cfg["queue"].get("site", "unknown")}"',
+            projection=['ClusterId', 'ProcId'] + self.AD_PROJECTION_QUEUE,
+        ):
+            job_id = CondorJobId(cluster_id=ad['ClusterId'], proc_id=ad['ProcId'])
+            submit_dir = None
+            if s := ad.get('Iwd'):
+                submit_dir = Path(s)
+            status = JobStatus.IDLE
+            if s := ad.get('JobStatus'):
+                status = JobStatus.from_condor_status(s)
+            job = CondorJob(
+                dataset_id=ad.get('IceProdDatasetId'),
+                task_id=ad.get('IceProdTaskId'),
+                instance_id=ad.get('IceProdTaskInstanceId'),
+                submit_dir=submit_dir,
+                status=status,
+                extra=ad,
+            )
+            ret[job_id] = job
+        return ret
+
+    def get_history(self, since=None) -> {CondorJobId: CondorJob}:
+        """
+        Get all jobs currently on the condor history.
+        """
+        ret = {}
+        for ad in self.condor_schedd.query(
+            constraint=f'IceProdSite =?= "{self.cfg["queue"].get("site", "unknown")}"',
+            projection=['ClusterId', 'ProcId'] + self.AD_PROJECTION_HISTORY,
+            since=f'CompletionDate<{since}' if since else None,
+        ):
+            job_id = CondorJobId(cluster_id=ad['ClusterId'], proc_id=ad['ProcId'])
+            if s := ad.get('Iwd'):
+                submit_dir = Path(s)
+            status = JobStatus.IDLE
+            if s := ad.get('JobStatus'):
+                status = JobStatus.from_condor_status(s)
+            job = CondorJob(
+                dataset_id=ad.get('IceProdDatasetId'),
+                task_id=ad.get('IceProdTaskId'),
+                instance_id=ad.get('IceProdTaskInstanceId'),
+                submit_dir=submit_dir,
+                status=status,
+                extra=ad,
+            )
+            ret[job_id] = job
+        return ret
+
+    def remove(self, job_id: str | CondorJobId, reason: str | None = None):
+        """
+        Remove a job from condor.
+
+        Args:
+            job_id: condor job id
+            reason: reason for removal
+        """
         logger.info('removing job %s', job_id)
         self.condor_schedd.act(htcondor.JobAction.Remove, str(job_id), reason=reason)
 
@@ -420,7 +499,11 @@ class Grid(grid.BaseGrid):
             f.write(str(self.last_event_timestamp))
 
     async def run(self, forever=True):
-        # initial job load from JELs
+        # initial job load
+        try:
+            await self.check()
+        except Exception:
+            logger.warning('failed to check', exc_info=True)
         try:
             await self.wait(timeout=0)
         except Exception:
@@ -438,7 +521,6 @@ class Grid(grid.BaseGrid):
             wait_time = max(0, self.cfg['queue']['submit_interval'] - (time.monotonic() - start))
             try:
                 await self.wait(timeout=wait_time)
-                self.save_timestamp()
             except Exception:
                 logger.warning('failed to wait', exc_info=True)
 
@@ -446,6 +528,7 @@ class Grid(grid.BaseGrid):
             if now - check_time >= self.cfg['queue']['check_time']:
                 try:
                     await self.check()
+                    self.save_timestamp()
                 except Exception:
                     logger.warning('failed to check', exc_info=True)
                 check_time = now
@@ -532,7 +615,6 @@ class Grid(grid.BaseGrid):
                     for event in events:
                         if float(event.timestamp) < self.last_event_timestamp:
                             continue
-                        self.last_event_timestamp = event.timestamp
 
                         job_id = CondorJobId(cluster_id=event.cluster, proc_id=event.proc)
 
@@ -625,7 +707,7 @@ class Grid(grid.BaseGrid):
         except Exception:
             pass
 
-    async def finish(self, job_id: CondorJobId, success: bool = True, resources: dict | None = None, reason: str | None = None):
+    async def finish(self, job_id: CondorJobId, success: bool = True, resources: dict | None = None, reason: str | None = None, stats: dict | None = None):
         """
         Run cleanup actions after a batch job completes.
 
@@ -635,7 +717,8 @@ class Grid(grid.BaseGrid):
             logger.debug('dup call: %s not in job dict', job_id)
             return
 
-        stats = {}
+        if not stats:
+            stats = {}
         if resources:
             stats['resources'] = resources
 
@@ -659,14 +742,14 @@ class Grid(grid.BaseGrid):
                     # check condor error for reset reason
                     for text in RESET_REASONS:
                         if text.lower() in reason.lower():
-                            future = self.task_reset(job, reason=reason)
+                            future = self.task_reset(job, stats=stats, reason=reason)
                             break
                 if future is None and stderr and stderr.is_file():
                     # check stderr for reset reason
                     reason = stderr.open().read()
                     for text in RESET_REASONS:
                         if text.lower() in reason.lower():
-                            future = self.task_reset(job, reason=reason)
+                            future = self.task_reset(job, stats=stats, reason=reason)
                             break
                 if future is None:
                     future = self.task_failure(job, stats=stats, reason=reason, stdout=stdout, stderr=stderr)
@@ -683,7 +766,74 @@ class Grid(grid.BaseGrid):
         """
         Do a cross-check, to verify `self.jobs` vs the submit dir and IceProd API.
         """
-        # check for reset tasks
+        logger.info('starting cross-check')
+
+        all_jobs = self.submitter.get_jobs()
+
+        # swap job dicts
+        for job_id in set(self.jobs) - set(all_jobs):
+            logger.info('removing job %s from cross-check', job_id)
+        old_jobs = self.jobs
+        self.jobs = all_jobs
+
+        # process any updates
+        for job_id, job in all_jobs.items():
+            if job_id not in old_jobs or job.status != old_jobs[job_id].status:
+                if job.status == JobStatus.FAILED:
+                    extra = job.extra if job.extra else {}
+                    reason = extra.get('HoldReason', None)
+                    logger.info("job %s %s.%s removed from cross-check: %r", job_id, job.dataset_id, job.task_id, reason)
+                    self.submitter.remove(job_id, reason=reason)
+
+        # check for history
+        now = time.time()
+        hist_jobs = self.submitter.get_history(since=self.last_event_timestamp)
+        self.last_event_timestamp = now
+        for job_id, job in hist_jobs.items():
+            if job_id not in self.jobs:
+                self.jobs[job_id] = job
+
+            logger.info("job %s %s.%s exited on its own from cross-check", job_id, job.dataset_id, job.task_id)
+            extra = job.extra if job.extra else {}
+
+            # get stats
+            cpu = extra.get('CpusUsage', None)
+            if not cpu and (wall := extra.get('LastRemoteWallClockTime', None)):
+                cpu = (extra.get('RemoteSysCpu', 0) + extra.get('RemoteUserCpu', 0)) * 1. / wall
+            gpu = extra.get('GpusUsage', None)
+            memory = extra.get('ResidentSetSize_RAW', None)  # KB
+            disk = extra.get('DiskUsage_RAW', None)  # KB
+            time_ = extra.get('LastRemoteWallClockTime', None)  # seconds
+
+            resources = {}
+            if cpu is not None:
+                resources['cpu'] = cpu
+            if gpu is not None:
+                resources['gpu'] = gpu
+            if memory is not None:
+                resources['memory'] = memory/1000000.
+            if disk is not None:
+                resources['disk'] = disk/1000000.
+            if time_ is not None:
+                resources['time'] = time_/3600.
+
+            success = extra.get('ExitCode', 1) == 0
+            job.status = JobStatus.COMPLETED if success else JobStatus.FAILED
+
+            stats = {}
+            if site := extra.get('MachineAttrGLIDEIN_Site0'):
+                stats['site'] = site
+            elif site := extra.get('MATCH_EXP_JOBGLIDEIN_ResourceName'):
+                stats['site'] = site
+
+            reason = None
+            if r := extra.get('LastHoldReason'):
+                reason = r
+            elif r := extra.get('RemoveReason'):
+                reason = r
+
+            # finish job
+            await self.finish(job_id, success=success, resources=resources, stats=stats, reason=reason)
 
         # check for old jobs and dirs
         async for path in self.check_submit_dir():
