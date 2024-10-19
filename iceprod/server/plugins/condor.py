@@ -153,12 +153,12 @@ class CondorSubmit:
     }
 
     _GENERIC_ADS = ['Iwd', 'IceProdDatasetId', 'IceProdTaskId', 'IceProdTaskInstanceId', 'MATCH_EXP_JOBGLIDEIN_ResourceName']
-    AD_INFO = ['RemotePool', 'RemoteHost'] + _GENERIC_ADS
-    AD_PROJECTION_QUEUE = ['JobStatus'] + AD_INFO
+    AD_INFO = ['RemotePool', 'RemoteHost', 'LastRemoteHost', 'LastRemotePool', 'HoldReason', 'LastHoldReason', 'RemoveReason', 'MachineAttrGLIDEIN_Site0'] + _GENERIC_ADS
+    AD_PROJECTION_QUEUE = ['JobStatus', 'RemotePool', 'RemoteHost'] + _GENERIC_ADS
     AD_PROJECTION_HISTORY = [
         'JobStatus', 'ExitCode', 'RemoveReason', 'LastHoldReason', 'CpusUsage', 'RemoteSysCpu', 'RemoteUserCpu',
         'GpusUsage', 'ResidentSetSize_RAW', 'DiskUsage_RAW', 'LastRemoteWallClockTime',
-        'LastRemoteHost', 'LastRemotePool', 'MachineAttrGLIDEIN_Site0', 'MATCH_EXP_JOBGLIDEIN_ResourceName',
+        'LastRemoteHost', 'LastRemotePool', 'MachineAttrGLIDEIN_Site0',
     ] + _GENERIC_ADS
 
     def __init__(self, cfg: IceProdConfig, submit_dir: Path, credentials_dir: Path):
@@ -670,8 +670,22 @@ class Grid(grid.BaseGrid):
                                 success = event.get('ReturnValue', 1) == 0
                                 job.status = JobStatus.COMPLETED if success else JobStatus.FAILED
 
+                                stats = {}
+                                if site := event.get('MachineAttrGLIDEIN_Site0'):
+                                    stats['site'] = site
+                                elif site := event.get('MATCH_EXP_JOBGLIDEIN_ResourceName'):
+                                    stats['site'] = site
+
+                                reason = None
+                                if r := event.get('HoldReason'):
+                                    reason = r
+                                elif r := event.get('LastHoldReason'):
+                                    reason = r
+                                elif r := event.get('RemoveReason'):
+                                    reason = r
+
                                 # finish job
-                                await self.finish(job_id, success=success, resources=resources)
+                                await self.finish(job_id, success=success, resources=resources, stats=stats, reason=reason)
 
                             elif type_ == htcondor.JobEventType.JOB_ABORTED:
                                 job.status = JobStatus.FAILED
