@@ -510,6 +510,7 @@ class Grid(grid.BaseGrid):
             self.save_timestamp()
         except Exception:
             logger.warning('failed to check', exc_info=True)
+        check_time = time.monotonic()
         try:
             await self.wait(timeout=0)
         except Exception:
@@ -517,7 +518,6 @@ class Grid(grid.BaseGrid):
 
         logger.info('active JELs: %r', list(self.jels.keys()))
 
-        check_time = time.monotonic()
         while True:
             start = time.monotonic()
             try:
