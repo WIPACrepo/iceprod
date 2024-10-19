@@ -766,9 +766,9 @@ class Grid(grid.BaseGrid):
                             break
                 if future is None and stderr and stderr.is_file():
                     # check stderr for reset reason
-                    reason = stderr.open().read()
+                    data = stderr.open().read()
                     for text in RESET_STDERR_REASONS:
-                        if text.lower() in reason.lower():
+                        if text.lower() in data.lower():
                             future = self.task_reset(job, stats=stats, reason=reason)
                             break
                 if future is None:
@@ -860,6 +860,8 @@ class Grid(grid.BaseGrid):
             for job_id, job in self.jobs.items():
                 if job.submit_dir == path:
                     self.submitter.remove(job_id, reason='exceeded max queue time')
+
+        logger.info('finished cross-check')
 
     async def check_submit_dir(self):
         """
