@@ -502,6 +502,7 @@ class Grid(grid.BaseGrid):
         # initial job load
         try:
             await self.check()
+            self.save_timestamp()
         except Exception:
             logger.warning('failed to check', exc_info=True)
         try:
