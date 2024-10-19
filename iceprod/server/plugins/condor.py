@@ -855,7 +855,7 @@ class Grid(grid.BaseGrid):
         dir_old_time = now - (queued_time + processing_time + suspend_time)
         logger.debug('now: %r, job_old_time: %r, dir_old_time: %r', now, job_old_time, dir_old_time)
 
-        for daydir in self.submit_dir.glob('[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]'):
+        for daydir in self.submit_dir.glob('[0-9][0-9][0-9][0-9]*'):
             logger.debug('looking at daydir %s', daydir)
             if daydir.is_dir():
                 empty = True
