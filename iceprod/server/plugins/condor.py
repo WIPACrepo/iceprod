@@ -579,12 +579,12 @@ class Grid(grid.BaseGrid):
     def get_current_JEL(self) -> Path:
         """
         Get the current Job Event Log, possibly creating a new one
-        if the day rolls over.
+        for every hour.
 
         Returns:
             Path: filename to current JEL
         """
-        day = datetime.now(UTC).date().isoformat()
+        day = datetime.now(UTC).strftime('%Y-%m-%dT%H')
         day_submit_dir = self.submit_dir / day
         if not day_submit_dir.exists():
             day_submit_dir.mkdir(mode=0o700, parents=True)
@@ -853,8 +853,9 @@ class Grid(grid.BaseGrid):
         now = time.time()
         job_old_time = now - (queued_time + processing_time)
         dir_old_time = now - (queued_time + processing_time + suspend_time)
+        logger.debug('now: %r, job_old_time: %r, dir_old_time: %r', now, job_old_time, dir_old_time)
 
-        for daydir in self.submit_dir.glob('[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'):
+        for daydir in self.submit_dir.glob('[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]'):
             logger.debug('looking at daydir %s', daydir)
             if daydir.is_dir():
                 empty = True

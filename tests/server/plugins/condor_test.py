@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import logging
 from pathlib import Path
 import os
@@ -26,6 +27,18 @@ def schedd(monkeypatch):
     mock = MagicMock()
     monkeypatch.setattr(htcondor, 'Schedd', mock)
     yield mock
+
+
+@pytest.fixture
+def set_time(monkeypatch):
+    now = datetime.datetime(2024, 10, 10, 10, 50, 0, 0, datetime.UTC)
+    mock = MagicMock()
+    mock.now = MagicMock(return_value=now)
+    monkeypatch.setattr(iceprod.server.plugins.condor, 'datetime', mock)
+    tnow = time.mktime(now.utctimetuple())
+    tmock = MagicMock(return_value=tnow)
+    monkeypatch.setattr(time, 'time', tmock)
+    yield now
 
 
 def test_grid_init(schedd):
@@ -425,19 +438,20 @@ async def test_Grid_get_queue_num(schedd, i3prod_path):
     assert n == 0
 
 
-async def test_Grid_get_current_JEL(schedd, i3prod_path):
+async def test_Grid_get_current_JEL(schedd, i3prod_path, set_time):
     override = ['queue.type=htcondor']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
     rc = MagicMock()
     g = iceprod.server.plugins.condor.Grid(cfg=cfg, rest_client=rc, cred_client=None)
 
-    g.get_current_JEL()
+    ret = g.get_current_JEL()
+    assert set_time.strftime('%Y-%m-%d') in str(ret) 
 
     assert len(g.jels) == 1
 
 
-async def test_Grid_wait_no_events(schedd, i3prod_path):
+async def test_Grid_wait_no_events(schedd, i3prod_path, set_time):
     override = ['queue.type=htcondor']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
@@ -447,7 +461,7 @@ async def test_Grid_wait_no_events(schedd, i3prod_path):
     await g.wait(timeout=0)
 
 
-async def test_Grid_wait_JEL(schedd, i3prod_path):
+async def test_Grid_wait_JEL(schedd, i3prod_path, set_time):
     override = ['queue.type=htcondor']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
@@ -493,7 +507,7 @@ async def test_Grid_wait_JEL(schedd, i3prod_path):
     assert g.finish.call_count == 6
 
 
-async def test_Grid_wait_JEL_finish(schedd, i3prod_path):
+async def test_Grid_wait_JEL_finish(schedd, i3prod_path, set_time):
     override = ['queue.type=htcondor']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
@@ -522,7 +536,7 @@ async def test_Grid_wait_JEL_finish(schedd, i3prod_path):
     assert g.task_success.call_count == 4
 
 
-async def test_Grid_wait_JEL_exception(schedd, i3prod_path):
+async def test_Grid_wait_JEL_exception(schedd, i3prod_path, set_time):
     override = ['queue.type=htcondor']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
@@ -551,7 +565,7 @@ async def test_Grid_wait_JEL_exception(schedd, i3prod_path):
     assert g.task_success.call_count == 4
 
 
-async def test_Grid_wait_JEL_reprocess(schedd, i3prod_path):
+async def test_Grid_wait_JEL_reprocess(schedd, i3prod_path, set_time):
     override = ['queue.type=htcondor']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
@@ -575,7 +589,7 @@ async def test_Grid_wait_JEL_reprocess(schedd, i3prod_path):
     assert len(g.jobs) == 0
 
 
-async def test_Grid_check_empty(schedd, i3prod_path):
+async def test_Grid_check_empty(schedd, i3prod_path, set_time):
     override = ['queue.type=htcondor']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
@@ -588,11 +602,11 @@ async def test_Grid_check_empty(schedd, i3prod_path):
 
     await g.check()
 
-    dirs = {x.name: list(x.iterdir()) for x in g.submit_dir.glob('[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]')}
+    dirs = {x.name: list(x.iterdir()) for x in g.submit_dir.glob('[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]')}
     assert dirs == {}
 
 
-async def test_Grid_check_delete_day(schedd, i3prod_path):
+async def test_Grid_check_delete_day(schedd, i3prod_path, set_time):
     override = ['queue.type=htcondor', 'queue.max_task_queued_time=10', 'queue.max_task_processing_time=10', 'queue.suspend_submit_dir_time=10']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
@@ -605,7 +619,7 @@ async def test_Grid_check_delete_day(schedd, i3prod_path):
 
     jel = g.get_current_JEL()
     p = jel.parent
-    t = time.time() - 60
+    t = time.mktime(set_time.utctimetuple()) - 35  # must be older than all times added together
     os.utime(p, (t, t))
     logging.info('set time to %d', t)
     
@@ -613,12 +627,12 @@ async def test_Grid_check_delete_day(schedd, i3prod_path):
 
     await g.check()
 
-    dirs = {x.name: [x for x in x.iterdir() if x.is_dir()] for x in g.submit_dir.glob('[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]')}
+    dirs = {x.name: [x for x in x.iterdir() if x.is_dir()] for x in g.submit_dir.glob('[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]')}
     assert dirs == {}
     assert g.jels == {}
 
 
-async def test_Grid_check_old(schedd, i3prod_path):
+async def test_Grid_check_old(schedd, i3prod_path, set_time):
     override = ['queue.type=htcondor', 'queue.max_task_queued_time=10', 'queue.max_task_processing_time=10', 'queue.suspend_submit_dir_time=10']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
@@ -633,17 +647,17 @@ async def test_Grid_check_old(schedd, i3prod_path):
     daydir = jel.parent
     p = daydir / 'olddir'
     p.mkdir()
-    t = time.time() - 60
+    t = time.mktime(set_time.utctimetuple()) - 35  # must be older than all times added together
     os.utime(p, (t, t))
     logging.info('set time to %d', t)
 
     await g.check()
 
-    dirs = {x.name: [x for x in x.iterdir() if x.is_dir()] for x in g.submit_dir.glob('[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]')}
+    dirs = {x.name: [x for x in x.iterdir() if x.is_dir()] for x in g.submit_dir.glob('[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]')}
     assert dirs == {daydir.name: []}
 
 
-async def test_Grid_check_oldjob(schedd, i3prod_path):
+async def test_Grid_check_oldjob(schedd, i3prod_path, set_time):
     override = ['queue.type=htcondor', 'queue.max_task_queued_time=10', 'queue.max_task_processing_time=10', 'queue.suspend_submit_dir_time=10']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
@@ -659,7 +673,7 @@ async def test_Grid_check_oldjob(schedd, i3prod_path):
     daydir = jel.parent
     p = daydir / 'olddir'
     p.mkdir()
-    t = time.time() - 25
+    t = time.mktime(set_time.utctimetuple()) - 25  # must be older than queued + processing time
     os.utime(p, (t, t))
     logging.info('set time to %d', t)
 
@@ -667,7 +681,7 @@ async def test_Grid_check_oldjob(schedd, i3prod_path):
 
     await g.check()
 
-    dirs = {x.name: [x for x in x.iterdir() if x.is_dir()] for x in g.submit_dir.glob('[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]')}
+    dirs = {x.name: [x for x in x.iterdir() if x.is_dir()] for x in g.submit_dir.glob('[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]')}
     assert dirs == {daydir.name: [p]}
     assert g.submitter.remove.call_count == 1
 
@@ -724,7 +738,7 @@ async def test_Grid_check_oldjob(schedd, i3prod_path):
      0, 1
     ),
 ])
-async def test_Grid_check_queue_jel_mismatch(schedd, i3prod_path, jel_jobs, queue_jobs, hist_jobs, remove_calls, finish_calls):
+async def test_Grid_check_queue_jel_mismatch(schedd, i3prod_path, set_time, jel_jobs, queue_jobs, hist_jobs, remove_calls, finish_calls):
     override = ['queue.type=htcondor', 'queue.max_task_queued_time=10', 'queue.max_task_processing_time=10', 'queue.suspend_submit_dir_time=10']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
@@ -760,7 +774,7 @@ async def test_Grid_check_queue_jel_mismatch(schedd, i3prod_path, jel_jobs, queu
     assert g.finish.call_count == finish_calls
 
 
-async def test_reset_task(schedd, i3prod_path):
+async def test_reset_task(schedd, i3prod_path, set_time):
     override = ['queue.type=htcondor', 'queue.max_task_queued_time=10', 'queue.max_task_processing_time=10', 'queue.suspend_submit_dir_time=10']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
