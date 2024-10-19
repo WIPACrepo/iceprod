@@ -441,7 +441,7 @@ transfer_output_remaps = $(outremaps)
         Get all jobs currently on the condor history.
         """
         ret = {}
-        for ad in self.condor_schedd.query(
+        for ad in self.condor_schedd.history(
             constraint=f'IceProdSite =?= "{self.cfg["queue"].get("site", "unknown")}"',
             projection=['ClusterId', 'ProcId'] + self.AD_PROJECTION_HISTORY,
             since=f'CompletionDate<{since}' if since else None,
