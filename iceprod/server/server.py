@@ -38,11 +38,11 @@ class Server(object):
         logger.error('IceProd Server - version %s', version_string)
 
     async def rotate_logs(self):
-        current_date = datetime.utcnow()
+        current_date = datetime.now(UTC)
         while self.outfile and self.errfile:
-            if current_date.day != datetime.utcnow().day:
+            if current_date.day != datetime.now(UTC).day:
                 # rotate files
-                current_date = datetime.utcnow()
+                current_date = datetime.now(UTC)
                 if self.outfile:
                     roll_files(sys.stdout, self.outfile)
                 if self.errfile:

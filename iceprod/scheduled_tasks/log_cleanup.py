@@ -8,7 +8,7 @@ stdout: 1 year
 
 import argparse
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 import logging
 
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
@@ -26,7 +26,7 @@ async def run(rest_client, debug=False):
         debug (bool): debug flag to propagate exceptions
     """
     async def delete_logs(name, days):
-        time_limit = datetime.utcnow() - timedelta(days=days)
+        time_limit = datetime.now(UTC) - timedelta(days=days)
         args = {
             'to': datetime2str(time_limit),
             'name': name,

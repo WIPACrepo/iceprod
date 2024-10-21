@@ -3,7 +3,7 @@ Test script for scheduled_tasks/job_temp_cleaning
 """
 
 import logging
-from datetime import datetime,timedelta
+from datetime import datetime, timedelta, UTC
 from unittest.mock import patch, MagicMock, AsyncMock
 from concurrent.futures import ThreadPoolExecutor
 
@@ -121,10 +121,11 @@ async def test_scheduled_tasks_job_temp_cleaning_run():
     rmtree.assert_awaited_once_with(path+'/0/1')
 
     # dir with recent suspended job
+    now = datetime.now(UTC)
     jobs['bar'] = {
         'job_index': 1,
         'status': 'suspended',
-        'status_changed': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f'),
+        'status_changed': now.strftime('%Y-%m-%dT%H:%M:%S.%f'),
     }
     rc.request = AsyncMock(side_effect=client)
     listdir = AsyncMock(return_value=data)
@@ -135,10 +136,11 @@ async def test_scheduled_tasks_job_temp_cleaning_run():
     rmtree.assert_not_awaited()
 
     # dir with old suspended job
+    now = datetime.now(UTC)
     jobs['bar'] = {
         'job_index': 1,
         'status': 'suspended',
-        'status_changed': (datetime.utcnow()-timedelta(days=100)).strftime('%Y-%m-%dT%H:%M:%S'),
+        'status_changed': (now-timedelta(days=100)).strftime('%Y-%m-%dT%H:%M:%S'),
     }
     rc.request = AsyncMock(side_effect=client)
     listdir = AsyncMock(return_value=data)

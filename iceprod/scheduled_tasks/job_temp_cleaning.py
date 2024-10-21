@@ -8,7 +8,7 @@ import argparse
 import asyncio
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from functools import partial
 import logging
 import os
@@ -87,7 +87,7 @@ async def run(rest_client, temp_dir, list_dirs, rmtree, dataset=None, debug=Fals
         debug (bool): debug flag to propagate exceptions
     """
     suspend_time = timedelta(days=90)
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
 
     try:
         # get all the job_indexes currently in tmp

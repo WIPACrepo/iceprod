@@ -880,9 +880,7 @@ class Grid(grid.BaseGrid):
         queue_tasks = {j.task_id: j for j in self.jobs.values()}
         server_tasks = await fut
         now = datetime.now(UTC)
-        logger.info(f'server tasks: %r', server_tasks)
         for task in server_tasks:
-            logger.info(f'task {task["dataset_id"]}.{task["task_id"]}')
             if task['task_id'] not in queue_tasks:
                 # ignore anything too recent
                 if str2datetime(task['status_changed']) >= now - timedelta(minutes=1):

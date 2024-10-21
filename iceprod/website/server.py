@@ -7,7 +7,7 @@ It has been broken down into several sub-handlers for easier maintenance.
 """
 
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 import functools
 import importlib.resources
 import logging
@@ -37,7 +37,7 @@ import iceprod.core.functions
 from iceprod.server import documentation
 from iceprod.server.module import FakeStatsClient, StatsClientIgnoreErrors
 import iceprod.server.states
-from iceprod.server.util import nowstr
+from iceprod.server.util import datetime2str, nowstr
 
 logger = logging.getLogger('website')
 
@@ -596,7 +596,7 @@ class Profile(PublicHandler):
             }
             if self.auth_refresh_token:
                 args['refresh_token'] = self.auth_refresh_token
-                args['expiration'] = (datetime.utcnow() + timedelta(days=30)).isoformat()
+                args['expiration'] = datetime2str(datetime.now(UTC) + timedelta(days=30))
             await self.cred_rest_client.request('POST', f'/users/{username}/credentials', args)
 
         else:

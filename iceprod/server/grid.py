@@ -438,6 +438,7 @@ class BaseGrid:
             if stderr and stderr.exists():
                 await self._upload_log(task, 'stderr', stderr.read_text())
 
+
 '''
     @run_on_executor
     def _delete_dirs(self, dirs):

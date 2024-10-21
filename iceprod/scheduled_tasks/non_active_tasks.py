@@ -7,7 +7,7 @@ tasks in pilots.  Reset the difference.
 
 import argparse
 import asyncio
-from datetime import datetime
+from datetime import datetime, UTC
 import logging
 
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
@@ -64,6 +64,7 @@ async def run(rest_client, debug=False):
 
         awaitables = set()
         reset_pilots = set()
+        now = datetime.now(UTC)
         for dataset_id in dataset_ids:
             tasks = dataset_tasks[dataset_id]
             if 'processing' in tasks:
@@ -72,7 +73,7 @@ async def run(rest_client, debug=False):
                     args = {'keys': 'status|status_changed'}
                     task = await rest_client.request('GET', f'/datasets/{dataset_id}/tasks/{task_id}', args)
                     # check status, and that we haven't just changed status
-                    if task['status'] == 'processing' and (datetime.utcnow()-str2datetime(task['status_changed'])).total_seconds() > 600:
+                    if task['status'] == 'processing' and (now-str2datetime(task['status_changed'])).total_seconds() > 600:
                         logger.info('dataset %s reset task %s', dataset_id, task_id)
                         awaitables.add(reset(dataset_id,task_id))
 
@@ -82,7 +83,7 @@ async def run(rest_client, debug=False):
                         args = {'keys': 'status|status_changed'}
                         task = await rest_client.request('GET', f'/datasets/{dataset_id}/tasks/{task_id}', args)
                         # check status, and that we haven't just changed status
-                        if task['status'] in ('reset', 'waiting', 'failed', 'suspended') and (datetime.utcnow()-str2datetime(task['status_changed'])).total_seconds() > 600:
+                        if task['status'] in ('reset', 'waiting', 'failed', 'suspended') and (now-str2datetime(task['status_changed'])).total_seconds() > 600:
                             reset_pilots.add(task_id)
 
         for p in pilots.values():
