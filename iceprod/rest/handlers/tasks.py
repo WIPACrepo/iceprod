@@ -1,8 +1,9 @@
-import logging
-import json
-import uuid
-import math
 from collections import defaultdict
+import json
+import logging
+import math
+import re
+import uuid
 
 import pymongo
 import tornado.web
@@ -83,6 +84,7 @@ class MultiTasksHandler(APIBase):
 
         Params (optional):
             status: | separated list of task status to filter by
+            site: site to filter on
             keys: | separated list of keys to return for each task
             sort: | separated list of sort key=values, with values of 1 or -1
             limit: number of tasks to return
@@ -92,13 +94,14 @@ class MultiTasksHandler(APIBase):
         """
         filters = {}
 
-        status = self.get_argument('status', None)
-        if status:
+        if status := self.get_argument('status', None):
             filters['status'] = {'$in': status.split('|')}
 
-        sort = self.get_argument('sort', None)
+        if site := self.get_argument('site', None):
+            filters['site'] = {'$regex': '^'+re.escape(site)}
+
         mongo_sort = []
-        if sort:
+        if sort := self.get_argument('sort', None):
             for s in sort.split('|'):
                 if '=' in s:
                     name, order = s.split('=', 1)
@@ -109,8 +112,7 @@ class MultiTasksHandler(APIBase):
                 else:
                     mongo_sort.append((s, pymongo.ASCENDING))
 
-        limit = self.get_argument('limit', 0)
-        if limit:
+        if limit := self.get_argument('limit', 0):
             try:
                 limit = int(limit)
             except Exception:

@@ -212,6 +212,25 @@ class BaseGrid:
         resource.update(values)
         return resource
 
+    async def get_tasks_on_queue(self) -> list:
+        """
+        Get all tasks that are "assigned" to this queue.
+
+        Returns:
+            list of tasks
+        """
+        args = {
+            'status': 'queued|processing',
+            'site': self.site,
+            'keys': 'dataset_id|task_id|instance_id|status|status_changed',
+        }
+        try:
+            tasks = await self.rest_client.request('GET', '/tasks', args)
+            return tasks['tasks']
+        except requests.exceptions.HTTPError:
+            logger.warning('cannot get tasks on queue', exc_info=True)
+            return []
+
     # Task Actions #
 
     async def _upload_log(self, task: GridTask, name: str, data: str):
@@ -418,7 +437,6 @@ class BaseGrid:
                 await self._upload_log(task, 'stdout', stdout.read_text())
             if stderr and stderr.exists():
                 await self._upload_log(task, 'stderr', stderr.read_text())
-
 
 '''
     @run_on_executor

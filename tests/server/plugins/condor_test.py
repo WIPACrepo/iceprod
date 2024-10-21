@@ -16,6 +16,7 @@ from iceprod.core.config import Dataset, Job, Task
 from iceprod.core.exe import Data, Transfer
 import iceprod.server.config
 import iceprod.server.grid
+from iceprod.server.util import datetime2str
 import iceprod.server.plugins.condor
 from iceprod.server.plugins.condor import CondorJob, CondorJobId, JobStatus
 
@@ -599,6 +600,7 @@ async def test_Grid_check_empty(schedd, i3prod_path, set_time):
     g.submitter.get_jobs = MagicMock(return_value={})
     g.submitter.get_history = MagicMock(return_value={})
     g.submitter.remove = MagicMock()
+    g.get_tasks_on_queue = AsyncMock(return_value=[])
 
     await g.check()
 
@@ -616,6 +618,7 @@ async def test_Grid_check_delete_day(schedd, i3prod_path, set_time):
     g.submitter.get_jobs = MagicMock(return_value={})
     g.submitter.get_history = MagicMock(return_value={})
     g.submitter.remove = MagicMock()
+    g.get_tasks_on_queue = AsyncMock(return_value=[])
 
     jel = g.get_current_JEL()
     p = jel.parent
@@ -642,6 +645,7 @@ async def test_Grid_check_old(schedd, i3prod_path, set_time):
     g.submitter.get_jobs = MagicMock(return_value={})
     g.submitter.get_history = MagicMock(return_value={})
     g.submitter.remove = MagicMock()
+    g.get_tasks_on_queue = AsyncMock(return_value=[])
 
     jel = g.get_current_JEL()
     daydir = jel.parent
@@ -668,6 +672,7 @@ async def test_Grid_check_oldjob(schedd, i3prod_path, set_time):
     g.submitter.get_jobs = MagicMock(return_value=jobs)
     g.submitter.get_history = MagicMock(return_value={})
     g.submitter.remove = MagicMock()
+    g.get_tasks_on_queue = AsyncMock(return_value=[])
 
     jel = g.get_current_JEL()
     daydir = jel.parent
@@ -751,6 +756,7 @@ async def test_Grid_check_queue_jel_mismatch(schedd, i3prod_path, set_time, jel_
     g.submitter.get_history = MagicMock(return_value=hjobs)
     g.submitter.remove = MagicMock()
     g.finish = AsyncMock()
+    g.get_tasks_on_queue = AsyncMock(return_value=[])
 
     jel = g.get_current_JEL()
     daydir = jel.parent
@@ -772,6 +778,67 @@ async def test_Grid_check_queue_jel_mismatch(schedd, i3prod_path, set_time, jel_
 
     assert g.submitter.remove.call_count == remove_calls
     assert g.finish.call_count == finish_calls
+
+
+@pytest.mark.parametrize('queue_jobs,hist_jobs,iceprod_tasks,reset_calls', [
+    ({(1,0): ("dataset", "task", "instance")},
+     {},
+     [("dataset", "task", "instance", 0)],
+     0,
+    ),
+    ({},
+     {(1,0): ("dataset", "task", "instance")},
+     [("dataset", "task", "instance", 1)],
+     0,
+    ),
+    ({},
+     {},
+     [("dataset", "task", "instance", 1)],
+     0,
+    ),
+    ({},
+     {},
+     [("dataset", "task", "instance", 600)],
+     1,
+    ),
+])
+async def test_Grid_check_queue_iceprod_mismatch(schedd, i3prod_path, set_time, queue_jobs, hist_jobs, iceprod_tasks, reset_calls):
+    override = ['queue.type=htcondor', 'queue.max_task_queued_time=10', 'queue.max_task_processing_time=10', 'queue.suspend_submit_dir_time=10']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+
+    rc = MagicMock()
+    g = iceprod.server.plugins.condor.Grid(cfg=cfg, rest_client=rc, cred_client=None)
+
+    qjobs = {}
+    hjobs = {}
+    g.submitter.get_jobs = MagicMock(return_value=qjobs)
+    g.submitter.get_history = MagicMock(return_value=hjobs)
+    g.submitter.remove = MagicMock()
+    g.finish = AsyncMock()
+    g.task_reset = AsyncMock()
+    itasks = []
+    g.get_tasks_on_queue = AsyncMock(return_value=itasks)
+
+    jel = g.get_current_JEL()
+    daydir = jel.parent
+    def mkdir(name):
+        p = daydir / name
+        if p.exists():
+            return p
+        p.mkdir()
+        return p
+
+    for (c,p), (d_id, t_id, i_id) in queue_jobs.items():
+        qjobs[CondorJobId(cluster_id=c, proc_id=p)] = CondorJob(dataset_id=d_id, task_id=t_id, instance_id=i_id, submit_dir=mkdir(f'{c}.{p}'))
+    for (c,p), (d_id, t_id, i_id) in hist_jobs.items():
+        hjobs[CondorJobId(cluster_id=c, proc_id=p)] = CondorJob(dataset_id=d_id, task_id=t_id, instance_id=i_id, submit_dir=mkdir(f'{c}.{p}'))
+    for (d_id, t_id, i_id, secs) in iceprod_tasks:
+        t = set_time - datetime.timedelta(seconds=secs)
+        itasks.append({'dataset_id': d_id, 'task_id': t_id, 'instance_id': i_id, 'status_changed': datetime2str(t)})
+
+    await g.check()
+
+    assert g.task_reset.call_count == reset_calls
 
 
 async def test_reset_task(schedd, i3prod_path, set_time):

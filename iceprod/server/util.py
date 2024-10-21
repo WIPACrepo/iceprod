@@ -15,6 +15,6 @@ def nowstr():
 def str2datetime(st):
     """Convert a ISO 8601 string to datetime object"""
     if '.' in st:
-        return datetime.strptime(st, "%Y-%m-%dT%H:%M:%S.%f")
+        return datetime.strptime(st, "%Y-%m-%dT%H:%M:%S.%f").replace(tzinfo=UTC)
     else:
-        return datetime.strptime(st, "%Y-%m-%dT%H:%M:%S")
+        return datetime.strptime(st, "%Y-%m-%dT%H:%M:%S").replace(tzinfo=UTC)

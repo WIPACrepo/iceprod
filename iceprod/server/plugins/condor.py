@@ -7,7 +7,7 @@ Note: Condor was renamed to HTCondor in 2012.
 import asyncio
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime, UTC
+from datetime import datetime, timedelta, UTC
 import enum
 import importlib
 import logging
@@ -25,6 +25,7 @@ from iceprod.core.config import Task
 from iceprod.core.exe import WriteToScript, Transfer
 from iceprod.server.config import IceProdConfig
 from iceprod.server import grid
+from iceprod.server.util import str2datetime
 
 logger = logging.getLogger('condor')
 
@@ -86,6 +87,7 @@ RESET_CONDOR_REASONS = [
     'cgroup memory limit',
     'local storage limit on worker node exceeded',
     'execution time limit exceeded',
+    'exceeded max iceprod queue time',
 ]
 
 
@@ -807,7 +809,20 @@ class Grid(grid.BaseGrid):
                     logger.info("job %s %s.%s removed from cross-check: %r", job_id, job.dataset_id, job.task_id, reason)
                     self.submitter.remove(job_id, reason=reason)
 
-        # check for history
+        await self.check_history()
+
+        await self.check_iceprod()
+
+        # check for old jobs and dirs
+        async for path in self.check_submit_dir():
+            for job_id, job in self.jobs.items():
+                if job.submit_dir == path:
+                    self.submitter.remove(job_id, reason='exceeded max iceprod queue time')
+
+        logger.info('finished cross-check')
+
+    async def check_history(self):
+        """Check condor_history"""
         now = time.time()
         hist_jobs = self.submitter.get_history(since=self.last_event_timestamp)
         self.last_event_timestamp = now
@@ -857,13 +872,28 @@ class Grid(grid.BaseGrid):
             # finish job
             await self.finish(job_id, success=success, resources=resources, stats=stats, reason=reason)
 
-        # check for old jobs and dirs
-        async for path in self.check_submit_dir():
-            for job_id, job in self.jobs.items():
-                if job.submit_dir == path:
-                    self.submitter.remove(job_id, reason='exceeded max queue time')
-
-        logger.info('finished cross-check')
+    async def check_iceprod(self):
+        """
+        Sync with iceprod server status.
+        """
+        fut = self.get_tasks_on_queue()
+        queue_tasks = {j.task_id: j for j in self.jobs.values()}
+        server_tasks = await fut
+        now = datetime.now(UTC)
+        logger.info(f'server tasks: %r', server_tasks)
+        for task in server_tasks:
+            logger.info(f'task {task["dataset_id"]}.{task["task_id"]}')
+            if task['task_id'] not in queue_tasks:
+                # ignore anything too recent
+                if str2datetime(task['status_changed']) >= now - timedelta(minutes=1):
+                    continue
+                logger.info(f'task {task["dataset_id"]}.{task["task_id"]} in iceprod but not in queue')
+                job = CondorJob(
+                    dataset_id=task['dataset_id'],
+                    task_id=task['task_id'],
+                    instance_id=task['instance_id'],
+                )
+                await self.task_reset(job, reason='task missing from HTCondor queue')
 
     async def check_submit_dir(self):
         """
