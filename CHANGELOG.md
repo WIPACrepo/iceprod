@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.27 (2024-10-21)
+
+### Other
+
+* Reset iceprod tasks if not present on the queue ([#396](https://github.com/WIPACrepo/iceprod/issues/396)) ([`c3c95c8`](https://github.com/WIPACrepo/iceprod/commit/c3c95c85652d899d5c11a831413984cf5852b38e))
+
 ## v3.0.26 (2024-10-19)
 
 ### Other
