@@ -77,6 +77,46 @@ async def test_rest_tasks_get(server):
     assert ret['tasks'][0]['task_id'] == task_id
 
 
+async def test_rest_tasks_get_by_site(server):
+    client = server(roles=['system'])
+
+    data = {
+        'dataset_id': 'foo',
+        'job_id': 'foo1',
+        'task_index': 0,
+        'job_index': 0,
+        'name': 'bar',
+        'depends': [],
+        'requirements': {},
+    }
+    ret = await client.request('POST', '/tasks', data)
+    task_id1 = ret['result']
+    await client.request('PATCH', f'/tasks/{task_id1}', {'site': 'foo'})
+
+    ret = await client.request('POST', '/tasks', data)
+    task_id2 = ret['result']
+    await client.request('PATCH', f'/tasks/{task_id2}', {'site': 'bar'})
+
+    ret = await client.request('POST', '/tasks', data)
+    task_id3 = ret['result']
+    await client.request('PATCH', f'/tasks/{task_id3}', {'site': 'foo.bar'})
+
+    ret = await client.request('GET', '/tasks', {'site': 'foo'})
+    assert 'tasks' in ret
+    assert len(ret['tasks']) == 2
+    assert [t['task_id'] for t in ret['tasks']] == [task_id1, task_id3]
+
+    ret = await client.request('GET', '/tasks', {'site': 'bar'})
+    assert 'tasks' in ret
+    assert len(ret['tasks']) == 1
+    assert [t['task_id'] for t in ret['tasks']] == [task_id2]
+
+    ret = await client.request('GET', '/tasks', {'site': 'foo.bar'})
+    assert 'tasks' in ret
+    assert len(ret['tasks']) == 1
+    assert [t['task_id'] for t in ret['tasks']] == [task_id3]
+
+
 async def test_rest_tasks_get_details(server):
     client = server(roles=['system'])
 

@@ -14,11 +14,11 @@ attrs==24.2.0
     #   referencing
 beautifulsoup4==4.12.3
     # via iceprod (setup.py)
-boto3==1.35.44
+boto3==1.35.45
     # via
     #   iceprod (setup.py)
     #   moto
-botocore==1.35.44
+botocore==1.35.45
     # via
     #   boto3
     #   moto
@@ -38,7 +38,7 @@ cffi==1.17.1
     # via cryptography
 charset-normalizer==3.4.0
     # via requests
-coverage[toml]==7.6.3
+coverage[toml]==7.6.4
     # via
     #   iceprod (setup.py)
     #   pytest-cov
@@ -95,7 +95,7 @@ mccabe==0.7.0
     # via flake8
 mock==5.1.0
     # via iceprod (setup.py)
-moto[s3]==5.0.17
+moto[s3]==5.0.18
     # via iceprod (setup.py)
 motor==3.6.0
     # via iceprod (setup.py)
