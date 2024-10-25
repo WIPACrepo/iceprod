@@ -920,7 +920,7 @@ class Grid(grid.BaseGrid):
                     logger.debug('stat: %r', st)
                     if stat.S_ISDIR(st.st_mode):
                         empty = False
-                        if job_active:
+                        if not job_active:
                             if st.st_mtime < job_clean_logs_time:
                                 logger.info('cleaning up submit dir %s', path)
                                 shutil.rmtree(path)
