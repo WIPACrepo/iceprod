@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.28 (2024-10-25)
+
+### Other
+
+* Clean up job submit dirs more rapidly after completion ([#397](https://github.com/WIPACrepo/iceprod/issues/397)) ([`9546be8`](https://github.com/WIPACrepo/iceprod/commit/9546be8be07b91065530dca2b76b347a35683d28))
+
 ## v3.0.27 (2024-10-21)
 
 ### Other
