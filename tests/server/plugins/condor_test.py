@@ -635,7 +635,7 @@ async def test_Grid_check_delete_day(schedd, i3prod_path, set_time):
     assert g.jels == {}
 
 
-async def test_Grid_check_old(schedd, i3prod_path, set_time):
+async def test_Grid_check_old_delete(schedd, i3prod_path, set_time):
     override = ['queue.type=htcondor', 'queue.max_task_queued_time=10', 'queue.max_task_processing_time=10', 'queue.suspend_submit_dir_time=10']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
@@ -661,7 +661,7 @@ async def test_Grid_check_old(schedd, i3prod_path, set_time):
     assert dirs == {daydir.name: []}
 
 
-async def test_Grid_check_oldjob(schedd, i3prod_path, set_time):
+async def test_Grid_check_oldjob_remove(schedd, i3prod_path, set_time):
     override = ['queue.type=htcondor', 'queue.max_task_queued_time=10', 'queue.max_task_processing_time=10', 'queue.suspend_submit_dir_time=10']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
@@ -682,13 +682,41 @@ async def test_Grid_check_oldjob(schedd, i3prod_path, set_time):
     os.utime(p, (t, t))
     logging.info('set time to %d', t)
 
-    jobs[CondorJobId(cluster_id=1, proc_id=0)] = CondorJob(status=JobStatus.IDLE, submit_dir=p)
+    jobs[CondorJobId(cluster_id=1, proc_id=0)] = CondorJob(status=JobStatus.IDLE, submit_dir=p, task_id=p.name)
 
     await g.check()
 
     dirs = {x.name: [x for x in x.iterdir() if x.is_dir()] for x in g.submit_dir.glob('[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]')}
     assert dirs == {daydir.name: [p]}
     assert g.submitter.remove.call_count == 1
+
+
+async def test_Grid_check_oldjob_delete(schedd, i3prod_path, set_time):
+    override = ['queue.type=htcondor', 'queue.max_task_queued_time=10', 'queue.max_task_processing_time=10', 'queue.suspend_submit_dir_time=10']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+
+    rc = MagicMock()
+    g = iceprod.server.plugins.condor.Grid(cfg=cfg, rest_client=rc, cred_client=None)
+
+    jobs = {}
+    g.submitter.get_jobs = MagicMock(return_value=jobs)
+    g.submitter.get_history = MagicMock(return_value={})
+    g.submitter.remove = MagicMock()
+    g.get_tasks_on_queue = AsyncMock(return_value=[])
+
+    jel = g.get_current_JEL()
+    daydir = jel.parent
+    p = daydir / 'olddir'
+    p.mkdir()
+    t = time.mktime(set_time.utctimetuple()) - 15  # must be older than suspend time
+    os.utime(p, (t, t))
+    logging.info('set time to %d', t)
+
+    await g.check()
+
+    dirs = {x.name: [x for x in x.iterdir() if x.is_dir()] for x in g.submit_dir.glob('[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]')}
+    assert dirs == {daydir.name: []}
+    assert g.submitter.remove.call_count == 0
 
 
 @pytest.mark.parametrize('jel_jobs,queue_jobs,hist_jobs,remove_calls,finish_calls', [
