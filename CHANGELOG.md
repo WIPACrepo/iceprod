@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.29 (2024-10-26)
+
+### Other
+
+* Delete jel and day dir if empty ([#398](https://github.com/WIPACrepo/iceprod/issues/398)) ([`667d7a2`](https://github.com/WIPACrepo/iceprod/commit/667d7a2aed86e79eb2a61b457d684990bfec7edf))
+
 ## v3.0.28 (2024-10-25)
 
 ### Other
