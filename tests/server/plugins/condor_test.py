@@ -622,9 +622,7 @@ async def test_Grid_check_delete_day(schedd, i3prod_path, set_time):
 
     jel = g.get_current_JEL()
     p = jel.parent
-    t = time.mktime(set_time.utctimetuple()) - 35  # must be older than all times added together
-    os.utime(p, (t, t))
-    logging.info('set time to %d', t)
+    t = time.mktime(set_time.utctimetuple())
     
     assert g.jels != {}
 
