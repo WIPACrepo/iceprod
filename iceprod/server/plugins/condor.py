@@ -930,15 +930,13 @@ class Grid(grid.BaseGrid):
                                 logger.info('cleaning up submit dir %s', path)
                                 shutil.rmtree(path)
                 if empty:
-                    st = daydir.lstat()
-                    if st.st_mtime < dir_old_time:
-                        logger.info('cleaning up daydir %s', daydir)
-                        for path in self.jels.copy():
-                            if Path(path).parent == daydir:
-                                logger.info('removing JEL')
-                                self.jels[path].close()
-                                del self.jels[path]
-                        shutil.rmtree(daydir)
-                        continue
+                    logger.info('cleaning up daydir %s', daydir)
+                    for path in self.jels.copy():
+                        if Path(path).parent == daydir:
+                            logger.info('removing JEL')
+                            self.jels[path].close()
+                            del self.jels[path]
+                    shutil.rmtree(daydir)
+                    continue
                 # let other processing happen
                 await asyncio.sleep(0)
