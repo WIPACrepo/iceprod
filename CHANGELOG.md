@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.30 (2024-10-27)
+
+### Other
+
+* Add more error reasons to reset instead of fail ([#399](https://github.com/WIPACrepo/iceprod/issues/399)) ([`c166b2e`](https://github.com/WIPACrepo/iceprod/commit/c166b2edcf5f4b4b9b410c113452c0bde6199524))
+
 ## v3.0.29 (2024-10-26)
 
 ### Other
