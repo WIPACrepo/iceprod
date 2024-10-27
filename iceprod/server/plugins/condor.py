@@ -79,25 +79,37 @@ JOB_EVENT_STATUS_TRANSITIONS = {
 
 
 RESET_CONDOR_REASONS = [
+    # condor file transfer plugin failed
     '_condor_stdout: (errno 2) No such file',
     'transfer input files failure',
     'transfer output files failure',
+    # resource limits
     'cpu consumption limit exceeded',
     'memory limit exceeded',
     'cgroup memory limit',
     'local storage limit on worker node exceeded',
     'execution time limit exceeded',
+    # general retries
     'exceeded max iceprod queue time',
+    'job has failed',
+    'python-initiated action (by user ice3simusr)',
 ]
 
 
 RESET_STDERR_REASONS = [
+    # glidein died
     'sigterm',
     'killed',
+    # hopefully transient errors
     'bus error (core dumped)',
     'segmentation fault (core dumped)',
     'operation timed out',
     'connection timed out',
+    # GPU errors
+    'opencl error: could not set up context',
+    # CVMFS errors
+    'python: command not found',
+    'cannot read file data: Stale file handle',
 ]
 
 
@@ -704,7 +716,7 @@ class Grid(grid.BaseGrid):
                                 if new_status is not None and job.status != new_status:
                                     job.status = new_status
                                     if new_status == JobStatus.FAILED:
-                                        self.submitter.remove(job_id, reason=event.get('HoldReason', None))
+                                        self.submitter.remove(job_id, reason=event.get('HoldReason', 'Job has failed'))
                                     else:
                                         await self.job_update(job)
                 except Exception:
@@ -806,7 +818,7 @@ class Grid(grid.BaseGrid):
             if job_id not in old_jobs or job.status != old_jobs[job_id].status:
                 if job.status == JobStatus.FAILED:
                     extra = job.extra if job.extra else {}
-                    reason = extra.get('HoldReason', None)
+                    reason = extra.get('HoldReason', 'Job has failed')
                     logger.info("job %s %s.%s removed from cross-check: %r", job_id, job.dataset_id, job.task_id, reason)
                     self.submitter.remove(job_id, reason=reason)
 
