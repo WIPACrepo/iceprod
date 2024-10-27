@@ -60,9 +60,12 @@ class Materialize:
                     # check that last job was buffered correctly
                     job_index = max(jobs[i]['job_index'] for i in jobs)+1 if jobs else 0
                     num_tasks = sum(tasks.values())
+                    logger.info('job_index: %d', job_index)
+                    logger.info('num_tasks: %d', num_tasks)
+                    logger.info('tasks_per_job: %d', dataset['tasks_per_job'])
                     while num_tasks % dataset['tasks_per_job'] != 0 and job_index > 0:
-                        # a job must have failed to buffer, so check in reverse order
                         job_index -= 1
+                        logger.info('a job must have failed to buffer, so check in reverse order. job_index=%d, num_tasks=%d', job_index, num_tasks)
                         job_tasks = await self.rest_client.request('GET', f'/datasets/{dataset_id}/tasks',
                                                                    {'job_index': job_index, 'keys': 'task_id|job_id|task_index'})
                         if len(job_tasks) != dataset['tasks_per_job']:
@@ -70,10 +73,12 @@ class Materialize:
                             ret = await self.rest_client.request('GET', f'/datasets/{dataset_id}/jobs',
                                                                  {'job_index': job_index, 'keys': 'job_id'})
                             job_id = list(ret.keys())[0]
+                            logger.info('  fixing job_id %s, num existing tasks: %d', job_id, len(job_tasks))
                             tasks_buffered = await self.buffer_job(dataset, job_index, job_id=job_id,
                                                                    tasks=list(job_tasks.values()),
                                                                    set_status=set_status, dryrun=dryrun)
                             num_tasks += tasks_buffered
+                            logger.info('buffered %d tasks. num_tasks increased to: %d', tasks_buffered, num_tasks)
 
                     # now try buffering new tasks
                     job_index = max(jobs[i]['job_index'] for i in jobs)+1 if jobs else 0
@@ -123,7 +128,7 @@ class Materialize:
         if dryrun:
             job_id = {'result': 'DRYRUN'}
             task_ids = []
-            task_iter = enumerate(task_names)
+            task_iter = list(enumerate(task_names))
         elif job_id:
             task_ids = [task['task_id'] for task in tasks] if tasks else []
             task_indexes = {task['task_index'] for task in tasks} if tasks else {}
@@ -134,10 +139,11 @@ class Materialize:
             ret = await self.rest_client.request('POST', '/jobs', args)
             job_id = ret['result']
             task_ids = []
-            task_iter = enumerate(task_names)
+            task_iter = list(enumerate(task_names))
 
         # buffer tasks
         for task_index,name in task_iter:
+            logger.info('  buffering task_index %d, name %s', task_index, name)
             depends = await self.get_depends(config, job_index,
                                              task_index, task_ids)
             config['options']['job'] = job_index
@@ -167,7 +173,7 @@ class Materialize:
                 p = await self.prio.get_task_prio(dataset_id, task_id)
                 await self.rest_client.request('PATCH', f'/tasks/{task_id}', {'priority': p})
 
-        return len(task_ids)
+        return len(task_iter)
 
     async def get_config(self, dataset_id):
         """Get dataset config"""
