@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.31 (2024-10-27)
+
+### Other
+
+* Fix materialization task count when buffering an existing job ([#400](https://github.com/WIPACrepo/iceprod/issues/400)) ([`8301751`](https://github.com/WIPACrepo/iceprod/commit/83017516c37c2ee6dbcb4acb33b9cb12409d5890))
+
 ## v3.0.30 (2024-10-27)
 
 ### Other
