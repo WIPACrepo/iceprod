@@ -79,17 +79,17 @@ JOB_EVENT_STATUS_TRANSITIONS = {
 
 
 RESET_CONDOR_REASONS = [
-# condor file transfer plugin failed
+    # condor file transfer plugin failed
     '_condor_stdout: (errno 2) No such file',
     'transfer input files failure',
     'transfer output files failure',
-# resource limits
+    # resource limits
     'cpu consumption limit exceeded',
     'memory limit exceeded',
     'cgroup memory limit',
     'local storage limit on worker node exceeded',
     'execution time limit exceeded',
-# general retries
+    # general retries
     'exceeded max iceprod queue time',
     'job has failed',
     'python-initiated action (by user ice3simusr)',
@@ -97,17 +97,17 @@ RESET_CONDOR_REASONS = [
 
 
 RESET_STDERR_REASONS = [
-# glidein died
+    # glidein died
     'sigterm',
     'killed',
-# hopefully transient errors
+    # hopefully transient errors
     'bus error (core dumped)',
     'segmentation fault (core dumped)',
     'operation timed out',
     'connection timed out',
-# GPU errors
+    # GPU errors
     'opencl error: could not set up context',
-# CVMFS errors
+    # CVMFS errors
     'python: command not found',
     'cannot read file data: Stale file handle',
 ]
