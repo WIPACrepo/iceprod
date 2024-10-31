@@ -56,6 +56,7 @@ class Materialize:
                     # buffer for this dataset
                     logger.warning('checking dataset %s', dataset_id)
                     jobs = await self.rest_client.request('GET', '/datasets/{}/jobs'.format(dataset_id), {'keys': 'job_id|job_index'})
+                    job_index_id = {j['job_index']: j['job_id'] for j in jobs.values()}
 
                     # check that last job was buffered correctly
                     job_index = max(jobs[i]['job_index'] for i in jobs)+1 if jobs else 0
@@ -63,16 +64,14 @@ class Materialize:
                     logger.info('job_index: %d', job_index)
                     logger.info('num_tasks: %d', num_tasks)
                     logger.info('tasks_per_job: %d', dataset['tasks_per_job'])
-                    while num_tasks % dataset['tasks_per_job'] != 0 and job_index > 0:
+                    while job_index * dataset['tasks_per_job'] != num_tasks and job_index > 0:
                         job_index -= 1
                         logger.info('a job must have failed to buffer, so check in reverse order. job_index=%d, num_tasks=%d', job_index, num_tasks)
                         job_tasks = await self.rest_client.request('GET', f'/datasets/{dataset_id}/tasks',
                                                                    {'job_index': job_index, 'keys': 'task_id|job_id|task_index'})
                         if len(job_tasks) != dataset['tasks_per_job']:
                             logger.info('fixing buffer of job %d for dataset %s', job_index, dataset_id)
-                            ret = await self.rest_client.request('GET', f'/datasets/{dataset_id}/jobs',
-                                                                 {'job_index': job_index, 'keys': 'job_id'})
-                            job_id = list(ret.keys())[0]
+                            job_id = job_index_id[job_index]
                             logger.info('  fixing job_id %s, num existing tasks: %d', job_id, len(job_tasks))
                             tasks_buffered = await self.buffer_job(dataset, job_index, job_id=job_id,
                                                                    tasks=list(job_tasks.values()),
