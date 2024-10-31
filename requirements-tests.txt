@@ -14,11 +14,11 @@ attrs==24.2.0
     #   referencing
 beautifulsoup4==4.12.3
     # via iceprod (setup.py)
-boto3==1.35.49
+boto3==1.35.53
     # via
     #   iceprod (setup.py)
     #   moto
-botocore==1.35.49
+botocore==1.35.53
     # via
     #   boto3
     #   moto
@@ -131,7 +131,7 @@ pytest==8.0.2
     #   pytest-mock
 pytest-asyncio==0.23.8
     # via iceprod (setup.py)
-pytest-cov==5.0.0
+pytest-cov==6.0.0
     # via iceprod (setup.py)
 pytest-mock==3.14.0
     # via iceprod (setup.py)
@@ -173,7 +173,7 @@ responses==0.25.3
     # via moto
 respx==0.21.1
     # via iceprod (setup.py)
-rpds-py==0.20.0
+rpds-py==0.20.1
     # via
     #   jsonschema
     #   referencing
@@ -216,7 +216,7 @@ urllib3==2.2.3
     #   responses
     #   types-requests
     #   wipac-rest-tools
-werkzeug==3.0.6
+werkzeug==3.1.0
     # via moto
 wipac-dev-tools==1.13.0
     # via
