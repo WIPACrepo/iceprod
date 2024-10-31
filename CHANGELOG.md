@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.32 (2024-10-31)
+
+### Other
+
+* Fix materialization case where job gets created and service is killed ([#401](https://github.com/WIPACrepo/iceprod/issues/401)) ([`cfd92e2`](https://github.com/WIPACrepo/iceprod/commit/cfd92e2b724116c4b1f73cb55622429794b0483e))
+
 ## v3.0.31 (2024-10-27)
 
 ### Other
