@@ -149,30 +149,35 @@ class BaseGrid:
 
     async def _convert_to_task(self, task):
         """Convert from basic task dict to a Task object"""
-        d = deepcopy(await self.dataset_lookup(task['dataset_id']))
-        # don't bother looking up the job status - trust that if we got a task, we're in processing
-        j = Job(dataset=d, job_id=task['job_id'], job_index=task['job_index'], status=JOB_STATUS_START)
-        t = Task(
-            dataset=d,
-            job=j,
-            task_id=task['task_id'],
-            task_index=task['task_index'],
-            instance_id=task['instance_id'],
-            name=task['name'],
-            depends=task['depends'],
-            requirements=task['requirements'],
-            status=task['status'],
-            site=self.site,
-            stats={},
-            task_files=[],
-        )
-        await t.load_task_files_from_api(self.rest_client)
+        try:
+            d = deepcopy(await self.dataset_lookup(task['dataset_id']))
+            # don't bother looking up the job status - trust that if we got a task, we're in processing
+            j = Job(dataset=d, job_id=task['job_id'], job_index=task['job_index'], status=JOB_STATUS_START)
+            t = Task(
+                dataset=d,
+                job=j,
+                task_id=task['task_id'],
+                task_index=task['task_index'],
+                instance_id=task['instance_id'],
+                name=task['name'],
+                depends=task['depends'],
+                requirements=task['requirements'],
+                status=task['status'],
+                site=self.site,
+                stats={},
+                task_files=[],
+            )
+            await t.load_task_files_from_api(self.rest_client)
 
-        # load some config defaults
-        config = t.dataset.config
-        if (not config['options'].get('site_temp','')) and self.cfg['queue'].get('site_temp', ''):
-            config['options']['site_temp'] = self.cfg['queue']['site_temp']
-        add_default_options(config['options'])
+            # load some config defaults
+            config = t.dataset.config
+            if (not config['options'].get('site_temp','')) and self.cfg['queue'].get('site_temp', ''):
+                config['options']['site_temp'] = self.cfg['queue']['site_temp']
+            add_default_options(config['options'])
+
+        except Exception:
+            logger.warning('Error converting task dict to task: %s.%s', task['dataset_id'], task['task_id'])
+            raise
 
         return t
 
