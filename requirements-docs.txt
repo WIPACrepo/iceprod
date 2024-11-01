@@ -16,7 +16,7 @@ attrs==24.2.0
     #   referencing
 babel==2.16.0
     # via sphinx
-boto3==1.35.53
+boto3==1.35.54
     # via iceprod (setup.py)
 botocore==1.35.54
     # via
