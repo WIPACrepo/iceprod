@@ -12,7 +12,7 @@ attrs==24.2.0
     # via
     #   jsonschema
     #   referencing
-boto3==1.35.53
+boto3==1.35.54
     # via iceprod (setup.py)
 botocore==1.35.54
     # via
