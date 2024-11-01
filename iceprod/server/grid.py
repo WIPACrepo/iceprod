@@ -140,9 +140,16 @@ class BaseGrid:
 
         tasks = []
         for f in asyncio.as_completed(futures):
-            task = await f
-            # add default resource requirements
-            task.requirements = self._get_resources(task)
+            try:
+                task = await f
+            except Exception:  # already logged in function
+                continue
+            try:
+                # add default resource requirements
+                task.requirements = self._get_resources(task)
+            except Exception:
+                logger.warning('cannot get task resources for %s.%s', task.dataset.dataset_id, task.task_id, exc_info=True)
+                continue
             tasks.append(task)
 
         return tasks
@@ -176,7 +183,7 @@ class BaseGrid:
             add_default_options(config['options'])
 
         except Exception:
-            logger.warning('Error converting task dict to task: %s.%s', task['dataset_id'], task['task_id'])
+            logger.warning('Error converting task dict to task: %s.%s', task['dataset_id'], task['task_id'], exc_info=True)
             raise
 
         return t
