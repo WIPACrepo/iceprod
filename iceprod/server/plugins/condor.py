@@ -170,7 +170,7 @@ class CondorSubmit:
     }
 
     _GENERIC_ADS = ['Iwd', 'IceProdDatasetId', 'IceProdTaskId', 'IceProdTaskInstanceId', 'MATCH_EXP_JOBGLIDEIN_ResourceName']
-    AD_INFO = ['RemotePool', 'RemoteHost', 'LastRemoteHost', 'LastRemotePool', 'HoldReason', 'LastHoldReason', 'RemoveReason', 'MachineAttrGLIDEIN_Site0'] + _GENERIC_ADS
+    AD_INFO = ['RemotePool', 'RemoteHost', 'RemoteWallClockTime', 'HoldReason', 'LastHoldReason', 'RemoveReason', 'MachineAttrGLIDEIN_Site0'] + _GENERIC_ADS
     AD_PROJECTION_QUEUE = ['JobStatus', 'RemotePool', 'RemoteHost'] + _GENERIC_ADS
     AD_PROJECTION_HISTORY = [
         'JobStatus', 'ExitCode', 'RemoveReason', 'LastHoldReason', 'CpusUsage', 'RemoteSysCpu', 'RemoteUserCpu',
@@ -663,12 +663,12 @@ class Grid(grid.BaseGrid):
 
                                 # get stats
                                 cpu = event.get('CpusUsage', None)
-                                if not cpu:
-                                    cpu = parse_usage(event.get('RunRemoteUsage', ''))
                                 gpu = event.get('GpusUsage', None)
                                 memory = event.get('MemoryUsage', None)  # MB
                                 disk = event.get('DiskUsage', None)  # KB
-                                time_ = event.get('LastRemoteWallClockTime', None)  # seconds
+                                time_ = event.get('RemoteWallClockTime', None)  # seconds
+                                if not time_:
+                                    time_ = parse_usage(event.get('RunRemoteUsage', ''))
                                 # data_in = event['ReceivedBytes']  # KB
                                 # data_out = event['SentBytes']  # KB
 
