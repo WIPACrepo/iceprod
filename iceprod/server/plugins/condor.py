@@ -170,7 +170,9 @@ class CondorSubmit:
     }
 
     _GENERIC_ADS = ['Iwd', 'IceProdDatasetId', 'IceProdTaskId', 'IceProdTaskInstanceId', 'MATCH_EXP_JOBGLIDEIN_ResourceName']
-    AD_INFO = ['RemotePool', 'RemoteHost', 'RemoteWallClockTime', 'HoldReason', 'LastHoldReason', 'RemoveReason', 'MachineAttrGLIDEIN_Site0'] + _GENERIC_ADS
+    AD_INFO = ['RemotePool', 'RemoteHost', 'RemoteWallClockTime', 'ResidentSetSize_RAW', 'DiskUsage_RAW',
+        'HoldReason', 'RemoveReason', 'Reason', 'MachineAttrGLIDEIN_Site0'
+    ] + _GENERIC_ADS
     AD_PROJECTION_QUEUE = ['JobStatus', 'RemotePool', 'RemoteHost'] + _GENERIC_ADS
     AD_PROJECTION_HISTORY = [
         'JobStatus', 'ExitCode', 'RemoveReason', 'LastHoldReason', 'CpusUsage', 'RemoteSysCpu', 'RemoteUserCpu',
@@ -664,11 +666,17 @@ class Grid(grid.BaseGrid):
                                 # get stats
                                 cpu = event.get('CpusUsage', None)
                                 gpu = event.get('GpusUsage', None)
-                                memory = event.get('MemoryUsage', None)  # MB
-                                disk = event.get('DiskUsage', None)  # KB
+                                memory = event.get('ResidentSetSize_RAW', None)  # KB
+                                if memory is None:
+                                    memory = event.get('MemoryUsage', None)*1000  # MB
+                                disk = event.get('DiskUsage_RAW', None)  # KB
+                                if disk is None:
+                                    disk = event.get('DiskUsage', None)  # KB
                                 time_ = event.get('RemoteWallClockTime', None)  # seconds
-                                if not time_:
-                                    time_ = parse_usage(event.get('RunRemoteUsage', ''))
+                                if time_ is None:
+                                    time_ = parse_usage(event.get('RunRemoteUsage', '')) / event.get('RequestCpus', 1)
+                                elif cpu is None and time_:
+                                    cpu = parse_usage(event.get('RunRemoteUsage', '')) / time_
                                 # data_in = event['ReceivedBytes']  # KB
                                 # data_out = event['SentBytes']  # KB
 
@@ -678,7 +686,7 @@ class Grid(grid.BaseGrid):
                                 if gpu is not None:
                                     resources['gpu'] = gpu
                                 if memory is not None:
-                                    resources['memory'] = memory/1000.
+                                    resources['memory'] = memory/1000000.
                                 if disk is not None:
                                     resources['disk'] = disk/1000000.
                                 if time_ is not None:
@@ -696,9 +704,9 @@ class Grid(grid.BaseGrid):
                                 reason = None
                                 if r := event.get('HoldReason'):
                                     reason = r
-                                elif r := event.get('LastHoldReason'):
-                                    reason = r
                                 elif r := event.get('RemoveReason'):
+                                    reason = r
+                                elif r := event.get('Reason'):
                                     reason = r
 
                                 # finish job
