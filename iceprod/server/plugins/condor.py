@@ -555,8 +555,7 @@ class Grid(grid.BaseGrid):
         while True:
             start = time.monotonic()
             try:
-                ret = await self.submit()
-                self.jobs.update(ret)
+                await self.submit()
             except Exception:
                 logger.warning('failed to submit', exc_info=True)
             wait_time = max(0, self.cfg['queue']['submit_interval'] - (time.monotonic() - start))
@@ -592,7 +591,8 @@ class Grid(grid.BaseGrid):
         for key in tasks_by_dataset:
             tasks = tasks_by_dataset[key]
             try:
-                await self.submitter.submit(tasks, cur_jel)
+                ret = await self.submitter.submit(tasks, cur_jel)
+                self.jobs.update(ret)
             except Exception as e:
                 logger.warning('submit failed for dataset %s', key, exc_info=True)
                 async with asyncio.TaskGroup() as tg:
