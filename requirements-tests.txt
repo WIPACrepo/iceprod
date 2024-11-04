@@ -95,7 +95,7 @@ mccabe==0.7.0
     # via flake8
 mock==5.1.0
     # via iceprod (setup.py)
-moto[s3]==5.0.18
+moto[s3]==5.0.19
     # via iceprod (setup.py)
 motor==3.6.0
     # via iceprod (setup.py)
