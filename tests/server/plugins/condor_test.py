@@ -359,7 +359,7 @@ async def test_Grid_submit(schedd, i3prod_path):
     jel_path = i3prod_path/'today'/'jel.log'
     jel_path.parent.mkdir()
     g.get_current_JEL = MagicMock(return_value=jel_path)
-    g.submitter.submit = AsyncMock()
+    g.submitter.submit = AsyncMock(return_value={})
     g.task_reset = AsyncMock()
 
     await g.submit()
