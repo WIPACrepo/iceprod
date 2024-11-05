@@ -107,9 +107,11 @@ RESET_STDERR_REASONS = [
     'connection timed out',
     # GPU errors
     'opencl error: could not set up context',
+    'opencl error: could build the opencl program',
     # CVMFS errors
     'python: command not found',
     'cannot read file data: Stale file handle',
+    'setenv: command not found',
 ]
 
 
