@@ -107,9 +107,11 @@ RESET_STDERR_REASONS = [
     'connection timed out',
     # GPU errors
     'opencl error: could not set up context',
+    'opencl error: could build the opencl program',
     # CVMFS errors
     'python: command not found',
     'cannot read file data: Stale file handle',
+    'setenv: command not found',
 ]
 
 
@@ -170,7 +172,10 @@ class CondorSubmit:
     }
 
     _GENERIC_ADS = ['Iwd', 'IceProdDatasetId', 'IceProdTaskId', 'IceProdTaskInstanceId', 'MATCH_EXP_JOBGLIDEIN_ResourceName']
-    AD_INFO = ['RemotePool', 'RemoteHost', 'LastRemoteHost', 'LastRemotePool', 'HoldReason', 'LastHoldReason', 'RemoveReason', 'MachineAttrGLIDEIN_Site0'] + _GENERIC_ADS
+    AD_INFO = [
+        'RemotePool', 'RemoteHost', 'RemoteWallClockTime', 'ResidentSetSize_RAW', 'DiskUsage_RAW',
+        'HoldReason', 'RemoveReason', 'Reason', 'MachineAttrGLIDEIN_Site0',
+    ] + _GENERIC_ADS
     AD_PROJECTION_QUEUE = ['JobStatus', 'RemotePool', 'RemoteHost'] + _GENERIC_ADS
     AD_PROJECTION_HISTORY = [
         'JobStatus', 'ExitCode', 'RemoveReason', 'LastHoldReason', 'CpusUsage', 'RemoteSysCpu', 'RemoteUserCpu',
@@ -302,7 +307,7 @@ class CondorSubmit:
         path.mkdir(parents=True)
         return path
 
-    async def submit(self, tasks: list[Task], jel: Path):
+    async def submit(self, tasks: list[Task], jel: Path) -> dict[CondorJobId, CondorJob]:
         """
         Submit multiple jobs to Condor as a single batch.
 
@@ -311,6 +316,9 @@ class CondorSubmit:
         Args:
             tasks: IceProd Tasks to submit
             jel: common job event log
+
+        Returns:
+            dict of new jobs
         """
         jel_dir = jel.parent
         transfer_plugin_str = ';'.join(f'{k}={v}' for k,v in self.transfer_plugins.items())
@@ -429,7 +437,18 @@ transfer_output_remaps = $(outremaps)
         logger.debug("submitfile:\n%s", submitfile)
 
         s = htcondor.Submit(submitfile)
-        self.condor_schedd.submit(s, count=1, itemdata=s.itemdata())
+        submit_result = self.condor_schedd.submit(s, count=1, itemdata=s.itemdata())
+
+        cluster_id = int(submit_result.cluster())
+        ret = {}
+        for i,job in enumerate(jobset):
+            ret[CondorJobId(cluster_id=cluster_id, proc_id=i)] = CondorJob(
+                dataset_id=job['datasetid'].strip('"'),
+                task_id=job['taskid'].strip('"'),
+                instance_id=job['taskinstance'].strip('"'),
+                submit_dir=Path(job['initialdir']),
+            )
+        return ret
 
     def get_jobs(self) -> {CondorJobId: CondorJob}:
         """
@@ -574,7 +593,8 @@ class Grid(grid.BaseGrid):
         for key in tasks_by_dataset:
             tasks = tasks_by_dataset[key]
             try:
-                await self.submitter.submit(tasks, cur_jel)
+                ret = await self.submitter.submit(tasks, cur_jel)
+                self.jobs.update(ret)
             except Exception as e:
                 logger.warning('submit failed for dataset %s', key, exc_info=True)
                 async with asyncio.TaskGroup() as tg:
@@ -663,12 +683,18 @@ class Grid(grid.BaseGrid):
 
                                 # get stats
                                 cpu = event.get('CpusUsage', None)
-                                if not cpu:
-                                    cpu = parse_usage(event.get('RunRemoteUsage', ''))
                                 gpu = event.get('GpusUsage', None)
-                                memory = event.get('MemoryUsage', None)  # MB
-                                disk = event.get('DiskUsage', None)  # KB
-                                time_ = event.get('LastRemoteWallClockTime', None)  # seconds
+                                memory = event.get('ResidentSetSize_RAW', None)  # KB
+                                if memory is None:
+                                    memory = event.get('MemoryUsage', None)*1000  # MB
+                                disk = event.get('DiskUsage_RAW', None)  # KB
+                                if disk is None:
+                                    disk = event.get('DiskUsage', None)  # KB
+                                time_ = event.get('RemoteWallClockTime', None)  # seconds
+                                if time_ is None:
+                                    time_ = parse_usage(event.get('RunRemoteUsage', '')) / event.get('RequestCpus', 1)
+                                elif cpu is None and time_:
+                                    cpu = parse_usage(event.get('RunRemoteUsage', '')) / time_
                                 # data_in = event['ReceivedBytes']  # KB
                                 # data_out = event['SentBytes']  # KB
 
@@ -678,7 +704,7 @@ class Grid(grid.BaseGrid):
                                 if gpu is not None:
                                     resources['gpu'] = gpu
                                 if memory is not None:
-                                    resources['memory'] = memory/1000.
+                                    resources['memory'] = memory/1000000.
                                 if disk is not None:
                                     resources['disk'] = disk/1000000.
                                 if time_ is not None:
@@ -696,9 +722,9 @@ class Grid(grid.BaseGrid):
                                 reason = None
                                 if r := event.get('HoldReason'):
                                     reason = r
-                                elif r := event.get('LastHoldReason'):
-                                    reason = r
                                 elif r := event.get('RemoveReason'):
+                                    reason = r
+                                elif r := event.get('Reason'):
                                     reason = r
 
                                 # finish job

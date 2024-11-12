@@ -145,8 +145,7 @@
           }
         },
         "required": ["name", "trays"]
-      },
-      "minItems": 1
+      }
     }
   },
   "required": [ "version", "tasks", "description" ],
