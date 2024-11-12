@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.33 (2024-11-12)
+
+### Other
+
+* Several submission fixes ([#402](https://github.com/WIPACrepo/iceprod/issues/402)) ([`eff160d`](https://github.com/WIPACrepo/iceprod/commit/eff160d5f6ebbcd5eb879ff2cb769b46ea031a65))
+
 ## v3.0.32 (2024-10-31)
 
 ### Other
