@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.34 (2024-11-14)
+
+### Other
+
+* Add a flag to not auto-complete certain datasets ([#403](https://github.com/WIPACrepo/iceprod/issues/403)) ([`5d08da6`](https://github.com/WIPACrepo/iceprod/commit/5d08da68e2e408d4d9d4c268c9f859c70bd77c9d))
+
 ## v3.0.33 (2024-11-12)
 
 ### Other
