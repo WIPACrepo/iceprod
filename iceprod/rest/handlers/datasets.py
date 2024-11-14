@@ -119,6 +119,7 @@ class MultiDatasetHandler(APIBase):
             'priority': float,
             'debug': bool,
             'jobs_immutable': bool,
+            'always_active': bool,
             'status': str,
             'auth_groups_read': list,
         }
@@ -168,6 +169,8 @@ class MultiDatasetHandler(APIBase):
         if 'jobs_immutable' not in data:
             data['jobs_immutable'] = False
         data['truncated'] = False
+        if 'always_active' not in data:
+            data['always_active'] = False
 
         # insert
         ret = await self.db.datasets.insert_one(data)

@@ -92,3 +92,24 @@ async def test_201_run():
 
     # check it normally hides the error
     await dataset_completion.run(rc, debug=False)
+
+
+
+async def test_always_active():
+    rc = MagicMock()
+    dataset_summaries = {'processing':['foo']}
+    async def client(method, url, args=None):
+        logger.info('REST: %s, %s', method, url)
+        if url.startswith('/dataset_summaries'):
+            return dataset_summaries
+        elif url == '/config/foo':
+            return {}
+        elif url == '/datasets/foo':
+            return {'jobs_submitted':2, 'tasks_submitted':2, 'always_active': True}
+        else:
+            raise Exception()
+    rc.request = client
+    client.called = False
+
+    await dataset_completion.run(rc, debug=True)
+    assert client.called

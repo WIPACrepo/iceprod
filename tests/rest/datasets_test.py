@@ -55,6 +55,29 @@ async def test_rest_datasets_post_bad_role(server):
     assert exc_info.value.response.status_code == 403
 
 
+async def test_rest_datasets_post_always_active(server):
+    client = server(roles=['user'])
+
+    data = {
+        'description': 'blah',
+        'tasks_per_job': 4,
+        'jobs_submitted': 1,
+        'tasks_submitted': 4,
+        'group': 'users',
+        'always_active': True
+    }
+    ret = await client.request('POST', '/datasets', data)
+    dataset_id = ret['result'].split('/')[-1]
+
+    ret = await client.request('GET', '/datasets')
+    assert dataset_id in ret
+
+    ret = await client.request('GET', f'/datasets/{dataset_id}')
+    for k in data:
+        assert k in ret
+        assert data[k] == ret[k]
+
+
 async def test_rest_datasets_err(server):
     client = server(roles=['system'])
     with pytest.raises(requests.exceptions.HTTPError) as exc_info:
