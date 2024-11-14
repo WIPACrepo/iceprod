@@ -64,7 +64,7 @@ async def test_rest_datasets_post_always_active(server):
         'jobs_submitted': 1,
         'tasks_submitted': 4,
         'group': 'users',
-        'always_active': True
+        'always_active': True,
     }
     ret = await client.request('POST', '/datasets', data)
     dataset_id = ret['result'].split('/')[-1]

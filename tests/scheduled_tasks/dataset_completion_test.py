@@ -105,6 +105,7 @@ async def test_always_active():
         elif url == '/config/foo':
             return {}
         elif url == '/datasets/foo':
+            client.called = True
             return {'jobs_submitted':2, 'tasks_submitted':2, 'always_active': True}
         else:
             raise Exception()
