@@ -45,6 +45,9 @@ async def run(rest_client, debug=False):
         # test if dataset is complete / failed
         try:
             dataset = await rest_client.request('GET', f'/datasets/{dataset_id}')
+            if dataset.get('always_active', False):
+                logger.info('dataset %s always active, skipping', dataset_id)
+                continue
             jobs = await rest_client.request('GET', f'/datasets/{dataset_id}/job_counts/status')
             if dataset.get('truncated', False) or sum(jobs[s] for s in jobs) >= dataset['jobs_submitted']:
                 # jobs are all buffered / materialized
