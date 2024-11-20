@@ -14,11 +14,11 @@ attrs==24.2.0
     #   referencing
 beautifulsoup4==4.12.3
     # via iceprod (setup.py)
-boto3==1.35.61
+boto3==1.35.65
     # via
     #   iceprod (setup.py)
     #   moto
-botocore==1.35.61
+botocore==1.35.65
     # via
     #   boto3
     #   moto
@@ -38,7 +38,7 @@ cffi==1.17.1
     # via cryptography
 charset-normalizer==3.4.0
     # via requests
-coverage[toml]==7.6.5
+coverage[toml]==7.6.7
     # via
     #   iceprod (setup.py)
     #   pytest-cov
@@ -62,7 +62,7 @@ h11==0.14.0
     # via httpcore
 htcondor==24.1.1
     # via iceprod (setup.py)
-httpcore==1.0.6
+httpcore==1.0.7
     # via httpx
 httpx==0.27.2
     # via
@@ -95,7 +95,7 @@ mccabe==0.7.0
     # via flake8
 mock==5.1.0
     # via iceprod (setup.py)
-moto[s3]==5.0.20
+moto[s3]==5.0.21
     # via iceprod (setup.py)
 motor==3.6.0
     # via iceprod (setup.py)
@@ -115,7 +115,7 @@ pycparser==2.22
     # via cffi
 pyflakes==3.2.0
     # via flake8
-pyjwt[crypto]==2.9.0
+pyjwt[crypto]==2.10.0
     # via wipac-rest-tools
 pymongo==4.9.2
     # via
@@ -161,7 +161,7 @@ requests==2.32.3
     #   responses
     #   wipac-dev-tools
     #   wipac-rest-tools
-requests-futures==1.0.1
+requests-futures==1.0.2
     # via
     #   iceprod (setup.py)
     #   wipac-rest-tools
@@ -179,7 +179,7 @@ rpds-py==0.21.0
     #   referencing
 s3transfer==0.10.3
     # via boto3
-setproctitle==1.3.3
+setproctitle==1.3.4
     # via iceprod (setup.py)
 six==1.16.0
     # via python-dateutil
