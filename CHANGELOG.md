@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.35 (2024-11-20)
+
+### Other
+
+* Do not use the JEL for completions, as the statistics are incomplete ([#405](https://github.com/WIPACrepo/iceprod/issues/405)) ([`0122974`](https://github.com/WIPACrepo/iceprod/commit/0122974a6f46ad6ad1cb2c731a7611e1445f3b43))
+
 ## v3.0.34 (2024-11-14)
 
 ### Other
