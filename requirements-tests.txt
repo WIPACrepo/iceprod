@@ -14,11 +14,11 @@ attrs==24.2.0
     #   referencing
 beautifulsoup4==4.12.3
     # via iceprod (setup.py)
-boto3==1.35.65
+boto3==1.35.66
     # via
     #   iceprod (setup.py)
     #   moto
-botocore==1.35.65
+botocore==1.35.66
     # via
     #   boto3
     #   moto
@@ -177,7 +177,7 @@ rpds-py==0.21.0
     # via
     #   jsonschema
     #   referencing
-s3transfer==0.10.3
+s3transfer==0.10.4
     # via boto3
 setproctitle==1.3.4
     # via iceprod (setup.py)
