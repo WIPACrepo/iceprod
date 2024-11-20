@@ -173,7 +173,7 @@ class CondorSubmit:
 
     _GENERIC_ADS = ['Iwd', 'IceProdDatasetId', 'IceProdTaskId', 'IceProdTaskInstanceId', 'MATCH_EXP_JOBGLIDEIN_ResourceName']
     AD_INFO = [
-        'RemotePool', 'RemoteHost', 'RemoteWallClockTime', 'ResidentSetSize_RAW', 'DiskUsage_RAW',
+        'RemotePool', 'RemoteHost', #'RemoteWallClockTime', 'ResidentSetSize_RAW', 'DiskUsage_RAW',
         'HoldReason', 'RemoveReason', 'Reason', 'MachineAttrGLIDEIN_Site0',
     ] + _GENERIC_ADS
     AD_PROJECTION_QUEUE = ['JobStatus', 'RemotePool', 'RemoteHost'] + _GENERIC_ADS
