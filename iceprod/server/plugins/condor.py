@@ -681,6 +681,10 @@ class Grid(grid.BaseGrid):
                             if type_ == htcondor.JobEventType.JOB_TERMINATED:
                                 logger.info("job %s %s.%s exited on its own", job_id, job.dataset_id, job.task_id)
 
+                                # there's a bug where not all the classads are updated before the event fires
+                                # so ignore this and let the cross-check take care of it
+                                continue
+
                                 # get stats
                                 cpu = event.get('CpusUsage', None)
                                 gpu = event.get('GpusUsage', None)
@@ -734,6 +738,11 @@ class Grid(grid.BaseGrid):
                                 job.status = JobStatus.FAILED
                                 reason = event.get('Reason', None)
                                 logger.info("job %s %s.%s removed: %r", job_id, job.dataset_id, job.task_id, reason)
+
+                                # there's a bug where not all the classads are updated before the event fires
+                                # so ignore this and let the cross-check take care of it
+                                continue
+
                                 await self.finish(job_id, success=False, reason=reason)
 
                             else:
