@@ -183,7 +183,7 @@ class Priority:
 
         # bias towards older datasets
         logger.debug(f'{dataset_id} age: {dataset_age}')
-        factor = dataset_age**.1 if dataset_age > 1 else 1.
+        factor = (dataset_age*24)**.05 - .17 if dataset_age > 1 else 1.
         priority *= factor
         logger.info(f'{dataset_id} after age adjustment: {priority}')
 
