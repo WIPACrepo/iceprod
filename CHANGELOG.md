@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.36 (2024-11-22)
+
+### Other
+
+* Add a dataset age factor to priority ([#406](https://github.com/WIPACrepo/iceprod/issues/406)) ([`2ca9271`](https://github.com/WIPACrepo/iceprod/commit/2ca92717f2ac34c48b1c9c3525ccbe27b4dbbed3))
+
 ## v3.0.35 (2024-11-20)
 
 ### Other
