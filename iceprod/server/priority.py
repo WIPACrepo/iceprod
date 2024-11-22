@@ -3,10 +3,12 @@ Functions used to calculate dataset and task priority.
 """
 import argparse
 import asyncio
+from datetime import datetime, UTC
 import logging
 
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 from iceprod.roles_groups import GROUP_PRIORITIES
+from iceprod.server.util import str2datetime
 
 logger = logging.getLogger('priority')
 
@@ -20,7 +22,7 @@ class Priority:
 
     async def _populate_dataset_cache(self):
         args = {
-            'keys': 'dataset_id|priority|jobs_submitted|tasks_submitted|group|username',
+            'keys': 'dataset_id|priority|jobs_submitted|tasks_submitted|group|username|start_date',
             'status': 'processing',
         }
         self.dataset_cache = await self.rest_client.request('GET', '/datasets', args)
@@ -135,6 +137,7 @@ class Priority:
             return 0.
 
         dataset_prio = dataset['priority']
+        dataset_age = (datetime.now(UTC) - str2datetime(dataset['start_date'])).total_seconds() / 86400.
         user = dataset['username']
         group = dataset['group']
         logger.debug(f'{dataset_id} dataset_prio: {dataset_prio}')
@@ -177,6 +180,12 @@ class Priority:
         logger.info(f'{dataset_id} after user adjustment: {priority}')
         priority *= group_prio
         logger.info(f'{dataset_id} after group adjustment: {priority}')
+
+        # bias towards older datasets
+        logger.debug(f'{dataset_id} age: {dataset_age}')
+        factor = dataset_age**.1 if dataset_age > 1 else 1.
+        priority *= factor
+        logger.info(f'{dataset_id} after age adjustment: {priority}')
 
         # bias against large datasets
         factor = (10000. / num_dataset_jobs)**.05 if num_dataset_jobs > 0 else 1.
