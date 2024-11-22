@@ -157,7 +157,7 @@ statsd==4.0.1
     # via iceprod (setup.py)
 tomli==2.1.0
     # via sphinx
-tornado==6.4.1
+tornado==6.4.2
     # via
     #   iceprod (setup.py)
     #   wipac-rest-tools
