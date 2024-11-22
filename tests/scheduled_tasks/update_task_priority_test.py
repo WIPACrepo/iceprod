@@ -21,7 +21,7 @@ async def test_200_run():
         elif url == '/tasks':
             return {'tasks':[{'task_id':'bar','dataset_id':'foo'}]}
         elif url == '/datasets':
-            return {'foo':{'dataset_id':'foo','username':'a','group':'g','tasks_submitted':200,'jobs_submitted':100,'priority':1.}}
+            return {'foo':{'dataset_id':'foo','start_date':'2024-01-01T01:00:00','username':'a','group':'g','tasks_submitted':200,'jobs_submitted':100,'priority':1.}}
         elif url == '/datasets/foo/tasks':
             return {'bar':{'task_id':'bar','dataset_id':'foo','task_index':0,'job_index':12}}
         elif url == '/datasets/foo/tasks/bar':
