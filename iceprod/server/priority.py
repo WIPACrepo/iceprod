@@ -6,6 +6,8 @@ import asyncio
 from datetime import datetime, UTC
 import logging
 
+import wipac_dev_tools
+
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 from iceprod.roles_groups import GROUP_PRIORITIES
 from iceprod.server.util import str2datetime
@@ -88,6 +90,7 @@ class Priority:
         try:
             return max(d['priority'] for d in self.dataset_cache.values() if 'priority' in d and d['username'] == user)
         except ValueError:
+            logger.info('error getting max dataset prio', exc_info=True)
             return 1.
 
     async def _get_max_dataset_prio_group(self, group):
@@ -264,6 +267,11 @@ def main():
 
     logformat = '%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
     logging.basicConfig(format=logformat, level=logging.DEBUG if args.debug else logging.INFO)
+    wipac_dev_tools.logging_tools.set_level(
+        level='DEBUG',
+        first_party_loggers='priority',
+        future_third_parties=['SavedDeviceGrantAuth'],
+    )
 
     rest_client = create_rest_client(args)
 
