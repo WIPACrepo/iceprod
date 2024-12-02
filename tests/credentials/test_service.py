@@ -3,6 +3,7 @@ import json
 from unittest.mock import MagicMock
 import motor.motor_asyncio
 import jwt
+import pytest
 
 import iceprod.credentials.service
 
@@ -40,6 +41,7 @@ async def test_credentials_service_refresh_empty(mongo_url, mongo_clear, respx_m
     await rs._run_once()
 
 
+@pytest.mark.respx(using="httpx", assert_all_called=False)
 async def test_credentials_service_refresh_not_exp(mongo_url, mongo_clear, respx_mock):
     db = motor.motor_asyncio.AsyncIOMotorClient(mongo_url)['creds']
     clients = '{}'
@@ -66,6 +68,7 @@ async def test_credentials_service_refresh_not_exp(mongo_url, mongo_clear, respx
     assert rs.last_success_time is not None
 
 
+@pytest.mark.respx(using="httpx")
 async def test_credentials_service_refresh_group(mongo_url, mongo_clear, respx_mock, monkeypatch):
     db = motor.motor_asyncio.AsyncIOMotorClient(mongo_url)['creds']
     clients = json.dumps({
@@ -103,6 +106,7 @@ async def test_credentials_service_refresh_group(mongo_url, mongo_clear, respx_m
     assert ret['expiration'] == now+1000
 
 
+@pytest.mark.respx(using="httpx")
 async def test_credentials_service_refresh_user(mongo_url, mongo_clear, respx_mock, monkeypatch):
     db = motor.motor_asyncio.AsyncIOMotorClient(mongo_url)['creds']
     clients = json.dumps({
