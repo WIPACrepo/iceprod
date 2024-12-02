@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.37 (2024-12-02)
+
+### Other
+
+* Minor priorty and x509 fixes ([#408](https://github.com/WIPACrepo/iceprod/issues/408)) ([`d72f182`](https://github.com/WIPACrepo/iceprod/commit/d72f1827c03ed5d9135a7d61ac66dfb52768f3dd))
+
 ## v3.0.36 (2024-11-22)
 
 ### Other
