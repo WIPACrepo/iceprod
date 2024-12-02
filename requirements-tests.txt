@@ -173,7 +173,7 @@ responses==0.25.3
     # via moto
 respx==0.21.1
     # via iceprod (setup.py)
-rpds-py==0.21.0
+rpds-py==0.22.0
     # via
     #   jsonschema
     #   referencing
