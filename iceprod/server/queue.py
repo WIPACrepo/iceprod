@@ -145,7 +145,6 @@ class Queue:
                 self.cfg['queue']['x509proxy'] = self.proxy.get_proxy()
             except Exception:
                 logger.warning('cannot setup x509 proxy', exc_info=True)
-                raise RuntimeError('cannot setup x509 proxy')
 
         while True:
             start = time.monotonic()

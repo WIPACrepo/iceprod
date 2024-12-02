@@ -51,13 +51,16 @@ class SiteGlobusProxy(object):
         if 'duration' not in self.cfg:
             raise Exception('duration missing')
         logger.info('duration: %r',self.cfg['duration'])
+        cmd = [
+            'grid-proxy-info',
+            '-e',
+            '-valid',
+            '%d:0'%self.cfg['duration'],
+        ]
+        if 'out' in self.cfg:
+            cmd += ['-f', self.cfg['out']]
         if subprocess.call(
-            [
-                'grid-proxy-info',
-                '-e',
-                '-valid',
-                '%d:0'%self.cfg['duration'],
-            ],
+            cmd,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL
         ):

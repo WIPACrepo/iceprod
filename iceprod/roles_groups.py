@@ -17,5 +17,5 @@ GROUP_PRIORITIES = {
     'admin': 1.,
     'simprod': .5,
     'filtering': .9,
-    'users': .7,
+    'users': .8,
 }

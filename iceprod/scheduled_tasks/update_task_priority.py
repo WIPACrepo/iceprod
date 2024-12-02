@@ -12,19 +12,21 @@ from iceprod.server.priority import Priority
 logger = logging.getLogger('update_task_priority')
 
 
-async def run(rest_client, dataset_id=None, debug=False):
+async def run(rest_client, dataset_id=None, status=None, debug=False):
     """
     Actual runtime / loop.
 
     Args:
         rest_client (:py:class:`iceprod.core.rest_client.Client`): rest client
         dataset_id (str): (optional) dataset id to update
+        status (list): list of task statuses to update
         debug (bool): debug flag to propagate exceptions
     """
+    assert status
     prio = Priority(rest_client)
     try:
         args = {
-            'status': 'idle|waiting',
+            'status': '|'.join(status),
             'keys': 'task_id|depends|dataset_id',
         }
         if dataset_id:
@@ -92,6 +94,7 @@ def main():
     parser = argparse.ArgumentParser(description='run a scheduled task once')
     add_auth_to_argparse(parser)
     parser.add_argument('-d', '--dataset', type=str, default=None, help='dataset id (optional)')
+    parser.add_argument('-s', '--status', action='append', help='task statuses to update (optional)')
     parser.add_argument('--log-level', default='info', help='log level')
     parser.add_argument('--debug', default=False, action='store_true', help='debug enabled')
     args = parser.parse_args()
@@ -101,7 +104,7 @@ def main():
 
     rest_client = create_rest_client(args)
 
-    asyncio.run(run(rest_client, dataset_id=args.dataset, debug=args.debug))
+    asyncio.run(run(rest_client, dataset_id=args.dataset, status=args.status, debug=args.debug))
 
 
 if __name__ == '__main__':
