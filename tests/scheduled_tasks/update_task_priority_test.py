@@ -35,7 +35,7 @@ async def test_200_run():
     client.called = False
     rc.request = client
 
-    await update_task_priority.run(rc, debug=True)
+    await update_task_priority.run(rc, status=['idle', 'waiting'], debug=True)
     assert client.called
 
 
@@ -46,7 +46,7 @@ async def test_201_run():
     rc.request = AsyncMock(side_effect=Exception())
 
     # check it normally hides the error
-    await update_task_priority.run(rc, debug=False)
+    await update_task_priority.run(rc, status=['idle', 'waiting'], debug=False)
 
     with pytest.raises(Exception):
         await reset_tasks.run(rc, debug=True)
