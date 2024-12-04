@@ -902,7 +902,7 @@ class Grid(grid.BaseGrid):
             if time_ is not None:
                 resources['time'] = time_/3600.
 
-            success = extra.get('ExitCode', 1) == 0
+            success = extra.get('JobStatus') == 4 and extra.get('ExitCode', 1) == 0
             job.status = JobStatus.COMPLETED if success else JobStatus.FAILED
 
             stats = {}
