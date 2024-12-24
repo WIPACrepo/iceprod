@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.38 (2024-12-24)
+
+### Other
+
+* Make sure the job actually completed, and didn't get held or removed ([#409](https://github.com/WIPACrepo/iceprod/issues/409)) ([`021f3dd`](https://github.com/WIPACrepo/iceprod/commit/021f3dd8d89febc23ca3fbe21c96bd37e031e675))
+
 ## v3.0.37 (2024-12-02)
 
 ### Other
