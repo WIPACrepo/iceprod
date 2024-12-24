@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.39 (2024-12-24)
+
+### Other
+
+* Fix prio bug ([#411](https://github.com/WIPACrepo/iceprod/issues/411)) ([`3d4e416`](https://github.com/WIPACrepo/iceprod/commit/3d4e416dc1f01e6381f23a88551b0032d5ef94e2))
+
 ## v3.0.38 (2024-12-24)
 
 ### Other
