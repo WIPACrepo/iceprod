@@ -235,12 +235,12 @@ class Priority:
         tasks_per_job = dataset['tasks_submitted'] / dataset['jobs_submitted']
 
         # bias towards finishing jobs
-        priority += (1. * task['task_index'] / tasks_per_job) / 10.
+        priority += (1. * task['task_index'] / tasks_per_job) / 5.
         logger.info(f'{dataset_id}.{task_id} after finishing jobs adjustment: {priority}')
 
-        # bias towards first jobs in dataset
-        priority += (1. * (dataset['jobs_submitted'] - task['job_index']) / dataset['jobs_submitted']) / 100.
-        logger.info(f'{dataset_id}.{task_id} after first jobs adjustment: {priority}')
+        # spread out job priorities to allow dataset balancing
+        priority -= (1. - (dataset['jobs_submitted'] - task['job_index']) / dataset['jobs_submitted']) / 5.
+        logger.info(f'{dataset_id}.{task_id} after job index adjustment: {priority}')
 
         # boost towards first 100 jobs (or small datasets)
         if task['job_index'] < 100:
