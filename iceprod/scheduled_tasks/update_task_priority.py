@@ -22,7 +22,8 @@ async def run(rest_client, dataset_id=None, status=None, debug=False):
         status (list): list of task statuses to update
         debug (bool): debug flag to propagate exceptions
     """
-    assert status
+    if not status:
+        status = ['idle', 'waiting']
     prio = Priority(rest_client)
     try:
         args = {
