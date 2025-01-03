@@ -773,10 +773,10 @@ class Grid(grid.BaseGrid):
 
         try:
             if job.status == JobStatus.IDLE:
-                logging.info("task {}.{} is now queued", job.dataset_id, job.task_id)
+                logging.info("task %s.%s is now queued", job.dataset_id, job.task_id)
                 await self.task_idle(job)
             elif job.status == JobStatus.RUNNING:
-                logging.info("task {}.{} is now processing", job.dataset_id, job.task_id)
+                logging.info("task %s.%s is now processing", job.dataset_id, job.task_id)
                 await self.task_processing(job)
         except Exception:
             logging.warning("failed to update task status", exc_info=True)
