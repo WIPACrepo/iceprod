@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.40 (2025-01-03)
+
+### Other
+
+* Attempt to fix iceprod - condor queue sync issues ([#412](https://github.com/WIPACrepo/iceprod/issues/412)) ([`bc84d94`](https://github.com/WIPACrepo/iceprod/commit/bc84d9488e599154611f1219e6ac11586fced552))
+
 ## v3.0.39 (2024-12-24)
 
 ### Other
