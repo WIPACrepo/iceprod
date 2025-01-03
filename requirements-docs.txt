@@ -16,9 +16,9 @@ attrs==24.3.0
     #   referencing
 babel==2.16.0
     # via sphinx
-boto3==1.35.87
+boto3==1.35.91
     # via iceprod (setup.py)
-botocore==1.35.87
+botocore==1.35.91
     # via
     #   boto3
     #   s3transfer
@@ -35,7 +35,7 @@ certifi==2024.12.14
     #   requests
 cffi==1.17.1
     # via cryptography
-charset-normalizer==3.4.0
+charset-normalizer==3.4.1
     # via requests
 cryptography==44.0.0
     # via
