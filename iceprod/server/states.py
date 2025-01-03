@@ -40,7 +40,7 @@ TASK_STATUS = {
     'idle': ['waiting', 'suspended'],
     'waiting': ['queued', 'idle', 'suspended'],
     'queued': ['processing', 'idle', 'waiting', 'suspended', 'failed', 'complete'],
-    'processing': ['idle', 'waiting', 'suspended', 'failed', 'complete'],
+    'processing': ['idle', 'waiting', 'queued', 'suspended', 'failed', 'complete'],
     'suspended': ['idle', 'waiting'],
     'failed': ['idle', 'waiting'],
     'complete': [],

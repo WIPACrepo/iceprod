@@ -976,7 +976,7 @@ class TasksActionsCompleteHandler(APIBase):
 
         filter_query = {
             'task_id': task_id,
-            'status': 'processing',
+            'status': {'$in': task_prev_statuses('complete')},
             'instance_id': data['instance_id'],
         }
         update_query = {
