@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.41 (2025-01-03)
+
+### Other
+
+* Update task queued/processing when doing cross-check ([#413](https://github.com/WIPACrepo/iceprod/issues/413)) ([`5160c7c`](https://github.com/WIPACrepo/iceprod/commit/5160c7cc6ec69694fea79eab9ac0ed145e6810af))
+
 ## v3.0.40 (2025-01-03)
 
 ### Other
