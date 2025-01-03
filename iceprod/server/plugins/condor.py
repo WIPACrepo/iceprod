@@ -858,6 +858,8 @@ class Grid(grid.BaseGrid):
                     reason = extra.get('HoldReason', 'Job has failed')
                     logger.info("job %s %s.%s removed from cross-check: %r", job_id, job.dataset_id, job.task_id, reason)
                     self.submitter.remove(job_id, reason=reason)
+                else:
+                    self.job_update(job)
 
         await self.check_history()
 
