@@ -773,11 +773,13 @@ class Grid(grid.BaseGrid):
 
         try:
             if job.status == JobStatus.IDLE:
+                logging.info("task {}.{} is now queued", job.dataset_id, job.task_id)
                 await self.task_idle(job)
             elif job.status == JobStatus.RUNNING:
+                logging.info("task {}.{} is now processing", job.dataset_id, job.task_id)
                 await self.task_processing(job)
         except Exception:
-            pass
+            logging.warning("failed to update task status", exc_info=True)
 
     async def finish(self, job_id: CondorJobId, success: bool = True, resources: dict | None = None, reason: str | None = None, stats: dict | None = None):
         """

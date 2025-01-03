@@ -39,7 +39,7 @@ JOB_STATUS_START = 'processing'
 TASK_STATUS = {
     'idle': ['waiting', 'suspended'],
     'waiting': ['queued', 'idle', 'suspended'],
-    'queued': ['processing', 'idle', 'waiting', 'suspended', 'failed'],
+    'queued': ['processing', 'idle', 'waiting', 'suspended', 'failed', 'complete'],
     'processing': ['idle', 'waiting', 'suspended', 'failed', 'complete'],
     'suspended': ['idle', 'waiting'],
     'failed': ['idle', 'waiting'],
