@@ -14,11 +14,11 @@ attrs==24.3.0
     #   referencing
 beautifulsoup4==4.12.3
     # via iceprod (setup.py)
-boto3==1.35.87
+boto3==1.35.91
     # via
     #   iceprod (setup.py)
     #   moto
-botocore==1.35.87
+botocore==1.35.91
     # via
     #   boto3
     #   moto
@@ -36,9 +36,9 @@ certifi==2024.12.14
     #   requests
 cffi==1.17.1
     # via cryptography
-charset-normalizer==3.4.0
+charset-normalizer==3.4.1
     # via requests
-coverage[toml]==7.6.9
+coverage[toml]==7.6.10
     # via
     #   iceprod (setup.py)
     #   pytest-cov
@@ -56,7 +56,7 @@ exceptiongroup==1.2.2
     #   pytest
 flake8==7.1.1
     # via iceprod (setup.py)
-flexmock==0.12.1
+flexmock==0.12.2
     # via iceprod (setup.py)
 h11==0.14.0
     # via httpcore
@@ -95,7 +95,7 @@ mccabe==0.7.0
     # via flake8
 mock==5.1.0
     # via iceprod (setup.py)
-moto[s3]==5.0.24
+moto[s3]==5.0.25
     # via iceprod (setup.py)
 motor==3.6.0
     # via iceprod (setup.py)
@@ -105,7 +105,7 @@ pluggy==1.5.0
     # via pytest
 psutil==6.1.1
     # via iceprod (setup.py)
-py-partiql-parser==0.5.6
+py-partiql-parser==0.6.1
     # via moto
 pyasn1==0.6.1
     # via ldap3
