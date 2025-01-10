@@ -43,8 +43,6 @@ async def run(rest_client, config, dataset_id='', gpus=None, debug=False):
         args = {'status': 'idle|waiting'}
         if gpus is not None:
             args['gpu'] = gpus
-        print(args)
-        return
         tasks = await rest_client.request('GET', route, args)
         if 'idle' in tasks:
             num_tasks_idle = tasks['idle']
