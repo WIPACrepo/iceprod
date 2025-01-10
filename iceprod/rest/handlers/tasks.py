@@ -308,44 +308,6 @@ class TasksStatusHandler(APIBase):
         self.finish()
 
 
-class TaskCountsStatusHandler(APIBase):
-    """
-    Handle task summary grouping by status.
-    """
-    @authorization(roles=['admin', 'system'])
-    async def get(self):
-        """
-        Get the task counts for all tasks, group by status.
-
-        Params (optional):
-            status: | separated list of task status to filter by
-
-        Returns:
-            dict: {<status>: num}
-        """
-        match = {}
-        status = self.get_argument('status', None)
-        if status:
-            status_list = status.split('|')
-            if any(s not in TASK_STATUS for s in status_list):
-                raise tornado.web.HTTPError(400, reaosn='Unknown task status')
-            match['status'] = {'$in': status_list}
-
-        ret = {}
-        cursor = self.db.tasks.aggregate([
-            {'$match': match},
-            {'$group': {'_id': '$status', 'total': {'$sum': 1}}},
-        ])
-        ret = {}
-        async for row in cursor:
-            ret[row['_id']] = row['total']
-        ret2 = {}
-        for k in sorted(ret, key=task_status_sort):
-            ret2[k] = ret[k]
-        self.write(ret2)
-        self.finish()
-
-
 class DatasetMultiTasksHandler(APIBase):
     """
     Handle multi tasks requests.
@@ -553,29 +515,24 @@ class DatasetTaskSummaryStatusHandler(APIBase):
         self.finish()
 
 
-class DatasetTaskCountsStatusHandler(APIBase):
+class TaskCountsStatusHandler(APIBase):
     """
     Handle task summary grouping by status.
     """
-    @authorization(roles=['admin', 'user', 'system'])
-    @attr_auth(arg='dataset_id', role='read')
-    async def get(self, dataset_id):
-        """
-        Get the task counts for all tasks in a dataset, group by status.
-
-        Args:
-            dataset_id (str): dataset id
-
-        Returns:
-            dict: {<status>: num}
-        """
-        match = {'dataset_id': dataset_id}
+    async def counts(self, match):
         status = self.get_argument('status', None)
         if status:
             status_list = status.split('|')
             if any(s not in TASK_STATUS for s in status_list):
                 raise tornado.web.HTTPError(400, reaosn='Unknown task status')
             match['status'] = {'$in': status_list}
+
+        gpu = self.get_argument('gpu', None)
+        if gpu is not None:
+            if gpu:
+                match['requirements.gpu'] = {'$gte': 1}
+            else:
+                match['$or'] = [{"requirements.gpu": {"$exists": False}}, {"requirements.gpu": {"$lte": 0}}]
 
         ret = {}
         cursor = self.db.tasks.aggregate([
@@ -590,6 +547,44 @@ class DatasetTaskCountsStatusHandler(APIBase):
             ret2[k] = ret[k]
         self.write(ret2)
         self.finish()
+
+    @authorization(roles=['admin', 'system'])
+    async def get(self):
+        """
+        Get the task counts for all tasks, group by status.
+
+        Params (optional):
+            status: | separated list of task status to filter by
+            gpu: bool to select only gpu tasks or non-gpu tasks
+
+        Returns:
+            dict: {<status>: num}
+        """
+        await self.counts(match={})
+
+
+class DatasetTaskCountsStatusHandler(TaskCountsStatusHandler):
+    """
+    Handle task summary grouping by status.
+    """
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='read')
+    async def get(self, dataset_id):
+        """
+        Get the task counts for all tasks in a dataset, group by status.
+
+        Args:
+            dataset_id (str): dataset id
+
+        Params (optional):
+            status: | separated list of task status to filter by
+            gpu: bool to select only gpu tasks or non-gpu tasks
+
+        Returns:
+            dict: {<status>: num}
+        """
+        match = {'dataset_id': dataset_id}
+        await self.counts(match=match)
 
 
 class DatasetTaskCountsNameStatusHandler(APIBase):

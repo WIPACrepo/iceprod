@@ -10,38 +10,49 @@ import asyncio
 import logging
 import os
 
+from wipac_dev_tools import from_environment, strtobool
+
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 
 logger = logging.getLogger('queue_tasks')
 
-NTASKS = 250000
-NTASKS_PER_CYCLE = 1000
+default_config = {
+    'NTASKS': 250000,
+    'NTASKS_PER_CYCLE': 1000,
+}
 
 
-async def run(rest_client, dataset_id=None, ntasks=NTASKS, ntasks_per_cycle=NTASKS_PER_CYCLE, debug=False):
+async def run(rest_client, config, dataset_id='', gpus=None, debug=False):
     """
     Actual runtime / loop.
 
     Args:
         rest_client (:py:class:`iceprod.core.rest_client.Client`): rest client
+        config (dict): config dict
+        dataset_id (str): dataset to queue
+        gpus (bool): run on gpu tasks, cpu tasks, or both
         debug (bool): debug flag to propagate exceptions
     """
     try:
+        num_tasks_idle = 0
         num_tasks_waiting = 0
-        num_tasks_queued = 0
         if dataset_id:
             route = f'/datasets/{dataset_id}/task_counts/status'
         else:
             route = '/task_counts/status'
         args = {'status': 'idle|waiting'}
+        if gpus is not None:
+            args['gpu'] = gpus
+        print(args)
+        return
         tasks = await rest_client.request('GET', route, args)
         if 'idle' in tasks:
-            num_tasks_waiting = tasks['idle']
+            num_tasks_idle = tasks['idle']
         if 'waiting' in tasks:
-            num_tasks_queued = tasks['waiting']
-        tasks_to_queue = min(num_tasks_waiting, ntasks - num_tasks_queued, ntasks_per_cycle)
-        logger.warning(f'num tasks idle: {num_tasks_waiting}')
-        logger.warning(f'num tasks waiting: {num_tasks_queued}')
+            num_tasks_waiting = tasks['waiting']
+        tasks_to_queue = min(num_tasks_idle, config['NTASKS'] - num_tasks_waiting, config['NTASKS_PER_CYCLE'])
+        logger.warning(f'num tasks idle: {num_tasks_idle}')
+        logger.warning(f'num tasks waiting: {num_tasks_waiting}')
         logger.warning(f'tasks to waiting: {tasks_to_queue}')
 
         if tasks_to_queue > 0:
@@ -128,24 +139,28 @@ async def run(rest_client, dataset_id=None, ntasks=NTASKS, ntasks_per_cycle=NTAS
 
 
 def main():
+    config = from_environment(default_config)
+
     parser = argparse.ArgumentParser(description='run a scheduled task once')
     add_auth_to_argparse(parser)
     parser.add_argument('--dataset-id', help='dataset id')
-    parser.add_argument('--ntasks', type=int, default=os.environ.get('NTASKS', NTASKS),
+    parser.add_argument('--gpus', default=None, type=strtobool, help='whether to select only gpu or non-gpu tasks')
+    parser.add_argument('--ntasks', type=int, default=config['NTASKS'],
                         help='number of tasks to keep queued')
-    parser.add_argument('--ntasks_per_cycle', type=int, default=os.environ.get('NTASKS_PER_CYCLE', NTASKS_PER_CYCLE),
+    parser.add_argument('--ntasks_per_cycle', type=int, default=config['NTASKS_PER_CYCLE'],
                         help='number of tasks to queue per cycle')
     parser.add_argument('--log-level', default='info', help='log level')
     parser.add_argument('--debug', default=False, action='store_true', help='debug enabled')
 
     args = parser.parse_args()
+    config.update(vars(args))
 
     logformat = '%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
     logging.basicConfig(format=logformat, level=getattr(logging, args.log_level.upper()))
 
     rest_client = create_rest_client(args)
 
-    asyncio.run(run(rest_client, dataset_id=args.dataset_id, ntasks=args.ntasks, ntasks_per_cycle=args.ntasks_per_cycle, debug=args.debug))
+    asyncio.run(run(rest_client, dataset_id=args.dataset_id, gpus=args.gpus, config=config, debug=args.debug))
 
 
 if __name__ == '__main__':
