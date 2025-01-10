@@ -297,13 +297,30 @@ async def test_rest_tasks_dataset_counts_status(server):
         'requirements': {},
     }
     ret = await client.request('POST', '/tasks', data)
-    task_id = ret['result']
+
+    data = {
+        'dataset_id': 'foo',
+        'job_id': 'foo1',
+        'task_index': 1,
+        'job_index': 0,
+        'name': 'baz',
+        'depends': [],
+        'requirements': {'gpu': 1},
+        'status': 'processing'
+    }
+    ret = await client.request('POST', '/tasks', data)
 
     ret = await client.request('GET', f'/datasets/{data["dataset_id"]}/task_counts/status')
-    assert ret == {states.TASK_STATUS_START: 1}
+    assert ret == {states.TASK_STATUS_START: 1, 'processing': 1}
 
     ret = await client.request('GET', f'/datasets/{data["dataset_id"]}/task_counts/status?status=complete')
     assert ret == {}
+    
+    ret = await client.request('GET', f'/datasets/{data["dataset_id"]}/task_counts/status?gpu=false')
+    assert ret == {states.TASK_STATUS_START: 1}
+    
+    ret = await client.request('GET', f'/datasets/{data["dataset_id"]}/task_counts/status?gpu=true')
+    assert ret == {'processing': 1}
 
 
 async def test_rest_tasks_dataset_counts_name_status(server):
