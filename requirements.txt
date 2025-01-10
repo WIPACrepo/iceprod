@@ -4,7 +4,7 @@
 #
 #    pip-compile --output-file=requirements.txt
 #
-anyio==4.7.0
+anyio==4.8.0
     # via httpx
 asyncache==0.3.1
     # via iceprod (setup.py)
@@ -12,9 +12,9 @@ attrs==24.3.0
     # via
     #   jsonschema
     #   referencing
-boto3==1.35.92
+boto3==1.35.96
     # via iceprod (setup.py)
-botocore==1.35.92
+botocore==1.35.96
     # via
     #   boto3
     #   s3transfer
@@ -44,7 +44,7 @@ exceptiongroup==1.2.2
     # via anyio
 h11==0.14.0
     # via httpcore
-htcondor==24.2.1
+htcondor==24.3.0
     # via iceprod (setup.py)
 httpcore==1.0.7
     # via httpx
@@ -135,7 +135,7 @@ urllib3==2.3.0
     #   botocore
     #   requests
     #   wipac-rest-tools
-wipac-dev-tools==1.13.0
+wipac-dev-tools==1.14.0
     # via
     #   iceprod (setup.py)
     #   wipac-rest-tools
