@@ -93,4 +93,4 @@ async def test_300_run():
     assert client.called
 
     # internally catch the error
-    await queue_tasks.run(rc)
+    await queue_tasks.run(rc, config)
