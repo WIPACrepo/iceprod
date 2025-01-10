@@ -18,6 +18,7 @@ logger = logging.getLogger('queue_tasks')
 default_config = {
     'NTASKS': 250000,
     'NTASKS_PER_CYCLE': 1000,
+    'TASKS_GET_FACTOR': 5,
 }
 
 
@@ -57,15 +58,15 @@ async def run(rest_client, config, dataset_id='', gpus=None, debug=False):
                 route = f'/datasets/{dataset_id}/tasks'
                 args = {
                     'status': 'idle',
-                    'keys': 'task_id|depends',
+                    'keys': 'task_id|depends|requirements.gpu',
                 }
             else:
                 route = '/tasks'
                 args = {
                     'status': 'idle',
-                    'keys': 'task_id|depends',
+                    'keys': 'task_id|depends|requirements.gpu',
                     'sort': 'priority=-1',
-                    'limit': 5*tasks_to_queue,
+                    'limit': config['TASKS_GET_FACTOR'] * tasks_to_queue,
                 }
             ret = await rest_client.request('GET', route, args)
             idle_tasks = ret.values() if dataset_id else ret['tasks']
@@ -82,6 +83,10 @@ async def run(rest_client, config, dataset_id='', gpus=None, debug=False):
                         return None
                 return task
             for task in idle_tasks:
+                if gpus is not None:
+                    task_gpus = task.get('requirements', {}).get('gpu', 0)
+                    if (gpus and task_gpus <= 0) or (not gpus and task_gpus > 0):
+                        continue
                 tasks_queue_pending += 1
                 if not task.get('depends', None):
                     logger.info('queueing task %s', task['task_id'])
