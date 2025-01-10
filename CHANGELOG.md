@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.42 (2025-01-10)
+
+### Other
+
+* Task idle -> waiting gpu tasks separately ([#414](https://github.com/WIPACrepo/iceprod/issues/414)) ([`d2b3f51`](https://github.com/WIPACrepo/iceprod/commit/d2b3f51aae02b1699c24052077d5083f4ea3f4fb))
+
 ## v3.0.41 (2025-01-03)
 
 ### Other
