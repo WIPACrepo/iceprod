@@ -12,6 +12,7 @@ logger = logging.getLogger('scheduled_tasks_queue_tasks_test')
 
 
 async def test_200_run():
+    config = queue_tasks.default_config.copy()
     rc = MagicMock()
     async def client(method, url, args=None):
         if url == '/datasets/foo':
@@ -27,7 +28,7 @@ async def test_200_run():
             raise Exception()
     client.called = False
     rc.request = client
-    await queue_tasks.run(rc, debug=True)
+    await queue_tasks.run(rc, config, debug=True)
     assert client.called
     
     async def client(method, url, args=None):
@@ -40,7 +41,7 @@ async def test_200_run():
             raise Exception()
     client.called = False
     rc.request = client
-    await queue_tasks.run(rc, debug=True)
+    await queue_tasks.run(rc, config, debug=True)
     assert not client.called
     
     async def client(method, url, args=None):
@@ -55,7 +56,7 @@ async def test_200_run():
             raise Exception()
     client.called = False
     rc.request = client
-    await queue_tasks.run(rc, debug=True)
+    await queue_tasks.run(rc, config, debug=True)
     assert not client.called
 
     async def client(method, url, args=None):
@@ -72,11 +73,12 @@ async def test_200_run():
             raise Exception()
     client.called = False
     rc.request = client
-    await queue_tasks.run(rc, debug=True)
+    await queue_tasks.run(rc, config, debug=True)
     assert not client.called
 
 
 async def test_300_run():
+    config = queue_tasks.default_config.copy()
     rc = MagicMock()
     async def client(method, url, args=None):
         if url.startswith('/task_counts/status'):
@@ -87,7 +89,7 @@ async def test_300_run():
     client.called = False
     rc.request = client
     with pytest.raises(Exception):
-        await queue_tasks.run(rc, debug=True)
+        await queue_tasks.run(rc, config, debug=True)
     assert client.called
 
     # internally catch the error

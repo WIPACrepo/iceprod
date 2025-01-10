@@ -7,6 +7,7 @@ import uuid
 
 import pymongo
 import tornado.web
+from wipac_dev_tools import strtobool
 
 from ..base_handler import APIBase
 from ..auth import authorization, attr_auth
@@ -529,7 +530,7 @@ class TaskCountsStatusHandler(APIBase):
 
         gpu = self.get_argument('gpu', None)
         if gpu is not None:
-            if gpu:
+            if strtobool(gpu):
                 match['requirements.gpu'] = {'$gte': 1}
             else:
                 match['$or'] = [{"requirements.gpu": {"$exists": False}}, {"requirements.gpu": {"$lte": 0}}]

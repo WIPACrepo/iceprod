@@ -8,7 +8,6 @@ tasks.  Also uses priority for ordering.
 import argparse
 import asyncio
 import logging
-import os
 
 from wipac_dev_tools import from_environment, strtobool
 
