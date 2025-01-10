@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.43 (2025-01-10)
+
+### Other
+
+* Actually filter by gpu tasks ([#415](https://github.com/WIPACrepo/iceprod/issues/415)) ([`70b49e6`](https://github.com/WIPACrepo/iceprod/commit/70b49e6d4dab1ae732cf64befa4ec8bca7cd16c0))
+
 ## v3.0.42 (2025-01-10)
 
 ### Other
