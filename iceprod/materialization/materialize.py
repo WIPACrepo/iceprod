@@ -65,7 +65,7 @@ class Materialize:
                     logger.info('num_tasks: %d', num_tasks)
                     logger.info('tasks_per_job: %d', dataset['tasks_per_job'])
                     for job_tmp_index in range(job_index-1, -1, -1):
-                        if job_index * dataset['tasks_per_job'] >= num_tasks:
+                        if job_index * dataset['tasks_per_job'] <= num_tasks:
                             break
                         logger.info('a job must have failed to buffer, so check in reverse order. job_index=%d, num_tasks=%d', job_tmp_index, num_tasks)
                         job_tasks = await self.rest_client.request('GET', f'/datasets/{dataset_id}/tasks',
