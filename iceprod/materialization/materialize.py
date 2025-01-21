@@ -64,24 +64,24 @@ class Materialize:
                     logger.info('job_index: %d', job_index)
                     logger.info('num_tasks: %d', num_tasks)
                     logger.info('tasks_per_job: %d', dataset['tasks_per_job'])
-                    while job_index * dataset['tasks_per_job'] != num_tasks and job_index > 0:
-                        job_index -= 1
-                        logger.info('a job must have failed to buffer, so check in reverse order. job_index=%d, num_tasks=%d', job_index, num_tasks)
+                    for job_tmp_index in range(job_index-1, -1, -1):
+                        if job_index * dataset['tasks_per_job'] <= num_tasks:
+                            break
+                        logger.info('a job must have failed to buffer, so check in reverse order. job_index=%d, num_tasks=%d', job_tmp_index, num_tasks)
                         job_tasks = await self.rest_client.request('GET', f'/datasets/{dataset_id}/tasks',
-                                                                   {'job_index': job_index, 'keys': 'task_id|job_id|task_index'})
+                                                                   {'job_index': job_tmp_index, 'keys': 'task_id|job_id|task_index'})
                         if len(job_tasks) != dataset['tasks_per_job']:
-                            logger.info('fixing buffer of job %d for dataset %s', job_index, dataset_id)
-                            job_id = job_index_id[job_index]
+                            logger.info('fixing buffer of job %d for dataset %s', job_tmp_index, dataset_id)
+                            job_id = job_index_id[job_tmp_index]
                             logger.info('  fixing job_id %s, num existing tasks: %d', job_id, len(job_tasks))
-                            tasks_buffered = await self.buffer_job(dataset, job_index, job_id=job_id,
+                            tasks_buffered = await self.buffer_job(dataset, job_tmp_index, job_id=job_id,
                                                                    tasks=list(job_tasks.values()),
                                                                    set_status=set_status, dryrun=dryrun)
                             num_tasks += tasks_buffered
                             logger.info('buffered %d tasks. num_tasks increased to: %d', tasks_buffered, num_tasks)
 
                     # now try buffering new tasks
-                    job_index = max(jobs[i]['job_index'] for i in jobs)+1 if jobs else 0
-                    jobs_to_buffer = min(num, dataset['jobs_submitted'] - len(jobs))
+                    jobs_to_buffer = min(num, dataset['jobs_submitted'] - job_index)
                     if jobs_to_buffer > 0:
                         logger.info('buffering %d jobs for dataset %s', jobs_to_buffer, dataset_id)
                         for i in range(jobs_to_buffer):
