@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.44 (2025-01-21)
+
+### Other
+
+* Fix materialize bug causing extra jobs ([#417](https://github.com/WIPACrepo/iceprod/issues/417)) ([`26b5312`](https://github.com/WIPACrepo/iceprod/commit/26b5312c42beaa4634da19aa50e52350ba13ec72))
+
 ## v3.0.43 (2025-01-10)
 
 ### Other
