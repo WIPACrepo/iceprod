@@ -20,7 +20,7 @@ import time
 from typing import NamedTuple
 
 import htcondor  # type: ignore
-from wipac_dev_tools.prometheus_tools import GlobalLabels, AsyncPromWrapper, AsyncPromTimer
+from wipac_dev_tools.prometheus_tools import GlobalLabels, AsyncPromWrapper, PromWrapper, AsyncPromTimer, PromTimer
 
 from iceprod.core.config import Task
 from iceprod.core.exe import WriteToScript, Transfer
@@ -455,7 +455,7 @@ transfer_output_remaps = $(outremaps)
             )
         return ret
 
-    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_get_jobs', 'IceProd grid condor.get_jobs calls'))
+    @PromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_get_jobs', 'IceProd grid condor.get_jobs calls'))
     def get_jobs(self) -> {CondorJobId: CondorJob}:
         """
         Get all jobs currently on the condor queue.
@@ -614,15 +614,18 @@ class Grid(grid.BaseGrid):
                 success = 'fail'
             prom_counter.labels({'dataset': dataset_num, 'task': task_name, 'success': success}).inc(len(tasks))
 
-    def get_queue_num(self) -> int:
+    @PromWrapper(lambda self: self.prometheus.gauge('iceprod_grid_queue_num', 'IceProd grid queue status gauges', labels=['status'], finalize=False))
+    def get_queue_num(self, prom_counter) -> int:
         """Determine how many tasks to queue."""
         counts = {s: 0 for s in JobStatus}
         for job in self.jobs.values():
             counts[job.status] += 1
 
         idle_jobs = counts[JobStatus.IDLE]
+        prom_counter.labels({'status': 'idle'}).set(idle_jobs)
         logger.info('idle jobs: %r', idle_jobs)
         processing_jobs = counts[JobStatus.RUNNING]
+        prom_counter.labels({'status': 'processing'}).set(processing_jobs)
         logger.info('processing jobs: %r', processing_jobs)
         queue_tot_max = self.cfg['queue']['max_total_tasks_on_queue'] - idle_jobs - processing_jobs
         queue_idle_max = self.cfg['queue']['max_idle_tasks_on_queue'] - idle_jobs
@@ -775,7 +778,7 @@ class Grid(grid.BaseGrid):
 
             if time.monotonic() - start >= timeout:
                 break
-            await asyncio.sleep(1)
+            await asyncio.sleep(.1)
 
     async def job_update(self, job: CondorJob):
         """
@@ -852,6 +855,7 @@ class Grid(grid.BaseGrid):
 
     # Longer checks #
 
+    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_check', 'IceProd grid check calls'))
     async def check(self):
         """
         Do a cross-check, to verify `self.jobs` vs the submit dir and IceProd API.
@@ -889,6 +893,7 @@ class Grid(grid.BaseGrid):
 
         logger.info('finished cross-check')
 
+    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_check_history', 'IceProd grid check calls'))
     async def check_history(self):
         """Check condor_history"""
         now = time.time()
@@ -940,6 +945,7 @@ class Grid(grid.BaseGrid):
             # finish job
             await self.finish(job_id, success=success, resources=resources, stats=stats, reason=reason)
 
+    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_check_iceprod', 'IceProd grid check calls'))
     async def check_iceprod(self):
         """
         Sync with iceprod server status.
@@ -961,6 +967,7 @@ class Grid(grid.BaseGrid):
                 )
                 await self.task_reset(job, reason='task missing from HTCondor queue')
 
+    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_check_submit_dir', 'IceProd grid check calls'))
     async def check_submit_dir(self):
         """
         Return directory paths that should be cleaned up.
