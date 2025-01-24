@@ -22,6 +22,23 @@
         }
       }
     },
+    "prometheus": {
+      "description": "Prometheus configuration",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "enable": {
+          "description": "enable Prometheus server",
+          "type": "boolean",
+          "default": false
+        },
+        "port": {
+          "descrption": "port to serve metrics on",
+          "type": "integer",
+          "default": 8000
+        }
+      }
+    },
     "queue": {
       "description": "Queue specifications",
       "type": "object",

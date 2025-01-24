@@ -20,6 +20,7 @@ import time
 from typing import NamedTuple
 
 import htcondor  # type: ignore
+from wipac_dev_tools.prometheus_tools import GlobalLabels, AsyncPromWrapper, AsyncPromTimer
 
 from iceprod.core.config import Task
 from iceprod.core.exe import WriteToScript, Transfer
@@ -45,7 +46,7 @@ def check_output_clean_env(*args, **kwargs):
 
 
 @enum.unique
-class JobStatus(enum.Enum):
+class JobStatus(enum.StrEnum):
     IDLE = enum.auto()       # job is waiting in the queue
     RUNNING = enum.auto()    # job is running
     FAILED = enum.auto()     # job needs cleanup
@@ -183,11 +184,14 @@ class CondorSubmit:
         'LastRemoteHost', 'LastRemotePool', 'MachineAttrGLIDEIN_Site0',
     ] + _GENERIC_ADS
 
-    def __init__(self, cfg: IceProdConfig, submit_dir: Path, credentials_dir: Path):
+    def __init__(self, cfg: IceProdConfig, submit_dir: Path, credentials_dir: Path, prom_global=None):
         self.cfg = cfg
         self.submit_dir = submit_dir
         self.credentials_dir = credentials_dir
         self.condor_schedd = htcondor.Schedd()
+        self.prometheus = prom_global if prom_global else GlobalLabels({
+            "type": "condor"
+        })
 
         submit_dir.mkdir(parents=True, exist_ok=True)
         self.precmd = submit_dir / 'pre.py'
@@ -307,6 +311,7 @@ class CondorSubmit:
         path.mkdir(parents=True)
         return path
 
+    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_submit', 'IceProd grid condor.submit calls'))
     async def submit(self, tasks: list[Task], jel: Path) -> dict[CondorJobId, CondorJob]:
         """
         Submit multiple jobs to Condor as a single batch.
@@ -450,6 +455,7 @@ transfer_output_remaps = $(outremaps)
             )
         return ret
 
+    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_get_jobs', 'IceProd grid condor.get_jobs calls'))
     def get_jobs(self) -> {CondorJobId: CondorJob}:
         """
         Get all jobs currently on the condor queue.
@@ -522,7 +528,7 @@ class Grid(grid.BaseGrid):
         super().__init__(*args, **kwargs)
         self.jobs = {}
         self.jels = {str(filename): htcondor.JobEventLog(str(filename)).events(0) for filename in self.submit_dir.glob('*/*.jel')}
-        self.submitter = CondorSubmit(self.cfg, submit_dir=self.submit_dir, credentials_dir=self.credentials_dir)
+        self.submitter = CondorSubmit(self.cfg, submit_dir=self.submit_dir, credentials_dir=self.credentials_dir, prom_global=self.prometheus)
 
         # save last event.timestamp, on restart only process >= timestamp
         self.last_event_timestamp = 0.
@@ -580,7 +586,9 @@ class Grid(grid.BaseGrid):
 
     # Submit to Condor #
 
-    async def submit(self):
+    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_submit', 'IceProd grid submit calls'))
+    @AsyncPromWrapper(lambda self: self.prometheus.counter('iceprod_grid_submit_datasets', 'IceProd grid submit dataset counter', labels=['dataset', 'task', 'success'], finalize=False))
+    async def submit(self, prom_counter):
         num_to_submit = self.get_queue_num()
         logger.info("Attempting to submit %d tasks", num_to_submit)
         tasks = await self.get_tasks_to_queue(num_to_submit)
@@ -592,6 +600,8 @@ class Grid(grid.BaseGrid):
             tasks_by_dataset[f'{task.dataset.dataset_num}-{task.name}'].append(task)
         for key in tasks_by_dataset:
             tasks = tasks_by_dataset[key]
+            dataset_num, task_name = key.split('-')[:2]
+            success = 'success'
             try:
                 ret = await self.submitter.submit(tasks, cur_jel)
                 self.jobs.update(ret)
@@ -601,6 +611,8 @@ class Grid(grid.BaseGrid):
                     for task in tasks:
                         j = CondorJob(dataset_id=task.dataset.dataset_id, task_id=task.task_id, instance_id=task.instance_id)
                         tg.create_task(self.task_reset(j, reason=f'HTCondor submit failed: {e}'))
+                success = 'fail'
+            prom_counter.labels({'dataset': dataset_num, 'task': task_name, 'success': success}).inc(len(tasks))
 
     def get_queue_num(self) -> int:
         """Determine how many tasks to queue."""
@@ -640,7 +652,8 @@ class Grid(grid.BaseGrid):
 
     # JEL processing #
 
-    async def wait(self, timeout):
+    @AsyncPromWrapper(lambda self: self.prometheus.counter('iceprod_grid_wait', 'IceProd grid wait counter', labels=['job_status'], finalize=False))
+    async def wait(self, prom_counter, timeout):
         """
         Wait for jobs to complete from the Job Event Logs.
 
@@ -681,6 +694,10 @@ class Grid(grid.BaseGrid):
                             if type_ == htcondor.JobEventType.JOB_TERMINATED:
                                 logger.info("job %s %s.%s exited on its own", job_id, job.dataset_id, job.task_id)
 
+                                success = event.get('ReturnValue', 1) == 0
+                                job.status = JobStatus.COMPLETED if success else JobStatus.FAILED
+                                prom_counter.labels({"job_status": str(job.status)}).inc()
+
                                 # there's a bug where not all the classads are updated before the event fires
                                 # so ignore this and let the cross-check take care of it
                                 continue
@@ -714,9 +731,6 @@ class Grid(grid.BaseGrid):
                                 if time_ is not None:
                                     resources['time'] = time_/3600.
 
-                                success = event.get('ReturnValue', 1) == 0
-                                job.status = JobStatus.COMPLETED if success else JobStatus.FAILED
-
                                 stats = {}
                                 if site := event.get('MachineAttrGLIDEIN_Site0'):
                                     stats['site'] = site
@@ -736,6 +750,7 @@ class Grid(grid.BaseGrid):
 
                             elif type_ == htcondor.JobEventType.JOB_ABORTED:
                                 job.status = JobStatus.FAILED
+                                prom_counter.labels({"job_status": str(job.status)}).inc()
                                 reason = event.get('Reason', None)
                                 logger.info("job %s %s.%s removed: %r", job_id, job.dataset_id, job.task_id, reason)
 
@@ -750,6 +765,7 @@ class Grid(grid.BaseGrid):
                                 new_status = JOB_EVENT_STATUS_TRANSITIONS.get(type_, None)
                                 if new_status is not None and job.status != new_status:
                                     job.status = new_status
+                                    prom_counter.labels({"job_status": str(job.status)}).inc()
                                     if new_status == JobStatus.FAILED:
                                         self.submitter.remove(job_id, reason=event.get('HoldReason', 'Job has failed'))
                                     else:
@@ -859,7 +875,7 @@ class Grid(grid.BaseGrid):
                     logger.info("job %s %s.%s removed from cross-check: %r", job_id, job.dataset_id, job.task_id, reason)
                     self.submitter.remove(job_id, reason=reason)
                 else:
-                    self.job_update(job)
+                    await self.job_update(job)
 
         await self.check_history()
 
