@@ -26,7 +26,7 @@ def test_grid_init():
     pprint(list(REGISTRY.collect()))
     metric = REGISTRY.get_sample_value('iceprod_site_info', {
         'name': 'bar',
-        'type': 'BaseGrid',
+        'type': 'test',
         'version': version_string,
         'exclusive': 'False',
     })
@@ -44,7 +44,7 @@ def test_grid_init_gpu():
     pprint(list(REGISTRY.collect()))
     metric = REGISTRY.get_sample_value('iceprod_site_info', {
         'name': 'grid-gpu',
-        'type': 'BaseGrid',
+        'type': 'test',
         'version': version_string,
         'exclusive': 'False',
     })

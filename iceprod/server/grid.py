@@ -15,7 +15,7 @@ from typing import Any, Protocol
 from asyncache import cachedmethod  # type: ignore
 from cachetools import TTLCache
 from cachetools.func import ttl_cache
-from prometheus_client import Counter, Info
+from prometheus_client import Info
 import requests.exceptions
 from wipac_dev_tools.prometheus_tools import GlobalLabels, AsyncPromWrapper, AsyncPromTimer
 

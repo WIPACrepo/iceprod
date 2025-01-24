@@ -52,7 +52,7 @@ class Server(object):
             await asyncio.sleep(3600)
 
     async def run(self):
-        if self.cfg['prometheus']['enable']:
+        if self.cfg.get('prometheus', {}).get('enable', False):
             start_http_server(self.cfg['prometheus']['port'])
         self.rotate_logs_task = asyncio.create_task(self.rotate_logs())
         try:
