@@ -8,7 +8,7 @@ anyio==4.8.0
     # via httpx
 asyncache==0.3.1
     # via iceprod (setup.py)
-attrs==24.3.0
+attrs==25.1.0
     # via
     #   jsonschema
     #   referencing
@@ -149,7 +149,7 @@ pyyaml==6.0.2
     #   responses
 qrcode==8.0
     # via wipac-rest-tools
-referencing==0.36.1
+referencing==0.36.2
     # via
     #   jsonschema
     #   jsonschema-specifications
