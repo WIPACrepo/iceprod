@@ -874,15 +874,16 @@ class Grid(grid.BaseGrid):
         self.jobs = all_jobs
 
         # process any updates
-        for job_id, job in all_jobs.items():
-            if job_id not in old_jobs or job.status != old_jobs[job_id].status:
-                if job.status == JobStatus.FAILED:
-                    extra = job.extra if job.extra else {}
-                    reason = extra.get('HoldReason', 'Job has failed')
-                    logger.info("job %s %s.%s removed from cross-check: %r", job_id, job.dataset_id, job.task_id, reason)
-                    self.submitter.remove(job_id, reason=reason)
-                else:
-                    await self.job_update(job)
+        async with asyncio.TaskGroup() as tg:
+            for job_id, job in all_jobs.items():
+                if job_id not in old_jobs or job.status != old_jobs[job_id].status:
+                    if job.status == JobStatus.FAILED:
+                        extra = job.extra if job.extra else {}
+                        reason = extra.get('HoldReason', 'Job has failed')
+                        logger.info("job %s %s.%s removed from cross-check: %r", job_id, job.dataset_id, job.task_id, reason)
+                        self.submitter.remove(job_id, reason=reason)
+                    else:
+                        tg.create_task(self.job_update(job))
 
         await self.check_history()
 
@@ -903,52 +904,53 @@ class Grid(grid.BaseGrid):
         now = time.time()
         hist_jobs_iter = self.submitter.get_history(since=self.last_event_timestamp)
         self.last_event_timestamp = now
-        for job_id, job in hist_jobs_iter:
-            with prom_histogram.time():
-                if job_id not in self.jobs:
-                    self.jobs[job_id] = job
+        async with asyncio.TaskGroup() as tg:
+            for job_id, job in hist_jobs_iter:
+                with prom_histogram.time():
+                    if job_id not in self.jobs:
+                        self.jobs[job_id] = job
 
-                logger.info("job %s %s.%s exited on its own from cross-check", job_id, job.dataset_id, job.task_id)
-                extra = job.extra if job.extra else {}
+                    logger.info("job %s %s.%s exited on its own from cross-check", job_id, job.dataset_id, job.task_id)
+                    extra = job.extra if job.extra else {}
 
-                # get stats
-                cpu = extra.get('CpusUsage', None)
-                if not cpu and (wall := extra.get('LastRemoteWallClockTime', None)):
-                    cpu = (extra.get('RemoteSysCpu', 0) + extra.get('RemoteUserCpu', 0)) * 1. / wall
-                gpu = extra.get('GpusUsage', None)
-                memory = extra.get('ResidentSetSize_RAW', None)  # KB
-                disk = extra.get('DiskUsage_RAW', None)  # KB
-                time_ = extra.get('LastRemoteWallClockTime', None)  # seconds
+                    # get stats
+                    cpu = extra.get('CpusUsage', None)
+                    if not cpu and (wall := extra.get('LastRemoteWallClockTime', None)):
+                        cpu = (extra.get('RemoteSysCpu', 0) + extra.get('RemoteUserCpu', 0)) * 1. / wall
+                    gpu = extra.get('GpusUsage', None)
+                    memory = extra.get('ResidentSetSize_RAW', None)  # KB
+                    disk = extra.get('DiskUsage_RAW', None)  # KB
+                    time_ = extra.get('LastRemoteWallClockTime', None)  # seconds
 
-                resources = {}
-                if cpu is not None:
-                    resources['cpu'] = cpu
-                if gpu is not None:
-                    resources['gpu'] = gpu
-                if memory is not None:
-                    resources['memory'] = memory/1000000.
-                if disk is not None:
-                    resources['disk'] = disk/1000000.
-                if time_ is not None:
-                    resources['time'] = time_/3600.
+                    resources = {}
+                    if cpu is not None:
+                        resources['cpu'] = cpu
+                    if gpu is not None:
+                        resources['gpu'] = gpu
+                    if memory is not None:
+                        resources['memory'] = memory/1000000.
+                    if disk is not None:
+                        resources['disk'] = disk/1000000.
+                    if time_ is not None:
+                        resources['time'] = time_/3600.
 
-                success = extra.get('JobStatus') == 4 and extra.get('ExitCode', 1) == 0
-                job.status = JobStatus.COMPLETED if success else JobStatus.FAILED
+                    success = extra.get('JobStatus') == 4 and extra.get('ExitCode', 1) == 0
+                    job.status = JobStatus.COMPLETED if success else JobStatus.FAILED
 
-                stats = {}
-                if site := extra.get('MachineAttrGLIDEIN_Site0'):
-                    stats['site'] = site
-                elif site := extra.get('MATCH_EXP_JOBGLIDEIN_ResourceName'):
-                    stats['site'] = site
+                    stats = {}
+                    if site := extra.get('MachineAttrGLIDEIN_Site0'):
+                        stats['site'] = site
+                    elif site := extra.get('MATCH_EXP_JOBGLIDEIN_ResourceName'):
+                        stats['site'] = site
 
-                reason = None
-                if r := extra.get('LastHoldReason'):
-                    reason = r
-                elif r := extra.get('RemoveReason'):
-                    reason = r
+                    reason = None
+                    if r := extra.get('LastHoldReason'):
+                        reason = r
+                    elif r := extra.get('RemoveReason'):
+                        reason = r
 
-                # finish job
-                await self.finish(job_id, success=success, resources=resources, stats=stats, reason=reason)
+                    # finish job
+                    tg.create_task(self.finish(job_id, success=success, resources=resources, stats=stats, reason=reason))
 
     @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_check_iceprod', 'IceProd grid check calls'))
     async def check_iceprod(self):
@@ -959,18 +961,19 @@ class Grid(grid.BaseGrid):
         queue_tasks = {j.task_id: j for j in self.jobs.values()}
         server_tasks = await fut
         now = datetime.now(UTC)
-        for task in server_tasks:
-            if task['task_id'] not in queue_tasks:
-                # ignore anything too recent
-                if str2datetime(task['status_changed']) >= now - timedelta(minutes=1):
-                    continue
-                logger.info(f'task {task["dataset_id"]}.{task["task_id"]} in iceprod but not in queue')
-                job = CondorJob(
-                    dataset_id=task['dataset_id'],
-                    task_id=task['task_id'],
-                    instance_id=task['instance_id'],
-                )
-                await self.task_reset(job, reason='task missing from HTCondor queue')
+        async with asyncio.TaskGroup() as tg:
+            for task in server_tasks:
+                if task['task_id'] not in queue_tasks:
+                    # ignore anything too recent
+                    if str2datetime(task['status_changed']) >= now - timedelta(minutes=1):
+                        continue
+                    logger.info(f'task {task["dataset_id"]}.{task["task_id"]} in iceprod but not in queue')
+                    job = CondorJob(
+                        dataset_id=task['dataset_id'],
+                        task_id=task['task_id'],
+                        instance_id=task['instance_id'],
+                    )
+                    tg.create_task(self.task_reset(job, reason='task missing from HTCondor queue'))
 
     @PromWrapper(lambda self: self.prometheus.histogram('iceprod_grid_check_submit_dir', 'IceProd grid check calls'))
     async def check_submit_dir(self, prom_histogram):
