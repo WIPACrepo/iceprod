@@ -17,7 +17,7 @@ import shutil
 import stat
 import subprocess
 import time
-from typing import NamedTuple
+from typing import Generator, NamedTuple
 
 import htcondor  # type: ignore
 from wipac_dev_tools.prometheus_tools import GlobalLabels, AsyncPromWrapper, PromWrapper, AsyncPromTimer, PromTimer
@@ -483,11 +483,14 @@ transfer_output_remaps = $(outremaps)
             ret[job_id] = job
         return ret
 
-    def get_history(self, since=None) -> {CondorJobId: CondorJob}:
+    @PromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_get_history', 'IceProd grid condor.get_history calls'))
+    def get_history(self, since: int | None = None) -> Generator[tuple[CondorJobId, CondorJob], None, None]:
         """
         Get all jobs currently on the condor history.
+
+        Args:
+            since: how far back to look in the history (unix time)
         """
-        ret = {}
         for ad in self.condor_schedd.history(
             constraint=f'IceProdSite =?= "{self.cfg["queue"].get("site", "unknown")}"',
             projection=['ClusterId', 'ProcId'] + self.AD_PROJECTION_HISTORY,
@@ -507,9 +510,9 @@ transfer_output_remaps = $(outremaps)
                 status=status,
                 extra=ad,
             )
-            ret[job_id] = job
-        return ret
+            yield (job_id, job)
 
+    @PromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_remove', 'IceProd grid condor.remove calls'))
     def remove(self, job_id: str | CondorJobId, reason: str | None = None):
         """
         Remove a job from condor.
@@ -894,56 +897,58 @@ class Grid(grid.BaseGrid):
         logger.info('finished cross-check')
 
     @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_check_history', 'IceProd grid check calls'))
-    async def check_history(self):
+    @AsyncPromWrapper(lambda self: self.prometheus.histogram('iceprod_grid_check_history_per_job', 'IceProd grid check history per job'))
+    async def check_history(self, prom_histogram):
         """Check condor_history"""
         now = time.time()
-        hist_jobs = self.submitter.get_history(since=self.last_event_timestamp)
+        hist_jobs_iter = self.submitter.get_history(since=self.last_event_timestamp)
         self.last_event_timestamp = now
-        for job_id, job in hist_jobs.items():
-            if job_id not in self.jobs:
-                self.jobs[job_id] = job
+        for job_id, job in hist_jobs_iter:
+            with prom_histogram.time():
+                if job_id not in self.jobs:
+                    self.jobs[job_id] = job
 
-            logger.info("job %s %s.%s exited on its own from cross-check", job_id, job.dataset_id, job.task_id)
-            extra = job.extra if job.extra else {}
+                logger.info("job %s %s.%s exited on its own from cross-check", job_id, job.dataset_id, job.task_id)
+                extra = job.extra if job.extra else {}
 
-            # get stats
-            cpu = extra.get('CpusUsage', None)
-            if not cpu and (wall := extra.get('LastRemoteWallClockTime', None)):
-                cpu = (extra.get('RemoteSysCpu', 0) + extra.get('RemoteUserCpu', 0)) * 1. / wall
-            gpu = extra.get('GpusUsage', None)
-            memory = extra.get('ResidentSetSize_RAW', None)  # KB
-            disk = extra.get('DiskUsage_RAW', None)  # KB
-            time_ = extra.get('LastRemoteWallClockTime', None)  # seconds
+                # get stats
+                cpu = extra.get('CpusUsage', None)
+                if not cpu and (wall := extra.get('LastRemoteWallClockTime', None)):
+                    cpu = (extra.get('RemoteSysCpu', 0) + extra.get('RemoteUserCpu', 0)) * 1. / wall
+                gpu = extra.get('GpusUsage', None)
+                memory = extra.get('ResidentSetSize_RAW', None)  # KB
+                disk = extra.get('DiskUsage_RAW', None)  # KB
+                time_ = extra.get('LastRemoteWallClockTime', None)  # seconds
 
-            resources = {}
-            if cpu is not None:
-                resources['cpu'] = cpu
-            if gpu is not None:
-                resources['gpu'] = gpu
-            if memory is not None:
-                resources['memory'] = memory/1000000.
-            if disk is not None:
-                resources['disk'] = disk/1000000.
-            if time_ is not None:
-                resources['time'] = time_/3600.
+                resources = {}
+                if cpu is not None:
+                    resources['cpu'] = cpu
+                if gpu is not None:
+                    resources['gpu'] = gpu
+                if memory is not None:
+                    resources['memory'] = memory/1000000.
+                if disk is not None:
+                    resources['disk'] = disk/1000000.
+                if time_ is not None:
+                    resources['time'] = time_/3600.
 
-            success = extra.get('JobStatus') == 4 and extra.get('ExitCode', 1) == 0
-            job.status = JobStatus.COMPLETED if success else JobStatus.FAILED
+                success = extra.get('JobStatus') == 4 and extra.get('ExitCode', 1) == 0
+                job.status = JobStatus.COMPLETED if success else JobStatus.FAILED
 
-            stats = {}
-            if site := extra.get('MachineAttrGLIDEIN_Site0'):
-                stats['site'] = site
-            elif site := extra.get('MATCH_EXP_JOBGLIDEIN_ResourceName'):
-                stats['site'] = site
+                stats = {}
+                if site := extra.get('MachineAttrGLIDEIN_Site0'):
+                    stats['site'] = site
+                elif site := extra.get('MATCH_EXP_JOBGLIDEIN_ResourceName'):
+                    stats['site'] = site
 
-            reason = None
-            if r := extra.get('LastHoldReason'):
-                reason = r
-            elif r := extra.get('RemoveReason'):
-                reason = r
+                reason = None
+                if r := extra.get('LastHoldReason'):
+                    reason = r
+                elif r := extra.get('RemoveReason'):
+                    reason = r
 
-            # finish job
-            await self.finish(job_id, success=success, resources=resources, stats=stats, reason=reason)
+                # finish job
+                await self.finish(job_id, success=success, resources=resources, stats=stats, reason=reason)
 
     @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_check_iceprod', 'IceProd grid check calls'))
     async def check_iceprod(self):
