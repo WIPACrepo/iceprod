@@ -174,8 +174,6 @@ class PilotsHandler(APIBase):
         if not ret:
             self.send_error(404, reason="Pilot not found")
         else:
-            if 'site' in ret and ret['site']:
-                self.module.statsd.incr('site.{}.pilot'.format(ret['site']))
             self.write(ret)
             self.finish()
 
@@ -194,6 +192,4 @@ class PilotsHandler(APIBase):
         if not ret:
             self.send_error(404, reason="Pilot not found")
         else:
-            if 'site' in ret and ret['site']:
-                self.module.statsd.incr('site.{}.pilot_delete'.format(ret['site']))
             self.write({})

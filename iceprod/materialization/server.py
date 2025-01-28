@@ -366,7 +366,7 @@ class Server:
             i = Info('iceprod', 'IceProd information')
             i.info({
                 'version': version_string,
-                'type': 'api',
+                'type': 'materialization',
             })
 
         for collection in self.indexes:

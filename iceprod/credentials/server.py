@@ -519,7 +519,7 @@ class Server:
             i = Info('iceprod', 'IceProd information')
             i.info({
                 'version': version_string,
-                'type': 'api',
+                'type': 'credentials',
             })
 
         for collection in self.indexes:

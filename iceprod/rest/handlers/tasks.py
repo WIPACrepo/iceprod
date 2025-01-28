@@ -762,7 +762,6 @@ class TasksActionsQueueHandler(APIBase):
             logger.info('filter_query: %r', filter_query)
             self.send_error(404, reason="Task not found")
         else:
-            self.statsd.incr('site.{}.task_queued'.format(site))
             self.write(ret)
             self.finish()
 
@@ -903,25 +902,6 @@ class TasksActionsErrorHandler(APIBase):
             if 'site' in data:
                 site = data['site']
                 update_query['$set']['site'] = site
-            if self.statsd and 'reason' in data and data['reason']:
-                reason = 'other'
-                reasons = [
-                    ('Exception: failed to download', 'download_failure'),
-                    ('Exception: failed to upload', 'upload_failure'),
-                    ('Exception: module failed', 'module_failure'),
-                    ('Resource overusage for cpu', 'cpu_overuse'),
-                    ('Resource overusage for gpu', 'gpu_overuse'),
-                    ('Resource overusage for memory', 'memory_overuse'),
-                    ('Resource overusage for disk', 'disk_overuse'),
-                    ('Resource overusage for time', 'time_overuse'),
-                    ('pilot SIGTERM', 'sigterm'),
-                    ('killed', 'killed'),
-                ]
-                for text,r in reasons:
-                    if text in data['reason']:
-                        reason = r
-                        break
-                self.statsd.incr('site.{}.task_{}.{}'.format(site, self.final_status, reason))
 
         ret = await self.db.tasks.find_one_and_update(
             filter_query,
@@ -985,11 +965,8 @@ class TasksActionsCompleteHandler(APIBase):
 
         if 'time_used' in data:
             update_query['$set']['walltime'] = data['time_used']/3600.
-        site = 'unknown'
         if 'site' in data:
-            site = data['site']
-            update_query['$set']['site'] = site
-        self.statsd.incr('site.{}.task_complete'.format(site))
+            update_query['$set']['site'] = data['site']
 
         ret = await self.db.tasks.find_one_and_update(
             filter_query,
