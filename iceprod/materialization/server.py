@@ -342,7 +342,7 @@ class Server:
         self.materialization_service = MaterializationService(self.db, rest_client)
         self.materialization_service_task = None
 
-        kwargs = IceProdRestConfig(rest_config, statsd=statsd, database=self.db)
+        kwargs = IceProdRestConfig(rest_config, database=self.db)
         kwargs['materialization_service'] = self.materialization_service
         kwargs['rest_client'] = rest_client
 
