@@ -2,6 +2,15 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.45 (2025-01-28)
+
+### Other
+
+* <bot> update requirements.txt ([`0ac4eaa`](https://github.com/WIPACrepo/iceprod/commit/0ac4eaa529c1f2e500f2a9894c27f0376a2c1640))
+* <bot> update requirements-tests.txt ([`3d40320`](https://github.com/WIPACrepo/iceprod/commit/3d40320c08ca396473a98d4a47aab4417da54224))
+* <bot> update requirements-docs.txt ([`b907c09`](https://github.com/WIPACrepo/iceprod/commit/b907c097f722fa4692a3e6e927a93a32a678109d))
+* Add prometheus metrics ([#418](https://github.com/WIPACrepo/iceprod/issues/418)) ([`6e51584`](https://github.com/WIPACrepo/iceprod/commit/6e51584c6c8638d92a8eb385b6cf43bac35cc8e1))
+
 ## v3.0.44 (2025-01-21)
 
 ### Other
