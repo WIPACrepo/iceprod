@@ -107,6 +107,7 @@ RESET_STDERR_REASONS = [
     'segmentation fault (core dumped)',
     'operation timed out',
     'connection timed out',
+    'globus_ftp_client: the operation was aborted',
     # GPU errors
     'opencl error: could not set up context',
     'opencl error: could build the opencl program',
