@@ -30,6 +30,7 @@ from rest_tools.server import catch_error, RestServer, RestHandlerSetup, RestHan
 from wipac_dev_tools import from_environment
 
 from iceprod import __version__ as version_string
+from iceprod.prom_utils import PromRequestMixin
 from iceprod.roles_groups import GROUPS
 from iceprod.core.config import CONFIG_SCHEMA as DATASET_SCHEMA
 from iceprod.server.config import CONFIG_SCHEMA as SERVER_SCHEMA
@@ -187,14 +188,14 @@ class TokenStorageMixin:
         self.clear_cookie('iceprod_username')
 
 
-class Login(TokenStorageMixin, OpenIDLoginHandler):
+class Login(TokenStorageMixin, PromRequestMixin, OpenIDLoginHandler):
     def initialize(self, cred_rest_client=None, full_url=None, **kwargs):
         super().initialize(**kwargs)
         self.cred_rest_client = cred_rest_client
         self.full_url = full_url
 
 
-class PublicHandler(TokenStorageMixin, RestHandler):
+class PublicHandler(TokenStorageMixin, PromRequestMixin, RestHandler):
     """Default Handler"""
     def initialize(self, rest_api=None, cred_rest_client=None, system_rest_client=None, full_url=None, **kwargs):
         """
