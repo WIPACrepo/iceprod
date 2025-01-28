@@ -1,7 +1,7 @@
 import logging
 import time
 
-from prometheus_client import Counter, Gauge, Histogram
+from prometheus_client import Histogram
 from rest_tools.server import RestHandlerSetup, RestHandler
 
 import iceprod
