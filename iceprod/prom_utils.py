@@ -17,6 +17,9 @@ class HistogramBuckets:
     #: Timer bucket up to 1 second
     SECOND = [.0001, .0005, .001, .0025, .005, .0075, .01, .025, .05, .075, .1, .25, .5, .75, 1]
 
+    #: Timer bucket up to 10 seconds
+    TENSECOND = [.001, .0025, .005, .0075, .01, .025, .05, .075, .1, .25, .5, .75, 1, 2.5, 5, 10]
+
     #: Timer bucket up to 1 minute
     MINUTE = [.1, .5, 1, 2.5, 5, 7.5, 10, 15, 20, 25, 30, 45, 60]
 

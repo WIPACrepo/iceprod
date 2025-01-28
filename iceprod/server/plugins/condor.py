@@ -957,10 +957,10 @@ class Grid(grid.BaseGrid):
 
                 # do timing manually to also count generator time per job
                 next_time = time.monotonic()
-                prom_histogram.observe(last_time - next_time)
+                prom_histogram.observe(next_time - last_time)
                 last_time = next_time
 
-    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_check_iceprod', 'IceProd grid check calls', buckets=HistogramBuckets.MINUTE))
+    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_check_iceprod', 'IceProd grid check calls', buckets=HistogramBuckets.TENSECOND))
     async def check_iceprod(self):
         """
         Sync with iceprod server status.
@@ -983,7 +983,7 @@ class Grid(grid.BaseGrid):
                     )
                     tg.create_task(self.task_reset(job, reason='task missing from HTCondor queue'))
 
-    @PromWrapper(lambda self: self.prometheus.histogram('iceprod_grid_check_submit_dir', 'IceProd grid check calls', buckets=HistogramBuckets.MINUTE))
+    @PromWrapper(lambda self: self.prometheus.histogram('iceprod_grid_check_submit_dir', 'IceProd grid check calls', buckets=HistogramBuckets.TENSECOND))
     async def check_submit_dir(self, prom_histogram):
         """
         Return directory paths that should be cleaned up.
