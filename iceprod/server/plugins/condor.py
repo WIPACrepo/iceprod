@@ -24,6 +24,7 @@ from wipac_dev_tools.prometheus_tools import GlobalLabels, AsyncPromWrapper, Pro
 
 from iceprod.core.config import Task
 from iceprod.core.exe import WriteToScript, Transfer
+from iceprod.prom_utils import HistogramBuckets
 from iceprod.server.config import IceProdConfig
 from iceprod.server import grid
 from iceprod.server.util import str2datetime
@@ -311,8 +312,9 @@ class CondorSubmit:
         path.mkdir(parents=True)
         return path
 
-    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_submit', 'IceProd grid condor.submit calls'))
-    async def submit(self, tasks: list[Task], jel: Path) -> dict[CondorJobId, CondorJob]:
+    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_submit', 'IceProd grid condor.submit calls', buckets=HistogramBuckets.MINUTE))
+    @AsyncPromWrapper(lambda self: self.prometheus.histogram('iceprod_grid_condor_schedd_submit', 'IceProd grid htcondor.schedd.submit calls', buckets=HistogramBuckets.MINUTE))
+    async def submit(self, prom_histogram, tasks: list[Task], jel: Path) -> dict[CondorJobId, CondorJob]:
         """
         Submit multiple jobs to Condor as a single batch.
 
@@ -441,8 +443,9 @@ transfer_output_remaps = $(outremaps)
 
         logger.debug("submitfile:\n%s", submitfile)
 
-        s = htcondor.Submit(submitfile)
-        submit_result = self.condor_schedd.submit(s, count=1, itemdata=s.itemdata())
+        with prom_histogram.time():
+            s = htcondor.Submit(submitfile)
+            submit_result = self.condor_schedd.submit(s, count=1, itemdata=s.itemdata())
 
         cluster_id = int(submit_result.cluster())
         ret = {}
@@ -455,8 +458,8 @@ transfer_output_remaps = $(outremaps)
             )
         return ret
 
-    @PromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_get_jobs', 'IceProd grid condor.get_jobs calls'))
-    def get_jobs(self) -> {CondorJobId: CondorJob}:
+    @PromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_get_jobs', 'IceProd grid condor.get_jobs calls', buckets=HistogramBuckets.MINUTE))
+    def get_jobs(self) -> dict[CondorJobId: CondorJob]:
         """
         Get all jobs currently on the condor queue.
         """
@@ -483,7 +486,7 @@ transfer_output_remaps = $(outremaps)
             ret[job_id] = job
         return ret
 
-    @PromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_get_history', 'IceProd grid condor.get_history calls'))
+    @PromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_get_history', 'IceProd grid condor.get_history calls', buckets=HistogramBuckets.MINUTE))
     def get_history(self, since: int | None = None) -> Generator[tuple[CondorJobId, CondorJob], None, None]:
         """
         Get all jobs currently on the condor history.
@@ -512,7 +515,7 @@ transfer_output_remaps = $(outremaps)
             )
             yield (job_id, job)
 
-    @PromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_remove', 'IceProd grid condor.remove calls'))
+    @PromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_remove', 'IceProd grid condor.remove calls', buckets=HistogramBuckets.SECOND))
     def remove(self, job_id: str | CondorJobId, reason: str | None = None):
         """
         Remove a job from condor.
@@ -589,7 +592,7 @@ class Grid(grid.BaseGrid):
 
     # Submit to Condor #
 
-    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_submit', 'IceProd grid submit calls'))
+    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_submit', 'IceProd grid submit calls', buckets=HistogramBuckets.TENMINUTE))
     @AsyncPromWrapper(lambda self: self.prometheus.counter('iceprod_grid_submit_datasets', 'IceProd grid submit dataset counter', labels=['dataset', 'task', 'success'], finalize=False))
     async def submit(self, prom_counter):
         num_to_submit = self.get_queue_num()
@@ -897,62 +900,67 @@ class Grid(grid.BaseGrid):
 
         logger.info('finished cross-check')
 
-    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_check_history', 'IceProd grid check calls'))
-    @AsyncPromWrapper(lambda self: self.prometheus.histogram('iceprod_grid_check_history_per_job', 'IceProd grid check history per job'))
+    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_check_history', 'IceProd grid check calls', buckets=HistogramBuckets.MINUTE))
+    @AsyncPromWrapper(lambda self: self.prometheus.histogram('iceprod_grid_check_history_per_job', 'IceProd grid check history per job', buckets=HistogramBuckets.SECOND))
     async def check_history(self, prom_histogram):
         """Check condor_history"""
         now = time.time()
         hist_jobs_iter = self.submitter.get_history(since=self.last_event_timestamp)
         self.last_event_timestamp = now
         async with asyncio.TaskGroup() as tg:
+            last_time = time.monotonic()
             for job_id, job in hist_jobs_iter:
-                with prom_histogram.time():
-                    if job_id not in self.jobs:
-                        self.jobs[job_id] = job
+                if job_id not in self.jobs:
+                    self.jobs[job_id] = job
 
-                    logger.info("job %s %s.%s exited on its own from cross-check", job_id, job.dataset_id, job.task_id)
-                    extra = job.extra if job.extra else {}
+                logger.info("job %s %s.%s exited on its own from cross-check", job_id, job.dataset_id, job.task_id)
+                extra = job.extra if job.extra else {}
 
-                    # get stats
-                    cpu = extra.get('CpusUsage', None)
-                    if not cpu and (wall := extra.get('LastRemoteWallClockTime', None)):
-                        cpu = (extra.get('RemoteSysCpu', 0) + extra.get('RemoteUserCpu', 0)) * 1. / wall
-                    gpu = extra.get('GpusUsage', None)
-                    memory = extra.get('ResidentSetSize_RAW', None)  # KB
-                    disk = extra.get('DiskUsage_RAW', None)  # KB
-                    time_ = extra.get('LastRemoteWallClockTime', None)  # seconds
+                # get stats
+                cpu = extra.get('CpusUsage', None)
+                if not cpu and (wall := extra.get('LastRemoteWallClockTime', None)):
+                    cpu = (extra.get('RemoteSysCpu', 0) + extra.get('RemoteUserCpu', 0)) * 1. / wall
+                gpu = extra.get('GpusUsage', None)
+                memory = extra.get('ResidentSetSize_RAW', None)  # KB
+                disk = extra.get('DiskUsage_RAW', None)  # KB
+                time_ = extra.get('LastRemoteWallClockTime', None)  # seconds
 
-                    resources = {}
-                    if cpu is not None:
-                        resources['cpu'] = cpu
-                    if gpu is not None:
-                        resources['gpu'] = gpu
-                    if memory is not None:
-                        resources['memory'] = memory/1000000.
-                    if disk is not None:
-                        resources['disk'] = disk/1000000.
-                    if time_ is not None:
-                        resources['time'] = time_/3600.
+                resources = {}
+                if cpu is not None:
+                    resources['cpu'] = cpu
+                if gpu is not None:
+                    resources['gpu'] = gpu
+                if memory is not None:
+                    resources['memory'] = memory/1000000.
+                if disk is not None:
+                    resources['disk'] = disk/1000000.
+                if time_ is not None:
+                    resources['time'] = time_/3600.
 
-                    success = extra.get('JobStatus') == 4 and extra.get('ExitCode', 1) == 0
-                    job.status = JobStatus.COMPLETED if success else JobStatus.FAILED
+                success = extra.get('JobStatus') == 4 and extra.get('ExitCode', 1) == 0
+                job.status = JobStatus.COMPLETED if success else JobStatus.FAILED
 
-                    stats = {}
-                    if site := extra.get('MachineAttrGLIDEIN_Site0'):
-                        stats['site'] = site
-                    elif site := extra.get('MATCH_EXP_JOBGLIDEIN_ResourceName'):
-                        stats['site'] = site
+                stats = {}
+                if site := extra.get('MachineAttrGLIDEIN_Site0'):
+                    stats['site'] = site
+                elif site := extra.get('MATCH_EXP_JOBGLIDEIN_ResourceName'):
+                    stats['site'] = site
 
-                    reason = None
-                    if r := extra.get('LastHoldReason'):
-                        reason = r
-                    elif r := extra.get('RemoveReason'):
-                        reason = r
+                reason = None
+                if r := extra.get('LastHoldReason'):
+                    reason = r
+                elif r := extra.get('RemoveReason'):
+                    reason = r
 
-                    # finish job
-                    tg.create_task(self.finish(job_id, success=success, resources=resources, stats=stats, reason=reason))
+                # finish job
+                tg.create_task(self.finish(job_id, success=success, resources=resources, stats=stats, reason=reason))
 
-    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_check_iceprod', 'IceProd grid check calls'))
+                # do timing manually to also count generator time per job
+                next_time = time.monotonic()
+                prom_histogram.observe(last_time - next_time)
+                last_time = next_time
+
+    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_check_iceprod', 'IceProd grid check calls', buckets=HistogramBuckets.MINUTE))
     async def check_iceprod(self):
         """
         Sync with iceprod server status.
@@ -975,7 +983,7 @@ class Grid(grid.BaseGrid):
                     )
                     tg.create_task(self.task_reset(job, reason='task missing from HTCondor queue'))
 
-    @PromWrapper(lambda self: self.prometheus.histogram('iceprod_grid_check_submit_dir', 'IceProd grid check calls'))
+    @PromWrapper(lambda self: self.prometheus.histogram('iceprod_grid_check_submit_dir', 'IceProd grid check calls', buckets=HistogramBuckets.MINUTE))
     async def check_submit_dir(self, prom_histogram):
         """
         Return directory paths that should be cleaned up.

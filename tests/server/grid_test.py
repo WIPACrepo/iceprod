@@ -24,9 +24,10 @@ def test_grid_init():
     assert 'gpu' not in g.site_requirements
 
     pprint(list(REGISTRY.collect()))
-    metric = REGISTRY.get_sample_value('iceprod_site_info', {
+    metric = REGISTRY.get_sample_value('iceprod_info', {
         'name': 'bar',
-        'type': 'test',
+        'type': 'grid',
+        'queue_type': 'test',
         'version': version_string,
         'exclusive': 'False',
     })
@@ -42,9 +43,10 @@ def test_grid_init_gpu():
     assert 'gpu' in g.site_requirements
 
     pprint(list(REGISTRY.collect()))
-    metric = REGISTRY.get_sample_value('iceprod_site_info', {
+    metric = REGISTRY.get_sample_value('iceprod_info', {
         'name': 'grid-gpu',
-        'type': 'test',
+        'type': 'grid',
+        'queue_type': 'test',
         'version': version_string,
         'exclusive': 'False',
     })
