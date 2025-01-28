@@ -23,7 +23,7 @@ logger = logging.getLogger('dataset_monitor')
 TASKS_IN_PARALLEL = 100
 
 
-CronDuration = Histogram('iceprod_cron_duration_seconds', 'cron duration in seconds', labelnames=('name'), buckets=HistogramBuckets.MINUTE)
+CronDuration = Histogram('iceprod_cron_duration_seconds', 'cron duration in seconds', labelnames=('name',), buckets=HistogramBuckets.MINUTE)
 
 DatasetMonitorDuration = Histogram('iceprod_cron_bydataset_duration_seconds', 'cron duration by dataset in seconds', labelnames=('name', 'dataset'), buckets=HistogramBuckets.TENSECOND)
 
@@ -31,7 +31,7 @@ JobGauge = Gauge('iceprod_jobs', 'job statuses', labelnames=('dataset', 'status'
 
 TaskGauge = Gauge('iceprod_tasks', 'task statuses', labelnames=('dataset', 'taskname', 'status'))
 
-FutureResourcesGauge = Gauge('iceprod_future_resources_hours', 'estimate on future resources need in hours', labelnames=('resource'))
+FutureResourcesGauge = Gauge('iceprod_future_resources_hours', 'estimate on future resources need in hours', labelnames=('resource',))
 
 
 async def process_dataset(rest_client, dataset_id):
