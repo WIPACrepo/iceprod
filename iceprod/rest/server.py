@@ -9,12 +9,13 @@ from pathlib import Path
 import pkgutil
 
 import motor.motor_asyncio
+from prometheus_client import Info, start_http_server
 from rest_tools.server import RestServer
 from tornado.web import RequestHandler, HTTPError
 from wipac_dev_tools import from_environment
 
+from iceprod import __version__ as version_string
 from ..s3 import boto3, S3
-from ..server.module import FakeStatsClient, StatsClientIgnoreErrors
 from .base_handler import IceProdRestConfig
 
 logger = logging.getLogger('rest-server')
@@ -41,8 +42,7 @@ class Server:
             'DB_URL': 'mongodb://localhost/iceprod',
             'DB_TIMEOUT': 60,
             'DB_WRITE_CONCERN': 1,
-            'STATSD_ADDRESS': '',
-            'STATSD_PREFIX': 'rest_api',
+            'PROMETHEUS_PORT': 0,
             'S3_ADDRESS': '',
             'S3_ACCESS_KEY': '',
             'S3_SECRET_KEY': '',
@@ -79,17 +79,8 @@ class Server:
         else:
             raise RuntimeError('OPENID_URL not specified, and CI_TESTING not enabled!')
 
-        statsd = FakeStatsClient()
-        if config['STATSD_ADDRESS']:
-            try:
-                addr = config['STATSD_ADDRESS']
-                port = 8125
-                if ':' in addr:
-                    addr,port = addr.split(':')
-                    port = int(port)
-                statsd = StatsClientIgnoreErrors(addr, port=port, prefix=config['STATSD_PREFIX'])
-            except Exception:
-                logger.warning('failed to connect to statsd: %r', config['STATSD_ADDRESS'], exc_info=True)
+        # enable monitoring
+        self.prometheus_port = config['PROMETHEUS_PORT'] if config['PROMETHEUS_PORT'] > 0 else None
 
         s3conn = None
         if s3_override:
@@ -111,7 +102,7 @@ class Server:
         logging.info(f'DB name: {db_name}')
         self.indexes = defaultdict(partial(defaultdict, dict))
 
-        kwargs = IceProdRestConfig(rest_config, statsd=statsd, database=self.db, s3conn=s3conn)
+        kwargs = IceProdRestConfig(rest_config, database=self.db, s3conn=s3conn)
 
         server = RestServer(debug=config['DEBUG'], max_body_size=config['MAX_BODY_SIZE'])
 
@@ -136,6 +127,15 @@ class Server:
         self.server = server
 
     async def start(self):
+        if self.prometheus_port:
+            logging.info("starting prometheus on {}", self.prometheus_port)
+            start_http_server(self.prometheus_port)
+            i = Info('iceprod', 'IceProd information')
+            i.info({
+                'version': version_string,
+                'type': 'api',
+            })
+
         for database in self.indexes:
             db = self.db[database]
             for collection in self.indexes[database]:
