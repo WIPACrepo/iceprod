@@ -2,6 +2,7 @@
 Some Prometheus utilities.
 """
 
+
 class HistogramBuckets:
     """Prometheus histogram buckets"""
 
