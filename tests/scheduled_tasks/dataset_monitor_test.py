@@ -35,29 +35,22 @@ async def test_200_run():
             raise Exception()
     client.called = False
     rc.request = client
-    mon = MagicMock()
 
-    await dataset_monitor.run(rc, mon, debug=True)
+    await dataset_monitor.run(rc, debug=True)
     assert client.called
-    assert mon.gauge.called
 
     jobs['processing'] = 1
-    mon.reset_mock()
-    await dataset_monitor.run(rc, mon, debug=True)
-    assert mon.gauge.called
+    await dataset_monitor.run(rc, debug=True)
 
     tasks['generate']['queued'] = 1
-    mon.reset_mock()
-    await dataset_monitor.run(rc, mon, debug=True)
-    assert mon.gauge.called
+    await dataset_monitor.run(rc, debug=True)
 
 
 async def test_201_run():
     rc = MagicMock()
     rc.request = AsyncMock(side_effect=Exception())
-    mon = MagicMock()
     with pytest.raises(Exception):
-        await dataset_monitor.run(rc, mon, debug=True)
+        await dataset_monitor.run(rc, debug=True)
 
     # check it normally hides the error
-    await dataset_monitor.run(rc, mon, debug=False)
+    await dataset_monitor.run(rc, debug=False)

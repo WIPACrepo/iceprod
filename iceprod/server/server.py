@@ -12,6 +12,8 @@ import logging
 import os
 import sys
 
+from prometheus_client import start_http_server
+
 from iceprod import __version__ as version_string
 from iceprod.core.logger import set_log_level
 from iceprod.server.config import IceProdConfig
@@ -50,6 +52,8 @@ class Server(object):
             await asyncio.sleep(3600)
 
     async def run(self):
+        if self.cfg.get('prometheus', {}).get('enable', False):
+            start_http_server(self.cfg['prometheus']['port'])
         self.rotate_logs_task = asyncio.create_task(self.rotate_logs())
         try:
             await self.queue.run()

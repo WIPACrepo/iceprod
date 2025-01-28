@@ -6,6 +6,7 @@ from datetime import datetime
 import logging
 import time
 
+from prometheus_client import Info, start_http_server
 import pymongo
 import pymongo.errors
 import motor.motor_asyncio
@@ -16,9 +17,9 @@ from tornado.web import HTTPError
 from tornado.web import RequestHandler as TornadoRequestHandler
 from wipac_dev_tools import from_environment
 
+from iceprod import __version__ as version_string
 from iceprod.rest.auth import authorization
 from iceprod.rest.base_handler import IceProdRestConfig, APIBase
-from iceprod.server.module import FakeStatsClient, StatsClientIgnoreErrors
 from iceprod.server.util import nowstr, datetime2str
 from .service import RefreshService, get_expiration, is_expired
 
@@ -427,8 +428,7 @@ class Server:
             'DB_URL': 'mongodb://localhost/creds',
             'DB_TIMEOUT': 60,
             'DB_WRITE_CONCERN': 1,
-            'STATSD_ADDRESS': '',
-            'STATSD_PREFIX': 'credentials',
+            'PROMETHEUS_PORT': 0,
             'CI_TESTING': '',
         }
         config = from_environment(default_config)
@@ -453,17 +453,8 @@ class Server:
         else:
             raise RuntimeError('OPENID_URL not specified, and CI_TESTING not enabled!')
 
-        statsd = FakeStatsClient()
-        if config['STATSD_ADDRESS']:
-            try:
-                addr = config['STATSD_ADDRESS']
-                port = 8125
-                if ':' in addr:
-                    addr,port = addr.split(':')
-                    port = int(port)
-                statsd = StatsClientIgnoreErrors(addr, port=port, prefix=config['STATSD_PREFIX'])
-            except Exception:
-                logger.warning('failed to connect to statsd: %r', config['STATSD_ADDRESS'], exc_info=True)
+        # enable monitoring
+        self.prometheus_port = config['PROMETHEUS_PORT'] if config['PROMETHEUS_PORT'] > 0 else None
 
         logging_url = config["DB_URL"].split('@')[-1] if '@' in config["DB_URL"] else config["DB_URL"]
         logging.info(f'DB: {logging_url}')
@@ -506,7 +497,7 @@ class Server:
         )
         self.refresh_service_task = None
 
-        kwargs = IceProdRestConfig(rest_config, statsd=statsd, database=self.db)
+        kwargs = IceProdRestConfig(rest_config, database=self.db)
         kwargs['refresh_service'] = self.refresh_service
         kwargs['rest_client'] = rest_client
 
@@ -522,6 +513,15 @@ class Server:
         self.server = server
 
     async def start(self):
+        if self.prometheus_port:
+            logging.info("starting prometheus on {}", self.prometheus_port)
+            start_http_server(self.prometheus_port)
+            i = Info('iceprod', 'IceProd information')
+            i.info({
+                'version': version_string,
+                'type': 'credentials',
+            })
+
         for collection in self.indexes:
             existing = await self.db[collection].index_information()
             for name in self.indexes[collection]:

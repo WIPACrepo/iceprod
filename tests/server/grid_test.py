@@ -1,10 +1,13 @@
 import asyncio
 from dataclasses import dataclass
+from pprint import pprint
 from unittest.mock import MagicMock, AsyncMock
 
+from prometheus_client import REGISTRY
 import pytest
 import requests.exceptions
 
+from iceprod import __version__ as version_string
 from iceprod.core.resources import Resources
 from iceprod.core.config import Dataset, Job, Task
 import iceprod.server.config
@@ -12,13 +15,23 @@ import iceprod.server.grid
 
 
 def test_grid_init():
-    override = ['queue.type=test']
+    override = ['queue.type=test', 'queue.site=bar']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
     rc = MagicMock()
     g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
 
     assert 'gpu' not in g.site_requirements
+
+    pprint(list(REGISTRY.collect()))
+    metric = REGISTRY.get_sample_value('iceprod_info', {
+        'name': 'bar',
+        'type': 'grid',
+        'queue_type': 'test',
+        'version': version_string,
+        'exclusive': 'False',
+    })
+    assert metric == 1
 
 def test_grid_init_gpu():
     override = ['queue.type=test', 'queue.site=grid-gpu']
@@ -28,6 +41,16 @@ def test_grid_init_gpu():
     g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
 
     assert 'gpu' in g.site_requirements
+
+    pprint(list(REGISTRY.collect()))
+    metric = REGISTRY.get_sample_value('iceprod_info', {
+        'name': 'grid-gpu',
+        'type': 'grid',
+        'queue_type': 'test',
+        'version': version_string,
+        'exclusive': 'False',
+    })
+    assert metric == 1
 
 def test_grid_init_exclusive():
     override = ['queue.type=test', 'queue.site=grid', 'queue.exclusive=true']

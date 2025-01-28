@@ -15,12 +15,16 @@ from typing import Any, Protocol
 from asyncache import cachedmethod  # type: ignore
 from cachetools import TTLCache
 from cachetools.func import ttl_cache
+from prometheus_client import Info
 import requests.exceptions
+from wipac_dev_tools.prometheus_tools import GlobalLabels, AsyncPromWrapper, AsyncPromTimer
 
+from iceprod import __version__ as version_string
 from iceprod.core import functions
 from iceprod.core.config import Task, Job, Dataset
 from iceprod.core.defaults import add_default_options
 from iceprod.core.resources import Resources
+from iceprod.prom_utils import HistogramBuckets
 from iceprod.server.states import JOB_STATUS_START
 from iceprod.server.util import nowstr
 
@@ -84,15 +88,31 @@ class BaseGrid:
         # dataset lookup cache
         self.dataset_cache = TTLCache(maxsize=100, ttl=60)
 
+        i = Info('iceprod', 'IceProd information')
+        i.info({
+            'name': str(self.site),
+            'type': 'grid',
+            'queue_type': queue_cfg.get('type',''),
+            'version': version_string,
+            'exclusive': str(queue_cfg.get('exclusive', False)),
+        })
+
+        self.prometheus = GlobalLabels({
+            'site': str(self.site),
+            'type': queue_cfg.get('type',''),
+            'gpu': str(self.site_requirements.get('gpu', 0)),
+        })
+
     # Functions to override #
 
     async def run(self):
         """Override the `ActiveJobs` and `JobActions` batch submission / monitoring classes"""
         raise NotImplementedError()
 
-    # Commong functions #
+    # Common functions #
 
     @cachedmethod(lambda self: self.dataset_cache)
+    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_dataset_lookup', 'IceProd grid.dataset_lookup calls', buckets=HistogramBuckets.SECOND))
     async def dataset_lookup(self, dataset_id: str) -> Dataset:
         """
         Lookup a dataset fromn the REST API.
@@ -110,7 +130,9 @@ class BaseGrid:
         ret.validate()
         return ret
 
-    async def get_tasks_to_queue(self, num: int) -> list[Task]:
+    @AsyncPromWrapper(lambda self: self.prometheus.counter('iceprod_grid_queue_tasks', 'IceProd grid tasks queued', labels=['step'], finalize=False))
+    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_tasks_to_queue', 'IceProd grid.tasks_to_queue calls'))
+    async def get_tasks_to_queue(self, prom_counter, num: int) -> list[Task]:
         """
         Get new tasks to queue from the REST API.
 
@@ -136,6 +158,8 @@ class BaseGrid:
                 raise
             else:
                 futures.add(asyncio.create_task(self._convert_to_task(ret)))
+
+        prom_counter.labels({'step': 'raw'}).inc(tasks_queued)
         logging.info('got %d tasks to queue', tasks_queued)
 
         tasks = []
@@ -151,6 +175,10 @@ class BaseGrid:
                 logger.warning('cannot get task resources for %s.%s', task.dataset.dataset_id, task.task_id, exc_info=True)
                 continue
             tasks.append(task)
+
+        tasks_queued2 = len(tasks)
+        prom_counter.labels({'step': 'processed'}).inc(tasks_queued2)
+        logging.info('got %d Task objects to queue', tasks_queued2)
 
         return tasks
 
@@ -224,7 +252,8 @@ class BaseGrid:
         resource.update(values)
         return resource
 
-    async def get_tasks_on_queue(self) -> list:
+    @AsyncPromWrapper(lambda self: self.prometheus.gauge('iceprod_grid_tasks', 'IceProd grid tasks IceProd thinks are on the queue'))
+    async def get_tasks_on_queue(self, prom_gauge) -> list:
         """
         Get all tasks that are "assigned" to this queue.
 
@@ -238,7 +267,9 @@ class BaseGrid:
         }
         try:
             tasks = await self.rest_client.request('GET', '/tasks', args)
-            return tasks['tasks']
+            ret = tasks['tasks']
+            prom_gauge.set(len(ret))
+            return ret
         except requests.exceptions.HTTPError:
             logger.warning('cannot get tasks on queue', exc_info=True)
             return []
@@ -294,6 +325,7 @@ class BaseGrid:
         except requests.exceptions.HTTPError:
             logger.warning('cannot upload stats', exc_info=True)
 
+    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_task_idle', 'IceProd grid.task_idle calls', buckets=HistogramBuckets.MINUTE))
     async def task_idle(self, task: GridTask):
         """
         Tell IceProd API a task is now idle on the queue (put back to "queue" status).
@@ -314,6 +346,7 @@ class BaseGrid:
             if e.response.status_code != 404:
                 raise
 
+    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_task_processing', 'IceProd grid.task_processing calls', buckets=HistogramBuckets.MINUTE))
     async def task_processing(self, task: GridTask, site: str | None = None):
         """
         Tell IceProd API a task is now processing (put in the "processing" status).
@@ -336,6 +369,7 @@ class BaseGrid:
             if e.response.status_code != 404:
                 raise
 
+    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_task_reset', 'IceProd grid.task_reset calls', buckets=HistogramBuckets.MINUTE))
     async def task_reset(self, task: GridTask, reason: str | None = None, stats: dict | None = None):
         """
         Tell IceProd API a task should be reset back to the "waiting" status.
@@ -366,6 +400,7 @@ class BaseGrid:
             if reason:
                 await self._upload_log(task, 'stdlog', reason)
 
+    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_task_failure', 'IceProd grid.task_failure calls', buckets=HistogramBuckets.MINUTE))
     async def task_failure(self, task: GridTask, reason: str | None = None, stats: dict | None = None, stdout: Path | None = None, stderr: Path | None = None):
         """
         Tell IceProd API a task should be put in the "failed" status.
@@ -410,6 +445,7 @@ class BaseGrid:
             if reason:
                 await self._upload_log(task, 'stdlog', reason)
 
+    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_task_success', 'IceProd grid.task_success calls', buckets=HistogramBuckets.MINUTE))
     async def task_success(self, task: GridTask, stats: dict | None = None, stdout: Path | None = None, stderr: Path | None = None):
         """
         Tell IceProd API a task was successfully completed.

@@ -19,6 +19,7 @@ from urllib.parse import urlencode
 from iceprod.core.jsonUtil import json_encode
 
 from cachetools.func import ttl_cache
+from prometheus_client import Info, start_http_server
 import tornado.web
 import tornado.httpserver
 import tornado.gen
@@ -26,16 +27,15 @@ import jwt
 import tornado.concurrent
 from rest_tools.client import RestClient, ClientCredentialsAuth
 from rest_tools.server import catch_error, RestServer, RestHandlerSetup, RestHandler, OpenIDLoginHandler
-from rest_tools import telemetry as wtt
 from wipac_dev_tools import from_environment
 
-import iceprod
+from iceprod import __version__ as version_string
+from iceprod.prom_utils import PromRequestMixin
 from iceprod.roles_groups import GROUPS
 from iceprod.core.config import CONFIG_SCHEMA as DATASET_SCHEMA
 from iceprod.server.config import CONFIG_SCHEMA as SERVER_SCHEMA
 import iceprod.core.functions
 from iceprod.server import documentation
-from iceprod.server.module import FakeStatsClient, StatsClientIgnoreErrors
 import iceprod.server.states
 from iceprod.server.util import datetime2str, nowstr
 
@@ -188,27 +188,25 @@ class TokenStorageMixin:
         self.clear_cookie('iceprod_username')
 
 
-class Login(TokenStorageMixin, OpenIDLoginHandler):
+class Login(TokenStorageMixin, PromRequestMixin, OpenIDLoginHandler):
     def initialize(self, cred_rest_client=None, full_url=None, **kwargs):
         super().initialize(**kwargs)
         self.cred_rest_client = cred_rest_client
         self.full_url = full_url
 
 
-class PublicHandler(TokenStorageMixin, RestHandler):
+class PublicHandler(TokenStorageMixin, PromRequestMixin, RestHandler):
     """Default Handler"""
-    def initialize(self, statsd=None, rest_api=None, cred_rest_client=None, system_rest_client=None, full_url=None, **kwargs):
+    def initialize(self, rest_api=None, cred_rest_client=None, system_rest_client=None, full_url=None, **kwargs):
         """
         Get some params from the website module
 
-        :param statsd: statsd client
         :param rest_api: the rest api url
         :param cred_rest_client: the rest api url for the cred service
         :param system_rest_client: the rest client for the system role
         :param full_url: the full base url for the website
         """
         super().initialize(**kwargs)
-        self.statsd = statsd
         self.rest_api = rest_api
         self.cred_rest_client = cred_rest_client
         self.system_rest_client = system_rest_client
@@ -217,7 +215,7 @@ class PublicHandler(TokenStorageMixin, RestHandler):
 
     def get_template_namespace(self):
         namespace = super().get_template_namespace()
-        namespace['version'] = iceprod.__version__
+        namespace['version'] = version_string
         namespace['section'] = self.request.uri.lstrip('/').split('?')[0].split('/')[0]
         namespace['json_encode'] = json_encode
         namespace['states'] = iceprod.server.states
@@ -235,7 +233,6 @@ class PublicHandler(TokenStorageMixin, RestHandler):
         self.current_user = ret
         return ret
 
-    @wtt.evented(all_args=True)
     def write_error(self, status_code=500, **kwargs):
         """Write out custom error page."""
         self.set_status(status_code)
@@ -258,7 +255,6 @@ class Default(PublicHandler):
     async def get(self):
         # try to get the user, if available
         await self.get_current_user_async()
-        self.statsd.incr('default')
         self.render('main.html')
 
 
@@ -279,7 +275,6 @@ class Submit(PublicHandler):
     @authenticated
     async def get(self):
         logger.info('here')
-        self.statsd.incr('submit')
         token = self.auth_access_token
         groups = self.auth_groups
         default_config = {
@@ -308,7 +303,6 @@ class Config(PublicHandler):
     """Handle /config urls"""
     @authenticated
     async def get(self):
-        self.statsd.incr('config')
         dataset_id = self.get_argument('dataset_id',default=None)
         if not dataset_id:
             self.write_error(400,message='must provide dataset_id')
@@ -339,7 +333,6 @@ class DatasetBrowse(PublicHandler):
 
     @authenticated
     async def get(self):
-        self.statsd.incr('dataset_browse')
         usernames = await self.get_usernames()
         filter_options = {
             'status': ['processing', 'suspended', 'errors', 'complete', 'truncated'],
@@ -375,8 +368,6 @@ class Dataset(PublicHandler):
     """Handle /dataset urls"""
     @authenticated
     async def get(self, dataset_id):
-        self.statsd.incr('dataset')
-
         if dataset_id.isdigit():
             try:
                 d_num = int(dataset_id)
@@ -430,9 +421,7 @@ class TaskBrowse(PublicHandler):
     """Handle /task urls"""
     @authenticated
     async def get(self, dataset_id):
-        self.statsd.incr('task_browse')
         status = self.get_argument('status',default=None)
-
         if status:
             tasks = await self.rest_client.request('GET','/datasets/{}/tasks?status={}'.format(dataset_id,status))
             for t in tasks:
@@ -450,9 +439,7 @@ class Task(PublicHandler):
     """Handle /task urls"""
     @authenticated
     async def get(self, dataset_id, task_id):
-        self.statsd.incr('task')
         status = self.get_argument('status', default=None)
-
         passkey = self.auth_access_token
 
         dataset = await self.rest_client.request('GET', '/datasets/{}'.format(dataset_id))
@@ -483,9 +470,7 @@ class JobBrowse(PublicHandler):
     """Handle /job urls"""
     @authenticated
     async def get(self, dataset_id):
-        self.statsd.incr('job')
         status = self.get_argument('status',default=None)
-
         passkey = self.auth_access_token
 
         jobs = await self.rest_client.request('GET', '/datasets/{}/jobs'.format(dataset_id))
@@ -501,9 +486,7 @@ class Job(PublicHandler):
     """Handle /job urls"""
     @authenticated
     async def get(self, dataset_id, job_id):
-        self.statsd.incr('job')
         status = self.get_argument('status',default=None)
-
         passkey = self.auth_access_token
 
         dataset = await self.rest_client.request('GET', '/datasets/{}'.format(dataset_id))
@@ -522,7 +505,6 @@ class Documentation(PublicHandler):
     async def get(self, url):
         # try to get the user, if available
         await self.get_current_user_async()
-        self.statsd.incr('documentation')
         doc_path = str(importlib.resources.files('iceprod.server')/'data'/'docs')
         full_path = os.path.join(doc_path, url)
         if not full_path.startswith(doc_path):
@@ -536,7 +518,6 @@ class Documentation(PublicHandler):
 class Log(PublicHandler):
     @authenticated
     async def get(self, dataset_id, log_id):
-        self.statsd.incr('log')
         ret = await self.rest_client.request('GET','/datasets/{}/logs/{}'.format(dataset_id, log_id))
         log_text = ret['data']
         html = '<html><head><title>' + ret['name'] + '</title></head><body>'
@@ -552,7 +533,6 @@ class Help(PublicHandler):
     async def get(self):
         # try to get the user, if available
         await self.get_current_user_async()
-        self.statsd.incr('help')
         self.render('help.html')
 
 
@@ -562,7 +542,6 @@ class Other(PublicHandler):
     async def get(self):
         # try to get the user, if available
         await self.get_current_user_async()
-        self.statsd.incr('other')
         path = self.request.path
         self.set_status(404)
         self.render('404.html', path=path)
@@ -572,7 +551,6 @@ class Profile(PublicHandler):
     """Handle user profile page"""
     @authenticated
     async def get(self):
-        self.statsd.incr('profile')
         username = self.current_user
         groups = self.auth_groups
         group_creds = {}
@@ -634,7 +612,6 @@ class Profile(PublicHandler):
 class Logout(PublicHandler):
     @catch_error
     async def get(self):
-        self.statsd.incr('logout')
         self.clear_tokens()
         self.current_user = None
         self.request.uri = '/'  # for login redirect, fake the main page
@@ -690,8 +667,7 @@ class Server:
             'ICEPROD_CRED_CLIENT_ID': '',
             'ICEPROD_CRED_CLIENT_SECRET': '',
             'COOKIE_SECRET': '',
-            'STATSD_ADDRESS': '',
-            'STATSD_PREFIX': 'rest_api',
+            'PROMETHEUS_PORT': 0,
             'CI_TESTING': '',
         }
         config = from_environment(default_config)
@@ -714,7 +690,7 @@ class Server:
 
         rest_config = {
             'debug': config['DEBUG'],
-            'server_header': 'IceProd/' + iceprod.__version__,
+            'server_header': 'IceProd/' + version_string,
         }
 
         if config['OPENID_URL']:
@@ -734,17 +710,8 @@ class Server:
         else:
             raise RuntimeError('OPENID_URL not specified, and CI_TESTING not enabled!')
 
-        statsd = FakeStatsClient()
-        if config['STATSD_ADDRESS']:
-            try:
-                addr = config['STATSD_ADDRESS']
-                port = 8125
-                if ':' in addr:
-                    addr,port = addr.split(':')
-                    port = int(port)
-                statsd = StatsClientIgnoreErrors(addr, port=port, prefix=config['STATSD_PREFIX'])
-            except Exception:
-                logger.warning('failed to connect to statsd: %r', config['STATSD_ADDRESS'], exc_info=True)
+        # enable monitoring
+        self.prometheus_port = config['PROMETHEUS_PORT'] if config['PROMETHEUS_PORT'] > 0 else None
 
         if config['ICEPROD_CRED_CLIENT_ID'] and config['ICEPROD_CRED_CLIENT_SECRET']:
             logging.info(f'enabling auth via {config["OPENID_URL"]} for aud "{config["OPENID_AUDIENCE"]}"')
@@ -785,7 +752,6 @@ class Server:
             raise RuntimeError('ICEPROD_API_CLIENT_ID or ICEPROD_API_CLIENT_SECRET not specified, and CI_TESTING not enabled!')
 
         handler_args.update({
-            'statsd': statsd,
             'rest_api': rest_address,
             'system_rest_client': rest_client,
         })
@@ -828,7 +794,14 @@ class Server:
         self.server = server
 
     async def start(self):
-        pass
+        if self.prometheus_port:
+            logging.info("starting prometheus on {}", self.prometheus_port)
+            start_http_server(self.prometheus_port)
+            i = Info('iceprod', 'IceProd information')
+            i.info({
+                'version': version_string,
+                'type': 'website',
+            })
 
     async def stop(self):
         await self.server.stop()

@@ -17,12 +17,14 @@ import shutil
 import stat
 import subprocess
 import time
-from typing import NamedTuple
+from typing import Generator, NamedTuple
 
 import htcondor  # type: ignore
+from wipac_dev_tools.prometheus_tools import GlobalLabels, AsyncPromWrapper, PromWrapper, AsyncPromTimer, PromTimer
 
 from iceprod.core.config import Task
 from iceprod.core.exe import WriteToScript, Transfer
+from iceprod.prom_utils import HistogramBuckets
 from iceprod.server.config import IceProdConfig
 from iceprod.server import grid
 from iceprod.server.util import str2datetime
@@ -45,7 +47,7 @@ def check_output_clean_env(*args, **kwargs):
 
 
 @enum.unique
-class JobStatus(enum.Enum):
+class JobStatus(enum.StrEnum):
     IDLE = enum.auto()       # job is waiting in the queue
     RUNNING = enum.auto()    # job is running
     FAILED = enum.auto()     # job needs cleanup
@@ -105,6 +107,7 @@ RESET_STDERR_REASONS = [
     'segmentation fault (core dumped)',
     'operation timed out',
     'connection timed out',
+    'globus_ftp_client: the operation was aborted',
     # GPU errors
     'opencl error: could not set up context',
     'opencl error: could build the opencl program',
@@ -183,11 +186,14 @@ class CondorSubmit:
         'LastRemoteHost', 'LastRemotePool', 'MachineAttrGLIDEIN_Site0',
     ] + _GENERIC_ADS
 
-    def __init__(self, cfg: IceProdConfig, submit_dir: Path, credentials_dir: Path):
+    def __init__(self, cfg: IceProdConfig, submit_dir: Path, credentials_dir: Path, prom_global=None):
         self.cfg = cfg
         self.submit_dir = submit_dir
         self.credentials_dir = credentials_dir
         self.condor_schedd = htcondor.Schedd()
+        self.prometheus = prom_global if prom_global else GlobalLabels({
+            "type": "condor"
+        })
 
         submit_dir.mkdir(parents=True, exist_ok=True)
         self.precmd = submit_dir / 'pre.py'
@@ -307,7 +313,9 @@ class CondorSubmit:
         path.mkdir(parents=True)
         return path
 
-    async def submit(self, tasks: list[Task], jel: Path) -> dict[CondorJobId, CondorJob]:
+    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_submit', 'IceProd grid condor.submit calls', buckets=HistogramBuckets.MINUTE))
+    @AsyncPromWrapper(lambda self: self.prometheus.histogram('iceprod_grid_condor_schedd_submit', 'IceProd grid htcondor.schedd.submit calls', buckets=HistogramBuckets.MINUTE))
+    async def submit(self, prom_histogram, tasks: list[Task], jel: Path) -> dict[CondorJobId, CondorJob]:
         """
         Submit multiple jobs to Condor as a single batch.
 
@@ -436,8 +444,9 @@ transfer_output_remaps = $(outremaps)
 
         logger.debug("submitfile:\n%s", submitfile)
 
-        s = htcondor.Submit(submitfile)
-        submit_result = self.condor_schedd.submit(s, count=1, itemdata=s.itemdata())
+        with prom_histogram.time():
+            s = htcondor.Submit(submitfile)
+            submit_result = self.condor_schedd.submit(s, count=1, itemdata=s.itemdata())
 
         cluster_id = int(submit_result.cluster())
         ret = {}
@@ -450,7 +459,8 @@ transfer_output_remaps = $(outremaps)
             )
         return ret
 
-    def get_jobs(self) -> {CondorJobId: CondorJob}:
+    @PromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_get_jobs', 'IceProd grid condor.get_jobs calls', buckets=HistogramBuckets.MINUTE))
+    def get_jobs(self) -> dict[CondorJobId: CondorJob]:
         """
         Get all jobs currently on the condor queue.
         """
@@ -477,11 +487,14 @@ transfer_output_remaps = $(outremaps)
             ret[job_id] = job
         return ret
 
-    def get_history(self, since=None) -> {CondorJobId: CondorJob}:
+    @PromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_get_history', 'IceProd grid condor.get_history calls', buckets=HistogramBuckets.MINUTE))
+    def get_history(self, since: int | None = None) -> Generator[tuple[CondorJobId, CondorJob], None, None]:
         """
         Get all jobs currently on the condor history.
+
+        Args:
+            since: how far back to look in the history (unix time)
         """
-        ret = {}
         for ad in self.condor_schedd.history(
             constraint=f'IceProdSite =?= "{self.cfg["queue"].get("site", "unknown")}"',
             projection=['ClusterId', 'ProcId'] + self.AD_PROJECTION_HISTORY,
@@ -501,9 +514,9 @@ transfer_output_remaps = $(outremaps)
                 status=status,
                 extra=ad,
             )
-            ret[job_id] = job
-        return ret
+            yield (job_id, job)
 
+    @PromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_remove', 'IceProd grid condor.remove calls', buckets=HistogramBuckets.SECOND))
     def remove(self, job_id: str | CondorJobId, reason: str | None = None):
         """
         Remove a job from condor.
@@ -522,7 +535,7 @@ class Grid(grid.BaseGrid):
         super().__init__(*args, **kwargs)
         self.jobs = {}
         self.jels = {str(filename): htcondor.JobEventLog(str(filename)).events(0) for filename in self.submit_dir.glob('*/*.jel')}
-        self.submitter = CondorSubmit(self.cfg, submit_dir=self.submit_dir, credentials_dir=self.credentials_dir)
+        self.submitter = CondorSubmit(self.cfg, submit_dir=self.submit_dir, credentials_dir=self.credentials_dir, prom_global=self.prometheus)
 
         # save last event.timestamp, on restart only process >= timestamp
         self.last_event_timestamp = 0.
@@ -580,7 +593,9 @@ class Grid(grid.BaseGrid):
 
     # Submit to Condor #
 
-    async def submit(self):
+    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_submit', 'IceProd grid submit calls', buckets=HistogramBuckets.TENMINUTE))
+    @AsyncPromWrapper(lambda self: self.prometheus.counter('iceprod_grid_submit_datasets', 'IceProd grid submit dataset counter', labels=['dataset', 'task', 'success'], finalize=False))
+    async def submit(self, prom_counter):
         num_to_submit = self.get_queue_num()
         logger.info("Attempting to submit %d tasks", num_to_submit)
         tasks = await self.get_tasks_to_queue(num_to_submit)
@@ -592,6 +607,8 @@ class Grid(grid.BaseGrid):
             tasks_by_dataset[f'{task.dataset.dataset_num}-{task.name}'].append(task)
         for key in tasks_by_dataset:
             tasks = tasks_by_dataset[key]
+            dataset_num, task_name = key.split('-')[:2]
+            success = 'success'
             try:
                 ret = await self.submitter.submit(tasks, cur_jel)
                 self.jobs.update(ret)
@@ -601,16 +618,21 @@ class Grid(grid.BaseGrid):
                     for task in tasks:
                         j = CondorJob(dataset_id=task.dataset.dataset_id, task_id=task.task_id, instance_id=task.instance_id)
                         tg.create_task(self.task_reset(j, reason=f'HTCondor submit failed: {e}'))
+                success = 'fail'
+            prom_counter.labels({'dataset': dataset_num, 'task': task_name, 'success': success}).inc(len(tasks))
 
-    def get_queue_num(self) -> int:
+    @PromWrapper(lambda self: self.prometheus.gauge('iceprod_grid_queue_num', 'IceProd grid queue status gauges', labels=['status'], finalize=False))
+    def get_queue_num(self, prom_counter) -> int:
         """Determine how many tasks to queue."""
         counts = {s: 0 for s in JobStatus}
         for job in self.jobs.values():
             counts[job.status] += 1
 
         idle_jobs = counts[JobStatus.IDLE]
+        prom_counter.labels({'status': 'idle'}).set(idle_jobs)
         logger.info('idle jobs: %r', idle_jobs)
         processing_jobs = counts[JobStatus.RUNNING]
+        prom_counter.labels({'status': 'processing'}).set(processing_jobs)
         logger.info('processing jobs: %r', processing_jobs)
         queue_tot_max = self.cfg['queue']['max_total_tasks_on_queue'] - idle_jobs - processing_jobs
         queue_idle_max = self.cfg['queue']['max_idle_tasks_on_queue'] - idle_jobs
@@ -640,7 +662,8 @@ class Grid(grid.BaseGrid):
 
     # JEL processing #
 
-    async def wait(self, timeout):
+    @AsyncPromWrapper(lambda self: self.prometheus.counter('iceprod_grid_wait', 'IceProd grid wait counter', labels=['job_status'], finalize=False))
+    async def wait(self, prom_counter, timeout):
         """
         Wait for jobs to complete from the Job Event Logs.
 
@@ -681,6 +704,10 @@ class Grid(grid.BaseGrid):
                             if type_ == htcondor.JobEventType.JOB_TERMINATED:
                                 logger.info("job %s %s.%s exited on its own", job_id, job.dataset_id, job.task_id)
 
+                                success = event.get('ReturnValue', 1) == 0
+                                job.status = JobStatus.COMPLETED if success else JobStatus.FAILED
+                                prom_counter.labels({"job_status": str(job.status)}).inc()
+
                                 # there's a bug where not all the classads are updated before the event fires
                                 # so ignore this and let the cross-check take care of it
                                 continue
@@ -714,9 +741,6 @@ class Grid(grid.BaseGrid):
                                 if time_ is not None:
                                     resources['time'] = time_/3600.
 
-                                success = event.get('ReturnValue', 1) == 0
-                                job.status = JobStatus.COMPLETED if success else JobStatus.FAILED
-
                                 stats = {}
                                 if site := event.get('MachineAttrGLIDEIN_Site0'):
                                     stats['site'] = site
@@ -736,6 +760,7 @@ class Grid(grid.BaseGrid):
 
                             elif type_ == htcondor.JobEventType.JOB_ABORTED:
                                 job.status = JobStatus.FAILED
+                                prom_counter.labels({"job_status": str(job.status)}).inc()
                                 reason = event.get('Reason', None)
                                 logger.info("job %s %s.%s removed: %r", job_id, job.dataset_id, job.task_id, reason)
 
@@ -750,6 +775,7 @@ class Grid(grid.BaseGrid):
                                 new_status = JOB_EVENT_STATUS_TRANSITIONS.get(type_, None)
                                 if new_status is not None and job.status != new_status:
                                     job.status = new_status
+                                    prom_counter.labels({"job_status": str(job.status)}).inc()
                                     if new_status == JobStatus.FAILED:
                                         self.submitter.remove(job_id, reason=event.get('HoldReason', 'Job has failed'))
                                     else:
@@ -759,7 +785,7 @@ class Grid(grid.BaseGrid):
 
             if time.monotonic() - start >= timeout:
                 break
-            await asyncio.sleep(1)
+            await asyncio.sleep(.1)
 
     async def job_update(self, job: CondorJob):
         """
@@ -836,6 +862,7 @@ class Grid(grid.BaseGrid):
 
     # Longer checks #
 
+    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_check', 'IceProd grid check calls'))
     async def check(self):
         """
         Do a cross-check, to verify `self.jobs` vs the submit dir and IceProd API.
@@ -851,15 +878,16 @@ class Grid(grid.BaseGrid):
         self.jobs = all_jobs
 
         # process any updates
-        for job_id, job in all_jobs.items():
-            if job_id not in old_jobs or job.status != old_jobs[job_id].status:
-                if job.status == JobStatus.FAILED:
-                    extra = job.extra if job.extra else {}
-                    reason = extra.get('HoldReason', 'Job has failed')
-                    logger.info("job %s %s.%s removed from cross-check: %r", job_id, job.dataset_id, job.task_id, reason)
-                    self.submitter.remove(job_id, reason=reason)
-                else:
-                    self.job_update(job)
+        async with asyncio.TaskGroup() as tg:
+            for job_id, job in all_jobs.items():
+                if job_id not in old_jobs or job.status != old_jobs[job_id].status:
+                    if job.status == JobStatus.FAILED:
+                        extra = job.extra if job.extra else {}
+                        reason = extra.get('HoldReason', 'Job has failed')
+                        logger.info("job %s %s.%s removed from cross-check: %r", job_id, job.dataset_id, job.task_id, reason)
+                        self.submitter.remove(job_id, reason=reason)
+                    else:
+                        tg.create_task(self.job_update(job))
 
         await self.check_history()
 
@@ -873,57 +901,67 @@ class Grid(grid.BaseGrid):
 
         logger.info('finished cross-check')
 
-    async def check_history(self):
+    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_check_history', 'IceProd grid check calls', buckets=HistogramBuckets.MINUTE))
+    @AsyncPromWrapper(lambda self: self.prometheus.histogram('iceprod_grid_check_history_per_job', 'IceProd grid check history per job', buckets=HistogramBuckets.SECOND))
+    async def check_history(self, prom_histogram):
         """Check condor_history"""
         now = time.time()
-        hist_jobs = self.submitter.get_history(since=self.last_event_timestamp)
+        hist_jobs_iter = self.submitter.get_history(since=self.last_event_timestamp)
         self.last_event_timestamp = now
-        for job_id, job in hist_jobs.items():
-            if job_id not in self.jobs:
-                self.jobs[job_id] = job
+        async with asyncio.TaskGroup() as tg:
+            last_time = time.monotonic()
+            for job_id, job in hist_jobs_iter:
+                if job_id not in self.jobs:
+                    self.jobs[job_id] = job
 
-            logger.info("job %s %s.%s exited on its own from cross-check", job_id, job.dataset_id, job.task_id)
-            extra = job.extra if job.extra else {}
+                logger.info("job %s %s.%s exited on its own from cross-check", job_id, job.dataset_id, job.task_id)
+                extra = job.extra if job.extra else {}
 
-            # get stats
-            cpu = extra.get('CpusUsage', None)
-            if not cpu and (wall := extra.get('LastRemoteWallClockTime', None)):
-                cpu = (extra.get('RemoteSysCpu', 0) + extra.get('RemoteUserCpu', 0)) * 1. / wall
-            gpu = extra.get('GpusUsage', None)
-            memory = extra.get('ResidentSetSize_RAW', None)  # KB
-            disk = extra.get('DiskUsage_RAW', None)  # KB
-            time_ = extra.get('LastRemoteWallClockTime', None)  # seconds
+                # get stats
+                cpu = extra.get('CpusUsage', None)
+                if not cpu and (wall := extra.get('LastRemoteWallClockTime', None)):
+                    cpu = (extra.get('RemoteSysCpu', 0) + extra.get('RemoteUserCpu', 0)) * 1. / wall
+                gpu = extra.get('GpusUsage', None)
+                memory = extra.get('ResidentSetSize_RAW', None)  # KB
+                disk = extra.get('DiskUsage_RAW', None)  # KB
+                time_ = extra.get('LastRemoteWallClockTime', None)  # seconds
 
-            resources = {}
-            if cpu is not None:
-                resources['cpu'] = cpu
-            if gpu is not None:
-                resources['gpu'] = gpu
-            if memory is not None:
-                resources['memory'] = memory/1000000.
-            if disk is not None:
-                resources['disk'] = disk/1000000.
-            if time_ is not None:
-                resources['time'] = time_/3600.
+                resources = {}
+                if cpu is not None:
+                    resources['cpu'] = cpu
+                if gpu is not None:
+                    resources['gpu'] = gpu
+                if memory is not None:
+                    resources['memory'] = memory/1000000.
+                if disk is not None:
+                    resources['disk'] = disk/1000000.
+                if time_ is not None:
+                    resources['time'] = time_/3600.
 
-            success = extra.get('JobStatus') == 4 and extra.get('ExitCode', 1) == 0
-            job.status = JobStatus.COMPLETED if success else JobStatus.FAILED
+                success = extra.get('JobStatus') == 4 and extra.get('ExitCode', 1) == 0
+                job.status = JobStatus.COMPLETED if success else JobStatus.FAILED
 
-            stats = {}
-            if site := extra.get('MachineAttrGLIDEIN_Site0'):
-                stats['site'] = site
-            elif site := extra.get('MATCH_EXP_JOBGLIDEIN_ResourceName'):
-                stats['site'] = site
+                stats = {}
+                if site := extra.get('MachineAttrGLIDEIN_Site0'):
+                    stats['site'] = site
+                elif site := extra.get('MATCH_EXP_JOBGLIDEIN_ResourceName'):
+                    stats['site'] = site
 
-            reason = None
-            if r := extra.get('LastHoldReason'):
-                reason = r
-            elif r := extra.get('RemoveReason'):
-                reason = r
+                reason = None
+                if r := extra.get('LastHoldReason'):
+                    reason = r
+                elif r := extra.get('RemoveReason'):
+                    reason = r
 
-            # finish job
-            await self.finish(job_id, success=success, resources=resources, stats=stats, reason=reason)
+                # finish job
+                tg.create_task(self.finish(job_id, success=success, resources=resources, stats=stats, reason=reason))
 
+                # do timing manually to also count generator time per job
+                next_time = time.monotonic()
+                prom_histogram.observe(next_time - last_time)
+                last_time = next_time
+
+    @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_check_iceprod', 'IceProd grid check calls', buckets=HistogramBuckets.TENSECOND))
     async def check_iceprod(self):
         """
         Sync with iceprod server status.
@@ -932,62 +970,65 @@ class Grid(grid.BaseGrid):
         queue_tasks = {j.task_id: j for j in self.jobs.values()}
         server_tasks = await fut
         now = datetime.now(UTC)
-        for task in server_tasks:
-            if task['task_id'] not in queue_tasks:
-                # ignore anything too recent
-                if str2datetime(task['status_changed']) >= now - timedelta(minutes=1):
-                    continue
-                logger.info(f'task {task["dataset_id"]}.{task["task_id"]} in iceprod but not in queue')
-                job = CondorJob(
-                    dataset_id=task['dataset_id'],
-                    task_id=task['task_id'],
-                    instance_id=task['instance_id'],
-                )
-                await self.task_reset(job, reason='task missing from HTCondor queue')
+        async with asyncio.TaskGroup() as tg:
+            for task in server_tasks:
+                if task['task_id'] not in queue_tasks:
+                    # ignore anything too recent
+                    if str2datetime(task['status_changed']) >= now - timedelta(minutes=1):
+                        continue
+                    logger.info(f'task {task["dataset_id"]}.{task["task_id"]} in iceprod but not in queue')
+                    job = CondorJob(
+                        dataset_id=task['dataset_id'],
+                        task_id=task['task_id'],
+                        instance_id=task['instance_id'],
+                    )
+                    tg.create_task(self.task_reset(job, reason='task missing from HTCondor queue'))
 
-    async def check_submit_dir(self):
+    @PromWrapper(lambda self: self.prometheus.histogram('iceprod_grid_check_submit_dir', 'IceProd grid check calls', buckets=HistogramBuckets.TENSECOND))
+    async def check_submit_dir(self, prom_histogram):
         """
         Return directory paths that should be cleaned up.
         """
-        # get time limits
-        queue_tasks = {j.task_id for j in self.jobs.values()}
-        queued_time = self.cfg['queue'].get('max_task_queued_time', 86400*2)
-        processing_time = self.cfg['queue'].get('max_task_processing_time', 86400*2)
-        suspend_time = self.cfg['queue'].get('suspend_submit_dir_time', 86400)
-        now = time.time()
-        job_clean_logs_time = now - suspend_time
-        job_old_time = now - (queued_time + processing_time)
-        dir_old_time = now - (queued_time + processing_time + suspend_time)
-        logger.debug('now: %r, job_clean_logs_time: %r, job_old_time: %r, dir_old_time: %r', now, job_clean_logs_time, job_old_time, dir_old_time)
+        with prom_histogram.time():
+            # get time limits
+            queue_tasks = {j.task_id for j in self.jobs.values()}
+            queued_time = self.cfg['queue'].get('max_task_queued_time', 86400*2)
+            processing_time = self.cfg['queue'].get('max_task_processing_time', 86400*2)
+            suspend_time = self.cfg['queue'].get('suspend_submit_dir_time', 86400)
+            now = time.time()
+            job_clean_logs_time = now - suspend_time
+            job_old_time = now - (queued_time + processing_time)
+            dir_old_time = now - (queued_time + processing_time + suspend_time)
+            logger.debug('now: %r, job_clean_logs_time: %r, job_old_time: %r, dir_old_time: %r', now, job_clean_logs_time, job_old_time, dir_old_time)
 
-        for daydir in self.submit_dir.glob('[0-9][0-9][0-9][0-9]*'):
-            logger.debug('looking at daydir %s', daydir)
-            if daydir.is_dir():
-                empty = True
-                for path in daydir.iterdir():
-                    job_active = path.name.split('_')[0] in queue_tasks
-                    logger.debug('looking at path %s, active: %r', path, job_active)
-                    st = path.lstat()
-                    logger.debug('stat: %r', st)
-                    if stat.S_ISDIR(st.st_mode):
-                        empty = False
-                        if not job_active:
-                            if st.st_mtime < job_clean_logs_time:
-                                logger.info('cleaning up submit dir %s', path)
-                                shutil.rmtree(path)
-                        elif st.st_mtime < job_old_time:
-                            yield path
-                            if st.st_mtime < dir_old_time:
-                                logger.info('cleaning up submit dir %s', path)
-                                shutil.rmtree(path)
-                if empty:
-                    logger.info('cleaning up daydir %s', daydir)
-                    for path in self.jels.copy():
-                        if Path(path).parent == daydir:
-                            logger.info('removing JEL')
-                            self.jels[path].close()
-                            del self.jels[path]
-                    shutil.rmtree(daydir)
-                    continue
-                # let other processing happen
-                await asyncio.sleep(0)
+            for daydir in self.submit_dir.glob('[0-9][0-9][0-9][0-9]*'):
+                logger.debug('looking at daydir %s', daydir)
+                if daydir.is_dir():
+                    empty = True
+                    for path in daydir.iterdir():
+                        job_active = path.name.split('_')[0] in queue_tasks
+                        logger.debug('looking at path %s, active: %r', path, job_active)
+                        st = path.lstat()
+                        logger.debug('stat: %r', st)
+                        if stat.S_ISDIR(st.st_mode):
+                            empty = False
+                            if not job_active:
+                                if st.st_mtime < job_clean_logs_time:
+                                    logger.info('cleaning up submit dir %s', path)
+                                    shutil.rmtree(path)
+                            elif st.st_mtime < job_old_time:
+                                yield path
+                                if st.st_mtime < dir_old_time:
+                                    logger.info('cleaning up submit dir %s', path)
+                                    shutil.rmtree(path)
+                    if empty:
+                        logger.info('cleaning up daydir %s', daydir)
+                        for path in self.jels.copy():
+                            if Path(path).parent == daydir:
+                                logger.info('removing JEL')
+                                self.jels[path].close()
+                                del self.jels[path]
+                        shutil.rmtree(daydir)
+                        continue
+                    # let other processing happen
+                    await asyncio.sleep(0)

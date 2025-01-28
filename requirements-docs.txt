@@ -10,19 +10,19 @@ anyio==4.8.0
     # via httpx
 asyncache==0.3.1
     # via iceprod (setup.py)
-attrs==24.3.0
+attrs==25.1.0
     # via
     #   jsonschema
     #   referencing
 babel==2.16.0
     # via sphinx
-boto3==1.36.2
+boto3==1.36.7
     # via iceprod (setup.py)
-botocore==1.36.2
+botocore==1.36.7
     # via
     #   boto3
     #   s3transfer
-cachetools==5.5.0
+cachetools==5.5.1
     # via
     #   asyncache
     #   iceprod (setup.py)
@@ -81,6 +81,8 @@ motor==3.6.1
     # via iceprod (setup.py)
 packaging==24.2
     # via sphinx
+prometheus-client==0.21.1
+    # via iceprod (setup.py)
 psutil==6.1.1
     # via iceprod (setup.py)
 pyasn1==0.6.1
@@ -105,7 +107,7 @@ pyyaml==6.0.2
     # via iceprod (setup.py)
 qrcode==8.0
     # via wipac-rest-tools
-referencing==0.36.1
+referencing==0.36.2
     # via
     #   jsonschema
     #   jsonschema-specifications
@@ -127,7 +129,7 @@ rpds-py==0.22.3
     # via
     #   jsonschema
     #   referencing
-s3transfer==0.11.1
+s3transfer==0.11.2
     # via boto3
 setproctitle==1.3.4
     # via iceprod (setup.py)
@@ -151,8 +153,6 @@ sphinxcontrib-qthelp==2.0.0
     # via sphinx
 sphinxcontrib-serializinghtml==2.0.0
     # via sphinx
-statsd==4.0.1
-    # via iceprod (setup.py)
 tomli==2.2.1
     # via sphinx
 tornado==6.4.2
@@ -172,7 +172,7 @@ urllib3==2.3.0
     #   botocore
     #   requests
     #   wipac-rest-tools
-wipac-dev-tools==1.15.0
+wipac-dev-tools==1.15.1
     # via
     #   iceprod (setup.py)
     #   wipac-rest-tools

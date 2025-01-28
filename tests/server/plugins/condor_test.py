@@ -779,7 +779,7 @@ async def test_Grid_check_queue_jel_mismatch(schedd, i3prod_path, set_time, jel_
     qjobs = {}
     hjobs = {}
     g.submitter.get_jobs = MagicMock(return_value=qjobs)
-    g.submitter.get_history = MagicMock(return_value=hjobs)
+    g.submitter.get_history = MagicMock()
     g.submitter.remove = MagicMock()
     g.finish = AsyncMock()
     g.get_tasks_on_queue = AsyncMock(return_value=[])
@@ -800,6 +800,7 @@ async def test_Grid_check_queue_jel_mismatch(schedd, i3prod_path, set_time, jel_
     for (c,p), s in hist_jobs.items():
         hjobs[CondorJobId(cluster_id=c, proc_id=p)] = CondorJob(status=s, submit_dir=mkdir(f'{c}.{p}'))
 
+    g.submitter.get_history.return_value = hjobs.items()
     await g.check()
 
     assert g.submitter.remove.call_count == remove_calls
@@ -838,7 +839,7 @@ async def test_Grid_check_queue_iceprod_mismatch(schedd, i3prod_path, set_time, 
     qjobs = {}
     hjobs = {}
     g.submitter.get_jobs = MagicMock(return_value=qjobs)
-    g.submitter.get_history = MagicMock(return_value=hjobs)
+    g.submitter.get_history = MagicMock()
     g.submitter.remove = MagicMock()
     g.finish = AsyncMock()
     g.task_reset = AsyncMock()
@@ -862,6 +863,7 @@ async def test_Grid_check_queue_iceprod_mismatch(schedd, i3prod_path, set_time, 
         t = set_time - datetime.timedelta(seconds=secs)
         itasks.append({'dataset_id': d_id, 'task_id': t_id, 'instance_id': i_id, 'status_changed': datetime2str(t)})
 
+    g.submitter.get_history.return_value = hjobs.items()
     await g.check()
 
     assert g.task_reset.call_count == reset_calls
