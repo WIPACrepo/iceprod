@@ -37,11 +37,11 @@ class APIBase(AttrAuthMixin, RestHandler):
     def on_finish(self):
         super().on_finish()
         end_time = time.monotonic()
-        PromHTTPHistogram.labels({
-            'verb': self.request.method,
-            'path': self.request.path,
-            'status': self.get_status(),
-        }).observe(end_time - self._prom_start_time)
+        PromHTTPHistogram.labels(
+            verb=self.request.method,
+            path=self.request.path,
+            status=self.get_status(),
+        ).observe(end_time - self._prom_start_time)
 
     def get_template_namespace(self):
         namespace = super().get_template_namespace()
