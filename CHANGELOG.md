@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.46 (2025-01-29)
+
+### Other
+
+* Add asyncio task monitor for api services ([#419](https://github.com/WIPACrepo/iceprod/issues/419)) ([`e398c1e`](https://github.com/WIPACrepo/iceprod/commit/e398c1ebdf8a6be1e5d601121cca58e9dfbce316))
+
 ## v3.0.45 (2025-01-28)
 
 ### Other
