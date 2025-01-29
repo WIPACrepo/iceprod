@@ -58,7 +58,7 @@ class AsyncMonitor(GlobalLabels):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._task = None
-    
+
     async def start(self):
         if self._task is None:
             self._task = asyncio.create_task(self._monitor())
