@@ -30,7 +30,7 @@ from rest_tools.server import catch_error, RestServer, RestHandlerSetup, RestHan
 from wipac_dev_tools import from_environment
 
 from iceprod import __version__ as version_string
-from iceprod.prom_utils import PromRequestMixin
+from iceprod.prom_utils import AsyncMonitor, PromRequestMixin
 from iceprod.roles_groups import GROUPS
 from iceprod.core.config import CONFIG_SCHEMA as DATASET_SCHEMA
 from iceprod.server.config import CONFIG_SCHEMA as SERVER_SCHEMA
@@ -712,6 +712,7 @@ class Server:
 
         # enable monitoring
         self.prometheus_port = config['PROMETHEUS_PORT'] if config['PROMETHEUS_PORT'] > 0 else None
+        self.async_monitor = None
 
         if config['ICEPROD_CRED_CLIENT_ID'] and config['ICEPROD_CRED_CLIENT_SECRET']:
             logging.info(f'enabling auth via {config["OPENID_URL"]} for aud "{config["OPENID_AUDIENCE"]}"')
@@ -802,6 +803,10 @@ class Server:
                 'version': version_string,
                 'type': 'website',
             })
+            self.async_monitor = AsyncMonitor(labels={'type': 'website'})
+            await self.async_monitor.start()
 
     async def stop(self):
         await self.server.stop()
+        if self.async_monitor:
+            await self.async_monitor.stop()

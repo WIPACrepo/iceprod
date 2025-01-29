@@ -15,6 +15,7 @@ from tornado.web import RequestHandler, HTTPError
 from wipac_dev_tools import from_environment
 
 from iceprod import __version__ as version_string
+from ..prom_utils import AsyncMonitor
 from ..s3 import boto3, S3
 from .base_handler import IceProdRestConfig
 
@@ -81,6 +82,7 @@ class Server:
 
         # enable monitoring
         self.prometheus_port = config['PROMETHEUS_PORT'] if config['PROMETHEUS_PORT'] > 0 else None
+        self.async_monitor = None
 
         s3conn = None
         if s3_override:
@@ -135,6 +137,8 @@ class Server:
                 'version': version_string,
                 'type': 'api',
             })
+            self.async_monitor = AsyncMonitor(labels={'type': 'api'})
+            await self.async_monitor.start()
 
         for database in self.indexes:
             db = self.db[database]
@@ -148,3 +152,5 @@ class Server:
 
     async def stop(self):
         await self.server.stop()
+        if self.async_monitor:
+            await self.async_monitor.stop()

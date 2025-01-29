@@ -20,6 +20,7 @@ from tornado.web import RequestHandler as TornadoRequestHandler
 from wipac_dev_tools import from_environment
 
 from iceprod import __version__ as version_string
+from ..prom_utils import AsyncMonitor
 from iceprod.rest.auth import authorization, attr_auth
 from iceprod.rest.base_handler import IceProdRestConfig, APIBase
 from iceprod.server.util import nowstr, datetime2str
@@ -307,6 +308,7 @@ class Server:
 
         # enable monitoring
         self.prometheus_port = config['PROMETHEUS_PORT'] if config['PROMETHEUS_PORT'] > 0 else None
+        self.async_monitor = None
 
         logging_url = config["DB_URL"].split('@')[-1] if '@' in config["DB_URL"] else config["DB_URL"]
         logging.info(f'DB: {logging_url}')
@@ -368,6 +370,8 @@ class Server:
                 'version': version_string,
                 'type': 'materialization',
             })
+            self.async_monitor = AsyncMonitor(labels={'type': 'materialization'})
+            await self.async_monitor.start()
 
         for collection in self.indexes:
             existing = await self.db[collection].index_information()
@@ -390,3 +394,5 @@ class Server:
                 pass
             finally:
                 self.materialization_service_task = None
+        if self.async_monitor:
+            await self.async_monitor.stop()
