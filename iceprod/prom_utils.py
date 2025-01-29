@@ -1,10 +1,11 @@
 """
 Some Prometheus utilities.
 """
-
+import asyncio
 import time
 
 from prometheus_client import Histogram
+from wipac_dev_tools.prometheus_tools import GlobalLabels,AsyncPromWrapper
 
 
 class HistogramBuckets:
@@ -49,3 +50,31 @@ class PromRequestMixin:
             path=self.request.path,
             status=self.get_status(),
         ).observe(end_time - self._prom_start_time)
+
+
+class AsyncMonitor(GlobalLabels):
+    SLEEP_TIME = 5
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._task = None
+
+    async def start(self):
+        if self._task is None:
+            self._task = asyncio.create_task(self._monitor())
+
+    async def stop(self):
+        if self._task:
+            self._task.cancel()
+            try:
+                await self._task
+            except asyncio.CancelledError:
+                pass
+            finally:
+                self._task = None
+
+    @AsyncPromWrapper(lambda self: self.prometheus.gauge('asyncio_tasks_running', 'Python asyncio tasks active'))
+    async def _monitor(self, prom_gauge):
+        while True:
+            prom_gauge.set(len(asyncio.all_tasks()))
+            asyncio.sleep(self.SLEEP_TIME)
