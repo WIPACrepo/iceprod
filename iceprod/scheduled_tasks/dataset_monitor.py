@@ -154,8 +154,9 @@ def main():
 
     rest_client = create_rest_client(args)
 
-    logging.info("starting prometheus on {}", args.prometheus_port)
-    start_http_server(args.prometheus_port)
+    if args.prometheus_port:
+        logging.info("starting prometheus on {}", args.prometheus_port)
+        start_http_server(int(args.prometheus_port))
     i = Info('iceprod', 'IceProd information')
     i.info({
         'version': version_string,
