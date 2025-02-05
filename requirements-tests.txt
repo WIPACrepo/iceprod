@@ -12,13 +12,13 @@ attrs==25.1.0
     # via
     #   jsonschema
     #   referencing
-beautifulsoup4==4.12.3
+beautifulsoup4==4.13.3
     # via iceprod (setup.py)
-boto3==1.36.8
+boto3==1.36.14
     # via
     #   iceprod (setup.py)
     #   moto
-botocore==1.36.8
+botocore==1.36.14
     # via
     #   boto3
     #   moto
@@ -28,7 +28,7 @@ cachetools==5.5.1
     #   asyncache
     #   iceprod (setup.py)
     #   wipac-rest-tools
-certifi==2024.12.14
+certifi==2025.1.31
     # via
     #   httpcore
     #   httpx
@@ -95,9 +95,9 @@ mccabe==0.7.0
     # via flake8
 mock==5.1.0
     # via iceprod (setup.py)
-moto[s3]==5.0.27
+moto[s3]==5.0.28
     # via iceprod (setup.py)
-motor==3.6.1
+motor==3.7.0
     # via iceprod (setup.py)
 packaging==24.2
     # via pytest
@@ -119,7 +119,7 @@ pyflakes==3.2.0
     # via flake8
 pyjwt[crypto]==2.10.1
     # via wipac-rest-tools
-pymongo==4.9.2
+pymongo==4.11
     # via
     #   iceprod (setup.py)
     #   motor
@@ -204,6 +204,7 @@ types-requests==2.32.0.20241016
 typing-extensions==4.12.2
     # via
     #   anyio
+    #   beautifulsoup4
     #   pyopenssl
     #   referencing
     #   wipac-dev-tools
