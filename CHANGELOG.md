@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.47 (2025-02-05)
+
+### Other
+
+* Fix prometheus port on dataset monitor ([#420](https://github.com/WIPACrepo/iceprod/issues/420)) ([`a772ddb`](https://github.com/WIPACrepo/iceprod/commit/a772ddb843563ea74b8be7c8590c4399be3c7b89))
+
 ## v3.0.46 (2025-01-29)
 
 ### Other
