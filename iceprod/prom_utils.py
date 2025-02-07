@@ -14,10 +14,10 @@ class HistogramBuckets:
     # DEFAULT = [.005, .01, .025, .05, .075, .1, .25, .5, .75, 1, 2.5, 5, 7.5, 10]
 
     #: Database bucket centered around 5ms, with outliers up to 10s
-    DB = [.001, .002, .003, .004, .005, .006, .007, .008, .009, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10]
+    DB = [.001, .0025, .005, .0075, .01, .025, .05, .1, .25, .5, 1, 10]
 
     #: API bucket centered around 50ms, up to 10s
-    API = [.005, .01, .02, .03, .04, .05, .06, .07, .08, .09, .1, .25, .5, .75, 1, 2.5, 5, 7.5, 10]
+    API = [.005, .01, .025, .04, .05, .06, .075, .1, .25, .5, 1, 5, 10]
 
     #: Timer bucket up to 1 second
     SECOND = [.0001, .0005, .001, .0025, .005, .0075, .01, .025, .05, .075, .1, .25, .5, .75, 1]
@@ -36,7 +36,7 @@ class HistogramBuckets:
 
 
 class PromRequestMixin:
-    PromHTTPHistogram = Histogram('http_request_duration_seconds', 'HTTP request duration in seconds', labelnames=('verb', 'path', 'status'), buckets=HistogramBuckets.API)
+    PromHTTPHistogram = Histogram('http_request_duration_seconds', 'HTTP request duration in seconds', labelnames=('method', 'handler', 'status'), buckets=HistogramBuckets.API)
 
     def prepare(self):
         super().prepare()
@@ -46,9 +46,9 @@ class PromRequestMixin:
         super().on_finish()
         end_time = time.monotonic()
         self.PromHTTPHistogram.labels(
-            verb=self.request.method,
-            path=self.request.path,
-            status=self.get_status(),
+            method=str(self.request.method).lower(),
+            handler=f'{self.__class__.__module__.split(".")[-1]}.{self.__class__.__name__}',
+            status=str(self.get_status()),
         ).observe(end_time - self._prom_start_time)
 
 
