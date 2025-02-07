@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.48 (2025-02-07)
+
+### Other
+
+* Reduce cardinality in api metrics to keep from blowing up prometheus ([#421](https://github.com/WIPACrepo/iceprod/issues/421)) ([`867d564`](https://github.com/WIPACrepo/iceprod/commit/867d564f4f684dcfd8910fc65fcb2501286cf0f9))
+
 ## v3.0.47 (2025-02-05)
 
 ### Other
