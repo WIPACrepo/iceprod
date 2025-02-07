@@ -45,6 +45,9 @@ async def process_dataset(rest_client, dataset_id):
     dataset = await rest_client.request('GET', f'/datasets/{dataset_id}')
     dataset_num = dataset['dataset']
     dataset_status = dataset['status']
+    if dataset_status != 'processing':
+        return
+
     with DatasetMonitorDuration.labels(name='dataset_monitor', dataset=str(dataset_num)).time():
         jobs = await rest_client.request('GET', f'/datasets/{dataset_id}/job_counts/status')
         jobs_counter = Counter()
