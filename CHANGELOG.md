@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.49 (2025-02-07)
+
+### Other
+
+* Pin boto3 to before aws broke it for third parties ([#422](https://github.com/WIPACrepo/iceprod/issues/422)) ([`c7c35f2`](https://github.com/WIPACrepo/iceprod/commit/c7c35f2f0d7db39e2e42a88a9291c375f5c43334))
+
 ## v3.0.48 (2025-02-07)
 
 ### Other
