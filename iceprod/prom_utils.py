@@ -47,7 +47,7 @@ class PromRequestMixin:
         end_time = time.monotonic()
         self.PromHTTPHistogram.labels(
             verb=str(self.request.method),
-            handler=f'{self.__class__.__module__.split('.')[-1]}.{self.__class__.__name__}',
+            handler=f'{self.__class__.__module__.split(".")[-1]}.{self.__class__.__name__}',
             status=str(self.get_status()),
         ).observe(end_time - self._prom_start_time)
 
