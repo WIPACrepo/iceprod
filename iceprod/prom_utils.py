@@ -36,7 +36,7 @@ class HistogramBuckets:
 
 
 class PromRequestMixin:
-    PromHTTPHistogram = Histogram('http_request_duration_seconds', 'HTTP request duration in seconds', labelnames=('verb', 'handler', 'status'), buckets=HistogramBuckets.API)
+    PromHTTPHistogram = Histogram('http_request_duration_seconds', 'HTTP request duration in seconds', labelnames=('method', 'handler', 'status'), buckets=HistogramBuckets.API)
 
     def prepare(self):
         super().prepare()
@@ -46,7 +46,7 @@ class PromRequestMixin:
         super().on_finish()
         end_time = time.monotonic()
         self.PromHTTPHistogram.labels(
-            verb=str(self.request.method),
+            method=str(self.request.method).lower(),
             handler=f'{self.__class__.__module__.split(".")[-1]}.{self.__class__.__name__}',
             status=str(self.get_status()),
         ).observe(end_time - self._prom_start_time)
