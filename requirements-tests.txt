@@ -14,11 +14,11 @@ attrs==25.1.0
     #   referencing
 beautifulsoup4==4.13.3
     # via iceprod (setup.py)
-boto3==1.36.14
+boto3==1.36.15
     # via
     #   iceprod (setup.py)
     #   moto
-botocore==1.36.14
+botocore==1.36.15
     # via
     #   boto3
     #   moto
@@ -60,7 +60,7 @@ flexmock==0.12.2
     # via iceprod (setup.py)
 h11==0.14.0
     # via httpcore
-htcondor==24.3.0
+htcondor==24.4.0
     # via iceprod (setup.py)
 httpcore==1.0.7
     # via httpx
