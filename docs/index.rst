@@ -17,22 +17,8 @@ Installation
 .. highlight:: bash
 
 Most users will not need to install IceProd, as they will use an already
-running instance.  For advanced users and administrators, you can install
-with ``pip``:
-
-.. parsed-literal::
-
-    pip install https\://github.com/WIPACrepo/iceprod/archive/v\ |version|.tar.gz
-
-**Optional dependencies**: Nginx, Globus toolkit, MySQL
-
-.. note::
-   :class: icecube
-
-    For IceCube users with CVMFS access, IceProd is already installed. To load
-    the environment execute::
-
-        /cvmfs/icecube.wisc.edu/iceprod/latest/env-shell.sh
+running instance.  For testing of datasets, you can install
+with ``pip install iceprod``.
 
 Documentation
 -------------
