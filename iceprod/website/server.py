@@ -291,6 +291,7 @@ class Submit(PublicHandler):
         render_args = {
             'passkey':token,
             'edit':False,
+            'dataset': '',
             'dataset_id':'',
             'config':default_config,
             'groups':groups,
@@ -317,6 +318,7 @@ class Config(PublicHandler):
         render_args = {
             'edit':edit,
             'passkey':passkey,
+            'dataset': dataset.get('dataset',''),
             'dataset_id':dataset_id,
             'config':config,
             'description':dataset.get('description',''),
