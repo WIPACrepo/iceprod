@@ -2,14 +2,14 @@
 
 {% autoescape None %}
 
-{% block title %}IceProd{% end %}
+{% block title %}IceProd Config{% if dataset %} Dataset {{ dataset }}{% end %}{% end %}
 
 {% block head_scripts %}
 <link rel="stylesheet" href="/static/submit.css" media="all" type="text/css" />
 <link rel="stylesheet" href="/static/documentation.css" media="all" type="text/css" />
 {% end %}
 
-{% block page_title %}{% if dataset_id %}{% if edit %}Edit{% else %}View{% end %} Config{% else %}Submit{% end %}{% end %}
+{% block page_title %}{% if dataset_id %}{% if edit %}Edit{% else %}View{% end %} Config - <a href="/dataset/{{ dataset_id }}">Dataset {{ dataset }}</a>{% else %}Submit{% end %}{% end %}
 
 {% block sidebar %}
 <div class="section macro_box">
