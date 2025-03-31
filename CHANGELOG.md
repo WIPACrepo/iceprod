@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.50 (2025-03-31)
+
+### Other
+
+* Website config link and docs ([#426](https://github.com/WIPACrepo/iceprod/issues/426)) ([`2873012`](https://github.com/WIPACrepo/iceprod/commit/2873012dbc204ebd2f1920e1ff34f94d4f9852e0))
+
 ## v3.0.49 (2025-02-07)
 
 ### Other
