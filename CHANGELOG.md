@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.51 (2025-04-11)
+
+### Other
+
+* Update default resources ([#427](https://github.com/WIPACrepo/iceprod/issues/427)) ([`9c72778`](https://github.com/WIPACrepo/iceprod/commit/9c72778272f8d460a9065c124361aca9b91df964))
+
 ## v3.0.50 (2025-03-31)
 
 ### Other
