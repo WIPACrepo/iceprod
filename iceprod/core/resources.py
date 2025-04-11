@@ -57,9 +57,9 @@ class Resources:
     # ordering based on priority for matching
     defaults = OrderedDict([
         ('gpu', []),
-        ('memory', 1.0),
+        ('memory', 2.0),
         ('disk', 10.0),
-        ('time', 1.0),
+        ('time', 8.0),
         ('cpu', 1),
     ])
     """Default resource values

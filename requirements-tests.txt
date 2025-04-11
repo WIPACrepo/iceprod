@@ -60,9 +60,9 @@ flexmock==0.12.2
     # via iceprod (setup.py)
 h11==0.14.0
     # via httpcore
-htcondor==24.5.1
+htcondor==24.6.1
     # via iceprod (setup.py)
-httpcore==1.0.7
+httpcore==1.0.8
     # via httpx
 httpx==0.28.1
     # via
@@ -95,7 +95,7 @@ mccabe==0.7.0
     # via flake8
 mock==5.2.0
     # via iceprod (setup.py)
-moto[s3]==5.1.2
+moto[s3]==5.1.3
     # via iceprod (setup.py)
 motor==3.7.0
     # via iceprod (setup.py)
@@ -119,7 +119,7 @@ pyflakes==3.3.2
     # via flake8
 pyjwt[crypto]==2.10.1
     # via wipac-rest-tools
-pymongo==4.11.3
+pymongo==4.12.0
     # via
     #   iceprod (setup.py)
     #   motor
@@ -133,7 +133,7 @@ pytest==8.0.2
     #   pytest-mock
 pytest-asyncio==0.23.8
     # via iceprod (setup.py)
-pytest-cov==6.0.0
+pytest-cov==6.1.1
     # via iceprod (setup.py)
 pytest-mock==3.14.0
     # via iceprod (setup.py)
@@ -147,7 +147,7 @@ pyyaml==6.0.2
     #   iceprod (setup.py)
     #   moto
     #   responses
-qrcode==8.0
+qrcode==8.1
     # via wipac-rest-tools
 referencing==0.36.2
     # via
@@ -201,7 +201,7 @@ types-cachetools==5.5.0.20240820
     # via iceprod (setup.py)
 types-requests==2.32.0.20250328
     # via iceprod (setup.py)
-typing-extensions==4.13.0
+typing-extensions==4.13.2
     # via
     #   anyio
     #   beautifulsoup4
@@ -210,7 +210,7 @@ typing-extensions==4.13.0
     #   wipac-dev-tools
 unidecode==1.3.8
     # via iceprod (setup.py)
-urllib3==2.3.0
+urllib3==2.4.0
     # via
     #   botocore
     #   requests
@@ -219,7 +219,7 @@ urllib3==2.3.0
     #   wipac-rest-tools
 werkzeug==3.1.3
     # via moto
-wipac-dev-tools==1.15.6
+wipac-dev-tools==1.16.2
     # via
     #   iceprod (setup.py)
     #   wipac-rest-tools
