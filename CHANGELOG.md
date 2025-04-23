@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.52 (2025-04-23)
+
+### Other
+
+* Fix submit bug when executable is a url ([#428](https://github.com/WIPACrepo/iceprod/issues/428)) ([`766d684`](https://github.com/WIPACrepo/iceprod/commit/766d684361d0a2f449da39c3273022c1fe9d0bb8))
+
 ## v3.0.51 (2025-04-11)
 
 ### Other
