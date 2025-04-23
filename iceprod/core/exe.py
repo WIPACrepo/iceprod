@@ -493,11 +493,13 @@ class WriteToScript:
             module_src = self.cfgparser.parseValue(module['src'], env)
             if functions.isurl(module_src):
                 path = os.path.basename(module_src).split('?', 0)[0].split('#', 0)[0]
-                env['input_files'].add(Data(
+                data = Data(
                     url=module_src,
                     local=path,
                     transfer=Transfer.TRUE,
-                ))
+                )
+                env['input_files'].append(data)
+                self.infiles.add(data)
                 module_src = path
             self.logger.info('running module %r with src %s', module['name'], module_src)
         elif module['running_class']:
@@ -523,7 +525,7 @@ class WriteToScript:
             env_shell = module['env_shell'].split()
             if functions.isurl(env_shell[0]):
                 path = os.path.basename(env_shell[0]).split('?', 0)[0].split('#', 0)[0]
-                env['input_files'].add(Data(
+                env['input_files'].append(Data(
                     url=env_shell[0],
                     local=path,
                     transfer=Transfer.TRUE,
