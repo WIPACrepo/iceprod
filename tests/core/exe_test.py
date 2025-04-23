@@ -715,6 +715,36 @@ async def test_write_to_script_data_transfer(tmp_path):
     assert ws.outfiles == set()
 
 
+async def test_write_to_script_executable(tmp_path):
+    t = get_task({
+        'options': {
+            'job_temp': 'https://foo.bar',
+        },
+        'steering': {
+            'parameters': {
+                'foo0': 'baz',
+                'test': 'foo_bar_$steering(foo$(iter))',
+                'remote': 'https://foo.bar',
+            }
+        },
+        'tasks': [{
+            'name': 'foo',
+            'trays': [{
+                'modules': [{
+                    'env_clear': False,
+                    'src': '$steering(remote)/foo.py',
+                }]
+            }]
+        }]
+    })
+
+    ws = iceprod.core.exe.WriteToScript(t, workdir=tmp_path, logger=logger)
+    await ws.convert(transfer=True)
+
+    assert ws.infiles == {Data('https://foo.bar/foo.py', 'foo.py', Transfer.TRUE)}
+    assert ws.outfiles == set()
+
+
 async def test_write_to_script_configs(tmp_path):
     t = get_task({
         'options': {
