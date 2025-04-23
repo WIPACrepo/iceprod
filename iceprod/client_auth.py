@@ -28,7 +28,7 @@ def add_auth_to_argparse(parser):
                        help='The OAuth client secret, to enable client credential mode')
 
 
-def create_rest_client(args):
+def create_rest_client(args, **kwargs):
     """Create a RestClient from argparse args."""
     if args.oauth_client_secret:
         logging.debug('Using client credentials to authenticate')
@@ -37,6 +37,7 @@ def create_rest_client(args):
             token_url=args.oauth_url,
             client_id=args.oauth_client_id,
             client_secret=args.oauth_client_secret,
+            **kwargs,
         )
     else:
         logging.debug('Using user credentials to authenticate')
@@ -47,4 +48,5 @@ def create_rest_client(args):
             filename='.iceprod-auth',
             token_url=args.oauth_url,
             client_id=args.oauth_client_id,
+            **kwargs,
         )

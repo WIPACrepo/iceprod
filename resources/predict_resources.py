@@ -61,12 +61,15 @@ def determine_group(simprod, iceprod):
 
     return simprod
 
-async def run(rpc, simprod_data, outfile):
+async def run(rpc, ceph_rpc, simprod_data, outfile):
     datasets = {}
     iceprod_dataset_data = await rpc.request('GET', f'/datasets', {'keys': 'dataset_id|dataset|group|username|description|start_date'})
 
-    for data in reversed(simprod_data):
+    existing_paths = set()
+    for data in simprod_data:
         dataset_id = data['did']
+        if dataset_id == 'd9a980b2e82611ed9ff800505684797b':
+            continue
         number = data['number']
         logging.info('simprod - processing %d %s', number, dataset_id)
         logging.debug('iceprod data: %r', iceprod_dataset_data[dataset_id])
@@ -84,7 +87,68 @@ async def run(rpc, simprod_data, outfile):
                     'gpu': task['gpu'] > 0,
                     'goodput': task['total_hrs'],
                     'badput': task['total_err_hrs'],
+                    'storage': 0,
                 }
+
+        if data['paths']:
+            gen_disk = 0
+            filt_disk = 0
+            other_disk = 0
+            for path in data['paths'].split(';'):
+                if path in existing_paths:
+                    continue
+                existing_paths.add(path)
+                try:
+                    ret = await ceph_rpc.request('GET', path)
+                except Exception:
+                    continue
+                if 'generated' in path:
+                    gen_disk += ret['size']
+                elif 'filtered' in path:
+                    filt_disk += ret['size']
+                else:
+                    other_disk += ret['size']
+            
+            if 'other' in tasks:
+                tasks['other']['storage'] += other_disk
+                if filt_disk:
+                    if 'offline' in tasks:
+                        tasks['offline']['storage'] += filt_disk
+                    else:
+                        tasks['other']['storage'] += filt_disk
+                if gen_disk:
+                    if 'detector' in tasks:
+                        tasks['detector']['storage'] += gen_disk
+                    elif 'propagate' in tasks:
+                        tasks['propagate']['storage'] += gen_disk
+                    elif 'generate' in tasks:
+                        tasks['generate']['storage'] += gen_disk
+                    elif 'offline' in tasks:
+                        tasks['offline']['storage'] += gen_disk
+                    else:
+                        tasks['other']['storage'] += filt_disk
+
+            else:
+                filt_disk += other_disk
+                if filt_disk:
+                    if 'offline' in tasks:
+                        tasks['offline']['storage'] += filt_disk
+                    else:
+                        gen_disk += filt_disk
+                if gen_disk:
+                    if 'detector' in tasks:
+                        tasks['detector']['storage'] += gen_disk
+                    elif 'propagate' in tasks:
+                        tasks['propagate']['storage'] += gen_disk
+                    elif 'generate' in tasks:
+                        tasks['generate']['storage'] += gen_disk
+                    elif 'offline' in tasks:
+                        tasks['offline']['storage'] += gen_disk
+                    else:
+                        logging.info('paths %s', data['paths'])
+                        logging.info('tasks: %r', list(tasks.keys()))
+                        raise Exception('cannot allocate storage to any task!')
+
         datasets[number] = {
             'dataset_id': dataset_id,
             'tasks': tasks,
@@ -115,6 +179,7 @@ async def run(rpc, simprod_data, outfile):
                     'gpu': task['gpu'] > 0,
                     'goodput': task['total_hrs'],
                     'badput': task['total_err_hrs'],
+                    'storage': 0,
                 }
         datasets[number] = {
             'dataset_id': dataset_id,
@@ -133,11 +198,13 @@ async def run(rpc, simprod_data, outfile):
                 d[name] = {
                     'cpu': 0.,
                     'gpu': 0.,
+                    'storage': 0.,
                 }
             d[name]['gpu' if is_gpu else 'cpu'] += task['goodput'] + task['badput']
+            d[name]['storage'] += task['storage'] / 1000000000000.  # convert to TB
 
     with open(outfile, 'w', newline='') as csvfile:
-        fieldnames = ['group', 'year', 'task', 'gpu', 'cpu']
+        fieldnames = ['group', 'year', 'task', 'gpu', 'cpu', 'storage']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         for group in group_data:
@@ -149,6 +216,7 @@ async def run(rpc, simprod_data, outfile):
                         'task': task,
                         'gpu': int(group_data[group][year][task]['gpu']),
                         'cpu': int(group_data[group][year][task]['cpu']),
+                        'storage': group_data[group][year][task]['storage'],
                     }
                     writer.writerow(row)
 
@@ -163,11 +231,13 @@ def main():
 
     logging.basicConfig(level=getattr(logging, args.log_level.upper()))
     rpc = create_rest_client(args)
+    args.rest_url = 'https://disk-usage.icecube.aq/api'
+    ceph_rpc = create_rest_client(args, retries=0)
 
     with open(args.infile, 'r') as f:
         simprod_data = json.load(f)
 
-    asyncio.run(run(rpc, simprod_data, args.outfile))
+    asyncio.run(run(rpc, ceph_rpc, simprod_data, args.outfile))
 
 
 if __name__ == '__main__':
