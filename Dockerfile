@@ -4,7 +4,7 @@ FROM python:3.12-bullseye as base
 FROM base as build
 
 RUN wget -q -O - \
-      https://dist.eugridpma.info/distribution/igtf/current/GPG-KEY-EUGridPMA-RPM-3 \
+      https://dist.eugridpma.info/distribution/igtf/current/GPG-KEY-EUGridPMA-RPM-4 \
       | apt-key add -
 
 RUN echo "deb http://dist.eugridpma.info/distribution/igtf/current igtf accredited" >> /etc/apt/sources.list
