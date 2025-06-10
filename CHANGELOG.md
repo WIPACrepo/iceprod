@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.53 (2025-06-10)
+
+### Other
+
+* Add a longer timeout for gridftp transfers ([#429](https://github.com/WIPACrepo/iceprod/issues/429)) ([`0bfbdad`](https://github.com/WIPACrepo/iceprod/commit/0bfbdad9c86a7e9e882b5873ee1bd9e88964ea08))
+
 ## v3.0.52 (2025-04-23)
 
 ### Other
