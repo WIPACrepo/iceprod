@@ -398,7 +398,7 @@ class WriteToScript:
                 if data.transfer is Transfer.FALSE:
                     continue
                 if data.url.startswith('gsiftp://'):
-                    python_cmd = f'from iceprod.core.gridftp import GridFTP\nGridFTP.get("{data.url}", filename="$PWD/{data.local}")'
+                    python_cmd = f'from iceprod.core.gridftp import GridFTP\nGridFTP.get("{data.url}", filename="$PWD/{data.local}", request_timeout=7200)'
                     cmd = [
                         '/cvmfs/icecube.opensciencegrid.org/iceprod/v2.7.1/env-shell.sh',
                         'python', '-', "<<____HERE\n" + python_cmd + '\n____HERE\n',
@@ -417,7 +417,7 @@ class WriteToScript:
                 if data.transfer is Transfer.FALSE:
                     continue
                 if data.url.startswith('gsiftp://'):
-                    python_cmd = f'from iceprod.core.gridftp import GridFTP\nGridFTP.put("{data.url}", filename="$PWD/{data.local}")'
+                    python_cmd = f'from iceprod.core.gridftp import GridFTP\nGridFTP.put("{data.url}", filename="$PWD/{data.local}", request_timeout=10800)'
                     cmd_core = [
                         '/cvmfs/icecube.opensciencegrid.org/iceprod/v2.7.1/env-shell.sh',
                         'python', '-', "<<____HERE\n" + python_cmd + '\n____HERE\n',
