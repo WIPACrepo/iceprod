@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.55 (2025-06-24)
+
+### Other
+
+* Fix weird heredoc login shell issues by defining the shell ([#431](https://github.com/WIPACrepo/iceprod/issues/431)) ([`152799c`](https://github.com/WIPACrepo/iceprod/commit/152799c636af5472ee517e2437a734a204528b2c))
+
 ## v3.0.54 (2025-06-24)
 
 ### Other
