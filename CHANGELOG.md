@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v3.0.54 (2025-06-24)
+
+### Other
+
+* Fix condor/iceprod check race condition ([#430](https://github.com/WIPACrepo/iceprod/issues/430)) ([`3ac6642`](https://github.com/WIPACrepo/iceprod/commit/3ac6642cb7120e89829a7f1b9dca660d1e7704c3))
+
 ## v3.0.53 (2025-06-10)
 
 ### Other
