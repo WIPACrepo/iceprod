@@ -868,6 +868,7 @@ class Grid(grid.BaseGrid):
         Do a cross-check, to verify `self.jobs` vs the submit dir and IceProd API.
         """
         logger.info('starting cross-check')
+        self.cross_check_start = time.monotonic()
 
         all_jobs = self.submitter.get_jobs()
 
@@ -969,12 +970,13 @@ class Grid(grid.BaseGrid):
         fut = self.get_tasks_on_queue()
         queue_tasks = {j.task_id: j for j in self.jobs.values()}
         server_tasks = await fut
-        now = datetime.now(UTC)
+        # buffer time takes the time since cross check started + 60 seconds
+        buffer_time = datetime.now(UTC) - timedelta(seconds=(time.monotonic() - self.cross_check_start + 60))
         async with asyncio.TaskGroup() as tg:
             for task in server_tasks:
                 if task['task_id'] not in queue_tasks:
                     # ignore anything too recent
-                    if str2datetime(task['status_changed']) >= now - timedelta(minutes=1):
+                    if str2datetime(task['status_changed']) >= buffer_time:
                         continue
                     logger.info(f'task {task["dataset_id"]}.{task["task_id"]} in iceprod but not in queue')
                     job = CondorJob(
