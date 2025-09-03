@@ -363,7 +363,7 @@ class Server:
 
     async def start(self):
         if self.prometheus_port:
-            logging.info("starting prometheus on {}", self.prometheus_port)
+            logging.info("starting prometheus on %r", self.prometheus_port)
             start_http_server(self.prometheus_port)
             i = Info('iceprod', 'IceProd information')
             i.info({

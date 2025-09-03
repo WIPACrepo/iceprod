@@ -7,6 +7,8 @@ It has been broken down into several sub-handlers for easier maintenance.
 """
 
 from collections import defaultdict
+from collections.abc import Callable
+import dataclasses as dc
 from datetime import datetime, timedelta, UTC
 import functools
 import importlib.resources
@@ -14,6 +16,7 @@ import logging
 import os
 import random
 import re
+from typing import Optional
 from urllib.parse import urlencode
 
 from iceprod.core.jsonUtil import json_encode
@@ -27,7 +30,8 @@ import jwt
 import tornado.concurrent
 from rest_tools.client import RestClient, ClientCredentialsAuth
 from rest_tools.server import catch_error, RestServer, RestHandlerSetup, RestHandler, OpenIDLoginHandler
-from wipac_dev_tools import from_environment
+from rest_tools.utils.auth import OpenIDAuth
+from wipac_dev_tools import from_environment_as_dataclass
 
 from iceprod.util import VERSION_STRING
 from iceprod.prom_utils import AsyncMonitor, PromRequestMixin
@@ -102,6 +106,13 @@ class TokenStorageMixin:
     """
     Store/load current user's `OpenIDLoginHandler` tokens in iceprod credentials API.
     """
+    auth: OpenIDAuth
+    cred_rest_client: RestClient
+    get_secure_cookie: Callable[..., Optional[bytes]]
+    set_secure_cookie: Callable[..., None]
+    clear_cookie: Callable[..., None]
+    full_url: str
+
     def get_current_user(self):
         return None
 
@@ -653,26 +664,28 @@ class HealthHandler(PublicHandler):
         self.write(status)
 
 
+@dc.dataclass(frozen=True)
+class Config:
+    HOST : str = 'localhost'
+    PORT : int = 8080
+    DEBUG : bool = False
+    OPENID_URL : str = ''
+    OPENID_AUDIENCE : str = ''
+    ICEPROD_WEB_URL : str = 'https://iceprod2.icecube.wisc.edu'
+    ICEPROD_API_ADDRESS : str = 'https://iceprod2-api.icecube.wisc.edu'
+    ICEPROD_API_CLIENT_ID : str = ''
+    ICEPROD_API_CLIENT_SECRET : str = ''
+    ICEPROD_CRED_ADDRESS : str = 'https://credentials.iceprod.icecube.aq'
+    ICEPROD_CRED_CLIENT_ID : str = ''
+    ICEPROD_CRED_CLIENT_SECRET : str = ''
+    COOKIE_SECRET : str = ''
+    PROMETHEUS_PORT : int = 0
+    CI_TESTING : str = ''
+
+
 class Server:
     def __init__(self):
-        default_config = {
-            'HOST': 'localhost',
-            'PORT': 8080,
-            'DEBUG': False,
-            'OPENID_URL': '',
-            'OPENID_AUDIENCE': '',
-            'ICEPROD_WEB_URL': 'https://iceprod2.icecube.wisc.edu',
-            'ICEPROD_API_ADDRESS': 'https://iceprod2-api.icecube.wisc.edu',
-            'ICEPROD_API_CLIENT_ID': '',
-            'ICEPROD_API_CLIENT_SECRET': '',
-            'ICEPROD_CRED_ADDRESS': 'https://credentials.iceprod.icecube.aq',
-            'ICEPROD_CRED_CLIENT_ID': '',
-            'ICEPROD_CRED_CLIENT_SECRET': '',
-            'COOKIE_SECRET': '',
-            'PROMETHEUS_PORT': 0,
-            'CI_TESTING': '',
-        }
-        config = from_environment(default_config)
+        config = from_environment_as_dataclass(Config)
 
         # get package data
         static_path = str(importlib.resources.files('iceprod.website')/'data'/'www')
@@ -685,25 +698,25 @@ class Server:
             raise Exception('bad template path')
 
         # set IceProd REST API
-        if config['ICEPROD_API_ADDRESS']:
-            rest_address = config['ICEPROD_API_ADDRESS']
+        if config.ICEPROD_API_ADDRESS:
+            rest_address = config.ICEPROD_API_ADDRESS
         else:
             raise RuntimeError('ICEPROD_API_ADDRESS not specified')
 
         rest_config = {
-            'debug': config['DEBUG'],
+            'debug': config.DEBUG,
             'server_header': 'IceProd/' + VERSION_STRING,
         }
 
-        if config['OPENID_URL']:
-            logging.info(f'enabling auth via {config["OPENID_URL"]} for aud "{config["OPENID_AUDIENCE"]}"')
+        if config.OPENID_URL:
+            logging.info(f'enabling auth via {config.OPENID_URL} for aud "{config.OPENID_AUDIENCE}"')
             rest_config.update({
                 'auth': {
-                    'openid_url': config['OPENID_URL'],
-                    'audience': config['OPENID_AUDIENCE'],
+                    'openid_url': config.OPENID_URL,
+                    'audience': config.OPENID_AUDIENCE,
                 }
             })
-        elif config['CI_TESTING']:
+        elif config.CI_TESTING:
             rest_config.update({
                 'auth': {
                     'secret': 'secret',
@@ -713,44 +726,44 @@ class Server:
             raise RuntimeError('OPENID_URL not specified, and CI_TESTING not enabled!')
 
         # enable monitoring
-        self.prometheus_port = config['PROMETHEUS_PORT'] if config['PROMETHEUS_PORT'] > 0 else None
+        self.prometheus_port = config.PROMETHEUS_PORT if config.PROMETHEUS_PORT > 0 else None
         self.async_monitor = None
 
-        if config['ICEPROD_CRED_CLIENT_ID'] and config['ICEPROD_CRED_CLIENT_SECRET']:
-            logging.info(f'enabling auth via {config["OPENID_URL"]} for aud "{config["OPENID_AUDIENCE"]}"')
+        if config.ICEPROD_CRED_CLIENT_ID and config.ICEPROD_CRED_CLIENT_SECRET:
+            logging.info(f'enabling auth via {config.OPENID_URL} for aud "{config.OPENID_AUDIENCE}"')
             cred_client = ClientCredentialsAuth(
-                address=config['ICEPROD_CRED_ADDRESS'],
-                token_url=config['OPENID_URL'],
-                client_id=config['ICEPROD_CRED_CLIENT_ID'],
-                client_secret=config['ICEPROD_CRED_CLIENT_SECRET'],
+                address=config.ICEPROD_CRED_ADDRESS,
+                token_url=config.OPENID_URL,
+                client_id=config.ICEPROD_CRED_CLIENT_ID,
+                client_secret=config.ICEPROD_CRED_CLIENT_SECRET,
             )
-        elif config['CI_TESTING']:
-            cred_client = RestClient(config['ICEPROD_CRED_ADDRESS'], timeout=1, retries=0)
+        elif config.CI_TESTING:
+            cred_client = RestClient(config.ICEPROD_CRED_ADDRESS, timeout=1, retries=0)
         else:
             raise RuntimeError('ICEPROD_CRED_CLIENT_ID or ICEPROD_CRED_CLIENT_SECRET not specified, and CI_TESTING not enabled!')
 
         handler_args = RestHandlerSetup(rest_config)
         handler_args['cred_rest_client'] = cred_client
 
-        full_url = config['ICEPROD_WEB_URL']
+        full_url = config.ICEPROD_WEB_URL
         handler_args['full_url'] = full_url
         login_url = full_url+'/login'
 
         login_handler_args = handler_args.copy()
-        if config['ICEPROD_API_CLIENT_ID'] and config['ICEPROD_API_CLIENT_SECRET']:
+        if config.ICEPROD_API_CLIENT_ID and config.ICEPROD_API_CLIENT_SECRET:
             logging.info('enabling system rest client and website logins"')
             rest_client = ClientCredentialsAuth(
-                address=config['ICEPROD_API_ADDRESS'],
-                token_url=config['OPENID_URL'],
-                client_id=config['ICEPROD_API_CLIENT_ID'],
-                client_secret=config['ICEPROD_API_CLIENT_SECRET'],
+                address=config.ICEPROD_API_ADDRESS,
+                token_url=config.OPENID_URL,
+                client_id=config.ICEPROD_API_CLIENT_ID,
+                client_secret=config.ICEPROD_API_CLIENT_SECRET,
             )
-            login_handler_args['oauth_client_id'] = config['ICEPROD_API_CLIENT_ID']
-            login_handler_args['oauth_client_secret'] = config['ICEPROD_API_CLIENT_SECRET']
+            login_handler_args['oauth_client_id'] = config.ICEPROD_API_CLIENT_ID
+            login_handler_args['oauth_client_secret'] = config.ICEPROD_API_CLIENT_SECRET
             login_handler_args['oauth_client_scope'] = 'offline_access posix profile'
-        elif config['CI_TESTING']:
+        elif config.CI_TESTING:
             logger.info('CI_TESTING: no login for testing')
-            rest_client = RestClient(config['ICEPROD_API_ADDRESS'], timeout=1, retries=0)
+            rest_client = RestClient(config.ICEPROD_API_ADDRESS, timeout=1, retries=0)
         else:
             raise RuntimeError('ICEPROD_API_CLIENT_ID or ICEPROD_API_CLIENT_SECRET not specified, and CI_TESTING not enabled!')
 
@@ -758,15 +771,15 @@ class Server:
             'rest_api': rest_address,
             'system_rest_client': rest_client,
         })
-        if config['COOKIE_SECRET']:
-            cookie_secret = config['COOKIE_SECRET']
+        if config.COOKIE_SECRET:
+            cookie_secret = config.COOKIE_SECRET
             log_cookie_secret = cookie_secret[:4] + 'X'*(len(cookie_secret)-8) + cookie_secret[-4:]
             logger.info('using supplied cookie secret %r', log_cookie_secret)
         else:
             cookie_secret = ''.join(hex(random.randint(0,15))[-1] for _ in range(64))
 
         server = RestServer(
-            debug=config['DEBUG'],
+            debug=config.DEBUG,
             cookie_secret=cookie_secret,
             login_url=login_url,
             template_path=template_path,
@@ -792,13 +805,13 @@ class Server:
         server.add_route('/healthz', HealthHandler, handler_args)
         server.add_route(r"/.*", Other, handler_args)
 
-        server.startup(address=config['HOST'], port=config['PORT'])
+        server.startup(address=config.HOST, port=config.PORT)
 
         self.server = server
 
     async def start(self):
         if self.prometheus_port:
-            logging.info("starting prometheus on {}", self.prometheus_port)
+            logging.info("starting prometheus on %r", self.prometheus_port)
             start_http_server(self.prometheus_port)
             i = Info('iceprod', 'IceProd information')
             i.info({
