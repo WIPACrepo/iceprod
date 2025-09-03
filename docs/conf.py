@@ -2,6 +2,7 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
 import iceprod
+from iceprod.util import VERSION_STRING
 
 # the dbmethod decorator and docstrings don't get along
 # so turn the decorator off
@@ -26,12 +27,10 @@ except:
     pass
 if is_master:
     release = 'master'
-    parts = list(iceprod.version_info[:3])
-    parts[-1] -= 1
-    version = '%d.%d.%d'%tuple(parts)
+    version = VERSION_STRING
 else:
-    release = '%d.%d'%iceprod.version_info[:2]
-    version = iceprod.__version__
+    release = VERSION_STRING
+    version = VERSION_STRING
 
 extensions = [
     'sphinx.ext.autodoc',
