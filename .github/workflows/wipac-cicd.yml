@@ -78,6 +78,7 @@ jobs:
           author: WIPAC Developers
           author_email: developers@icecube.wisc.edu
           keywords_comma: "WIPAC, batch, workload"
+          package_dirs: iceprod
           auto_mypy_option: True
 
   py-dependencies:
