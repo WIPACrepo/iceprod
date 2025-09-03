@@ -7,72 +7,119 @@ on:
     tags-ignore:
       - '**'
 
-env:
-  py_version: '3.11'
-
 jobs:
-
-  flake8:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.py_version }}
-      - uses: WIPACrepo/wipac-dev-flake8-action@v1.0
-
-  py-setup:
-    runs-on: ubuntu-latest
-    steps:
-      - name: checkout
-        uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-      - uses: WIPACrepo/wipac-dev-py-setup-action@v1.15
-
   py-versions:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.versions.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
       - id: versions
-        uses: WIPACrepo/wipac-dev-py-versions-action@v2.1
+        uses: WIPACrepo/wipac-dev-py-versions-action@v2.7
 
-  pip-install:
-    needs: [py-versions]
+
+  ############################################################################
+  # LINTERS
+  #############################################################################
+
+  flake8:
+    needs: [ py-versions ]
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 4
       fail-fast: false
       matrix:
-        version: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
+        py3: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v5
         with:
-          python-version: ${{ matrix.version }}
-      - run: |
-          pip install --upgrade pip wheel setuptools
-          pip install .
+          ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.py3 }}
+      - uses: WIPACrepo/wipac-dev-flake8-action@v1.3
+        with:
+          max-complexity: 10  # ideal is ~10-15
 
-  py-tests:
+  mypy:
+    needs: [ py-versions ]
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        py3: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # setuptools-scm needs to access git tags
+          ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.py3 }}
+      - uses: WIPACrepo/wipac-dev-mypy-action@v2.0
+
+  ############################################################################
+  # PACKAGING
+  #############################################################################
+
+  py-setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          ref: ${{ github.ref }}  # dont lock to sha (action needs to push)
+      - uses: WIPACrepo/wipac-dev-py-setup-action@v5.3
+        with:
+          mode: PACKAGING_AND_PYPI
+          python_min: 3.11
+          pypi_name: iceprod
+          author: WIPAC Developers
+          author_email: developers@icecube.wisc.edu
+          keywords_comma: "WIPAC, batch, workload"
+          auto_mypy_option: True
+
+  py-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # setuptools-scm needs to access git tags
+          ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
+      - uses: WIPACrepo/wipac-dev-py-dependencies-action@v3.1
+
+  ############################################################################
+  # TESTS
+  #############################################################################
+
+  tests:
+    needs: [ py-versions ]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        py3: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
     services:
       mongo:
         image: mongo:7.0
         ports:
         - 27017:27017
+      redis:
+        image: redis:8
+        ports:
+        - 6379:6379
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v5
         with:
-          python-version: ${{ env.py_version }}
-      - name: Set up GCC
-        uses: egor-tensin/setup-gcc@v1
-      - name: Setup Dependencies
-        id: dependencies
+          fetch-depth: 0  # setuptools-scm needs to access git tags
+          ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.py3 }}
+      - name: Install dependencies
         run: |
+          set -euo pipefail; echo "now: $(date -u +"%Y-%m-%dT%H:%M:%S.%3N")"
           pip install --upgrade pip wheel setuptools
           pip install .[tests]
       - name: Run Tests
@@ -89,61 +136,87 @@ jobs:
     if: ${{ github.ref != 'refs/heads/master' && github.ref != 'refs/heads/main' }}
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout Project
-      uses: actions/checkout@v3
-    - name: Build Docker Image
-      uses: docker/build-push-action@v4
-      with:
-        context: .
-        push: false
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: false
 
-  release:
-    if: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' }}
-    needs: [flake8, py-setup, pip-install, py-tests]
-    runs-on: ubuntu-latest
-    concurrency: release
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-        token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-    - name: Python Semantic Release
-      uses: relekang/python-semantic-release@v7.34.6
-      with:
-        github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-        repository_username: __token__
-        repository_password: ${{ secrets.PYPI_TOKEN }}
 
-  docker:
-    name: "Docker Image"
-    if: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' }}
-    needs: [flake8, py-setup, pip-install, py-tests]
+  ############################################################################
+  # TAG + RELEASE
+  #############################################################################
+
+  release-version:
+    if: format('refs/heads/{0}', github.event.repository.default_branch) == github.ref
+    needs: [
+      py-versions,
+      flake8,
+      mypy,
+      py-setup,
+      py-dependencies,
+      tests,
+    ]
     runs-on: ubuntu-latest
+    outputs:
+      next-version: ${{ steps.next-version.outputs.version }}
     steps:
-    - name: Checkout Project
-      uses: actions/checkout@v3
-    - name: Docker meta
-      id: docker_meta
-      uses: docker/metadata-action@v3
-      with:
-        images: |
-          ghcr.io/WIPACRepo/iceprod
-        tags: |
-          type=ref,event=branch
-          type=semver,pattern={{major}}
-          type=semver,pattern={{major}}.{{minor}}
-          type=semver,pattern={{major}}.{{minor}}.{{patch}}
-    - name: Login to GitHub Container Registry
-      uses: docker/login-action@v2
-      if: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' }}
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    - name: Push Docker Image
-      uses: docker/build-push-action@v4
-      with:
-        context: .
-        push: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' }}
-        tags: ${{ steps.docker_meta.outputs.tags }}
-        labels: ${{ steps.docker_meta.outputs.labels }}
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
+      # copied from tag-and-release
+      - name: Determine next version
+        uses: WIPACrepo/wipac-dev-next-version-action@v1.3
+        id: next-version
+        with:
+          force-patch-if-no-commit-token: true
+          ignore-paths: |
+            **/README.md
+            .github/**
+            .gitignore
+
+
+  tag-and-release:
+    # only run on main/default
+    if: format('refs/heads/{0}', github.event.repository.default_branch) == github.ref && needs.release-version.outputs.next-version != ''
+    needs: [
+      py-versions,
+      flake8,
+      mypy,
+      py-setup,
+      py-dependencies,
+      tests,
+      release-version,
+    ]
+    uses: WIPACrepo/wipac-dev-workflows/.github/workflows/tag-and-release.yml@v1.7
+    permissions: # for GITHUB_TOKEN
+      contents: write
+    with:
+      project-type: python
+      python-version: "${{ fromJSON(needs.py-versions.outputs.matrix)[0] }}"
+      release-artifacts: |
+        py-dependencies-logs
+      publish-to-pypi: true
+    secrets:
+      PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+
+  image-publish:
+    if: format('refs/heads/{0}', github.event.repository.default_branch) == github.ref && needs.release-version.outputs.next-version != ''
+    needs: [
+      tag-and-release,
+      release-version,
+    ]
+    uses: WIPACrepo/wipac-dev-workflows/.github/workflows/image-publish.yml@v1.4
+    permissions: # for GITHUB_TOKEN
+      packages: write
+    with:
+      image_namespace: wipacrepo
+      image_name: iceprod
+      mode: CVMFS_BUILD
+      cvmfs_dest_dir: "iceprod"
+      build_args: |
+        SETUPTOOLS_SCM_PRETEND_VERSION=${{ needs.release-version.outputs.next-version }}
+      extra_build_tag: ${{ needs.release-version.outputs.next-version }}
