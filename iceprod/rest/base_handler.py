@@ -2,7 +2,7 @@ import logging
 
 from rest_tools.server import RestHandlerSetup, RestHandler
 
-from iceprod import __version__ as version_string
+from iceprod.util import VERSION_STRING
 from iceprod.prom_utils import PromRequestMixin
 from .auth import AttrAuthMixin
 
@@ -10,7 +10,7 @@ logger = logging.getLogger('rest')
 
 
 def IceProdRestConfig(config=None, database=None, auth_database=None, s3conn=None):
-    config['server_header'] = 'IceProd/' + version_string
+    config['server_header'] = 'IceProd/' + VERSION_STRING
     ret = RestHandlerSetup(config)
     ret['database'] = database
     ret['auth_database'] = auth_database
@@ -28,7 +28,7 @@ class APIBase(AttrAuthMixin, PromRequestMixin, RestHandler):
 
     def get_template_namespace(self):
         namespace = super().get_template_namespace()
-        namespace['version'] = version_string
+        namespace['version'] = VERSION_STRING
         return namespace
 
     def get_current_user(self):

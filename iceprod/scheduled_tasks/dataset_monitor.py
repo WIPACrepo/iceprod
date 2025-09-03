@@ -12,7 +12,7 @@ import os
 
 from prometheus_client import Gauge, Histogram, Info, start_http_server
 
-from iceprod import __version__ as version_string
+from iceprod.util import VERSION_STRING
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 from iceprod.prom_utils import HistogramBuckets
 from iceprod.server import states
@@ -162,7 +162,7 @@ def main():
         start_http_server(int(args.prometheus_port))
     i = Info('iceprod', 'IceProd information')
     i.info({
-        'version': version_string,
+        'version': VERSION_STRING,
         'type': 'cron',
     })
 

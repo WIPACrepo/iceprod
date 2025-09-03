@@ -19,7 +19,7 @@ from prometheus_client import Info
 import requests.exceptions
 from wipac_dev_tools.prometheus_tools import GlobalLabels, AsyncPromWrapper, AsyncPromTimer
 
-from iceprod import __version__ as version_string
+from iceprod.util import VERSION_STRING
 from iceprod.core import functions
 from iceprod.core.config import Task, Job, Dataset
 from iceprod.core.defaults import add_default_options
@@ -93,7 +93,7 @@ class BaseGrid:
             'name': str(self.site),
             'type': 'grid',
             'queue_type': queue_cfg.get('type',''),
-            'version': version_string,
+            'version': VERSION_STRING,
             'exclusive': str(queue_cfg.get('exclusive', False)),
         })
 

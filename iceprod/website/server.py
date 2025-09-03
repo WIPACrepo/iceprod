@@ -29,7 +29,7 @@ from rest_tools.client import RestClient, ClientCredentialsAuth
 from rest_tools.server import catch_error, RestServer, RestHandlerSetup, RestHandler, OpenIDLoginHandler
 from wipac_dev_tools import from_environment
 
-from iceprod import __version__ as version_string
+from iceprod.util import VERSION_STRING
 from iceprod.prom_utils import AsyncMonitor, PromRequestMixin
 from iceprod.roles_groups import GROUPS
 from iceprod.core.config import CONFIG_SCHEMA as DATASET_SCHEMA
@@ -215,7 +215,7 @@ class PublicHandler(TokenStorageMixin, PromRequestMixin, RestHandler):
 
     def get_template_namespace(self):
         namespace = super().get_template_namespace()
-        namespace['version'] = version_string
+        namespace['version'] = VERSION_STRING
         namespace['section'] = self.request.uri.lstrip('/').split('?')[0].split('/')[0]
         namespace['json_encode'] = json_encode
         namespace['states'] = iceprod.server.states
@@ -692,7 +692,7 @@ class Server:
 
         rest_config = {
             'debug': config['DEBUG'],
-            'server_header': 'IceProd/' + version_string,
+            'server_header': 'IceProd/' + VERSION_STRING,
         }
 
         if config['OPENID_URL']:
@@ -802,7 +802,7 @@ class Server:
             start_http_server(self.prometheus_port)
             i = Info('iceprod', 'IceProd information')
             i.info({
-                'version': version_string,
+                'version': VERSION_STRING,
                 'type': 'website',
             })
             self.async_monitor = AsyncMonitor(labels={'type': 'website'})

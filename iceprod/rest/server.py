@@ -14,7 +14,7 @@ from rest_tools.server import RestServer
 from tornado.web import RequestHandler, HTTPError
 from wipac_dev_tools import from_environment
 
-from iceprod import __version__ as version_string
+from iceprod.util import VERSION_STRING
 from ..prom_utils import AsyncMonitor
 from ..s3 import boto3, S3
 from .base_handler import IceProdRestConfig
@@ -134,7 +134,7 @@ class Server:
             start_http_server(self.prometheus_port)
             i = Info('iceprod', 'IceProd information')
             i.info({
-                'version': version_string,
+                'version': VERSION_STRING,
                 'type': 'api',
             })
             self.async_monitor = AsyncMonitor(labels={'type': 'api'})

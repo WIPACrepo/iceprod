@@ -17,7 +17,7 @@ from tornado.web import HTTPError
 from tornado.web import RequestHandler as TornadoRequestHandler
 from wipac_dev_tools import from_environment
 
-from iceprod import __version__ as version_string
+from iceprod.util import VERSION_STRING
 from ..prom_utils import AsyncMonitor
 from iceprod.rest.auth import authorization
 from iceprod.rest.base_handler import IceProdRestConfig, APIBase
@@ -520,7 +520,7 @@ class Server:
             start_http_server(self.prometheus_port)
             i = Info('iceprod', 'IceProd information')
             i.info({
-                'version': version_string,
+                'version': VERSION_STRING,
                 'type': 'credentials',
             })
             self.async_monitor = AsyncMonitor(labels={'type': 'credentials'})
