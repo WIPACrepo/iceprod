@@ -26,9 +26,9 @@ dependencies = [
     "unidecode",
     "wipac-dev-tools",
     "wipac-rest-tools",
-] # (can remove comment) originally migrated from 'setup.cfg' by 'WIPACrepo/wipac-dev-py-setup-action' github action package
+]
 
-[project.optional-dependencies] # (can remove comment) originally migrated from 'setup.cfg' by 'WIPACrepo/wipac-dev-py-setup-action' github action package
+[project.optional-dependencies]
 tests = [
     "beautifulsoup4",
     "coverage",
