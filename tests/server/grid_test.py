@@ -7,7 +7,7 @@ from prometheus_client import REGISTRY
 import pytest
 import requests.exceptions
 
-from iceprod import __version__ as version_string
+from iceprod.util import VERSION_STRING
 from iceprod.core.resources import Resources
 from iceprod.core.config import Dataset, Job, Task
 import iceprod.server.config
@@ -28,7 +28,7 @@ def test_grid_init():
         'name': 'bar',
         'type': 'grid',
         'queue_type': 'test',
-        'version': version_string,
+        'version': VERSION_STRING,
         'exclusive': 'False',
     })
     assert metric == 1
@@ -47,7 +47,7 @@ def test_grid_init_gpu():
         'name': 'grid-gpu',
         'type': 'grid',
         'queue_type': 'test',
-        'version': version_string,
+        'version': VERSION_STRING,
         'exclusive': 'False',
     })
     assert metric == 1
