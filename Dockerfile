@@ -47,24 +47,27 @@ COPY --from=build /usr/local/bin/uberftp /usr/local/bin/
 
 COPY --from=build /etc/grid-security/certificates/ /etc/grid-security/certificates/
 
-RUN groupadd -g 1000 iceprod && useradd -m -g 1000 -u 1000 iceprod
+RUN groupadd -g 1000 app && useradd -m -g 1000 -u 1000 app
 
-WORKDIR /home/iceprod
-USER iceprod
+RUN mkdir /app
+WORKDIR /app
 
-COPY --chown=1000:1000 bin bin
-COPY --chown=1000:1000 iceprod iceprod
-COPY --chown=1000:1000 resources resources
-COPY --chown=1000:1000 env.sh setup.cfg setup.py make_dataclasses.py ./
-
+COPY bin /app/bin
+COPY iceprod /app/iceprod
+COPY pyproject.toml /app/pyproject.toml
+COPY resources /app/resources
 RUN mkdir etc
 
-USER root
+RUN chown -R app:app /app
 
-RUN pip install --no-cache-dir -e .
+USER app
 
-USER iceprod
+ENV VIRTUAL_ENV=/app/venv
 
-ENTRYPOINT ["/home/iceprod/env.sh"]
+RUN python3 -m venv $VIRTUAL_ENV
 
-CMD ["/home/iceprod/bin/iceprod_server.py", "-n", "start"]
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+RUN --mount=type=bind,source=.git,target=.git,ro pip install --no-cache .
+
+CMD ["/app/bin/iceprod_server.py", "-n", "start"]

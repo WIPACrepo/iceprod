@@ -139,6 +139,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
+          fetch-depth: 0  # setuptools-scm needs to access git tags
           ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
       - uses: docker/build-push-action@v6
         with:
