@@ -716,51 +716,51 @@ class Grid(grid.BaseGrid):
                                 # so ignore this and let the cross-check take care of it
                                 continue
 
-                                # get stats
-                                cpu = event.get('CpusUsage', None)
-                                gpu = event.get('GpusUsage', None)
-                                memory = event.get('ResidentSetSize_RAW', None)  # KB
-                                if memory is None:
-                                    memory = event.get('MemoryUsage', None)*1000  # MB
-                                disk = event.get('DiskUsage_RAW', None)  # KB
-                                if disk is None:
-                                    disk = event.get('DiskUsage', None)  # KB
-                                time_ = event.get('RemoteWallClockTime', None)  # seconds
-                                if time_ is None:
-                                    time_ = parse_usage(event.get('RunRemoteUsage', '')) / event.get('RequestCpus', 1)
-                                elif cpu is None and time_:
-                                    cpu = parse_usage(event.get('RunRemoteUsage', '')) / time_
-                                # data_in = event['ReceivedBytes']  # KB
-                                # data_out = event['SentBytes']  # KB
+                                # # get stats
+                                # cpu = event.get('CpusUsage', None)
+                                # gpu = event.get('GpusUsage', None)
+                                # memory = event.get('ResidentSetSize_RAW', None)  # KB
+                                # if memory is None:
+                                #     memory = event.get('MemoryUsage', None)*1000  # MB
+                                # disk = event.get('DiskUsage_RAW', None)  # KB
+                                # if disk is None:
+                                #     disk = event.get('DiskUsage', None)  # KB
+                                # time_ = event.get('RemoteWallClockTime', None)  # seconds
+                                # if time_ is None:
+                                #     time_ = parse_usage(event.get('RunRemoteUsage', '')) / event.get('RequestCpus', 1)
+                                # elif cpu is None and time_:
+                                #     cpu = parse_usage(event.get('RunRemoteUsage', '')) / time_
+                                # # data_in = event['ReceivedBytes']  # KB
+                                # # data_out = event['SentBytes']  # KB
 
-                                resources = {}
-                                if cpu is not None:
-                                    resources['cpu'] = cpu
-                                if gpu is not None:
-                                    resources['gpu'] = gpu
-                                if memory is not None:
-                                    resources['memory'] = memory/1000000.
-                                if disk is not None:
-                                    resources['disk'] = disk/1000000.
-                                if time_ is not None:
-                                    resources['time'] = time_/3600.
+                                # resources = {}
+                                # if cpu is not None:
+                                #     resources['cpu'] = cpu
+                                # if gpu is not None:
+                                #     resources['gpu'] = gpu
+                                # if memory is not None:
+                                #     resources['memory'] = memory/1000000.
+                                # if disk is not None:
+                                #     resources['disk'] = disk/1000000.
+                                # if time_ is not None:
+                                #     resources['time'] = time_/3600.
 
-                                stats = {}
-                                if site := event.get('MachineAttrGLIDEIN_Site0'):
-                                    stats['site'] = site
-                                elif site := event.get('MATCH_EXP_JOBGLIDEIN_ResourceName'):
-                                    stats['site'] = site
+                                # stats = {}
+                                # if site := event.get('MachineAttrGLIDEIN_Site0'):
+                                #     stats['site'] = site
+                                # elif site := event.get('MATCH_EXP_JOBGLIDEIN_ResourceName'):
+                                #     stats['site'] = site
 
-                                reason = None
-                                if r := event.get('HoldReason'):
-                                    reason = r
-                                elif r := event.get('RemoveReason'):
-                                    reason = r
-                                elif r := event.get('Reason'):
-                                    reason = r
+                                # reason = None
+                                # if r := event.get('HoldReason'):
+                                #     reason = r
+                                # elif r := event.get('RemoveReason'):
+                                #     reason = r
+                                # elif r := event.get('Reason'):
+                                #     reason = r
 
-                                # finish job
-                                await self.finish(job_id, success=success, resources=resources, stats=stats, reason=reason)
+                                # # finish job
+                                # await self.finish(job_id, success=success, resources=resources, stats=stats, reason=reason)
 
                             elif type_ == htcondor.JobEventType.JOB_ABORTED:
                                 job.status = JobStatus.FAILED
@@ -772,7 +772,7 @@ class Grid(grid.BaseGrid):
                                 # so ignore this and let the cross-check take care of it
                                 continue
 
-                                await self.finish(job_id, success=False, reason=reason)
+                                #await self.finish(job_id, success=False, reason=reason)
 
                             else:
                                 # update status

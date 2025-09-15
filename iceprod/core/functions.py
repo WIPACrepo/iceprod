@@ -362,7 +362,7 @@ async def download(url, local, options={}):
     return local
 
 
-async def upload(local, url, checksum=True, options={}):
+async def upload(local, url, checksum=True, options={}):  # noqa: C901
     """Upload a file, checksumming if possible"""
     local = os.path.expandvars(local)
     url = os.path.expandvars(url)

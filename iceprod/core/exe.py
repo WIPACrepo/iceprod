@@ -498,7 +498,7 @@ class WriteToScript:
         scriptname.chmod(scriptname.stat().st_mode | 0o700)
         return scriptname
 
-    async def _write_module(self, module, env, file):
+    async def _write_module(self, module, env, file):  # noqa: C901
         module = module.copy()
         module_class = ''
         if module['src']:

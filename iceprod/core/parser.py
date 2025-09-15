@@ -124,7 +124,7 @@ def scanner(data):
         yield ('word', word)
 
 
-def parser(data):
+def parser(data):  # noqa: C901
     """A syntactic parser, yielding syntactically accurate token pairs"""
     last_token = None
     last_word = ''
@@ -286,7 +286,7 @@ class ExpParser:
         for reduction in 'sum', 'min', 'max', 'len':
             self.keywords[reduction] = functools.partial(self.reduce_func, getattr(builtins, reduction))
 
-    def parse(self,input,job=None,env=None,depth=20):
+    def parse(self,input,job=None,env=None,depth=20):  # noqa: C901
         """
         Parse the input, expanding where possible.
 

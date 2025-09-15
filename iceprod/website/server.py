@@ -103,7 +103,7 @@ class TokenStorageMixin(OpenIDCookieHandlerMixin, RestHandler):
     """
     Store/load current user's `OpenIDLoginHandler` tokens in iceprod credentials API.
     """
-    def initialize(self, cred_rest_client: RestClient, full_url: str, **kwargs): # type: ignore
+    def initialize(self, cred_rest_client: RestClient, full_url: str, **kwargs):  # type: ignore
         super().initialize(**kwargs)
         self.cred_rest_client = cred_rest_client
         self.full_url = full_url

@@ -271,7 +271,6 @@ class Error(TornadoRequestHandler):
         raise HTTPError(404, 'invalid api route')
 
 
-
 @dataclasses.dataclass
 class DefaultConfig:
     HOST: str = 'localhost'
