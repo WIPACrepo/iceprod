@@ -74,11 +74,25 @@ async def rmtree_s3(path, s3_client=None):
     await s3_client.rmtree(path)  # type: ignore
 
 
+def filter_job_dirs(job_dirs, job_indexes, debug=False):
+    for j in job_dirs:
+        if isinstance(job_dirs[j], dict):
+            continue
+        if not j.isnumeric():
+            if debug:
+                logger.info('j is not numeric: %r', j)
+                raise Exception('not numeric')
+            continue
+        if int(j) in job_indexes:
+            yield j
+
+
 async def clean_dataset_dir(dataset_num, dataset_id, job_dirs, temp_dir, rmtree, debug, rest_client):
     logger.info('temp cleaning for dataset %r', dataset_num)
     logger.debug('job_dirs: %r', job_dirs)
-    
+
     now = datetime.now(UTC)
+    suspend_time = timedelta(days=90)
 
     try:
         jobs = await rest_client.request('GET', f'/datasets/{dataset_id}/jobs', {'keys':'status|status_changed|job_index'})
@@ -96,28 +110,20 @@ async def clean_dataset_dir(dataset_num, dataset_id, job_dirs, temp_dir, rmtree,
     logger.debug('job_indexes: %r', job_indexes)
 
     futures = set()
-    for j in job_dirs:
-        if isinstance(job_dirs[j], dict):
-            continue
-        if not j.isnumeric():
-            if debug:
-                logger.info('j is not numeric: %r', j)
-                raise Exception('not numeric')
-            continue
-        if int(j) in job_indexes:
-            while len(futures) >= 16:
-                done, futures = await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED)
-                for f in done:
-                    try:
-                        await f
-                    except Exception:
-                        logger.warning('failed to clean site_temp', exc_info=True)
-                        if debug:
-                            raise
+    for j in filter_job_dirs(job_dirs, job_indexes, debug=debug):
+        while len(futures) >= 16:
+            done, futures = await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED)
+            for f in done:
+                try:
+                    await f
+                except Exception:
+                    logger.warning('failed to clean site_temp', exc_info=True)
+                    if debug:
+                        raise
 
-            dagtemp = os.path.join(temp_dir, dataset_num, j)
-            logger.info('cleaning site_temp %r', dagtemp)
-            futures.add(asyncio.create_task(rmtree(dagtemp)))
+        dagtemp = os.path.join(temp_dir, dataset_num, j)
+        logger.info('cleaning site_temp %r', dagtemp)
+        futures.add(asyncio.create_task(rmtree(dagtemp)))
 
     if futures:
         for f in asyncio.as_completed(futures):
@@ -141,8 +147,6 @@ async def run(rest_client, temp_dir, list_dirs, rmtree, dataset=None, debug=Fals
         dataset (int): dataset num to run over (optional)
         debug (bool): debug flag to propagate exceptions
     """
-    suspend_time = timedelta(days=90)
-
     try:
         # get all the job_indexes currently in tmp
         if dataset:

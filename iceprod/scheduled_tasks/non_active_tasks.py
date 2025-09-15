@@ -41,7 +41,7 @@ async def delete_pilot(pilot_id, rest_client):
     await rest_client.request('DELETE', '/pilots/{}'.format(pilot_id))
 
 
-async def run(rest_client, debug=False):
+async def run(rest_client, debug=False):  # noqa: C901
     """
     Actual runtime / loop.
 
