@@ -62,13 +62,13 @@ def test_scope_env():
     c = iceprod.core.exe.ConfigParser(t.dataset, logger=logger)
     with iceprod.core.exe.scope_env(c, t.dataset.config['steering']) as env:
         # test parameters
-        assert env['parameters'] == t.dataset.config['steering']['parameters']
-        assert c.parseObject('$(foo)', env) == 1
+        assert env.parameters == t.dataset.config['steering']['parameters']
+        assert c.parseObject('$(foo)', env.to_parser_dict()) == 1
 
         # test parsing data
         with iceprod.core.exe.scope_env(c, t.dataset.config['tasks'][0], env) as tenv:
-            assert tenv['input_files'] == [Data('https://foo.bar/baz', 'baz', Transfer.TRUE)]
-        assert env['input_files'] == []
+            assert tenv.input_files == [Data('https://foo.bar/baz', 'baz', Transfer.TRUE)]
+        assert env.input_files == []
 
 
 def test_download_data():

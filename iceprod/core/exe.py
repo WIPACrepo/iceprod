@@ -148,6 +148,9 @@ class Env:
     upper_output_files: list[Data]
     environment: dict[str, str]
 
+    def to_parser_dict(self) -> dict[str, Any]:
+        return {'parameters': self.parameters, 'environment': self.environment}
+
 
 @contextmanager
 def scope_env(cfg: ConfigParser, obj: dict, upperenv: Optional[Env] = None, logger: Optional[logging.Logger] = None) -> Iterator[Env]:
@@ -204,14 +207,14 @@ def scope_env(cfg: ConfigParser, obj: dict, upperenv: Optional[Env] = None, logg
             env.parameters.update(obj['parameters'])
             # parse parameter values and update if necessary
             for p in obj['parameters']:
-                newval = cfg.parseValue(obj['parameters'][p], {'parameters': env.parameters, 'environment': env.environment})
+                newval = cfg.parseValue(obj['parameters'][p], env.to_parser_dict())
                 if newval != obj['parameters'][p]:
                     env.parameters[p] = newval
 
         if 'data' in obj:
             # download data
             for data in obj['data']:
-                d = cfg.parseObject(data, {'parameters': env.parameters, 'environment': env.environment})
+                d = cfg.parseObject(data, env.to_parser_dict())
                 if d['movement'] in ('input','both'):
                     ret = downloadData(d, cfg=cfg, logger=logger)
                     if ret:
