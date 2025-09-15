@@ -1,5 +1,3 @@
-import pytest
-import requests.exceptions
 
 
 async def test_rest_grids_empty(server):

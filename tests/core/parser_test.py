@@ -9,12 +9,6 @@ from tests.util import unittest_reporter, glob_tests
 import logging
 logger = logging.getLogger('parser_test')
 
-import os, sys, time
-import shutil
-import random
-import string
-import subprocess
-import threading
 import unittest
 import json
 try:
@@ -22,9 +16,7 @@ try:
 except ImportError:
     import __builtin__ as builtins
 
-from flexmock import flexmock
 
-from iceprod.core import to_log
 from iceprod.core import parser, dataclasses
 
 class parser_test(unittest.TestCase):

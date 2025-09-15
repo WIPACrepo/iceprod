@@ -7,7 +7,6 @@ It has been broken down into several sub-handlers for easier maintenance.
 """
 
 from collections import defaultdict
-from collections.abc import Callable
 import dataclasses as dc
 from datetime import datetime, timedelta, UTC
 import functools
@@ -16,7 +15,6 @@ import logging
 import os
 import random
 import re
-from typing import Optional
 from urllib.parse import urlencode
 
 from iceprod.core.jsonUtil import json_encode
@@ -30,7 +28,6 @@ import jwt
 import tornado.concurrent
 from rest_tools.client import RestClient, ClientCredentialsAuth
 from rest_tools.server import catch_error, RestServer, RestHandlerSetup, RestHandler, OpenIDCookieHandlerMixin, OpenIDLoginHandler
-from rest_tools.utils.auth import OpenIDAuth
 from wipac_dev_tools import from_environment_as_dataclass
 
 from iceprod.util import VERSION_STRING

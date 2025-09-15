@@ -4,29 +4,27 @@ Test script for resources
 
 from __future__ import absolute_import, division, print_function
 
-from tests.util import unittest_reporter, glob_tests, cmp_dict
+from tests.util import unittest_reporter, glob_tests
 
 import logging
 logger = logging.getLogger('resources')
 
 import os
-import sys
 import tempfile
 import shutil
 import time
 
 import unittest
 try:
-    import cPickle as pickle
+    pass
 except:
-    import pickle
+    pass
 
 try:
     import psutil
 except ImportError:
     psutil = False
 
-from iceprod.core import to_log
 import iceprod.core.resources
 
 

@@ -2,7 +2,6 @@ from unittest.mock import AsyncMock, MagicMock
 
 from rest_tools.client import RestClient
 
-import iceprod.materialization.materialize
 from iceprod.materialization.materialize import Materialize
 
 def test_materialize_init():

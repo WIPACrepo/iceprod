@@ -4,8 +4,6 @@ Test script for i3exec
 import argparse
 import json
 import logging
-import pytest
-import subprocess
 
 import iceprod.core.exe
 import iceprod.core.i3exec

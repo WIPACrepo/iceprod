@@ -1,7 +1,6 @@
 import pytest
 import requests.exceptions
 
-from iceprod.core.config import Config
 
 
 async def test_rest_config_err(server):

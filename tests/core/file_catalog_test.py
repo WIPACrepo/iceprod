@@ -9,24 +9,20 @@ from tests.util import unittest_reporter, glob_tests
 import logging
 logger = logging.getLogger('file_catalog')
 
-import os
-import sys
-import json
 
 try:
-    import cPickle as pickle
+    pass
 except:
-    import pickle
+    pass
 
 import unittest
 try:
     from unittest.mock import patch
 except ImportError:
-    from mock import patch
+    pass
 import requests_mock
 import requests
 
-from iceprod.core import to_log
 import iceprod.core.file_catalog
 from iceprod.core.jsonUtil import json_encode,json_decode
 

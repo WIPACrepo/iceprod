@@ -9,18 +9,16 @@ from tests.util import unittest_reporter, glob_tests
 import logging
 logger = logging.getLogger('gridftp')
 
-import os, sys, time
+import os
 import shutil
 import random
-import string
 import subprocess
 import tempfile
-from threading import Event
 
 try:
-    import cPickle as pickle
+    pass
 except:
-    import pickle
+    pass
 
 import unittest
 

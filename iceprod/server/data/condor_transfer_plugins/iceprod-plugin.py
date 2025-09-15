@@ -94,7 +94,7 @@ def parse_args():
     # <this> -classad
     # <this> -infile <input-filename> -outfile <output-filename>
     # <this> -outfile <output-filename> -infile <input-filename>
-    if not len(sys.argv) in [2, 5, 6]:
+    if len(sys.argv) not in [2, 5, 6]:
         print_help()
         sys.exit(EXIT_FAILURE)
 

@@ -1,14 +1,10 @@
-import asyncio
 import binascii
 import json
 import logging
 import random
-import re
-import secrets
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import MagicMock
 
 import httpx
-import pytest
 import pytest_asyncio
 from rest_tools.utils import Auth
 from rest_tools.client import RestClient

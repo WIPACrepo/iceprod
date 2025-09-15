@@ -19,7 +19,7 @@ from rest_tools.client import RestClient, ClientCredentialsAuth
 from rest_tools.server import RestServer
 from tornado.web import HTTPError
 from tornado.web import RequestHandler as TornadoRequestHandler
-from wipac_dev_tools import from_environment, from_environment_as_dataclass
+from wipac_dev_tools import from_environment_as_dataclass
 
 from iceprod.util import VERSION_STRING
 from ..prom_utils import AsyncMonitor
