@@ -714,6 +714,7 @@ class Grid(grid.BaseGrid):
 
                                 # there's a bug where not all the classads are updated before the event fires
                                 # so ignore this and let the cross-check take care of it
+                                continue
 
                                 """
                                 # get stats
@@ -771,8 +772,11 @@ class Grid(grid.BaseGrid):
 
                                 # there's a bug where not all the classads are updated before the event fires
                                 # so ignore this and let the cross-check take care of it
+                                continue
 
-                                #await self.finish(job_id, success=False, reason=reason)
+                                """
+                                await self.finish(job_id, success=False, reason=reason)
+                                """
 
                             else:
                                 # update status
