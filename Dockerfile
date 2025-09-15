@@ -1,7 +1,7 @@
-FROM python:3.12-bullseye as base
+FROM python:3.12-bullseye AS base
 
 
-FROM base as build
+FROM base AS build
 
 RUN wget -q -O - \
       https://dist.eugridpma.info/distribution/igtf/current/GPG-KEY-EUGridPMA-RPM-4 \
@@ -37,7 +37,7 @@ RUN make install
 
 
 # make release image
-FROM base as release
+FROM base AS release
 
 RUN apt-get update && apt-get install -y \
     globus-gass-copy-progs globus-proxy-utils voms-clients \
