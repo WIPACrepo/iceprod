@@ -115,7 +115,38 @@ class ConfigParser:
             return obj
 
 
-Env = dict[str, dict[str, Any]]
+class Transfer(StrEnum):
+    TRUE = 'true'
+    MAYBE = 'maybe'
+    FALSE = 'false'
+
+
+@dataclass(frozen=True, slots=True)
+class Data:
+    """
+    IceProd Data instance
+
+    Args:
+        url: url location
+        local: local filename
+        transfer: whether to transfer file (true | maybe | false)
+    """
+    url: str
+    local: str
+    transfer: Transfer
+
+    def __str__(self):
+        return f"Data(url='{self.url}', local='{self.local}', transfer='{str(self.transfer)}')"
+
+
+@dataclass
+class Env:
+    parameters: dict[str, Any]
+    input_files: list[Data]
+    output_files: list[Data]
+    upper_input_files: list[Data]
+    upper_output_files: list[Data]
+    environment: dict[str, str]
 
 
 @contextmanager
@@ -123,7 +154,7 @@ def scope_env(cfg: ConfigParser, obj: dict, upperenv: Optional[Env] = None, logg
     """
     A context manager for parsing scoped config, such as parameters.
 
-    The returned environment is a dictionary composed of several objects:
+    The returned environment is a dataclass composed of several objects:
 
     * parameters
         Parameters are defined directly as an object, or as a string pointing
@@ -148,20 +179,21 @@ def scope_env(cfg: ConfigParser, obj: dict, upperenv: Optional[Env] = None, logg
         upperenv: previous scope's env output
         logger: a logger object, for localized logging
     """
-    env: Env = {
-        'parameters': {},
-        'input_files': [],
-        'output_files': [],
-        'upper_input_files': [],
-        'upper_output_files': [],
-        'environment': {
+    env = Env(
+        parameters={},
+        input_files=[],
+        output_files=[],
+        upper_input_files=[],
+        upper_output_files=[],
+        environment={
             'OS_ARCH': '$OS_ARCH',
         }
-    }
+    )
+
     if upperenv:
-        env['parameters'].update(upperenv['parameters'])
-        env['upper_input_files'] = upperenv['input_files'] + upperenv['upper_input_files']
-        env['upper_output_files'] = upperenv['output_files'] + upperenv['upper_output_files']
+        env.parameters.update(upperenv.parameters)
+        env.upper_input_files = upperenv.input_files + upperenv.upper_input_files
+        env.upper_output_files = upperenv.output_files + upperenv.upper_output_files
 
     logger = logger if logger else logging.getLogger()
 
@@ -169,29 +201,29 @@ def scope_env(cfg: ConfigParser, obj: dict, upperenv: Optional[Env] = None, logg
         # copy parameters
         if 'parameters' in obj:
             # copy new parameters to env first so local referrals work
-            env['parameters'].update(obj['parameters'])
+            env.parameters.update(obj['parameters'])
             # parse parameter values and update if necessary
             for p in obj['parameters']:
-                newval = cfg.parseValue(obj['parameters'][p], env)
+                newval = cfg.parseValue(obj['parameters'][p], {'parameters': env.parameters, 'environment': env.environment})
                 if newval != obj['parameters'][p]:
-                    env['parameters'][p] = newval
+                    env.parameters[p] = newval
 
         if 'data' in obj:
             # download data
             for data in obj['data']:
-                d = cfg.parseObject(data, env)
+                d = cfg.parseObject(data, {'parameters': env.parameters, 'environment': env.environment})
                 if d['movement'] in ('input','both'):
                     ret = downloadData(d, cfg=cfg, logger=logger)
                     if ret:
-                        env['input_files'].append(ret)
+                        env.input_files.append(ret)
                 if d['movement'] in ('output','both'):
                     ret = uploadData(d, cfg=cfg, logger=logger)
                     if ret:
-                        env['output_files'].append(ret)
+                        env.output_files.append(ret)
 
         # add input and output to parseable options
-        cfg.config['options']['input'] = ' '.join(d.local for d in (env['input_files'] + env['upper_input_files']))
-        cfg.config['options']['output'] = ' '.join(d.local for d in (env['output_files'] + env['upper_output_files']))
+        cfg.config['options']['input'] = ' '.join(d.local for d in (env.input_files + env.upper_input_files))
+        cfg.config['options']['output'] = ' '.join(d.local for d in (env.output_files + env.upper_output_files))
         logging.info('input: %r', cfg.config['options']['input'])
         logging.info('output: %r', cfg.config['options']['output'])
 
@@ -202,30 +234,6 @@ def scope_env(cfg: ConfigParser, obj: dict, upperenv: Optional[Env] = None, logg
         raise
 
     yield env
-
-
-class Transfer(StrEnum):
-    TRUE = 'true'
-    MAYBE = 'maybe'
-    FALSE = 'false'
-
-
-@dataclass(frozen=True, slots=True)
-class Data:
-    """
-    IceProd Data instance
-
-    Args:
-        url: url location
-        local: local filename
-        transfer: whether to transfer file (true | maybe | false)
-    """
-    url: str
-    local: str
-    transfer: Transfer
-
-    def __str__(self):
-        return f"Data(url='{self.url}', local='{self.local}', transfer='{str(self.transfer)}')"
 
 
 def storage_location(data: dict, parser: ConfigParser) -> str:
@@ -309,7 +317,7 @@ def downloadData(data: dict, cfg: ConfigParser, logger=None) -> Optional[Data]:
     transfer = do_transfer(data)
     if transfer == Transfer.FALSE:
         logger.info('not transferring file %s', url)
-        return
+        return None
 
     if not local:
         local = os.path.basename(remote)
@@ -350,7 +358,7 @@ def uploadData(data: dict, cfg: ConfigParser, logger=None) -> Optional[Data]:
     transfer = do_transfer(data)
     if transfer == Transfer.FALSE:
         logger.info('not transferring file %s', local)
-        return
+        return None
 
     return Data(url, local, transfer)
 
@@ -459,10 +467,10 @@ class WriteToScript:
                 task = self.task.get_task_config()
                 if self.task.task_files:
                     task['data'].extend(self.task.task_files)
-                self._add_input_files(globalenv['input_files'], f=(f if transfer else None))
+                self._add_input_files(globalenv.input_files, f=(f if transfer else None))
                 self.logger.debug('converting task %s', self.task.name)
                 with scope_env(self.cfgparser, task, globalenv, logger=self.logger) as taskenv:
-                    self._add_input_files(taskenv['input_files'], f=(f if transfer else None))
+                    self._add_input_files(taskenv.input_files, f=(f if transfer else None))
                     for i, tray in enumerate(task['trays']):
                         trayname = tray['name'] if tray.get('name', '') else i
                         for iteration in range(tray['iterations']):
@@ -470,25 +478,26 @@ class WriteToScript:
                             self.logger.debug('converting tray %r iter %d', trayname, iteration)
                             print(f'# running tray {trayname}, iter {iteration}', file=f)
                             with scope_env(self.cfgparser, tray, taskenv, logger=self.logger) as trayenv:
-                                self._add_input_files(trayenv['input_files'], f=(f if transfer else None))
+                                self._add_input_files(trayenv.input_files, f=(f if transfer else None))
                                 for j, module in enumerate(tray['modules']):
                                     modulename = module['name'] if module.get('name', '') else j
                                     self.logger.debug('converting module %r', modulename)
                                     print(f'# running module {modulename}', file=f)
                                     with scope_env(self.cfgparser, module, trayenv, logger=self.logger) as moduleenv:
-                                        self._add_input_files(moduleenv['input_files'], f=(f if transfer else None))
+                                        self._add_input_files(moduleenv.input_files, f=(f if transfer else None))
                                         await self._write_module(module, moduleenv, file=f)
-                                        self._add_output_files(moduleenv['output_files'], f=(f if transfer else None))
+                                        self._add_output_files(moduleenv.output_files, f=(f if transfer else None))
                                     print('', file=f)
-                                self._add_output_files(trayenv['output_files'], f=(f if transfer else None))
-                    self._add_output_files(taskenv['output_files'], f=(f if transfer else None))
-                self._add_output_files(globalenv['output_files'], f=(f if transfer else None))
+                                self._add_output_files(trayenv.output_files, f=(f if transfer else None))
+                    self._add_output_files(taskenv.output_files, f=(f if transfer else None))
+                self._add_output_files(globalenv.output_files, f=(f if transfer else None))
 
         scriptname.chmod(scriptname.stat().st_mode | 0o700)
         return scriptname
 
     async def _write_module(self, module, env, file):
         module = module.copy()
+        module_class = ''
         if module['src']:
             module_src = self.cfgparser.parseValue(module['src'], env)
             if functions.isurl(module_src):
@@ -498,7 +507,7 @@ class WriteToScript:
                     local=path,
                     transfer=Transfer.TRUE,
                 )
-                env['input_files'].append(data)
+                env.input_files.append(data)
                 self.infiles.add(data)
                 module_src = path
             self.logger.info('running module %r with src %s', module['name'], module_src)
@@ -525,7 +534,7 @@ class WriteToScript:
             env_shell = module['env_shell'].split()
             if functions.isurl(env_shell[0]):
                 path = os.path.basename(env_shell[0]).split('?', 0)[0].split('#', 0)[0]
-                env['input_files'].append(Data(
+                env.input_files.append(Data(
                     url=env_shell[0],
                     local=path,
                     transfer=Transfer.TRUE,
@@ -572,7 +581,7 @@ class WriteToScript:
             # construct a python file to call the class
             parsed_args = self.cfgparser.parseObject(args, env)
             pymodule, class_ = module_class.rsplit('.', 1)
-            args = f"""import json
+            args_str = f"""import json
 from {pymodule} import {class_}
 args = json.loads('''{json_encode(parsed_args)}''')
 obj = {class_}()
@@ -596,12 +605,12 @@ obj.Execute({{}})"""
                     local=filename,
                     transfer=Transfer.TRUE,
                 )
-                env['input_files'].append(data)
+                env.input_files.append(data)
                 self.infiles.add(data)
 
         # run the module
         if (not module_src):
-            cmd.extend(['python', '-', "<<____HERE\n" + args + '\n____HERE\n'])
+            cmd.extend(['python', '-', "<<____HERE\n" + args_str + '\n____HERE\n'])  # type: ignore
         elif module_src[-3:] == '.py':
             # call as python script
             cmd.extend(['python', module_src] + args)

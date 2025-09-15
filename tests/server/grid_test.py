@@ -203,17 +203,17 @@ def test_grid_get_resources(i3prod_path):
 
     t.requirements['os'] = 'RHEL_7_x86_64'
     r = iceprod.server.grid.BaseGrid._get_resources(t)
-    assert r['os'] == ['RHEL_7_x86_64']
+    assert r['os'] == ['RHEL_7_x86_64']  # type: ignore
 
     t.requirements['os'] = ['RHEL_7_x86_64', 'RHEL_8_x86_64']
     r = iceprod.server.grid.BaseGrid._get_resources(t)
-    assert r['os'] == ['RHEL_7_x86_64', 'RHEL_8_x86_64']
+    assert r['os'] == ['RHEL_7_x86_64', 'RHEL_8_x86_64']  # type: ignore
 
 
 @dataclass(kw_only=True, slots=True)
 class GT(iceprod.server.grid.GridTask):
-    dataset_id: str
-    task_id: str
+    dataset_id: str  # type: ignore
+    task_id: str  # type: ignore
     instance_id: str | None = None
 
 

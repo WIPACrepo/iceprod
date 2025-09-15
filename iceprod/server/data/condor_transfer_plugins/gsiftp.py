@@ -20,12 +20,12 @@ EXIT_FAILURE = 1
 EXIT_AUTHENTICATION_REFRESH = 2
 
 try:
-    from classad import ClassAd, parseAds
+    from classad import ClassAd, parseAds  # type: ignore
 except ImportError:
     import re
     import json
 
-    class ClassAd(dict):
+    class ClassAd(dict):  # type: ignore
         def printOld(self):
             ret = []
             for k,v in self.items():

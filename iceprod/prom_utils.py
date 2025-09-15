@@ -5,7 +5,8 @@ import asyncio
 import time
 
 from prometheus_client import Histogram
-from wipac_dev_tools.prometheus_tools import GlobalLabels,AsyncPromWrapper
+from tornado.web import RequestHandler
+from wipac_dev_tools.prometheus_tools import GlobalLabels, AsyncPromWrapper
 
 
 class HistogramBuckets:
@@ -35,7 +36,7 @@ class HistogramBuckets:
     HOUR = [10, 60, 120, 300, 600, 1200, 1800, 2400, 3000, 3600]
 
 
-class PromRequestMixin:
+class PromRequestMixin(RequestHandler):
     PromHTTPHistogram = Histogram('http_request_duration_seconds', 'HTTP request duration in seconds', labelnames=('method', 'handler', 'status'), buckets=HistogramBuckets.API)
 
     def prepare(self):
@@ -77,4 +78,4 @@ class AsyncMonitor(GlobalLabels):
     async def _monitor(self, prom_gauge):
         while True:
             prom_gauge.set(len(asyncio.all_tasks()))
-            asyncio.sleep(self.SLEEP_TIME)
+            await asyncio.sleep(self.SLEEP_TIME)

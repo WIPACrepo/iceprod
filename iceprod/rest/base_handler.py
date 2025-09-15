@@ -1,5 +1,7 @@
 import logging
+from typing import Any
 
+import motor.motor_asyncio
 from rest_tools.server import RestHandlerSetup, RestHandler
 
 from iceprod.util import VERSION_STRING
@@ -9,8 +11,12 @@ from .auth import AttrAuthMixin
 logger = logging.getLogger('rest')
 
 
-def IceProdRestConfig(config=None, database=None, auth_database=None, s3conn=None):
-    config['server_header'] = 'IceProd/' + VERSION_STRING
+DB = motor.motor_asyncio.AsyncIOMotorDatabase | motor.motor_asyncio.AsyncIOMotorClient
+
+
+def IceProdRestConfig(config: dict[str, Any], database: DB, auth_database=None, s3conn=None):
+    if config:
+        config['server_header'] = 'IceProd/' + VERSION_STRING
     ret = RestHandlerSetup(config)
     ret['database'] = database
     ret['auth_database'] = auth_database
@@ -20,8 +26,8 @@ def IceProdRestConfig(config=None, database=None, auth_database=None, s3conn=Non
 
 class APIBase(AttrAuthMixin, PromRequestMixin, RestHandler):
     """Default REST handler"""
-    def initialize(self, database=None, auth_database=None, s3=None, **kwargs):
-        super().initialize(**kwargs)
+    def initialize(self, *args, database, auth_database, s3=None, **kwargs):
+        super().initialize(*args, **kwargs)
         self.db = database
         self.auth_db = auth_database
         self.s3 = s3

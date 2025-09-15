@@ -8,7 +8,7 @@ try:
 except ImportError:
     from typing_extensions import Self
 
-import jsonschema
+import jsonschema  # type: ignore
 from rest_tools.client import RestClient
 
 

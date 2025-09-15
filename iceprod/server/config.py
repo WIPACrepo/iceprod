@@ -8,7 +8,7 @@ import logging
 import os
 from pathlib import Path
 
-import jsonschema
+import jsonschema  # type: ignore
 
 logger = logging.getLogger('config')
 

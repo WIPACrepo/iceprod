@@ -59,7 +59,7 @@ class BaseGrid:
         queue_cfg = self.cfg['queue']
 
         # site name
-        self.site = None
+        self.site = ''
         if 'site' in queue_cfg:
             self.site = queue_cfg['site']
 
@@ -228,8 +228,8 @@ class BaseGrid:
         """
         resource = deepcopy(Resources.defaults)
         for k in resource:
-            if isinstance(resource[k],list):
-                resource[k] = len(resource[k])
+            if isinstance(resource[k], list):
+                resource[k] = len(resource[k])  # type: ignore
         values = {}
         try:
             for k in task.requirements:

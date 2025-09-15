@@ -139,6 +139,7 @@ class Queue:
         """
         def blocking():
             try:
+                assert self.proxy
                 if duration:
                     self.proxy.set_duration(duration//3600)
                 self.proxy.update_proxy()
@@ -148,6 +149,6 @@ class Queue:
 
         while True:
             start = time.monotonic()
-            await asyncio.to_thread(blocking())
+            await asyncio.to_thread(blocking())  # type: ignore
             end = time.monotonic()
             await asyncio.sleep(max(1, 300 - (end-start)))

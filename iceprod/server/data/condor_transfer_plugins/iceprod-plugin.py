@@ -18,15 +18,15 @@ import traceback
 try:
     import requests
 except ImportError:
-    requests = None
+    requests = None  # type: ignore
 
 try:
-    from classad import ClassAd, parseAds
+    from classad import ClassAd, parseAds  # type: ignore
 except ImportError:
     import re
     import json
 
-    class ClassAd(dict):
+    class ClassAd(dict):  # type: ignore
         def printOld(self):
             ret = []
             for k,v in self.items():

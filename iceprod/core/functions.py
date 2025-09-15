@@ -17,10 +17,10 @@ import asyncio
 try:
     import psutil
 except ImportError:
-    psutil = None
+    psutil = None  # type: ignore
 
 import requests
-from requests_toolbelt.multipart.encoder import MultipartEncoder
+from requests_toolbelt.multipart.encoder import MultipartEncoder  # type: ignore
 from rest_tools.client import Session, AsyncSession
 
 from iceprod.core.gridftp import GridFTP

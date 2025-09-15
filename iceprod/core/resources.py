@@ -15,10 +15,10 @@ import logging
 try:
     import psutil
 except ImportError:
-    psutil = None
+    psutil = None  # type: ignore
 
 try:
-    import classad
+    import classad  # type: ignore
 except ImportError:
     def classad_to_dict(text):
         ret = {}
@@ -31,7 +31,7 @@ except ImportError:
 else:
     def classad_to_dict(text):
         ret = {}
-        c = classad.parseOne(text)
+        c = classad.parseOne(text)  # type: ignore
         for k in c.keys():
             try:
                 ret[k.lower()] = c.eval(k)

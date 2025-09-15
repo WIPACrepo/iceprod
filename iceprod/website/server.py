@@ -29,7 +29,7 @@ import tornado.gen
 import jwt
 import tornado.concurrent
 from rest_tools.client import RestClient, ClientCredentialsAuth
-from rest_tools.server import catch_error, RestServer, RestHandlerSetup, RestHandler, OpenIDLoginHandler
+from rest_tools.server import catch_error, RestServer, RestHandlerSetup, RestHandler, OpenIDCookieHandlerMixin, OpenIDLoginHandler
 from rest_tools.utils.auth import OpenIDAuth
 from wipac_dev_tools import from_environment_as_dataclass
 
@@ -102,16 +102,14 @@ def eval_expression(token, e):
     return [r for r in ret if r]
 
 
-class TokenStorageMixin:
+class TokenStorageMixin(OpenIDCookieHandlerMixin, RestHandler):
     """
     Store/load current user's `OpenIDLoginHandler` tokens in iceprod credentials API.
     """
-    auth: OpenIDAuth
-    cred_rest_client: RestClient
-    get_secure_cookie: Callable[..., Optional[bytes]]
-    set_secure_cookie: Callable[..., None]
-    clear_cookie: Callable[..., None]
-    full_url: str
+    def initialize(self, cred_rest_client: RestClient, full_url: str, **kwargs): # type: ignore
+        super().initialize(**kwargs)
+        self.cred_rest_client = cred_rest_client
+        self.full_url = full_url
 
     def get_current_user(self):
         return None
@@ -119,6 +117,7 @@ class TokenStorageMixin:
     async def get_current_user_async(self):
         """Get the current user, and set auth-related attributes."""
         try:
+            assert self.auth
             username = self.get_secure_cookie('iceprod_username')
             if not username:
                 return None
@@ -173,6 +172,7 @@ class TokenStorageMixin:
             user_info (dict): user info (from id token or user info lookup)
             user_info_exp (int): user info expiration in seconds
         """
+        assert self.auth
         if not user_info:
             user_info = self.auth.validate(access_token)
         username = user_info.get('preferred_username')
@@ -199,16 +199,13 @@ class TokenStorageMixin:
         self.clear_cookie('iceprod_username')
 
 
-class Login(TokenStorageMixin, PromRequestMixin, OpenIDLoginHandler):
-    def initialize(self, cred_rest_client=None, full_url=None, **kwargs):
-        super().initialize(**kwargs)
-        self.cred_rest_client = cred_rest_client
-        self.full_url = full_url
+class Login(TokenStorageMixin, PromRequestMixin, OpenIDLoginHandler):  # type: ignore
+    pass
 
 
 class PublicHandler(TokenStorageMixin, PromRequestMixin, RestHandler):
     """Default Handler"""
-    def initialize(self, rest_api=None, cred_rest_client=None, system_rest_client=None, full_url=None, **kwargs):
+    def initialize(self, rest_api, system_rest_client, **kwargs):  # type: ignore
         """
         Get some params from the website module
 
@@ -219,15 +216,14 @@ class PublicHandler(TokenStorageMixin, PromRequestMixin, RestHandler):
         """
         super().initialize(**kwargs)
         self.rest_api = rest_api
-        self.cred_rest_client = cred_rest_client
         self.system_rest_client = system_rest_client
-        self.rest_client = None
-        self.full_url = full_url
+        self.rest_client: RestClient | None = None
 
     def get_template_namespace(self):
         namespace = super().get_template_namespace()
         namespace['version'] = VERSION_STRING
-        namespace['section'] = self.request.uri.lstrip('/').split('?')[0].split('/')[0]
+        if self.request.uri:
+            namespace['section'] = self.request.uri.lstrip('/').split('?')[0].split('/')[0]
         namespace['json_encode'] = json_encode
         namespace['states'] = iceprod.server.states
         namespace['rest_api'] = self.rest_api
@@ -315,6 +311,7 @@ class Config(PublicHandler):
     """Handle /config urls"""
     @authenticated
     async def get(self):
+        assert self.rest_client
         dataset_id = self.get_argument('dataset_id',default=None)
         if not dataset_id:
             self.write_error(400,message='must provide dataset_id')
@@ -346,6 +343,7 @@ class DatasetBrowse(PublicHandler):
 
     @authenticated
     async def get(self):
+        assert self.rest_client
         usernames = await self.get_usernames()
         filter_options = {
             'status': ['processing', 'suspended', 'errors', 'complete', 'truncated'],
@@ -381,6 +379,7 @@ class Dataset(PublicHandler):
     """Handle /dataset urls"""
     @authenticated
     async def get(self, dataset_id):
+        assert self.rest_client
         if dataset_id.isdigit():
             try:
                 d_num = int(dataset_id)
@@ -434,6 +433,7 @@ class TaskBrowse(PublicHandler):
     """Handle /task urls"""
     @authenticated
     async def get(self, dataset_id):
+        assert self.rest_client
         status = self.get_argument('status',default=None)
         if status:
             tasks = await self.rest_client.request('GET','/datasets/{}/tasks?status={}'.format(dataset_id,status))
@@ -452,6 +452,7 @@ class Task(PublicHandler):
     """Handle /task urls"""
     @authenticated
     async def get(self, dataset_id, task_id):
+        assert self.rest_client
         status = self.get_argument('status', default=None)
         passkey = self.auth_access_token
 
@@ -483,6 +484,7 @@ class JobBrowse(PublicHandler):
     """Handle /job urls"""
     @authenticated
     async def get(self, dataset_id):
+        assert self.rest_client
         status = self.get_argument('status',default=None)
         passkey = self.auth_access_token
 
@@ -499,6 +501,7 @@ class Job(PublicHandler):
     """Handle /job urls"""
     @authenticated
     async def get(self, dataset_id, job_id):
+        assert self.rest_client
         status = self.get_argument('status',default=None)
         passkey = self.auth_access_token
 
@@ -531,6 +534,7 @@ class Documentation(PublicHandler):
 class Log(PublicHandler):
     @authenticated
     async def get(self, dataset_id, log_id):
+        assert self.rest_client
         ret = await self.rest_client.request('GET','/datasets/{}/logs/{}'.format(dataset_id, log_id))
         log_text = ret['data']
         html = '<html><head><title>' + ret['name'] + '</title></head><body>'
@@ -665,7 +669,7 @@ class HealthHandler(PublicHandler):
 
 
 @dc.dataclass(frozen=True)
-class Config:
+class DefaultConfig:
     HOST : str = 'localhost'
     PORT : int = 8080
     DEBUG : bool = False
@@ -685,7 +689,7 @@ class Config:
 
 class Server:
     def __init__(self):
-        config = from_environment_as_dataclass(Config)
+        config = from_environment_as_dataclass(DefaultConfig)
 
         # get package data
         static_path = str(importlib.resources.files('iceprod.website')/'data'/'www')

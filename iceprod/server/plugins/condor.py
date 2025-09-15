@@ -9,7 +9,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timedelta, UTC
 import enum
-import importlib
+import importlib.resources
 import logging
 import os
 from pathlib import Path
@@ -206,18 +206,18 @@ class CondorSubmit:
 
     def condor_plugin_discovery(self):
         """Find all available HTCondor transfer plugins, and copy them to the submit_dir"""
-        src_dir = importlib.resources.files('iceprod.server')/'data'/'condor_transfer_plugins'
-        if src_dir.is_dir():
-            dest_dir = self.submit_dir / 'transfer_plugins'
-            shutil.copytree(src_dir, dest_dir, dirs_exist_ok=True)
-            ret = {}
-            for p in dest_dir.iterdir():
-                p.chmod(0o777)
-                logger.debug('transfer plugin %s', p)
-                for line in subprocess.run([str(p), '-classad'], capture_output=True, text=True, check=True).stdout.split('\n'):
-                    logger.debug('transfer plugin output: %s', line)
-                    if line.startswith('SupportedMethods'):
-                        ret[line.split('=')[-1].strip(' "')] = str(p)
+        ret = {}
+        with importlib.resources.as_file(importlib.resources.files('iceprod.server')/'data'/'condor_transfer_plugins') as src_dir:
+            if src_dir.is_dir():
+                dest_dir = self.submit_dir / 'transfer_plugins'
+                shutil.copytree(src_dir, dest_dir, dirs_exist_ok=True)
+                for p in dest_dir.iterdir():
+                    p.chmod(0o777)
+                    logger.debug('transfer plugin %s', p)
+                    for line in subprocess.run([str(p), '-classad'], capture_output=True, text=True, check=True).stdout.split('\n'):
+                        logger.debug('transfer plugin output: %s', line)
+                        if line.startswith('SupportedMethods'):
+                            ret[line.split('=')[-1].strip(' "')] = str(p)
         return ret
 
     @staticmethod
@@ -432,8 +432,8 @@ transfer_output_remaps = $(outremaps)
                 'container': f'{container}',
                 'prec': f'{ads["PreCmd"]}',
                 'prea': f'{ads["PreArguments"]}',
-                'infiles': f'"{";".join(ads["transfer_input_files"])}"',
-                'outfiles': f'"{";".join(ads["transfer_output_files"])}"',
+                'infiles': f'"{";".join(ads["transfer_input_files"])}"',  # type: ignore
+                'outfiles': f'"{";".join(ads["transfer_output_files"])}"',  # type: ignore
                 'outremaps': f'"{ads["transfer_output_remaps"]}"',
             })
 
@@ -460,7 +460,7 @@ transfer_output_remaps = $(outremaps)
         return ret
 
     @PromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_get_jobs', 'IceProd grid condor.get_jobs calls', buckets=HistogramBuckets.MINUTE))
-    def get_jobs(self) -> dict[CondorJobId: CondorJob]:
+    def get_jobs(self) -> dict[CondorJobId, CondorJob]:
         """
         Get all jobs currently on the condor queue.
         """
@@ -501,11 +501,15 @@ transfer_output_remaps = $(outremaps)
             since=f'CompletionDate<{since}' if since else None,
         ):
             job_id = CondorJobId(cluster_id=ad['ClusterId'], proc_id=ad['ProcId'])
+
+            submit_dir = None
             if s := ad.get('Iwd'):
                 submit_dir = Path(s)
+
             status = JobStatus.IDLE
             if s := ad.get('JobStatus'):
                 status = JobStatus.from_condor_status(s)
+
             job = CondorJob(
                 dataset_id=ad.get('IceProdDatasetId'),
                 task_id=ad.get('IceProdTaskId'),
@@ -907,7 +911,7 @@ class Grid(grid.BaseGrid):
     async def check_history(self, prom_histogram):
         """Check condor_history"""
         now = time.time()
-        hist_jobs_iter = self.submitter.get_history(since=self.last_event_timestamp)
+        hist_jobs_iter = self.submitter.get_history(since=int(self.last_event_timestamp))
         self.last_event_timestamp = now
         async with asyncio.TaskGroup() as tg:
             last_time = time.monotonic()

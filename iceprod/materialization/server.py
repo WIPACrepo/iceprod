@@ -2,10 +2,12 @@
 Materialization service for dataset late materialization.
 """
 import asyncio
-from datetime import datetime
+import dataclasses
+from datetime import UTC, datetime
 import json
 import logging
 import time
+from typing import Any
 import uuid
 
 from prometheus_client import Info, start_http_server
@@ -17,7 +19,7 @@ from rest_tools.client import RestClient, ClientCredentialsAuth
 from rest_tools.server import RestServer
 from tornado.web import HTTPError
 from tornado.web import RequestHandler as TornadoRequestHandler
-from wipac_dev_tools import from_environment
+from wipac_dev_tools import from_environment, from_environment_as_dataclass
 
 from iceprod.util import VERSION_STRING
 from ..prom_utils import AsyncMonitor
@@ -30,8 +32,8 @@ logger = logging.getLogger('server')
 
 
 class BaseHandler(APIBase):
-    def initialize(self, materialization_service=None, rest_client=None, **kwargs):
-        super().initialize(**kwargs)
+    def initialize(self, *args, materialization_service=None, rest_client=None, **kwargs):
+        super().initialize(*args, **kwargs)
         self.materialization_service = materialization_service
         self.rest_client = rest_client
 
@@ -79,6 +81,7 @@ class BaseHandler(APIBase):
             val (str): attribute value
             role (str): the role to check for (read|write)
         """
+        assert self.rest_client
         args = {
             'name': arg,
             'value': val,
@@ -216,10 +219,11 @@ class HealthHandler(BaseHandler):
 
         Returns based on exit code, 200 = ok, 400 = failure
         """
+        assert self.materialization_service
         now = time.time()
         status = {
             'now': nowstr(),
-            'start_time': datetime2str(datetime.utcfromtimestamp(self.materialization_service.start_time)),
+            'start_time': datetime2str(datetime.fromtimestamp(self.materialization_service.start_time, tz=UTC)),
             'last_run_time': "",
             'last_success_time': "",
             'last_cleanup_time': "",
@@ -233,7 +237,7 @@ class HealthHandler(BaseHandler):
                 if self.materialization_service.last_run_time + 3600 < now:
                     self.send_error(500, reason='materialization has stopped running')
                     return
-                status['last_run_time'] = datetime2str(datetime.utcfromtimestamp(self.materialization_service.last_run_time))
+                status['last_run_time'] = datetime2str(datetime.fromtimestamp(self.materialization_service.last_run_time, tz=UTC))
             if self.materialization_service.last_success_time is None and self.materialization_service.start_time + 86400 < now:
                 self.send_error(500, reason='materialization was never successful')
                 return
@@ -241,9 +245,9 @@ class HealthHandler(BaseHandler):
                 if self.materialization_service.last_success_time + 86400 < now:
                     self.send_error(500, reason='materialization has stopped being successful')
                     return
-                status['last_success_time'] = datetime2str(datetime.utcfromtimestamp(self.materialization_service.last_success_time))
+                status['last_success_time'] = datetime2str(datetime.fromtimestamp(self.materialization_service.last_success_time, tz=UTC))
             if self.materialization_service.last_cleanup_time is not None:
-                status['last_cleanup_time'] = datetime2str(datetime.utcfromtimestamp(self.materialization_service.last_cleanup_time))
+                status['last_cleanup_time'] = datetime2str(datetime.fromtimestamp(self.materialization_service.last_cleanup_time, tz=UTC))
         except Exception:
             logger.info('error from materialization service', exc_info=True)
             self.send_error(500, reason='error from materialization service')
@@ -267,56 +271,55 @@ class Error(TornadoRequestHandler):
         raise HTTPError(404, 'invalid api route')
 
 
+
+@dataclasses.dataclass
+class DefaultConfig:
+    HOST: str = 'localhost'
+    PORT: int = 8080
+    DEBUG: bool = False
+    OPENID_URL: str = ''
+    OPENID_AUDIENCE: str = ''
+    ICEPROD_API_ADDRESS: str = 'https://iceprod2-api.icecube.wisc.edu'
+    ICEPROD_API_CLIENT_ID: str = ''
+    ICEPROD_API_CLIENT_SECRET: str = ''
+    DB_URL: str = 'mongodb://localhost/datasets'
+    DB_TIMEOUT: int = 60
+    DB_WRITE_CONCERN: int = 1
+    PROMETHEUS_PORT: int = 0
+    CI_TESTING: str = ''
+
+
 class Server:
     def __init__(self):
-        default_config = {
-            'HOST': 'localhost',
-            'PORT': 8080,
-            'DEBUG': False,
-            'OPENID_URL': '',
-            'OPENID_AUDIENCE': '',
-            'ICEPROD_API_ADDRESS': 'https://iceprod2-api.icecube.wisc.edu',
-            'ICEPROD_API_CLIENT_ID': '',
-            'ICEPROD_API_CLIENT_SECRET': '',
-            'DB_URL': 'mongodb://localhost/datasets',
-            'DB_TIMEOUT': 60,
-            'DB_WRITE_CONCERN': 1,
-            'PROMETHEUS_PORT': 0,
-            'CI_TESTING': '',
-        }
-        config = from_environment(default_config)
+        config = from_environment_as_dataclass(DefaultConfig)
 
-        rest_config = {
-            'debug': config['DEBUG'],
+        rest_config: dict[str, Any] = {
+            'debug': config.DEBUG,
         }
-        if config['OPENID_URL']:
-            logging.info(f'enabling auth via {config["OPENID_URL"]} for aud "{config["OPENID_AUDIENCE"]}"')
-            rest_config.update({
-                'auth': {
-                    'openid_url': config['OPENID_URL'],
-                    'audience': config['OPENID_AUDIENCE'],
-                }
-            })
-        elif config['CI_TESTING']:
-            rest_config.update({
-                'auth': {
-                    'secret': 'secret',
-                }
-            })
+        if config.OPENID_URL:
+            logging.info(f'enabling auth via {config.OPENID_URL} for aud "{config.OPENID_AUDIENCE}"')
+            rest_config['auth'] = {
+                'openid_url': config.OPENID_URL,
+                'audience': config.OPENID_AUDIENCE,
+            }
+        elif config.CI_TESTING:
+            rest_config['auth'] = {
+                'secret': 'secret',
+            }
         else:
             raise RuntimeError('OPENID_URL not specified, and CI_TESTING not enabled!')
 
         # enable monitoring
-        self.prometheus_port = config['PROMETHEUS_PORT'] if config['PROMETHEUS_PORT'] > 0 else None
+        self.prometheus_port = config.PROMETHEUS_PORT if config.PROMETHEUS_PORT > 0 else None
         self.async_monitor = None
 
-        logging_url = config["DB_URL"].split('@')[-1] if '@' in config["DB_URL"] else config["DB_URL"]
+        logging_url = config.DB_URL.split('@')[-1] if '@' in config.DB_URL else config.DB_URL
         logging.info(f'DB: {logging_url}')
-        db_url, db_name = config['DB_URL'].rsplit('/', 1)
+        db_url, db_name = config.DB_URL.rsplit('/', 1)
         db = motor.motor_asyncio.AsyncIOMotorClient(
             db_url,
-            timeoutMS=config['DB_TIMEOUT']*1000,
-            w=config['DB_WRITE_CONCERN'],
+            timeoutMS=config.DB_TIMEOUT*1000,
+            w=config.DB_WRITE_CONCERN,
         )
         logging.info(f'DB name: {db_name}')
         self.db = db[db_name]
@@ -328,16 +331,16 @@ class Server:
             }
         }
 
-        if config['ICEPROD_API_CLIENT_ID'] and config['ICEPROD_API_CLIENT_SECRET']:
-            logging.info(f'enabling auth via {config["OPENID_URL"]} for aud "{config["OPENID_AUDIENCE"]}"')
+        if config.ICEPROD_API_CLIENT_ID and config.ICEPROD_API_CLIENT_SECRET:
+            logging.info(f'enabling auth via {config.OPENID_URL} for aud "{config.OPENID_AUDIENCE}"')
             rest_client = ClientCredentialsAuth(
-                address=config['ICEPROD_API_ADDRESS'],
-                token_url=config['OPENID_URL'],
-                client_id=config['ICEPROD_API_CLIENT_ID'],
-                client_secret=config['ICEPROD_API_CLIENT_SECRET'],
+                address=config.ICEPROD_API_ADDRESS,
+                token_url=config.OPENID_URL,
+                client_id=config.ICEPROD_API_CLIENT_ID,
+                client_secret=config.ICEPROD_API_CLIENT_SECRET,
             )
-        elif config['CI_TESTING']:
-            rest_client = RestClient(config['ICEPROD_API_ADDRESS'], timeout=1, retries=0)
+        elif config.CI_TESTING:
+            rest_client = RestClient(config.ICEPROD_API_ADDRESS, timeout=1, retries=0)
         else:
             raise RuntimeError('ICEPROD_API_CLIENT_ID or ICEPROD_API_CLIENT_SECRET not specified, and CI_TESTING not enabled!')
 
@@ -348,7 +351,7 @@ class Server:
         kwargs['materialization_service'] = self.materialization_service
         kwargs['rest_client'] = rest_client
 
-        server = RestServer(debug=config['DEBUG'])
+        server = RestServer(debug=config.DEBUG)
 
         server.add_route(r'/status/(?P<materialization_id>\w+)', StatusHandler, kwargs)
         server.add_route('/', RequestHandler, kwargs)
@@ -357,7 +360,7 @@ class Server:
         server.add_route('/healthz', HealthHandler, kwargs)
         server.add_route(r'/(.*)', Error)
 
-        server.startup(address=config['HOST'], port=config['PORT'])
+        server.startup(address=config.HOST, port=config.PORT)
 
         self.server = server
 
