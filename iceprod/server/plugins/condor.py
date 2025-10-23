@@ -19,7 +19,7 @@ import subprocess
 import time
 from typing import Generator, NamedTuple
 
-import htcondor  # type: ignore
+import htcondor2 as htcondor
 from wipac_dev_tools.prometheus_tools import GlobalLabels, AsyncPromWrapper, PromWrapper, AsyncPromTimer, PromTimer
 
 from iceprod.core.config import Task
@@ -146,7 +146,7 @@ class CondorJob(grid.GridTask):
     instance_id: str | None = None
     submit_dir: Path | None = None
     status: JobStatus = JobStatus.IDLE
-    extra: dict | None = None
+    extra: htcondor.classad.ClassAd | dict | None = None
 
 
 class CondorJobId(NamedTuple):
@@ -498,7 +498,7 @@ transfer_output_remaps = $(outremaps)
         for ad in self.condor_schedd.history(
             constraint=f'IceProdSite =?= "{self.cfg["queue"].get("site", "unknown")}"',
             projection=['ClusterId', 'ProcId'] + self.AD_PROJECTION_HISTORY,
-            since=f'CompletionDate<{since}' if since else None,
+            since=f'CompletionDate<{since}' if since else '',
         ):
             job_id = CondorJobId(cluster_id=ad['ClusterId'], proc_id=ad['ProcId'])
 
@@ -530,7 +530,7 @@ transfer_output_remaps = $(outremaps)
             reason: reason for removal
         """
         logger.info('removing job %s', job_id)
-        self.condor_schedd.act(htcondor.JobAction.Remove, str(job_id), reason=reason)
+        self.condor_schedd.act(htcondor.JobAction.Remove, str(job_id), reason=reason if reason else '')
 
 
 class Grid(grid.BaseGrid):
