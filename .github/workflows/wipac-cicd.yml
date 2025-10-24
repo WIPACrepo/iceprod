@@ -74,6 +74,7 @@ jobs:
         with:
           mode: PACKAGING_AND_PYPI
           python_min: 3.11
+          python_max: 3.13
           pypi_name: iceprod
           author: WIPAC Developers
           author_email: developers@icecube.wisc.edu

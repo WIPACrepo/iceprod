@@ -15,6 +15,7 @@ import logging
 import os
 import random
 import re
+from typing import Any
 from urllib.parse import urlencode
 
 from iceprod.core.jsonUtil import json_encode
@@ -28,7 +29,7 @@ import jwt
 import tornado.concurrent
 from rest_tools.client import RestClient, ClientCredentialsAuth
 from rest_tools.server import catch_error, RestServer, RestHandlerSetup, RestHandler, OpenIDCookieHandlerMixin, OpenIDLoginHandler
-from rest_tools.server.session import SessionDataTypes, SessionMixin, Session
+from rest_tools.server.session import SessionMixin, Session
 from wipac_dev_tools import from_environment_as_dataclass
 
 from iceprod.util import VERSION_STRING
@@ -111,7 +112,7 @@ class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):
             if not username:
                 raise RuntimeError('missing iceprod_username cookie')
             return username.decode('utf-8')
-        except Exception as e:
+        except Exception:
             logger.info('failed to get username')
         return None
 
@@ -126,7 +127,7 @@ class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):
         return None
 
     @auth_access_token.setter
-    def auth_access_token_setter(self, val: str):
+    def auth_access_token(self, val: str):
         if self.session:
             self.session['access_token'] = val
         else:
@@ -143,7 +144,7 @@ class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):
         return None
 
     @auth_refresh_token.setter
-    def auth_refresh_token_setter(self, val: str):
+    def auth_refresh_token(self, val: str):
         if self.session:
             self.session['refresh_token'] = val
         else:
@@ -161,15 +162,15 @@ class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):
             return []
 
         # lookup groups
-        auth_groups = set()
+        groups: set[str] = set()
         try:
             for name in GROUPS:
                 for expression in GROUPS[name]:
                     ret = eval_expression(data, expression)
-                    auth_groups.update(match.expand(name) for match in ret)
+                    groups.update(match.expand(name) for match in ret)
         except Exception:
             logger.info('cannot determine groups', exc_info=True)
-        return sorted(auth_groups)
+        return sorted(groups)
 
     def store_tokens(
         self,
@@ -330,12 +331,12 @@ class PublicHandler(LoginMixin, PromRequestMixin, RestHandler):
         :param system_rest_client: the rest client for the system role
         """
         super().initialize(**kwargs)
-        self.rest_api = rest_api        
+        self.rest_api = rest_api
         self.cred_rest_client = cred_rest_client
         self.system_rest_client = system_rest_client
         self.rest_client: RestClient | None = None
 
-    def get_template_namespace(self):
+    def get_template_namespace(self) -> dict[str, Any]:
         namespace = super().get_template_namespace()
         namespace['version'] = VERSION_STRING
         if self.request.uri:
@@ -345,7 +346,7 @@ class PublicHandler(LoginMixin, PromRequestMixin, RestHandler):
         namespace['rest_api'] = self.rest_api
         return namespace
 
-    async def get_current_user_async(self):
+    async def get_current_user_async(self) -> str | None:
         try:
             if self.current_user and self.auth_access_token:
                 self.rest_client = RestClient(self.rest_api, self.auth_access_token, timeout=50, retries=1)
@@ -357,7 +358,7 @@ class PublicHandler(LoginMixin, PromRequestMixin, RestHandler):
             logger.info('failed to create user rest client', exc_info=True)
         return self.current_user
 
-    def write_error(self, status_code=500, **kwargs):
+    def write_error(self, status_code: int = 500, **kwargs) -> None:
         """Write out custom error page."""
         self.set_status(status_code)
         if status_code >= 500:
