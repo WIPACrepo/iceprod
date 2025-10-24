@@ -83,11 +83,14 @@ async def server(monkeypatch, port):
                     'access_token': token,
                 }
             }
-            req_mock.add_mock('/users/username/credentials', ret)
+            req_mock.add_mock('/users/username/credentials', {})
             req_mock.add_mock('/groups/simprod/credentials', {})
             self.req_mock = req_mock
 
-            self.token_cookie = create_signed_value(cookie_secret, 'iceprod_username', token_data['preferred_username'])
+            username = token_data['preferred_username']
+            s.session.set(username, {'access_token': auth.create_token(username, payload=token_data)})
+
+            self.token_cookie = create_signed_value(cookie_secret, 'iceprod_username', username)
             logging.debug('Request cookie_secret: %r', cookie_secret)
 
         async def request(self, method, path, args=None):
@@ -96,7 +99,7 @@ async def server(monkeypatch, port):
                 kwargs = {'headers': {'Cookie': b'iceprod_username='+self.token_cookie}}
                 if args:
                     kwargs['params'] = args
-                ret = await client.request(method, address+path, **kwargs)
+                ret = await client.request(method, address+path, **kwargs)  # type: ignore
                 ret.raise_for_status()
                 return ret.text
 

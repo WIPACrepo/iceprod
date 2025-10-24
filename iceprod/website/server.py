@@ -28,6 +28,7 @@ import jwt
 import tornado.concurrent
 from rest_tools.client import RestClient, ClientCredentialsAuth
 from rest_tools.server import catch_error, RestServer, RestHandlerSetup, RestHandler, OpenIDCookieHandlerMixin, OpenIDLoginHandler
+from rest_tools.server.session import SessionDataTypes, SessionMixin, Session
 from wipac_dev_tools import from_environment_as_dataclass
 
 from iceprod.util import VERSION_STRING
@@ -97,6 +98,124 @@ def eval_expression(token, e):
     else:
         ret = [prog.fullmatch(token_val)]
     return [r for r in ret if r]
+
+
+class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):
+    """
+    Store/load current user's `OpenIDLoginHandler` tokens in Redis.
+    """
+    def get_current_user(self) -> str | None:
+        """Get the current username from the cookie"""
+        try:
+            username = self.get_secure_cookie('iceprod_username')
+            if not username:
+                raise RuntimeError('missing iceprod_username cookie')
+            return username.decode('utf-8')
+        except Exception as e:
+            logger.info('failed to get username')
+        return None
+
+    @property
+    def auth_access_token(self) -> str | None:
+        if self.session:
+            ret = self.session.get('access_token', None)
+            if not isinstance(ret, str):
+                logger.warning('bad access token type: not str')
+                return None
+            return ret
+        return None
+
+    @auth_access_token.setter
+    def auth_access_token_setter(self, val: str):
+        if self.session:
+            self.session['access_token'] = val
+        else:
+            raise RuntimeError('no valid session')
+
+    @property
+    def auth_refresh_token(self) -> str | None:
+        if self.session:
+            ret = self.session.get('refresh_token', None)
+            if not isinstance(ret, str):
+                logger.warning('bad access token type: not str')
+                return None
+            return ret
+        return None
+
+    @auth_refresh_token.setter
+    def auth_refresh_token_setter(self, val: str):
+        if self.session:
+            self.session['refresh_token'] = val
+        else:
+            raise RuntimeError('no valid session')
+
+    @property
+    def auth_groups(self) -> list[str]:
+        assert self.auth
+        if not self.auth_access_token:
+            return []
+        try:
+            data = self.auth.validate(self.auth_access_token.encode('utf-8'))
+        except jwt.ExpiredSignatureError:
+            logger.debug('user access_token expired')
+            return []
+
+        # lookup groups
+        auth_groups = set()
+        try:
+            for name in GROUPS:
+                for expression in GROUPS[name]:
+                    ret = eval_expression(data, expression)
+                    auth_groups.update(match.expand(name) for match in ret)
+        except Exception:
+            logger.info('cannot determine groups', exc_info=True)
+        return sorted(auth_groups)
+
+    def store_tokens(
+        self,
+        access_token,
+        access_token_exp,
+        refresh_token=None,
+        refresh_token_exp=None,
+        user_info=None,
+        user_info_exp=None,
+    ):
+        """
+        Store jwt tokens and user info from OpenID-compliant auth source.
+
+        Args:
+            access_token (str): jwt access token
+            access_token_exp (int): access token expiration in seconds
+            refresh_token (str): jwt refresh token
+            refresh_token_exp (int): refresh token expiration in seconds
+            user_info (dict): user info (from id token or user info lookup)
+            user_info_exp (int): user info expiration in seconds
+        """
+        assert self.auth
+        if not user_info:
+            user_info = self.auth.validate(access_token)
+        username = user_info.get('preferred_username')
+        if not username:
+            username = user_info.get('upn')
+        if not username:
+            raise tornado.web.HTTPError(400, reason='no username in token')
+
+        data = {
+            'access_token': access_token,
+            'refresh_token': refresh_token,
+        }
+        self._session_mgr.set(username, data)
+
+        self.set_secure_cookie('iceprod_username', username, expires_days=30)
+
+    def clear_tokens(self):
+        """
+        Clear token data, usually on logout.
+        """
+        username = self.current_user
+        self.clear_cookie('iceprod_username')
+        if username:
+            self._session_mgr.delete_session(username)
 
 
 class TokenStorageMixin(OpenIDCookieHandlerMixin, RestHandler):
@@ -196,23 +315,23 @@ class TokenStorageMixin(OpenIDCookieHandlerMixin, RestHandler):
         self.clear_cookie('iceprod_username')
 
 
-class Login(TokenStorageMixin, PromRequestMixin, OpenIDLoginHandler):  # type: ignore
+class Login(LoginMixin, PromRequestMixin, OpenIDLoginHandler):  # type: ignore
     pass
 
 
-class PublicHandler(TokenStorageMixin, PromRequestMixin, RestHandler):
+class PublicHandler(LoginMixin, PromRequestMixin, RestHandler):
     """Default Handler"""
-    def initialize(self, rest_api, system_rest_client, **kwargs):  # type: ignore
+    def initialize(self, rest_api, cred_rest_client, system_rest_client, **kwargs):  # type: ignore
         """
         Get some params from the website module
 
         :param rest_api: the rest api url
         :param cred_rest_client: the rest api url for the cred service
         :param system_rest_client: the rest client for the system role
-        :param full_url: the full base url for the website
         """
         super().initialize(**kwargs)
-        self.rest_api = rest_api
+        self.rest_api = rest_api        
+        self.cred_rest_client = cred_rest_client
         self.system_rest_client = system_rest_client
         self.rest_client: RestClient | None = None
 
@@ -227,15 +346,16 @@ class PublicHandler(TokenStorageMixin, PromRequestMixin, RestHandler):
         return namespace
 
     async def get_current_user_async(self):
-        ret = await super().get_current_user_async()
         try:
-            if ret:
+            if self.current_user and self.auth_access_token:
                 self.rest_client = RestClient(self.rest_api, self.auth_access_token, timeout=50, retries=1)
+            elif not self.current_user:
+                logger.info('no current user')
+            else:
+                logger.info('no access token')
         except Exception:
-            pass
-
-        self.current_user = ret
-        return ret
+            logger.info('failed to create user rest client', exc_info=True)
+        return self.current_user
 
     def write_error(self, status_code=500, **kwargs):
         """Write out custom error page."""
@@ -679,6 +799,7 @@ class DefaultConfig:
     ICEPROD_CRED_ADDRESS : str = 'https://credentials.iceprod.icecube.aq'
     ICEPROD_CRED_CLIENT_ID : str = ''
     ICEPROD_CRED_CLIENT_SECRET : str = ''
+    REDIS_HOST : str = 'localhost'
     COOKIE_SECRET : str = ''
     PROMETHEUS_PORT : int = 0
     CI_TESTING : str = ''
@@ -745,9 +866,13 @@ class Server:
 
         handler_args = RestHandlerSetup(rest_config)
         handler_args['cred_rest_client'] = cred_client
+        if config.CI_TESTING:
+            self.session = Session()
+        else:
+            self.session = Session(storage_type='redis', host=config.REDIS_HOST)  # type: ignore
+        handler_args['session'] = self.session
 
         full_url = config.ICEPROD_WEB_URL
-        handler_args['full_url'] = full_url
         login_url = full_url+'/login'
 
         login_handler_args = handler_args.copy()
@@ -826,3 +951,4 @@ class Server:
         await self.server.stop()
         if self.async_monitor:
             await self.async_monitor.stop()
+        self.session.close()

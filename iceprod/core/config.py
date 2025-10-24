@@ -8,7 +8,7 @@ try:
 except ImportError:
     from typing_extensions import Self
 
-import jsonschema  # type: ignore
+import jsonschema
 from rest_tools.client import RestClient
 
 
@@ -18,6 +18,8 @@ DATA_DEFAULTS = {key: value.get('default', None) for key,value in CONFIG_SCHEMA[
 
 
 class _ConfigMixin:
+    config: dict
+
     def fill_defaults(self):
         def _load_ref(schema_value):
             if '$ref' in list(schema_value.keys()):
