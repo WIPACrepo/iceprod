@@ -12,7 +12,7 @@ dependencies = [
     'cachetools',
     'certifi',
     'cryptography',
-    'htcondor<=24.99.99',  # bug in 25.x Submit.itemdata()
+    'htcondor<=24.99.99',
     'httpx',
     'jsonschema',
     'ldap3',
