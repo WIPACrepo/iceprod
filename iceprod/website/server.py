@@ -101,7 +101,7 @@ def eval_expression(token, e):
     return [r for r in ret if r]
 
 
-class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):
+class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):  # type: ignore[misc]
     """
     Store/load current user's `OpenIDLoginHandler` tokens in Redis.
     """
@@ -117,36 +117,36 @@ class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):
         return None
 
     @property
-    def auth_access_token(self) -> str | None:
+    def auth_access_token(self) -> bytes | None:
         if self.session:
             ret = self.session.get('access_token', None)
             if not isinstance(ret, str):
                 logger.warning('bad access token type: not str')
                 return None
-            return ret
+            return ret.encode('utf-8')
         return None
 
     @auth_access_token.setter
-    def auth_access_token(self, val: str):
+    def auth_access_token(self, val: bytes):
         if self.session:
-            self.session['access_token'] = val
+            self.session['access_token'] = val.decode('utf-8')
         else:
             raise RuntimeError('no valid session')
 
     @property
-    def auth_refresh_token(self) -> str | None:
+    def auth_refresh_token(self) -> bytes | None:
         if self.session:
             ret = self.session.get('refresh_token', None)
             if not isinstance(ret, str):
                 logger.warning('bad access token type: not str')
                 return None
-            return ret
+            return ret.encode('utf-8')
         return None
 
     @auth_refresh_token.setter
-    def auth_refresh_token(self, val: str):
+    def auth_refresh_token(self, val: bytes):
         if self.session:
-            self.session['refresh_token'] = val
+            self.session['refresh_token'] = val.decode('utf-8')
         else:
             raise RuntimeError('no valid session')
 
@@ -156,7 +156,7 @@ class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):
         if not self.auth_access_token:
             return []
         try:
-            data = self.auth.validate(self.auth_access_token.encode('utf-8'))
+            data = self.auth.validate(self.auth_access_token)
         except jwt.ExpiredSignatureError:
             logger.debug('user access_token expired')
             return []

@@ -6,7 +6,7 @@ import shutil
 import time
 from unittest.mock import MagicMock, AsyncMock
 
-import htcondor2 as htcondor
+import htcondor
 import pytest
 
 from iceprod.core.config import Job, Task

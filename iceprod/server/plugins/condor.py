@@ -19,7 +19,7 @@ import subprocess
 import time
 from typing import Generator, NamedTuple
 
-import htcondor2 as htcondor
+import htcondor
 from wipac_dev_tools.prometheus_tools import GlobalLabels, AsyncPromWrapper, PromWrapper, AsyncPromTimer, PromTimer
 
 from iceprod.core.config import Task
@@ -410,8 +410,9 @@ transfer_output_remaps = $(outremaps)
                     break
 
             if reqs2:
-                ads["requirements"] = f'({ads["requirements"]}) && ({reqs2})'
-            submitfile += f'reqs{task.task_id} = {ads["requirements"]}\n'
+                ads['requirements'] = f'({ads["requirements"]}) && ({reqs2})'
+            if ads['requirements']:
+                submitfile += f'reqs{task.task_id} = {ads["requirements"]}\n'
             # stringify everything, quoting the real strings
             jobset.append({
                 'datasetid': f'"{task.dataset.dataset_id}"',
@@ -437,16 +438,16 @@ transfer_output_remaps = $(outremaps)
                 'outremaps': f'"{ads["transfer_output_remaps"]}"',
             })
 
-        submitfile += '\n\nqueue '+','.join(jobset[0].keys())+' from (\n'
+        submitfile += '\n\nqueue '+', '.join(jobset[0].keys())+' from (\n'
         for job in jobset:
-            submitfile += '  '+','.join(job.values())+'\n'
+            submitfile += '  '+', '.join(job.values())+'\n'
         submitfile += ')\n'
 
         logger.debug("submitfile:\n%s", submitfile)
 
         with prom_histogram.time():
             s = htcondor.Submit(submitfile)
-            submit_result = self.condor_schedd.submit(s, count=1, itemdata=s.itemdata())
+            submit_result = self.condor_schedd.submit(s, count=1, itemdata=s.itemdata())#iter(jobset))
 
         cluster_id = int(submit_result.cluster())
         ret = {}
