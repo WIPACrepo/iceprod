@@ -801,6 +801,9 @@ class DefaultConfig:
     ICEPROD_CRED_CLIENT_ID : str = ''
     ICEPROD_CRED_CLIENT_SECRET : str = ''
     REDIS_HOST : str = 'localhost'
+    REDIS_USER : str = ''
+    REDIS_PASSWORD : str = ''
+    REDIS_TLS : bool = False
     COOKIE_SECRET : str = ''
     PROMETHEUS_PORT : int = 0
     CI_TESTING : str = ''
@@ -870,7 +873,14 @@ class Server:
         if config.CI_TESTING:
             self.session = Session()
         else:
-            self.session = Session(storage_type='redis', host=config.REDIS_HOST)  # type: ignore
+            kwargs = {}
+            if config.REDIS_USER:
+                kwargs['username'] = config.REDIS_USER
+            if config.REDIS_PASSWORD:
+                kwargs['password'] = config.REDIS_PASSWORD
+            if config.REDIS_TLS:
+                kwargs['tls'] = True
+            self.session = Session(storage_type='redis', host=config.REDIS_HOST, **kwargs)  # type: ignore
         handler_args['session'] = self.session
 
         full_url = config.ICEPROD_WEB_URL
