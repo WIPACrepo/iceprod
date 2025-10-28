@@ -44,7 +44,7 @@ cryptography==45.0.4
     #   pyopenssl
 dnspython==2.7.0
     # via pymongo
-docutils==0.21.2
+docutils==0.22.2
     # via sphinx
 exceptiongroup==1.3.0
     # via anyio
