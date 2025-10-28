@@ -1,6 +1,5 @@
 import pytest
 import requests.exceptions
-from rest_tools.utils.json_util import json_decode
 from iceprod.server import states
 
 

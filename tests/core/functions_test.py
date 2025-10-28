@@ -9,19 +9,17 @@ from tests.util import unittest_reporter, glob_tests
 import logging
 logger = logging.getLogger('functions')
 
-import os, sys, time
+import os
 import shutil
-import filecmp
 import random
 import string
 import subprocess
 import tempfile
-import socket
 
 try:
-    import cPickle as pickle
+    pass
 except:
-    import pickle
+    pass
 
 try:
     import psutil
@@ -37,12 +35,10 @@ import requests_mock
 
 from tornado.testing import AsyncTestCase
 
-from iceprod.core import to_log
 import iceprod.core.dataclasses
 import iceprod.core.util
 import iceprod.core.gridftp
 import iceprod.core.functions
-from iceprod.core.jsonUtil import json_encode,json_decode
 
 
 class functions_test(AsyncTestCase):

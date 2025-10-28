@@ -10,9 +10,7 @@ import logging
 logger = logging.getLogger('iceprod_server_test')
 
 import os
-import sys
 import time
-from functools import partial
 import tempfile
 import shutil
 import subprocess

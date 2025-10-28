@@ -16,7 +16,32 @@ from iceprod.server.util import str2datetime
 logger = logging.getLogger('non_active_tasks')
 
 
-async def run(rest_client, debug=False):
+async def reset(dataset_id, task_id, rest_client):
+    args = {'status':'reset'}
+    await rest_client.request('PUT', f'/datasets/{dataset_id}/tasks/{task_id}/status', args)
+    data = {
+        'name': 'stdlog',
+        'task_id': task_id,
+        'dataset_id': dataset_id,
+        'data': 'task status = processing, but not found in any pilot',
+    }
+    await rest_client.request('POST', '/logs', data)
+    data.update({'name':'stdout', 'data': ''})
+    await rest_client.request('POST', '/logs', data)
+    data.update({'name':'stderr', 'data': ''})
+    await rest_client.request('POST', '/logs', data)
+
+
+async def update_pilot(pilot_id, tasks, rest_client):
+    args = {'tasks': tasks}
+    await rest_client.request('PATCH', '/pilots/{}'.format(pilot_id), args)
+
+
+async def delete_pilot(pilot_id, rest_client):
+    await rest_client.request('DELETE', '/pilots/{}'.format(pilot_id))
+
+
+async def run(rest_client, debug=False):  # noqa: C901
     """
     Actual runtime / loop.
 
@@ -40,28 +65,6 @@ async def run(rest_client, debug=False):
         for dataset_id in dataset_ids:
             dataset_tasks[dataset_id] = await rest_client.request('GET', '/datasets/{}/task_summaries/status'.format(dataset_id))
 
-        async def reset(dataset_id, task_id):
-            args = {'status':'reset'}
-            await rest_client.request('PUT', f'/datasets/{dataset_id}/tasks/{task_id}/status', args)
-            data = {
-                'name': 'stdlog',
-                'task_id': task_id,
-                'dataset_id': dataset_id,
-                'data': 'task status = processing, but not found in any pilot',
-            }
-            await rest_client.request('POST', '/logs', data)
-            data.update({'name':'stdout', 'data': ''})
-            await rest_client.request('POST', '/logs', data)
-            data.update({'name':'stderr', 'data': ''})
-            await rest_client.request('POST', '/logs', data)
-
-        async def update_pilot(pilot_id, tasks):
-            args = {'tasks': tasks}
-            await rest_client.request('PATCH', '/pilots/{}'.format(pilot_id), args)
-
-        async def delete_pilot(pilot_id):
-            await rest_client.request('DELETE', '/pilots/{}'.format(pilot_id))
-
         awaitables = set()
         reset_pilots = set()
         now = datetime.now(UTC)
@@ -75,7 +78,7 @@ async def run(rest_client, debug=False):
                     # check status, and that we haven't just changed status
                     if task['status'] == 'processing' and (now-str2datetime(task['status_changed'])).total_seconds() > 600:
                         logger.info('dataset %s reset task %s', dataset_id, task_id)
-                        awaitables.add(reset(dataset_id,task_id))
+                        awaitables.add(reset(dataset_id, task_id, rest_client))
 
             for k in tasks.keys():
                 if k in ('reset', 'waiting', 'failed', 'suspended'):
@@ -90,9 +93,9 @@ async def run(rest_client, debug=False):
             if 'tasks' in p:
                 updated_tasks = set(p['tasks']) - reset_pilots
                 if not updated_tasks:
-                    awaitables.add(delete_pilot(p['pilot_id']))
+                    awaitables.add(delete_pilot(p['pilot_id'], rest_client=rest_client))
                 elif updated_tasks != set(p['tasks']):
-                    awaitables.add(delete_pilot(p['pilot_id'], updated_tasks))
+                    awaitables.add(update_pilot(p['pilot_id'], updated_tasks, rest_client=rest_client))
 
         for fut in asyncio.as_completed(awaitables):
             try:

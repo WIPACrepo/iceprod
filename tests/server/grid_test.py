@@ -1,4 +1,3 @@
-import asyncio
 from dataclasses import dataclass
 from pprint import pprint
 from unittest.mock import MagicMock, AsyncMock
@@ -7,7 +6,7 @@ from prometheus_client import REGISTRY
 import pytest
 import requests.exceptions
 
-from iceprod import __version__ as version_string
+from iceprod.util import VERSION_STRING
 from iceprod.core.resources import Resources
 from iceprod.core.config import Dataset, Job, Task
 import iceprod.server.config
@@ -28,7 +27,7 @@ def test_grid_init():
         'name': 'bar',
         'type': 'grid',
         'queue_type': 'test',
-        'version': version_string,
+        'version': VERSION_STRING,
         'exclusive': 'False',
     })
     assert metric == 1
@@ -47,7 +46,7 @@ def test_grid_init_gpu():
         'name': 'grid-gpu',
         'type': 'grid',
         'queue_type': 'test',
-        'version': version_string,
+        'version': VERSION_STRING,
         'exclusive': 'False',
     })
     assert metric == 1
@@ -203,17 +202,17 @@ def test_grid_get_resources(i3prod_path):
 
     t.requirements['os'] = 'RHEL_7_x86_64'
     r = iceprod.server.grid.BaseGrid._get_resources(t)
-    assert r['os'] == ['RHEL_7_x86_64']
+    assert r['os'] == ['RHEL_7_x86_64']  # type: ignore
 
     t.requirements['os'] = ['RHEL_7_x86_64', 'RHEL_8_x86_64']
     r = iceprod.server.grid.BaseGrid._get_resources(t)
-    assert r['os'] == ['RHEL_7_x86_64', 'RHEL_8_x86_64']
+    assert r['os'] == ['RHEL_7_x86_64', 'RHEL_8_x86_64']  # type: ignore
 
 
 @dataclass(kw_only=True, slots=True)
 class GT(iceprod.server.grid.GridTask):
-    dataset_id: str
-    task_id: str
+    dataset_id: str  # type: ignore
+    task_id: str  # type: ignore
     instance_id: str | None = None
 
 

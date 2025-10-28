@@ -14,7 +14,7 @@ import sys
 
 from prometheus_client import start_http_server
 
-from iceprod import __version__ as version_string
+from iceprod.util import VERSION_STRING
 from iceprod.core.logger import set_log_level
 from iceprod.server.config import IceProdConfig
 from iceprod.server.queue import Queue
@@ -37,7 +37,7 @@ class Server(object):
         self.queue = Queue(self.cfg)
 
         set_log_level(self.cfg['logging']['level'])
-        logger.error('IceProd Server - version %s', version_string)
+        logger.error('IceProd Server - version %s', VERSION_STRING)
 
     async def rotate_logs(self):
         current_date = datetime.now(UTC)

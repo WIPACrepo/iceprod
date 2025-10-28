@@ -1,16 +1,8 @@
-import asyncio
-import logging
 import random
 import string
 
-import boto3
-from moto import mock_aws
 import pytest
-import requests.exceptions
-from rest_tools.utils.json_util import json_decode
 
-import iceprod.rest.base_handler 
-from iceprod.rest.base_handler import IceProdRestConfig
 
 
 async def test_rest_logs_post(server):

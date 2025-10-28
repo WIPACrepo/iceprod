@@ -9,10 +9,9 @@ from tests.util import unittest_reporter, glob_tests
 import logging
 logger = logging.getLogger('globus_test')
 
-import os, sys, time
+import os
+import sys
 import shutil
-import random
-import string
 import subprocess
 import tempfile
 

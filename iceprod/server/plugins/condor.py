@@ -9,7 +9,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timedelta, UTC
 import enum
-import importlib
+import importlib.resources
 import logging
 import os
 from pathlib import Path
@@ -146,7 +146,7 @@ class CondorJob(grid.GridTask):
     instance_id: str | None = None
     submit_dir: Path | None = None
     status: JobStatus = JobStatus.IDLE
-    extra: dict | None = None
+    extra: htcondor.classad.ClassAd | dict | None = None
 
 
 class CondorJobId(NamedTuple):
@@ -206,18 +206,18 @@ class CondorSubmit:
 
     def condor_plugin_discovery(self):
         """Find all available HTCondor transfer plugins, and copy them to the submit_dir"""
-        src_dir = importlib.resources.files('iceprod.server')/'data'/'condor_transfer_plugins'
-        if src_dir.is_dir():
-            dest_dir = self.submit_dir / 'transfer_plugins'
-            shutil.copytree(src_dir, dest_dir, dirs_exist_ok=True)
-            ret = {}
-            for p in dest_dir.iterdir():
-                p.chmod(0o777)
-                logger.debug('transfer plugin %s', p)
-                for line in subprocess.run([str(p), '-classad'], capture_output=True, text=True, check=True).stdout.split('\n'):
-                    logger.debug('transfer plugin output: %s', line)
-                    if line.startswith('SupportedMethods'):
-                        ret[line.split('=')[-1].strip(' "')] = str(p)
+        ret = {}
+        with importlib.resources.as_file(importlib.resources.files('iceprod.server')/'data'/'condor_transfer_plugins') as src_dir:
+            if src_dir.is_dir():
+                dest_dir = self.submit_dir / 'transfer_plugins'
+                shutil.copytree(src_dir, dest_dir, dirs_exist_ok=True)
+                for p in dest_dir.iterdir():
+                    p.chmod(0o777)
+                    logger.debug('transfer plugin %s', p)
+                    for line in subprocess.run([str(p), '-classad'], capture_output=True, text=True, check=True).stdout.split('\n'):
+                        logger.debug('transfer plugin output: %s', line)
+                        if line.startswith('SupportedMethods'):
+                            ret[line.split('=')[-1].strip(' "')] = str(p)
         return ret
 
     @staticmethod
@@ -410,8 +410,9 @@ transfer_output_remaps = $(outremaps)
                     break
 
             if reqs2:
-                ads["requirements"] = f'({ads["requirements"]}) && ({reqs2})'
-            submitfile += f'reqs{task.task_id} = {ads["requirements"]}\n'
+                ads['requirements'] = f'({ads["requirements"]}) && ({reqs2})'
+            if ads['requirements']:
+                submitfile += f'reqs{task.task_id} = {ads["requirements"]}\n'
             # stringify everything, quoting the real strings
             jobset.append({
                 'datasetid': f'"{task.dataset.dataset_id}"',
@@ -432,14 +433,14 @@ transfer_output_remaps = $(outremaps)
                 'container': f'{container}',
                 'prec': f'{ads["PreCmd"]}',
                 'prea': f'{ads["PreArguments"]}',
-                'infiles': f'"{";".join(ads["transfer_input_files"])}"',
-                'outfiles': f'"{";".join(ads["transfer_output_files"])}"',
+                'infiles': f'"{";".join(ads["transfer_input_files"])}"',  # type: ignore
+                'outfiles': f'"{";".join(ads["transfer_output_files"])}"',  # type: ignore
                 'outremaps': f'"{ads["transfer_output_remaps"]}"',
             })
 
-        submitfile += '\n\nqueue '+','.join(jobset[0].keys())+' from (\n'
+        submitfile += '\n\nqueue '+', '.join(jobset[0].keys())+' from (\n'
         for job in jobset:
-            submitfile += '  '+','.join(job.values())+'\n'
+            submitfile += '  '+', '.join(job.values())+'\n'
         submitfile += ')\n'
 
         logger.debug("submitfile:\n%s", submitfile)
@@ -460,7 +461,7 @@ transfer_output_remaps = $(outremaps)
         return ret
 
     @PromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_get_jobs', 'IceProd grid condor.get_jobs calls', buckets=HistogramBuckets.MINUTE))
-    def get_jobs(self) -> dict[CondorJobId: CondorJob]:
+    def get_jobs(self) -> dict[CondorJobId, CondorJob]:
         """
         Get all jobs currently on the condor queue.
         """
@@ -498,14 +499,18 @@ transfer_output_remaps = $(outremaps)
         for ad in self.condor_schedd.history(
             constraint=f'IceProdSite =?= "{self.cfg["queue"].get("site", "unknown")}"',
             projection=['ClusterId', 'ProcId'] + self.AD_PROJECTION_HISTORY,
-            since=f'CompletionDate<{since}' if since else None,
+            since=f'CompletionDate<{since}' if since else '',
         ):
             job_id = CondorJobId(cluster_id=ad['ClusterId'], proc_id=ad['ProcId'])
+
+            submit_dir = None
             if s := ad.get('Iwd'):
                 submit_dir = Path(s)
+
             status = JobStatus.IDLE
             if s := ad.get('JobStatus'):
                 status = JobStatus.from_condor_status(s)
+
             job = CondorJob(
                 dataset_id=ad.get('IceProdDatasetId'),
                 task_id=ad.get('IceProdTaskId'),
@@ -526,7 +531,7 @@ transfer_output_remaps = $(outremaps)
             reason: reason for removal
         """
         logger.info('removing job %s', job_id)
-        self.condor_schedd.act(htcondor.JobAction.Remove, str(job_id), reason=reason)
+        self.condor_schedd.act(htcondor.JobAction.Remove, str(job_id), reason=reason if reason else '')
 
 
 class Grid(grid.BaseGrid):
@@ -712,6 +717,7 @@ class Grid(grid.BaseGrid):
                                 # so ignore this and let the cross-check take care of it
                                 continue
 
+                                """
                                 # get stats
                                 cpu = event.get('CpusUsage', None)
                                 gpu = event.get('GpusUsage', None)
@@ -757,6 +763,7 @@ class Grid(grid.BaseGrid):
 
                                 # finish job
                                 await self.finish(job_id, success=success, resources=resources, stats=stats, reason=reason)
+                                """
 
                             elif type_ == htcondor.JobEventType.JOB_ABORTED:
                                 job.status = JobStatus.FAILED
@@ -768,7 +775,9 @@ class Grid(grid.BaseGrid):
                                 # so ignore this and let the cross-check take care of it
                                 continue
 
+                                """
                                 await self.finish(job_id, success=False, reason=reason)
+                                """
 
                             else:
                                 # update status
@@ -907,7 +916,7 @@ class Grid(grid.BaseGrid):
     async def check_history(self, prom_histogram):
         """Check condor_history"""
         now = time.time()
-        hist_jobs_iter = self.submitter.get_history(since=self.last_event_timestamp)
+        hist_jobs_iter = self.submitter.get_history(since=int(self.last_event_timestamp))
         self.last_event_timestamp = now
         async with asyncio.TaskGroup() as tg:
             last_time = time.monotonic()

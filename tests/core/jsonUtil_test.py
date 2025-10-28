@@ -9,22 +9,18 @@ from tests.util import unittest_reporter, glob_tests
 import logging
 logger = logging.getLogger('jsonUtil')
 
-import os, sys, time
+import os
+import time
 import shutil
-import random
-import string
-import subprocess
-from threading import Event
 
 try:
-    import cPickle as pickle
+    pass
 except:
-    import pickle
+    pass
 
 import unittest
 
 from datetime import date,datetime,time
-import base64
 import iceprod.core.jsonUtil
 
 

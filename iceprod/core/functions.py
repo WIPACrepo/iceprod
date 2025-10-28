@@ -17,10 +17,10 @@ import asyncio
 try:
     import psutil
 except ImportError:
-    psutil = None
+    psutil = None  # type: ignore
 
 import requests
-from requests_toolbelt.multipart.encoder import MultipartEncoder
+from requests_toolbelt.multipart.encoder import MultipartEncoder  # type: ignore
 from rest_tools.client import Session, AsyncSession
 
 from iceprod.core.gridftp import GridFTP
@@ -362,7 +362,7 @@ async def download(url, local, options={}):
     return local
 
 
-async def upload(local, url, checksum=True, options={}):
+async def upload(local, url, checksum=True, options={}):  # noqa: C901
     """Upload a file, checksumming if possible"""
     local = os.path.expandvars(local)
     url = os.path.expandvars(url)

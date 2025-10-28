@@ -2,9 +2,11 @@
 Credentials store and refresh.
 """
 import asyncio
+import dataclasses
 from datetime import datetime
 import logging
 import time
+from typing import Any
 
 from prometheus_client import Info, start_http_server
 import pymongo
@@ -15,9 +17,9 @@ from rest_tools.client import RestClient, ClientCredentialsAuth
 from rest_tools.server import RestServer, ArgumentHandler, ArgumentSource
 from tornado.web import HTTPError
 from tornado.web import RequestHandler as TornadoRequestHandler
-from wipac_dev_tools import from_environment
+from wipac_dev_tools import from_environment_as_dataclass
 
-from iceprod import __version__ as version_string
+from iceprod.util import VERSION_STRING
 from ..prom_utils import AsyncMonitor
 from iceprod.rest.auth import authorization
 from iceprod.rest.base_handler import IceProdRestConfig, APIBase
@@ -28,8 +30,8 @@ logger = logging.getLogger('server')
 
 
 class BaseCredentialsHandler(APIBase):
-    def initialize(self, refresh_service=None, rest_client=None, **kwargs):
-        super().initialize(**kwargs)
+    def initialize(self, *args, refresh_service=None, rest_client=None, **kwargs):
+        super().initialize(*args, **kwargs)
         self.refresh_service = refresh_service
         self.rest_client = rest_client
 
@@ -45,6 +47,7 @@ class BaseCredentialsHandler(APIBase):
             val (str): attribute value
             role (str): the role to check for (read|write)
         """
+        assert self.rest_client
         args = {
             'name': arg,
             'value': val,
@@ -61,6 +64,7 @@ class BaseCredentialsHandler(APIBase):
                 raise HTTPError(500, 'auth could not be completed')
 
     async def create(self, db, base_data):
+        assert self.refresh_service
         now = time.time()
         argo = ArgumentHandler(ArgumentSource.JSON_BODY_ARGUMENTS, self)
         argo.add_argument('url', type=str, required=True)
@@ -118,6 +122,7 @@ class BaseCredentialsHandler(APIBase):
         )
 
     async def patch_cred(self, db, base_data):
+        assert self.refresh_service
         argo = ArgumentHandler(ArgumentSource.JSON_BODY_ARGUMENTS, self)
         argo.add_argument('url', type=str, required=True)
         argo.add_argument('buckets', type=list, default=[], required=False)
@@ -149,6 +154,7 @@ class BaseCredentialsHandler(APIBase):
             raise HTTPError(404, 'credential not found')
 
     async def search_creds(self, db, base_data):
+        assert self.refresh_service
         if url := self.get_argument('url', None):
             base_data['url'] = url
 
@@ -374,6 +380,7 @@ class HealthHandler(BaseCredentialsHandler):
 
         Returns based on exit code, 200 = ok, 400 = failure
         """
+        assert self.refresh_service
         now = time.time()
         status = {
             'now': nowstr(),
@@ -411,41 +418,43 @@ class Error(TornadoRequestHandler):
         raise HTTPError(404, 'invalid api route')
 
 
+@dataclasses.dataclass
+class DefaultConfig:
+    HOST: str = 'localhost'
+    PORT: int = 8080
+    DEBUG: bool = False
+    OPENID_URL: str = ''
+    OPENID_AUDIENCE: str = ''
+    ICEPROD_API_ADDRESS: str = 'https://iceprod2-api.icecube.wisc.edu'
+    ICEPROD_API_CLIENT_ID: str = ''
+    ICEPROD_API_CLIENT_SECRET: str = ''
+    TOKEN_CLIENTS: str = '{}'
+    TOKEN_REFRESH_WINDOW: float = 72.0
+    TOKEN_EXPIRE_BUFFER: float = 24.0
+    TOKEN_SERVICE_CHECK_INTERVAL: int = 180
+    DB_URL: str = 'mongodb://localhost/datasets'
+    DB_TIMEOUT: int = 60
+    DB_WRITE_CONCERN: int = 1
+    PROMETHEUS_PORT: int = 0
+    CI_TESTING: str = ''
+
+
 class Server:
     def __init__(self):
-        default_config = {
-            'HOST': 'localhost',
-            'PORT': 8080,
-            'DEBUG': False,
-            'OPENID_URL': '',
-            'OPENID_AUDIENCE': '',
-            'ICEPROD_API_ADDRESS': 'https://iceprod2-api.icecube.wisc.edu',
-            'ICEPROD_API_CLIENT_ID': '',
-            'ICEPROD_API_CLIENT_SECRET': '',
-            'TOKEN_CLIENTS': '{}',
-            'TOKEN_REFRESH_WINDOW': 72.0,
-            'TOKEN_EXPIRE_BUFFER': 24.0,
-            'TOKEN_SERVICE_CHECK_INTERVAL': 180,
-            'DB_URL': 'mongodb://localhost/creds',
-            'DB_TIMEOUT': 60,
-            'DB_WRITE_CONCERN': 1,
-            'PROMETHEUS_PORT': 0,
-            'CI_TESTING': '',
-        }
-        config = from_environment(default_config)
+        config = from_environment_as_dataclass(DefaultConfig)
 
-        rest_config = {
-            'debug': config['DEBUG'],
+        rest_config: dict[str, Any] = {
+            'debug': config.DEBUG,
         }
-        if config['OPENID_URL']:
-            logging.info(f'enabling auth via {config["OPENID_URL"]} for aud "{config["OPENID_AUDIENCE"]}"')
+        if config.OPENID_URL:
+            logging.info(f'enabling auth via {config.OPENID_URL} for aud "{config.OPENID_AUDIENCE}"')
             rest_config.update({
                 'auth': {
-                    'openid_url': config['OPENID_URL'],
-                    'audience': config['OPENID_AUDIENCE'],
+                    'openid_url': config.OPENID_URL,
+                    'audience': config.OPENID_AUDIENCE,
                 }
             })
-        elif config['CI_TESTING']:
+        elif config.CI_TESTING:
             rest_config.update({
                 'auth': {
                     'secret': 'secret',
@@ -455,16 +464,16 @@ class Server:
             raise RuntimeError('OPENID_URL not specified, and CI_TESTING not enabled!')
 
         # enable monitoring
-        self.prometheus_port = config['PROMETHEUS_PORT'] if config['PROMETHEUS_PORT'] > 0 else None
+        self.prometheus_port = config.PROMETHEUS_PORT if config.PROMETHEUS_PORT > 0 else None
         self.async_monitor = None
 
-        logging_url = config["DB_URL"].split('@')[-1] if '@' in config["DB_URL"] else config["DB_URL"]
+        logging_url = config.DB_URL.split('@')[-1] if '@' in config.DB_URL else config.DB_URL
         logging.info(f'DB: {logging_url}')
-        db_url, db_name = config['DB_URL'].rsplit('/', 1)
+        db_url, db_name = config.DB_URL.rsplit('/', 1)
         db = motor.motor_asyncio.AsyncIOMotorClient(
             db_url,
-            timeoutMS=config['DB_TIMEOUT']*1000,
-            w=config['DB_WRITE_CONCERN'],
+            timeoutMS=config.DB_TIMEOUT*1000,
+            w=config.DB_WRITE_CONCERN,
         )
         logging.info(f'DB name: {db_name}')
         self.db = db[db_name]
@@ -477,25 +486,25 @@ class Server:
             }
         }
 
-        if config['ICEPROD_API_CLIENT_ID'] and config['ICEPROD_API_CLIENT_SECRET']:
-            logging.info(f'enabling auth via {config["OPENID_URL"]} for aud "{config["OPENID_AUDIENCE"]}"')
+        if config.ICEPROD_API_CLIENT_ID and config.ICEPROD_API_CLIENT_SECRET:
+            logging.info(f'enabling auth via {config.OPENID_URL} for aud "{config.OPENID_AUDIENCE}"')
             rest_client = ClientCredentialsAuth(
-                address=config['ICEPROD_API_ADDRESS'],
-                token_url=config['OPENID_URL'],
-                client_id=config['ICEPROD_API_CLIENT_ID'],
-                client_secret=config['ICEPROD_API_CLIENT_SECRET'],
+                address=config.ICEPROD_API_ADDRESS,
+                token_url=config.OPENID_URL,
+                client_id=config.ICEPROD_API_CLIENT_ID,
+                client_secret=config.ICEPROD_API_CLIENT_SECRET,
             )
-        elif config['CI_TESTING']:
-            rest_client = RestClient(config['ICEPROD_API_ADDRESS'], timeout=1, retries=0)
+        elif config.CI_TESTING:
+            rest_client = RestClient(config.ICEPROD_API_ADDRESS, timeout=1, retries=0)
         else:
             raise RuntimeError('ICEPROD_API_CLIENT_ID or ICEPROD_API_CLIENT_SECRET not specified, and CI_TESTING not enabled!')
 
         self.refresh_service = RefreshService(
             database=self.db,
-            clients=config['TOKEN_CLIENTS'],
-            refresh_window=config['TOKEN_REFRESH_WINDOW'],
-            expire_buffer=config['TOKEN_EXPIRE_BUFFER'],
-            service_run_interval=config['TOKEN_SERVICE_CHECK_INTERVAL'],
+            clients=config.TOKEN_CLIENTS,
+            refresh_window=config.TOKEN_REFRESH_WINDOW,
+            expire_buffer=config.TOKEN_EXPIRE_BUFFER,
+            service_run_interval=config.TOKEN_SERVICE_CHECK_INTERVAL,
         )
         self.refresh_service_task = None
 
@@ -503,24 +512,24 @@ class Server:
         kwargs['refresh_service'] = self.refresh_service
         kwargs['rest_client'] = rest_client
 
-        server = RestServer(debug=config['DEBUG'])
+        server = RestServer(debug=config.DEBUG)
 
         server.add_route(r'/groups/(?P<groupname>\w+)/credentials', GroupCredentialsHandler, kwargs)
         server.add_route(r'/users/(?P<username>\w+)/credentials', UserCredentialsHandler, kwargs)
         server.add_route('/healthz', HealthHandler, kwargs)
         server.add_route(r'/(.*)', Error)
 
-        server.startup(address=config['HOST'], port=config['PORT'])
+        server.startup(address=config.HOST, port=config.PORT)
 
         self.server = server
 
     async def start(self):
         if self.prometheus_port:
-            logging.info("starting prometheus on {}", self.prometheus_port)
+            logging.info("starting prometheus on %r", self.prometheus_port)
             start_http_server(self.prometheus_port)
             i = Info('iceprod', 'IceProd information')
             i.info({
-                'version': version_string,
+                'version': VERSION_STRING,
                 'type': 'credentials',
             })
             self.async_monitor = AsyncMonitor(labels={'type': 'credentials'})

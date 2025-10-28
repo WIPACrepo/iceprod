@@ -22,7 +22,7 @@ default_config = {
 }
 
 
-async def run(rest_client, config, dataset_id='', gpus=None, debug=False):
+async def run(rest_client, config, dataset_id='', gpus=None, debug=False):  # noqa: C901
     """
     Actual runtime / loop.
 

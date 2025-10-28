@@ -1,9 +1,11 @@
 import logging
 from functools import wraps
+from typing import Protocol
 import uuid
 
+import motor.motor_asyncio
 import pymongo
-from rest_tools.server import catch_error, token_attribute_role_mapping_auth
+from rest_tools.server import catch_error, token_attribute_role_mapping_auth, TokenAttributeRoleMappingProtocol, RestHandler
 from tornado.web import HTTPError
 
 from iceprod.roles_groups import ROLES, GROUPS
@@ -11,7 +13,11 @@ from iceprod.roles_groups import ROLES, GROUPS
 logger = logging.getLogger('rest-auth')
 
 
-class AttrAuthMixin:
+class AuthProtocol(Protocol):
+    auth_db: motor.motor_asyncio.AsyncIOMotorClient
+
+
+class AttrAuthMixin(TokenAttributeRoleMappingProtocol, AuthProtocol, RestHandler):
     async def add_user(self, username):
         """
         Add a user to the auth database.
@@ -72,12 +78,12 @@ class AttrAuthMixin:
         Based on the request groups or username, check if they are allowed to
         access `arg`:`role`.
 
-
         Args:
             arg (str): attribute name to check
             val (str): attribute value
             role (str): the role to check for (read|write)
         """
+        ret = None
         try:
             ret = await self.auth_db.attr_auths.find_one({arg: val}, projection={'_id':False})
             if not ret:

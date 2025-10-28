@@ -2,6 +2,7 @@
 Server for queue management
 """
 from collections import defaultdict
+import dataclasses
 from functools import partial
 import importlib
 import logging
@@ -12,9 +13,9 @@ import motor.motor_asyncio
 from prometheus_client import Info, start_http_server
 from rest_tools.server import RestServer
 from tornado.web import RequestHandler, HTTPError
-from wipac_dev_tools import from_environment
+from wipac_dev_tools import from_environment_as_dataclass
 
-from iceprod import __version__ as version_string
+from iceprod.util import VERSION_STRING
 from ..prom_utils import AsyncMonitor
 from ..s3 import boto3, S3
 from .base_handler import IceProdRestConfig
@@ -32,46 +33,48 @@ class Health(RequestHandler):
         self.write({})
 
 
+@dataclasses.dataclass
+class DefaultConfig:
+    HOST: str = 'localhost'
+    PORT: int = 8080
+    DEBUG: bool = False
+    OPENID_URL: str = ''
+    OPENID_AUDIENCE: str = ''
+    DB_URL: str = 'mongodb://localhost/iceprod'
+    DB_TIMEOUT: int = 60
+    DB_WRITE_CONCERN: int = 1
+    PROMETHEUS_PORT: int = 0
+    S3_ADDRESS: str = ''
+    S3_ACCESS_KEY: str = ''
+    S3_SECRET_KEY: str = ''
+    MAX_BODY_SIZE: int = 10**9
+    ROUTE_STATS_WINDOW_SIZE: int = 1000
+    ROUTE_STATS_WINDOW_TIME: int = 3600
+    ROUTE_STATS_TIMEOUT: int = 60
+    CI_TESTING: bool = True
+
+
 class Server:
     def __init__(self, s3_override=None):
-        default_config = {
-            'HOST': 'localhost',
-            'PORT': 8080,
-            'DEBUG': False,
-            'OPENID_URL': '',
-            'OPENID_AUDIENCE': '',
-            'DB_URL': 'mongodb://localhost/iceprod',
-            'DB_TIMEOUT': 60,
-            'DB_WRITE_CONCERN': 1,
-            'PROMETHEUS_PORT': 0,
-            'S3_ADDRESS': '',
-            'S3_ACCESS_KEY': '',
-            'S3_SECRET_KEY': '',
-            'MAX_BODY_SIZE': 10**9,
-            'ROUTE_STATS_WINDOW_SIZE': 1000,
-            'ROUTE_STATS_WINDOW_TIME': 3600,
-            'ROUTE_STATS_TIMEOUT': 60,
-            'CI_TESTING': '',
-        }
-        config = from_environment(default_config)
+        config = from_environment_as_dataclass(DefaultConfig)
 
         rest_config = {
-            'debug': config['DEBUG'],
+            'debug': config.DEBUG,
             'route_stats': {
-                'window_size': config['ROUTE_STATS_WINDOW_SIZE'],
-                'window_time': config['ROUTE_STATS_WINDOW_TIME'],
-                'timeout': config['ROUTE_STATS_TIMEOUT'],
+                'window_size': config.ROUTE_STATS_WINDOW_SIZE,
+                'window_time': config.ROUTE_STATS_WINDOW_TIME,
+                'timeout': config.ROUTE_STATS_TIMEOUT,
             }
         }
-        if config['OPENID_URL']:
-            logging.info(f'enabling auth via {config["OPENID_URL"]} for aud "{config["OPENID_AUDIENCE"]}"')
+        if config.OPENID_URL:
+            logging.info(f'enabling auth via {config.OPENID_URL} for aud "{config.OPENID_AUDIENCE}"')
             rest_config.update({
                 'auth': {
-                    'openid_url': config['OPENID_URL'],
-                    'audience': config['OPENID_AUDIENCE'],
+                    'openid_url': config.OPENID_URL,
+                    'audience': config.OPENID_AUDIENCE,
                 }
             })
-        elif config['CI_TESTING']:
+        elif config.CI_TESTING:
             rest_config.update({
                 'auth': {
                     'secret': 'secret',
@@ -81,32 +84,32 @@ class Server:
             raise RuntimeError('OPENID_URL not specified, and CI_TESTING not enabled!')
 
         # enable monitoring
-        self.prometheus_port = config['PROMETHEUS_PORT'] if config['PROMETHEUS_PORT'] > 0 else None
+        self.prometheus_port = config.PROMETHEUS_PORT if config.PROMETHEUS_PORT > 0 else None
         self.async_monitor = None
 
         s3conn = None
         if s3_override:
             logging.warning('S3 in testing mode')
             s3conn = S3('', '', '', mock_s3=s3_override)
-        elif boto3 and config['S3_ACCESS_KEY'] and config['S3_SECRET_KEY']:
-            s3conn = S3(config['S3_ADDRESS'], config['S3_ACCESS_KEY'], config['S3_SECRET_KEY'])
+        elif boto3 and config.S3_ACCESS_KEY and config.S3_SECRET_KEY:
+            s3conn = S3(config.S3_ADDRESS, config.S3_ACCESS_KEY, config.S3_SECRET_KEY)
         else:
             logger.warning('S3 is not available!')
 
-        logging_url = config["DB_URL"].split('@')[-1] if '@' in config["DB_URL"] else config["DB_URL"]
+        logging_url = config.DB_URL.split('@')[-1] if '@' in config.DB_URL else config.DB_URL
         logging.info(f'DB: {logging_url}')
-        db_url, db_name = config['DB_URL'].rsplit('/', 1)
+        db_url, db_name = config.DB_URL.rsplit('/', 1)
         self.db = motor.motor_asyncio.AsyncIOMotorClient(
             db_url,
-            timeoutMS=config['DB_TIMEOUT']*1000,
-            w=config['DB_WRITE_CONCERN'],
+            timeoutMS=config.DB_TIMEOUT*1000,
+            w=config.DB_WRITE_CONCERN,
         )
         logging.info(f'DB name: {db_name}')
         self.indexes = defaultdict(partial(defaultdict, dict))
 
         kwargs = IceProdRestConfig(rest_config, database=self.db, s3conn=s3conn)
 
-        server = RestServer(debug=config['DEBUG'], max_body_size=config['MAX_BODY_SIZE'])
+        server = RestServer(debug=config.DEBUG, max_body_size=config.MAX_BODY_SIZE)
 
         handler_path = str(Path(__file__).parent / 'handlers')
         for _, name, _ in pkgutil.iter_modules([handler_path]):
@@ -124,17 +127,17 @@ class Server:
         server.add_route('/healthz', Health)
         server.add_route(r'/(.*)', Error)
 
-        server.startup(address=config['HOST'], port=config['PORT'])
+        server.startup(address=config.HOST, port=config.PORT)
 
         self.server = server
 
     async def start(self):
         if self.prometheus_port:
-            logging.info("starting prometheus on {}", self.prometheus_port)
+            logging.info("starting prometheus on %r", self.prometheus_port)
             start_http_server(self.prometheus_port)
             i = Info('iceprod', 'IceProd information')
             i.info({
-                'version': version_string,
+                'version': VERSION_STRING,
                 'type': 'api',
             })
             self.async_monitor = AsyncMonitor(labels={'type': 'api'})

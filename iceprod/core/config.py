@@ -18,6 +18,8 @@ DATA_DEFAULTS = {key: value.get('default', None) for key,value in CONFIG_SCHEMA[
 
 
 class _ConfigMixin:
+    config: dict
+
     def fill_defaults(self):
         def _load_ref(schema_value):
             if '$ref' in list(schema_value.keys()):

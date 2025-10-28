@@ -7,6 +7,7 @@ It has been broken down into several sub-handlers for easier maintenance.
 """
 
 from collections import defaultdict
+import dataclasses as dc
 from datetime import datetime, timedelta, UTC
 import functools
 import importlib.resources
@@ -14,6 +15,7 @@ import logging
 import os
 import random
 import re
+from typing import Any
 from urllib.parse import urlencode
 
 from iceprod.core.jsonUtil import json_encode
@@ -26,10 +28,11 @@ import tornado.gen
 import jwt
 import tornado.concurrent
 from rest_tools.client import RestClient, ClientCredentialsAuth
-from rest_tools.server import catch_error, RestServer, RestHandlerSetup, RestHandler, OpenIDLoginHandler
-from wipac_dev_tools import from_environment
+from rest_tools.server import catch_error, RestServer, RestHandlerSetup, RestHandler, OpenIDCookieHandlerMixin, OpenIDLoginHandler
+from rest_tools.server.session import SessionMixin, Session
+from wipac_dev_tools import from_environment_as_dataclass
 
-from iceprod import __version__ as version_string
+from iceprod.util import VERSION_STRING
 from iceprod.prom_utils import AsyncMonitor, PromRequestMixin
 from iceprod.roles_groups import GROUPS
 from iceprod.core.config import CONFIG_SCHEMA as DATASET_SCHEMA
@@ -98,16 +101,140 @@ def eval_expression(token, e):
     return [r for r in ret if r]
 
 
-class TokenStorageMixin:
+class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):  # type: ignore[misc]
+    """
+    Store/load current user's `OpenIDLoginHandler` tokens in Redis.
+    """
+    def get_current_user(self) -> str | None:
+        """Get the current username from the cookie"""
+        try:
+            username = self.get_secure_cookie('iceprod_username')
+            if not username:
+                raise RuntimeError('missing iceprod_username cookie')
+            return username.decode('utf-8')
+        except Exception:
+            logger.info('failed to get username')
+        return None
+
+    @property
+    def auth_access_token(self) -> bytes | None:
+        if self.session:
+            ret = self.session.get('access_token', None)
+            if not isinstance(ret, str):
+                logger.warning('bad access token type: not str')
+                return None
+            return ret.encode('utf-8')
+        return None
+
+    @auth_access_token.setter
+    def auth_access_token(self, val: bytes):
+        if self.session:
+            self.session['access_token'] = val.decode('utf-8')
+        else:
+            raise RuntimeError('no valid session')
+
+    @property
+    def auth_refresh_token(self) -> bytes | None:
+        if self.session:
+            ret = self.session.get('refresh_token', None)
+            if not isinstance(ret, str):
+                logger.warning('bad access token type: not str')
+                return None
+            return ret.encode('utf-8')
+        return None
+
+    @auth_refresh_token.setter  # type: ignore[override]
+    def auth_refresh_token(self, val: bytes):
+        if self.session:
+            self.session['refresh_token'] = val.decode('utf-8')
+        else:
+            raise RuntimeError('no valid session')
+
+    @property
+    def auth_groups(self) -> list[str]:
+        assert self.auth
+        if not self.auth_access_token:
+            return []
+        try:
+            data = self.auth.validate(self.auth_access_token)
+        except jwt.ExpiredSignatureError:
+            logger.debug('user access_token expired')
+            return []
+
+        # lookup groups
+        groups: set[str] = set()
+        try:
+            for name in GROUPS:
+                for expression in GROUPS[name]:
+                    ret = eval_expression(data, expression)
+                    groups.update(match.expand(name) for match in ret)
+        except Exception:
+            logger.info('cannot determine groups', exc_info=True)
+        return sorted(groups)
+
+    def store_tokens(
+        self,
+        access_token,
+        access_token_exp,
+        refresh_token=None,
+        refresh_token_exp=None,
+        user_info=None,
+        user_info_exp=None,
+    ):
+        """
+        Store jwt tokens and user info from OpenID-compliant auth source.
+
+        Args:
+            access_token (str): jwt access token
+            access_token_exp (int): access token expiration in seconds
+            refresh_token (str): jwt refresh token
+            refresh_token_exp (int): refresh token expiration in seconds
+            user_info (dict): user info (from id token or user info lookup)
+            user_info_exp (int): user info expiration in seconds
+        """
+        assert self.auth
+        if not user_info:
+            user_info = self.auth.validate(access_token)
+        username = user_info.get('preferred_username')
+        if not username:
+            username = user_info.get('upn')
+        if not username:
+            raise tornado.web.HTTPError(400, reason='no username in token')
+
+        data = {
+            'access_token': access_token,
+            'refresh_token': refresh_token,
+        }
+        self._session_mgr.set(username, data)
+
+        self.set_secure_cookie('iceprod_username', username, expires_days=30)
+
+    def clear_tokens(self):
+        """
+        Clear token data, usually on logout.
+        """
+        username = self.current_user
+        self.clear_cookie('iceprod_username')
+        if username:
+            self._session_mgr.delete_session(username)
+
+
+class TokenStorageMixin(OpenIDCookieHandlerMixin, RestHandler):
     """
     Store/load current user's `OpenIDLoginHandler` tokens in iceprod credentials API.
     """
+    def initialize(self, cred_rest_client: RestClient, full_url: str, **kwargs):  # type: ignore
+        super().initialize(**kwargs)
+        self.cred_rest_client = cred_rest_client
+        self.full_url = full_url
+
     def get_current_user(self):
         return None
 
     async def get_current_user_async(self):
         """Get the current user, and set auth-related attributes."""
         try:
+            assert self.auth
             username = self.get_secure_cookie('iceprod_username')
             if not username:
                 return None
@@ -162,6 +289,7 @@ class TokenStorageMixin:
             user_info (dict): user info (from id token or user info lookup)
             user_info_exp (int): user info expiration in seconds
         """
+        assert self.auth
         if not user_info:
             user_info = self.auth.validate(access_token)
         username = user_info.get('preferred_username')
@@ -188,52 +316,49 @@ class TokenStorageMixin:
         self.clear_cookie('iceprod_username')
 
 
-class Login(TokenStorageMixin, PromRequestMixin, OpenIDLoginHandler):
-    def initialize(self, cred_rest_client=None, full_url=None, **kwargs):
-        super().initialize(**kwargs)
-        self.cred_rest_client = cred_rest_client
-        self.full_url = full_url
+class Login(LoginMixin, PromRequestMixin, OpenIDLoginHandler):  # type: ignore
+    pass
 
 
-class PublicHandler(TokenStorageMixin, PromRequestMixin, RestHandler):
+class PublicHandler(LoginMixin, PromRequestMixin, RestHandler):
     """Default Handler"""
-    def initialize(self, rest_api=None, cred_rest_client=None, system_rest_client=None, full_url=None, **kwargs):
+    def initialize(self, rest_api, cred_rest_client, system_rest_client, **kwargs):  # type: ignore
         """
         Get some params from the website module
 
         :param rest_api: the rest api url
         :param cred_rest_client: the rest api url for the cred service
         :param system_rest_client: the rest client for the system role
-        :param full_url: the full base url for the website
         """
         super().initialize(**kwargs)
         self.rest_api = rest_api
         self.cred_rest_client = cred_rest_client
         self.system_rest_client = system_rest_client
-        self.rest_client = None
-        self.full_url = full_url
+        self.rest_client: RestClient | None = None
 
-    def get_template_namespace(self):
+    def get_template_namespace(self) -> dict[str, Any]:
         namespace = super().get_template_namespace()
-        namespace['version'] = version_string
-        namespace['section'] = self.request.uri.lstrip('/').split('?')[0].split('/')[0]
+        namespace['version'] = VERSION_STRING
+        if self.request.uri:
+            namespace['section'] = self.request.uri.lstrip('/').split('?')[0].split('/')[0]
         namespace['json_encode'] = json_encode
         namespace['states'] = iceprod.server.states
         namespace['rest_api'] = self.rest_api
         return namespace
 
-    async def get_current_user_async(self):
-        ret = await super().get_current_user_async()
+    async def get_current_user_async(self) -> str | None:
         try:
-            if ret:
+            if self.current_user and self.auth_access_token:
                 self.rest_client = RestClient(self.rest_api, self.auth_access_token, timeout=50, retries=1)
+            elif not self.current_user:
+                logger.info('no current user')
+            else:
+                logger.info('no access token')
         except Exception:
-            pass
+            logger.info('failed to create user rest client', exc_info=True)
+        return self.current_user
 
-        self.current_user = ret
-        return ret
-
-    def write_error(self, status_code=500, **kwargs):
+    def write_error(self, status_code: int = 500, **kwargs) -> None:
         """Write out custom error page."""
         self.set_status(status_code)
         if status_code >= 500:
@@ -304,6 +429,7 @@ class Config(PublicHandler):
     """Handle /config urls"""
     @authenticated
     async def get(self):
+        assert self.rest_client
         dataset_id = self.get_argument('dataset_id',default=None)
         if not dataset_id:
             self.write_error(400,message='must provide dataset_id')
@@ -335,6 +461,7 @@ class DatasetBrowse(PublicHandler):
 
     @authenticated
     async def get(self):
+        assert self.rest_client
         usernames = await self.get_usernames()
         filter_options = {
             'status': ['processing', 'suspended', 'errors', 'complete', 'truncated'],
@@ -370,6 +497,7 @@ class Dataset(PublicHandler):
     """Handle /dataset urls"""
     @authenticated
     async def get(self, dataset_id):
+        assert self.rest_client
         if dataset_id.isdigit():
             try:
                 d_num = int(dataset_id)
@@ -423,6 +551,7 @@ class TaskBrowse(PublicHandler):
     """Handle /task urls"""
     @authenticated
     async def get(self, dataset_id):
+        assert self.rest_client
         status = self.get_argument('status',default=None)
         if status:
             tasks = await self.rest_client.request('GET','/datasets/{}/tasks?status={}'.format(dataset_id,status))
@@ -441,6 +570,7 @@ class Task(PublicHandler):
     """Handle /task urls"""
     @authenticated
     async def get(self, dataset_id, task_id):
+        assert self.rest_client
         status = self.get_argument('status', default=None)
         passkey = self.auth_access_token
 
@@ -472,6 +602,7 @@ class JobBrowse(PublicHandler):
     """Handle /job urls"""
     @authenticated
     async def get(self, dataset_id):
+        assert self.rest_client
         status = self.get_argument('status',default=None)
         passkey = self.auth_access_token
 
@@ -488,6 +619,7 @@ class Job(PublicHandler):
     """Handle /job urls"""
     @authenticated
     async def get(self, dataset_id, job_id):
+        assert self.rest_client
         status = self.get_argument('status',default=None)
         passkey = self.auth_access_token
 
@@ -520,6 +652,7 @@ class Documentation(PublicHandler):
 class Log(PublicHandler):
     @authenticated
     async def get(self, dataset_id, log_id):
+        assert self.rest_client
         ret = await self.rest_client.request('GET','/datasets/{}/logs/{}'.format(dataset_id, log_id))
         log_text = ret['data']
         html = '<html><head><title>' + ret['name'] + '</title></head><body>'
@@ -653,26 +786,29 @@ class HealthHandler(PublicHandler):
         self.write(status)
 
 
+@dc.dataclass(frozen=True)
+class DefaultConfig:
+    HOST : str = 'localhost'
+    PORT : int = 8080
+    DEBUG : bool = False
+    OPENID_URL : str = ''
+    OPENID_AUDIENCE : str = ''
+    ICEPROD_WEB_URL : str = 'https://iceprod2.icecube.wisc.edu'
+    ICEPROD_API_ADDRESS : str = 'https://iceprod2-api.icecube.wisc.edu'
+    ICEPROD_API_CLIENT_ID : str = ''
+    ICEPROD_API_CLIENT_SECRET : str = ''
+    ICEPROD_CRED_ADDRESS : str = 'https://credentials.iceprod.icecube.aq'
+    ICEPROD_CRED_CLIENT_ID : str = ''
+    ICEPROD_CRED_CLIENT_SECRET : str = ''
+    REDIS_HOST : str = 'localhost'
+    COOKIE_SECRET : str = ''
+    PROMETHEUS_PORT : int = 0
+    CI_TESTING : str = ''
+
+
 class Server:
     def __init__(self):
-        default_config = {
-            'HOST': 'localhost',
-            'PORT': 8080,
-            'DEBUG': False,
-            'OPENID_URL': '',
-            'OPENID_AUDIENCE': '',
-            'ICEPROD_WEB_URL': 'https://iceprod2.icecube.wisc.edu',
-            'ICEPROD_API_ADDRESS': 'https://iceprod2-api.icecube.wisc.edu',
-            'ICEPROD_API_CLIENT_ID': '',
-            'ICEPROD_API_CLIENT_SECRET': '',
-            'ICEPROD_CRED_ADDRESS': 'https://credentials.iceprod.icecube.aq',
-            'ICEPROD_CRED_CLIENT_ID': '',
-            'ICEPROD_CRED_CLIENT_SECRET': '',
-            'COOKIE_SECRET': '',
-            'PROMETHEUS_PORT': 0,
-            'CI_TESTING': '',
-        }
-        config = from_environment(default_config)
+        config = from_environment_as_dataclass(DefaultConfig)
 
         # get package data
         static_path = str(importlib.resources.files('iceprod.website')/'data'/'www')
@@ -685,25 +821,25 @@ class Server:
             raise Exception('bad template path')
 
         # set IceProd REST API
-        if config['ICEPROD_API_ADDRESS']:
-            rest_address = config['ICEPROD_API_ADDRESS']
+        if config.ICEPROD_API_ADDRESS:
+            rest_address = config.ICEPROD_API_ADDRESS
         else:
             raise RuntimeError('ICEPROD_API_ADDRESS not specified')
 
         rest_config = {
-            'debug': config['DEBUG'],
-            'server_header': 'IceProd/' + version_string,
+            'debug': config.DEBUG,
+            'server_header': 'IceProd/' + VERSION_STRING,
         }
 
-        if config['OPENID_URL']:
-            logging.info(f'enabling auth via {config["OPENID_URL"]} for aud "{config["OPENID_AUDIENCE"]}"')
+        if config.OPENID_URL:
+            logging.info(f'enabling auth via {config.OPENID_URL} for aud "{config.OPENID_AUDIENCE}"')
             rest_config.update({
                 'auth': {
-                    'openid_url': config['OPENID_URL'],
-                    'audience': config['OPENID_AUDIENCE'],
+                    'openid_url': config.OPENID_URL,
+                    'audience': config.OPENID_AUDIENCE,
                 }
             })
-        elif config['CI_TESTING']:
+        elif config.CI_TESTING:
             rest_config.update({
                 'auth': {
                     'secret': 'secret',
@@ -713,44 +849,48 @@ class Server:
             raise RuntimeError('OPENID_URL not specified, and CI_TESTING not enabled!')
 
         # enable monitoring
-        self.prometheus_port = config['PROMETHEUS_PORT'] if config['PROMETHEUS_PORT'] > 0 else None
+        self.prometheus_port = config.PROMETHEUS_PORT if config.PROMETHEUS_PORT > 0 else None
         self.async_monitor = None
 
-        if config['ICEPROD_CRED_CLIENT_ID'] and config['ICEPROD_CRED_CLIENT_SECRET']:
-            logging.info(f'enabling auth via {config["OPENID_URL"]} for aud "{config["OPENID_AUDIENCE"]}"')
+        if config.ICEPROD_CRED_CLIENT_ID and config.ICEPROD_CRED_CLIENT_SECRET:
+            logging.info(f'enabling auth via {config.OPENID_URL} for aud "{config.OPENID_AUDIENCE}"')
             cred_client = ClientCredentialsAuth(
-                address=config['ICEPROD_CRED_ADDRESS'],
-                token_url=config['OPENID_URL'],
-                client_id=config['ICEPROD_CRED_CLIENT_ID'],
-                client_secret=config['ICEPROD_CRED_CLIENT_SECRET'],
+                address=config.ICEPROD_CRED_ADDRESS,
+                token_url=config.OPENID_URL,
+                client_id=config.ICEPROD_CRED_CLIENT_ID,
+                client_secret=config.ICEPROD_CRED_CLIENT_SECRET,
             )
-        elif config['CI_TESTING']:
-            cred_client = RestClient(config['ICEPROD_CRED_ADDRESS'], timeout=1, retries=0)
+        elif config.CI_TESTING:
+            cred_client = RestClient(config.ICEPROD_CRED_ADDRESS, timeout=1, retries=0)
         else:
             raise RuntimeError('ICEPROD_CRED_CLIENT_ID or ICEPROD_CRED_CLIENT_SECRET not specified, and CI_TESTING not enabled!')
 
         handler_args = RestHandlerSetup(rest_config)
         handler_args['cred_rest_client'] = cred_client
+        if config.CI_TESTING:
+            self.session = Session()
+        else:
+            self.session = Session(storage_type='redis', host=config.REDIS_HOST)  # type: ignore
+        handler_args['session'] = self.session
 
-        full_url = config['ICEPROD_WEB_URL']
-        handler_args['full_url'] = full_url
+        full_url = config.ICEPROD_WEB_URL
         login_url = full_url+'/login'
 
         login_handler_args = handler_args.copy()
-        if config['ICEPROD_API_CLIENT_ID'] and config['ICEPROD_API_CLIENT_SECRET']:
+        if config.ICEPROD_API_CLIENT_ID and config.ICEPROD_API_CLIENT_SECRET:
             logging.info('enabling system rest client and website logins"')
             rest_client = ClientCredentialsAuth(
-                address=config['ICEPROD_API_ADDRESS'],
-                token_url=config['OPENID_URL'],
-                client_id=config['ICEPROD_API_CLIENT_ID'],
-                client_secret=config['ICEPROD_API_CLIENT_SECRET'],
+                address=config.ICEPROD_API_ADDRESS,
+                token_url=config.OPENID_URL,
+                client_id=config.ICEPROD_API_CLIENT_ID,
+                client_secret=config.ICEPROD_API_CLIENT_SECRET,
             )
-            login_handler_args['oauth_client_id'] = config['ICEPROD_API_CLIENT_ID']
-            login_handler_args['oauth_client_secret'] = config['ICEPROD_API_CLIENT_SECRET']
+            login_handler_args['oauth_client_id'] = config.ICEPROD_API_CLIENT_ID
+            login_handler_args['oauth_client_secret'] = config.ICEPROD_API_CLIENT_SECRET
             login_handler_args['oauth_client_scope'] = 'offline_access posix profile'
-        elif config['CI_TESTING']:
+        elif config.CI_TESTING:
             logger.info('CI_TESTING: no login for testing')
-            rest_client = RestClient(config['ICEPROD_API_ADDRESS'], timeout=1, retries=0)
+            rest_client = RestClient(config.ICEPROD_API_ADDRESS, timeout=1, retries=0)
         else:
             raise RuntimeError('ICEPROD_API_CLIENT_ID or ICEPROD_API_CLIENT_SECRET not specified, and CI_TESTING not enabled!')
 
@@ -758,15 +898,15 @@ class Server:
             'rest_api': rest_address,
             'system_rest_client': rest_client,
         })
-        if config['COOKIE_SECRET']:
-            cookie_secret = config['COOKIE_SECRET']
+        if config.COOKIE_SECRET:
+            cookie_secret = config.COOKIE_SECRET
             log_cookie_secret = cookie_secret[:4] + 'X'*(len(cookie_secret)-8) + cookie_secret[-4:]
             logger.info('using supplied cookie secret %r', log_cookie_secret)
         else:
             cookie_secret = ''.join(hex(random.randint(0,15))[-1] for _ in range(64))
 
         server = RestServer(
-            debug=config['DEBUG'],
+            debug=config.DEBUG,
             cookie_secret=cookie_secret,
             login_url=login_url,
             template_path=template_path,
@@ -792,17 +932,17 @@ class Server:
         server.add_route('/healthz', HealthHandler, handler_args)
         server.add_route(r"/.*", Other, handler_args)
 
-        server.startup(address=config['HOST'], port=config['PORT'])
+        server.startup(address=config.HOST, port=config.PORT)
 
         self.server = server
 
     async def start(self):
         if self.prometheus_port:
-            logging.info("starting prometheus on {}", self.prometheus_port)
+            logging.info("starting prometheus on %r", self.prometheus_port)
             start_http_server(self.prometheus_port)
             i = Info('iceprod', 'IceProd information')
             i.info({
-                'version': version_string,
+                'version': VERSION_STRING,
                 'type': 'website',
             })
             self.async_monitor = AsyncMonitor(labels={'type': 'website'})
@@ -812,3 +952,4 @@ class Server:
         await self.server.stop()
         if self.async_monitor:
             await self.async_monitor.stop()
+        self.session.close()

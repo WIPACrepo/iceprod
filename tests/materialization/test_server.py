@@ -1,10 +1,6 @@
 import logging
-import os
 import re
-import socket
-from unittest.mock import AsyncMock, MagicMock
 
-import motor.motor_asyncio
 import pytest
 import pytest_asyncio
 from rest_tools.client import RestClient

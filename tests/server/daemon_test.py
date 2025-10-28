@@ -12,21 +12,17 @@ logger = logging.getLogger('daemon_test')
 import os
 import sys
 import time
-import random
-from datetime import datetime,timedelta
-from contextlib import contextmanager
 from functools import partial
 import shutil
 import tempfile
-import subprocess
 import signal
 import stat
 import multiprocessing
 
 try:
-    import cPickle as pickle
+    pass
 except:
-    import pickle
+    pass
 
 import unittest
 

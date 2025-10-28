@@ -110,7 +110,7 @@ if args.server:
         print('searching dir',d,'with glob',args.file_glob)
         try:
             test_suites.addTests(loader.discover(d,args.file_glob+'_test.py'))
-        except TypeError as e:
+        except TypeError:
             logging.error(f'error searching dir {d} with glob {args.file_glob}',
                           exc_info=True)
 

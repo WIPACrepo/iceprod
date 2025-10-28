@@ -19,7 +19,7 @@ from prometheus_client import Info
 import requests.exceptions
 from wipac_dev_tools.prometheus_tools import GlobalLabels, AsyncPromWrapper, AsyncPromTimer
 
-from iceprod import __version__ as version_string
+from iceprod.util import VERSION_STRING
 from iceprod.core import functions
 from iceprod.core.config import Task, Job, Dataset
 from iceprod.core.defaults import add_default_options
@@ -59,7 +59,7 @@ class BaseGrid:
         queue_cfg = self.cfg['queue']
 
         # site name
-        self.site = None
+        self.site = ''
         if 'site' in queue_cfg:
             self.site = queue_cfg['site']
 
@@ -93,7 +93,7 @@ class BaseGrid:
             'name': str(self.site),
             'type': 'grid',
             'queue_type': queue_cfg.get('type',''),
-            'version': version_string,
+            'version': VERSION_STRING,
             'exclusive': str(queue_cfg.get('exclusive', False)),
         })
 
@@ -228,8 +228,8 @@ class BaseGrid:
         """
         resource = deepcopy(Resources.defaults)
         for k in resource:
-            if isinstance(resource[k],list):
-                resource[k] = len(resource[k])
+            if isinstance(resource[k], list):
+                resource[k] = len(resource[k])  # type: ignore
         values = {}
         try:
             for k in task.requirements:

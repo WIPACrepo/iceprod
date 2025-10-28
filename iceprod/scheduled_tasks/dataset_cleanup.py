@@ -11,6 +11,29 @@ from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 logger = logging.getLogger('dataset_cleanup')
 
 
+async def cleanup_dataset(dataset_id, rest_client):
+    jobs = await rest_client.request('GET', f'/datasets/{dataset_id}/job_summaries/status')
+    job_ids = set()
+    if 'suspended' in jobs:
+        job_ids.update(jobs['suspended'])
+    if 'errors' in jobs:
+        job_ids.update(jobs['errors'])
+
+    args = {
+        'keys': 'task_id|job_id|status'
+    }
+    tasks = await rest_client.request('GET', f'/datasets/{dataset_id}/tasks', args)
+    task_ids = []
+    for tasks in tasks.values():
+        if tasks['status'] not in ('complete','suspended') and tasks['job_id'] in job_ids:
+            task_ids.append(tasks['task_id'])
+    while task_ids:
+        tids = task_ids[:10000]
+        task_ids = task_ids[10000:]
+        args = {'tasks': tids}
+        await rest_client.request('POST', f'/datasets/{dataset_id}/task_actions/bulk_status/suspended', args)
+
+
 async def run(rest_client, debug=False):
     """
     Actual runtime / loop.
@@ -55,27 +78,7 @@ async def run(rest_client, debug=False):
         dataset_ids.extend(list(datasets['processing']))
     for dataset_id in dataset_ids:
         try:
-            jobs = await rest_client.request('GET', f'/datasets/{dataset_id}/job_summaries/status')
-            job_ids = set()
-            if 'suspended' in jobs:
-                job_ids.update(jobs['suspended'])
-            if 'errors' in jobs:
-                job_ids.update(jobs['errors'])
-
-            args = {
-                'keys': 'task_id|job_id|status'
-            }
-            tasks = await rest_client.request('GET', f'/datasets/{dataset_id}/tasks', args)
-            task_ids = []
-            for tasks in tasks.values():
-                if tasks['status'] not in ('complete','suspended') and tasks['job_id'] in job_ids:
-                    task_ids.append(tasks['task_id'])
-            while task_ids:
-                tids = task_ids[:10000]
-                task_ids = task_ids[10000:]
-                args = {'tasks': tids}
-                await rest_client.request('POST', f'/datasets/{dataset_id}/task_actions/bulk_status/suspended', args)
-
+            await cleanup_dataset(dataset_id, rest_client=rest_client)
         except Exception:
             logger.error('error cleaning a task in dataset %s', dataset_id, exc_info=True)
             if debug:

@@ -1,4 +1,3 @@
-import asyncio
 import datetime
 import logging
 from pathlib import Path
@@ -9,10 +8,8 @@ from unittest.mock import MagicMock, AsyncMock
 
 import htcondor
 import pytest
-import requests.exceptions
 
-from iceprod.core.resources import Resources
-from iceprod.core.config import Dataset, Job, Task
+from iceprod.core.config import Job, Task
 from iceprod.core.exe import Data, Transfer
 import iceprod.server.config
 import iceprod.server.grid

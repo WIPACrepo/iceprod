@@ -20,12 +20,12 @@ EXIT_FAILURE = 1
 EXIT_AUTHENTICATION_REFRESH = 2
 
 try:
-    from classad import ClassAd, parseAds
+    from classad import ClassAd, parseAds  # type: ignore
 except ImportError:
     import re
     import json
 
-    class ClassAd(dict):
+    class ClassAd(dict):  # type: ignore
         def printOld(self):
             ret = []
             for k,v in self.items():
@@ -76,7 +76,7 @@ def parse_args():
     # <this> -classad
     # <this> -infile <input-filename> -outfile <output-filename>
     # <this> -outfile <output-filename> -infile <input-filename>
-    if not len(sys.argv) in [2, 5, 6]:
+    if len(sys.argv) not in [2, 5, 6]:
         print_help()
         sys.exit(EXIT_FAILURE)
 

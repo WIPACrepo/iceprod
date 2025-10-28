@@ -9,17 +9,13 @@ from tests.util import unittest_reporter, glob_tests
 import logging
 logger = logging.getLogger('dataclasses')
 
-import os
-import sys
-import json
 
 try:
-    import cPickle as pickle
+    pass
 except:
-    import pickle
+    pass
 
 import unittest
-from iceprod.core import to_log
 import iceprod.core.dataclasses
 
 

@@ -318,7 +318,7 @@ async def test_task_load_stats(requests_mock):
         'foo': 'bar',
     }
     requests_mock.get(
-        f'http://test.iceprod/datasets/did123/tasks/t123/task_stats',
+        'http://test.iceprod/datasets/did123/tasks/t123/task_stats',
         json={stat_data['task_stat_id']: stat_data},
     )
 
@@ -338,7 +338,7 @@ async def test_task_load_task_files(requests_mock):
         'remote': 'https://foo.bar.baz/foo.txt',
     }]
     requests_mock.get(
-        f'http://test.iceprod/datasets/did123/files/t123',
+        'http://test.iceprod/datasets/did123/files/t123',
         json={'files': data},
     )
 

@@ -5,9 +5,9 @@ from functools import partial
 import logging
 
 try:
-    import boto3
-    import botocore.client
-    import botocore.exceptions
+    import boto3  # type: ignore
+    import botocore.client  # type: ignore
+    import botocore.exceptions  # type: ignore
 except ImportError:
     boto3 = None
 

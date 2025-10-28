@@ -82,7 +82,7 @@ def unittest_reporter(*args,**kwargs):
                     else:
                         logging.info('test is seq')
                         obj(self, *args,**kwargs)
-            except Exception as e:
+            except Exception:
                 logging.error('Error running %s test',name,
                              exc_info=True)
                 printer('Test '+test_name,passed=False)
@@ -106,7 +106,8 @@ def glob_tests(x):
 
 def listmodules(package_name=''):
     """List modules in a package or directory"""
-    import os,imp
+    import os
+    import imp
     package_name_os = package_name.replace('.','/')
     file, pathname, description = imp.find_module(package_name_os)
     if file:
