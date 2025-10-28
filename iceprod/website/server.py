@@ -144,7 +144,7 @@ class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):  # type: 
         return None
 
     @auth_refresh_token.setter
-    def auth_refresh_token(self, val: bytes):
+    def auth_refresh_token(self, val: bytes):  # type: ignore[override]
         if self.session:
             self.session['refresh_token'] = val.decode('utf-8')
         else:
