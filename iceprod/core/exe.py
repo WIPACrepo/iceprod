@@ -43,78 +43,6 @@ import iceprod.core.parser
 from iceprod.core.jsonUtil import json_encode,json_decode
 
 
-class ConfigError(Exception):
-    pass
-
-
-class ConfigParser:
-    """
-    Parse things using a config and the tray/task/module environment.
-
-    Note: dataset config must be valid!
-
-    Args:
-        dataset: a dataset object with config
-        logger: a logger object, for localized logging
-    """
-    def __init__(self, dataset: config.Dataset, logger: Optional[logging.Logger] = None):
-        dataset.validate()
-        self.config = dataset.config
-        self.logger = logger if logger else logging.getLogger()
-        self.parser = iceprod.core.parser.ExpParser()
-
-    def parseValue(self, value: Any, env: dict = {}) -> Any:
-        """
-        Parse a value from the available env and global config.
-
-        If the value is a string:
-        1. Use the :class:`Meta Parser <iceprod.core.parser>` to parse the string.
-        2. Expand any env variables in the result.
-
-        If the value is not a string, pass through the value.
-
-        Args:
-            value: the value to parse
-            env: tray/task/module env
-
-        Returns:
-            the parsed value
-        """
-        if isinstance(value, str):
-            self.logger.debug('parse before:%r| env=%r| options=%r', value, env, self.config.get('options'))
-            while value != (ret := self.parser.parse(value, self.config, env)):
-                value = ret
-            if isinstance(value, str):
-                value = os.path.expandvars(value)
-            self.logger.debug('parse after:%r', value)
-        return value
-
-    def parseObject(self, obj: Any, env: dict) -> Any:
-        """
-        Recursively parse a dict or list.
-
-        Do not modify original object.
-
-        Args:
-            obj: object to parse
-            env: tray/task/module env
-
-        Returns:
-            the parsed object
-        """
-        if isinstance(obj, str):
-            return self.parseValue(obj, env)
-        elif isinstance(obj, (list, tuple)):
-            return [self.parseObject(v, env) for v in obj]
-        elif isinstance(obj, dict):
-            ret = copy.copy(obj)  # use copy.copy in case it's a subclass of dict
-            for k in obj:
-                ret[k] = self.parseObject(obj[k], env)
-            return ret
-        else:
-            return obj
-
-
 class Transfer(StrEnum):
     TRUE = 'true'
     MAYBE = 'maybe'
@@ -150,6 +78,80 @@ class Env:
 
     def to_parser_dict(self) -> dict[str, Any]:
         return {'parameters': self.parameters, 'environment': self.environment}
+
+
+class ConfigError(Exception):
+    pass
+
+
+class ConfigParser:
+    """
+    Parse things using a config and the tray/task/module environment.
+
+    Note: dataset config must be valid!
+
+    Args:
+        dataset: a dataset object with config
+        logger: a logger object, for localized logging
+    """
+    def __init__(self, dataset: config.Dataset, logger: Optional[logging.Logger] = None):
+        dataset.validate()
+        self.config = dataset.config
+        self.logger = logger if logger else logging.getLogger()
+        self.parser = iceprod.core.parser.ExpParser()
+
+    def parseValue(self, value: Any, env: dict | Env = {}) -> Any:
+        """
+        Parse a value from the available env and global config.
+
+        If the value is a string:
+        1. Use the :class:`Meta Parser <iceprod.core.parser>` to parse the string.
+        2. Expand any env variables in the result.
+
+        If the value is not a string, pass through the value.
+
+        Args:
+            value: the value to parse
+            env: tray/task/module env
+
+        Returns:
+            the parsed value
+        """
+        if isinstance(env, Env):
+            env = env.to_parser_dict()
+        if isinstance(value, str):
+            self.logger.debug('parse before:%r| env=%r| options=%r', value, env, self.config.get('options'))
+            while value != (ret := self.parser.parse(value, self.config, env)):
+                value = ret
+            if isinstance(value, str):
+                value = os.path.expandvars(value)
+            self.logger.debug('parse after:%r', value)
+        return value
+
+    def parseObject(self, obj: Any, env: dict | Env) -> Any:
+        """
+        Recursively parse a dict or list.
+
+        Do not modify original object.
+
+        Args:
+            obj: object to parse
+            env: tray/task/module env
+
+        Returns:
+            the parsed object
+        """
+        if isinstance(obj, str):
+            return self.parseValue(obj, env)
+        elif isinstance(obj, (list, tuple)):
+            return [self.parseObject(v, env) for v in obj]
+        elif isinstance(obj, dict):
+            ret = copy.copy(obj)  # use copy.copy in case it's a subclass of dict
+            for k in obj:
+                ret[k] = self.parseObject(obj[k], env)
+            return ret
+        else:
+            return obj
 
 
 @contextmanager
@@ -207,14 +209,14 @@ def scope_env(cfg: ConfigParser, obj: dict, upperenv: Optional[Env] = None, logg
             env.parameters.update(obj['parameters'])
             # parse parameter values and update if necessary
             for p in obj['parameters']:
-                newval = cfg.parseValue(obj['parameters'][p], env.to_parser_dict())
+                newval = cfg.parseValue(obj['parameters'][p], env)
                 if newval != obj['parameters'][p]:
                     env.parameters[p] = newval
 
         if 'data' in obj:
             # download data
             for data in obj['data']:
-                d = cfg.parseObject(data, env.to_parser_dict())
+                d = cfg.parseObject(data, env)
                 if d['movement'] in ('input','both'):
                     ret = downloadData(d, cfg=cfg, logger=logger)
                     if ret:
