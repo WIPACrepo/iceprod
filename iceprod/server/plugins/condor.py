@@ -447,7 +447,7 @@ transfer_output_remaps = $(outremaps)
 
         with prom_histogram.time():
             s = htcondor.Submit(submitfile)
-            submit_result = self.condor_schedd.submit(s, count=1, itemdata=s.itemdata())#iter(jobset))
+            submit_result = self.condor_schedd.submit(s, count=1, itemdata=s.itemdata())
 
         cluster_id = int(submit_result.cluster())
         ret = {}
