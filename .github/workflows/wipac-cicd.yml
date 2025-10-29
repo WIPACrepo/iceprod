@@ -69,7 +69,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          token: ${{ github.secrets.PERSONAL_ACCESS_TOKEN }}
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           ref: ${{ github.ref }}  # dont lock to sha (action needs to push)
       - uses: WIPACrepo/wipac-dev-py-setup-action@v5.7
         with:
@@ -217,6 +217,7 @@ jobs:
     ]
     uses: WIPACrepo/wipac-dev-workflows/.github/workflows/image-publish.yml@v1.16
     permissions: # for GITHUB_TOKEN
+      contents: read
       packages: write
     with:
       image_namespace: wipacrepo
