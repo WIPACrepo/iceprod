@@ -11,3 +11,4 @@ jobs:
     with:
       image_namespace: wipacrepo
       image_name: iceprod
+      mode: BUILD
