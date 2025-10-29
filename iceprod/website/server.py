@@ -23,10 +23,7 @@ from iceprod.core.jsonUtil import json_encode
 from cachetools.func import ttl_cache
 from prometheus_client import Info, start_http_server
 import tornado.web
-import tornado.httpserver
-import tornado.gen
 import jwt
-import tornado.concurrent
 import requests.exceptions
 from rest_tools.client import RestClient, ClientCredentialsAuth
 from rest_tools.server import catch_error, RestServer, RestHandlerSetup, RestHandler, OpenIDCookieHandlerMixin, OpenIDLoginHandler
@@ -38,7 +35,6 @@ from iceprod.prom_utils import AsyncMonitor, PromRequestMixin
 from iceprod.roles_groups import GROUPS
 from iceprod.core.config import CONFIG_SCHEMA as DATASET_SCHEMA
 from iceprod.server.config import CONFIG_SCHEMA as SERVER_SCHEMA
-import iceprod.core.functions
 from iceprod.server import documentation
 import iceprod.server.states
 from iceprod.server.util import datetime2str, nowstr
@@ -281,17 +277,15 @@ class Login(LoginMixin, PromRequestMixin, OpenIDLoginHandler):  # type: ignore
 
 class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler):
     """Default Handler"""
-    def initialize(self, rest_api, cred_rest_client, system_rest_client, **kwargs):  # type: ignore
+    def initialize(self, rest_api, system_rest_client, **kwargs):  # type: ignore
         """
         Get some params from the website module
 
         :param rest_api: the rest api url
-        :param cred_rest_client: the rest api url for the cred service
         :param system_rest_client: the rest client for the system role
         """
         super().initialize(**kwargs)
         self.rest_api = rest_api
-        self.cred_rest_client = cred_rest_client
         self.system_rest_client = system_rest_client
         self.rest_client: RestClient | None = None
 
