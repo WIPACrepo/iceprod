@@ -216,9 +216,9 @@ jobs:
       release-version,
     ]
     uses: WIPACrepo/wipac-dev-workflows/.github/workflows/image-publish.yml@v1.16
-    permissions: # for GITHUB_TOKEN
-      contents: read
-      packages: write
+#    permissions: # for GITHUB_TOKEN
+#      contents: read
+#     packages: write
     with:
       image_namespace: wipacrepo
       image_name: iceprod
