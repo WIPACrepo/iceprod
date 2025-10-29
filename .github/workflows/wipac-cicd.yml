@@ -64,6 +64,7 @@ jobs:
   #############################################################################
 
   py-setup:
+    if: ${{ github.actor != 'dependabot[bot]' }} # dependabot cannot access PAT
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -222,6 +223,7 @@ jobs:
       image_name: iceprod
       mode: CVMFS_BUILD
       cvmfs_dest_dir: "iceprod"
+      cvmfs_github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       build_args: |
         SETUPTOOLS_SCM_PRETEND_VERSION=${{ needs.release-version.outputs.next-version }}
       extra_build_tag: ${{ needs.release-version.outputs.next-version }}
