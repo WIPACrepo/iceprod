@@ -216,15 +216,15 @@ jobs:
       release-version,
     ]
     uses: WIPACrepo/wipac-dev-workflows/.github/workflows/image-publish.yml@v1.16
-#    permissions: # for GITHUB_TOKEN
-#      contents: read
-#     packages: write
+    permissions: # for GITHUB_TOKEN
+      packages: write
     with:
       image_namespace: wipacrepo
       image_name: iceprod
       mode: CVMFS_BUILD
       cvmfs_dest_dir: "iceprod"
-      cvmfs_github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       build_args: |
         SETUPTOOLS_SCM_PRETEND_VERSION=${{ needs.release-version.outputs.next-version }}
       extra_build_tag: ${{ needs.release-version.outputs.next-version }}
+    secrets:
+      cvmfs_github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
