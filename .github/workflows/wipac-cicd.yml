@@ -64,6 +64,7 @@ jobs:
   #############################################################################
 
   py-setup:
+    if: ${{ github.actor != 'dependabot[bot]' }} # dependabot cannot access PAT
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -225,3 +226,5 @@ jobs:
       build_args: |
         SETUPTOOLS_SCM_PRETEND_VERSION=${{ needs.release-version.outputs.next-version }}
       extra_build_tag: ${{ needs.release-version.outputs.next-version }}
+    secrets:
+      cvmfs_github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
