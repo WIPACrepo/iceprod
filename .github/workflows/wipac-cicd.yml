@@ -175,7 +175,7 @@ jobs:
           ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
       # copied from tag-and-release
       - name: Determine next version
-        uses: WIPACrepo/wipac-dev-next-version-action@v1.5
+        uses: WIPACrepo/wipac-dev-next-version-action@v1.7
         id: next-version
         with:
           force-patch-if-no-commit-token: true
