@@ -15,7 +15,7 @@ import logging
 import os
 import random
 import re
-from typing import Any
+from typing import Any, Awaitable
 from urllib.parse import urlencode
 
 from iceprod.core.jsonUtil import json_encode
@@ -31,6 +31,7 @@ from rest_tools.server.session import SessionMixin, Session
 from wipac_dev_tools import from_environment_as_dataclass
 
 from iceprod.util import VERSION_STRING
+from iceprod.credentials.util import ClientCreds
 from iceprod.prom_utils import AsyncMonitor, PromRequestMixin
 from iceprod.roles_groups import GROUPS
 from iceprod.core.config import CONFIG_SCHEMA as DATASET_SCHEMA
@@ -220,28 +221,59 @@ class TokenStorageMixin(RestHandler):
     """
     Store/load current user's tokens in iceprod credentials API.
     """
+    TokenResult = list[dict[str, Any]]
+
     def initialize(self, *args, cred_rest_client, **kwargs):
         super().initialize(**kwargs)
         self.cred_rest_client = cred_rest_client
 
-    @authenticated
-    async def get_cred_tokens(self, url):
+    async def _get_cred_tokens(self, path: str, url: str | None = None, scope: str | None = None) -> TokenResult:
         """Get selected tokens from the credential service."""
         try:
             assert self.auth
-            username = self.current_user
-            creds = await self.cred_rest_client.request('GET', f'/users/{username}/credentials', {'url': url})
-            return creds[url]
+            args = {'url': url}
+            if scope:
+                args['scope'] = scope
+            creds = await self.cred_rest_client.request('GET', path, args)
+            return creds
         except requests.exceptions.RequestException:
             logger.warning('failed to get credentials', exc_info=True)
-        return None
+        return []
 
-    @authenticated
-    async def put_cred_tokens(
+    async def get_cred_group_tokens(self, group_name: str, url: str | None = None, scope: str | None = None) -> TokenResult:
+        return await self._get_cred_tokens(
+            path = f'/groups/{group_name}/credentials',
+            url = url, 
+            scope = scope,
+        )
+
+    async def get_cred_user_tokens(self, username: str, url: str | None = None, scope: str | None = None) -> TokenResult:
+        return await self._get_cred_tokens(
+            path = f'/users/{username}/credentials',
+            url = url, 
+            scope = scope,
+        )
+
+    async def get_cred_dataset_tokens(self, dataset_id: str, url: str | None = None, scope: str | None = None) -> TokenResult:
+        return await self._get_cred_tokens(
+            path = f'/datasets/{dataset_id}/credentials',
+            url = url, 
+            scope = scope,
+        )
+
+    async def get_cred_dataset_task_tokens(self, dataset_id: str, task_name: str, url: str | None = None, scope: str | None = None) -> TokenResult:
+        return await self._get_cred_tokens(
+            path = f'/datasets/{dataset_id}/tasks/{task_name}/credentials',
+            url = url, 
+            scope = scope,
+        )
+
+    async def _put_cred_tokens(
         self,
-        url,
-        access_token,
-        refresh_token=None,
+        path: str,
+        url: str,
+        access_token: str,
+        refresh_token: str | None =None
     ):
         """
         Store jwt tokens from OpenID-compliant auth source.
@@ -252,7 +284,6 @@ class TokenStorageMixin(RestHandler):
             refresh_token (str): jwt refresh token
         """
         assert self.auth
-        username = self.current_user
         args = {
             'url': url,
             'type': 'oauth',
@@ -261,15 +292,89 @@ class TokenStorageMixin(RestHandler):
         if refresh_token:
             args['refresh_token'] = refresh_token
 
-        await self.cred_rest_client.request('POST', f'/users/{username}/credentials', args)
+        await self.cred_rest_client.request('POST', path, args)
 
-    async def clear_cred_tokens(self):
+    async def put_cred_group_tokens(
+            self,
+            group_name: str,
+            url: str,
+            access_token: str,
+            refresh_token: str | None = None
+    ):
+        return await self._put_cred_tokens(
+            path = f'/groups/{group_name}/credentials',
+            url = url, 
+            access_token=access_token,
+            refresh_token=refresh_token,
+        )
+
+    async def put_cred_user_tokens(
+            self,
+            username: str,
+            url: str,
+            access_token: str,
+            refresh_token: str | None = None
+    ):
+        return await self._put_cred_tokens(
+            path = f'/users/{username}/credentials',
+            url = url, 
+            access_token=access_token,
+            refresh_token=refresh_token,
+        )
+
+    async def put_cred_dataset_task_tokens(
+            self,
+            dataset_id: str,
+            task_name: str,
+            url: str,
+            access_token: str,
+            refresh_token: str | None = None
+    ):
+        return await self._put_cred_tokens(
+            path = f'/datasets/{dataset_id}/tasks/{task_name}/credentials',
+            url = url, 
+            access_token=access_token,
+            refresh_token=refresh_token,
+        )
+
+    async def _clear_cred_tokens(self, path: str, url: str | None = None, scope: str | None = None):
         """
         Clear all token data.
         """
-        username = self.current_user
-        await self.cred_rest_client.request('DELETE', f'/users/{username}/credentials', {})
+        args = {}
+        if url:
+            args['url'] = url
+        if scope:
+            args['scope'] = scope
+        await self.cred_rest_client.request('DELETE', path, args)
 
+    async def clear_cred_group_tokens(self, group_name: str, url: str, scope: str | None = None):
+        return await self._clear_cred_tokens(
+            path = f'/groups/{group_name}/credentials',
+            url = url, 
+            scope = scope,
+        )
+
+    async def clear_cred_user_tokens(self, username: str, url: str, scope: str | None = None):
+        return await self._clear_cred_tokens(
+            path = f'/users/{username}/credentials',
+            url = url, 
+            scope = scope,
+        )
+
+    async def clear_cred_dataset_tokens(self, dataset_id: str, url: str, scope: str | None = None):
+        return await self._clear_cred_tokens(
+            path = f'/datasets/{dataset_id}/credentials',
+            url = url, 
+            scope = scope,
+        )
+
+    async def clear_cred_dataset_task_tokens(self, dataset_id: str, task_name: str, url: str, scope: str | None = None):
+        return await self._clear_cred_tokens(
+            path = f'/datasets/{dataset_id}/tasks/{task_name}/credentials',
+            url = url, 
+            scope = scope,
+        )
 
 class Login(LoginMixin, PromRequestMixin, OpenIDLoginHandler):  # type: ignore
     pass
@@ -277,7 +382,7 @@ class Login(LoginMixin, PromRequestMixin, OpenIDLoginHandler):  # type: ignore
 
 class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler):
     """Default Handler"""
-    def initialize(self, rest_api, system_rest_client, **kwargs):  # type: ignore
+    def initialize(self, rest_api, system_rest_client, token_clients: list[ClientCreds], **kwargs):  # type: ignore
         """
         Get some params from the website module
 
@@ -287,6 +392,7 @@ class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler
         super().initialize(**kwargs)
         self.rest_api = rest_api
         self.system_rest_client = system_rest_client
+        self.token_clients = token_clients
         self.rest_client: RestClient | None = None
 
     def get_template_namespace(self) -> dict[str, Any]:
@@ -644,57 +750,10 @@ class Profile(PublicHandler):
         group_creds = {}
         for g in groups:
             if g != 'users':
-                ret = await self.cred_rest_client.request('GET', f'/groups/{g}/credentials')
-                group_creds[g] = ret
-        user_creds = await self.cred_rest_client.request('GET', f'/users/{username}/credentials')
+                group_creds[g] = await self.get_cred_group_tokens(group_name=g)
+        user_creds = await self.get_cred_user_tokens(username=username)
         self.render('profile.html', username=username, groups=groups,
                     group_creds=group_creds, user_creds=user_creds)
-
-    @authenticated
-    async def post(self):
-        username = self.current_user
-
-        if self.get_argument('add_icecube_token', ''):
-            args = {
-                'url': 'https://data.icecube.aq',
-                'type': 'oauth',
-                'access_token': self.auth_access_token,
-            }
-            if self.auth_refresh_token:
-                args['refresh_token'] = self.auth_refresh_token
-                args['expiration'] = datetime2str(datetime.now(UTC) + timedelta(days=30))
-            await self.cred_rest_client.request('POST', f'/users/{username}/credentials', args)
-
-        else:
-            type_ = self.get_argument('type')
-            args = {
-                'url': self.get_argument('url'),
-                'type': type_,
-            }
-            if type_ == 's3':
-                args['buckets'] = [x for x in self.get_argument('buckets').split('\n') if x]
-                args['access_key'] = self.get_argument('access_key')
-                args['secret_key'] = self.get_argument('secret_key')
-            elif type_ == 'oauth':
-                if acc := self.get_argument('refresh_token', ''):
-                    args['refresh_token'] = acc
-                if ref := self.get_argument('refresh_token', ''):
-                    args['refresh_token'] = ref
-                if not (acc or ref):
-                    raise tornado.web.HTTPError(400, reason='need access or refresh token')
-            else:
-                raise tornado.web.HTTPError(400, reason='bad cred type')
-
-            if self.get_argument('add_user_cred', ''):
-                await self.cred_rest_client.request('POST', f'/users/{username}/credentials', args)
-            elif self.get_argument('add_group_cred', ''):
-                groupname = self.get_argument('group')
-                if groupname not in self.auth_groups or groupname == 'users':
-                    raise tornado.web.HTTPError(400, reason='bad group name')
-                await self.cred_rest_client.request('POST', f'/groups/{groupname}/credentials', args)
-
-        # now show the profile page
-        await self.get()
 
 
 class Logout(PublicHandler):
@@ -704,6 +763,52 @@ class Logout(PublicHandler):
         self.current_user = None
         self.request.uri = '/'  # for login redirect, fake the main page
         self.render('logout.html', status=None)
+
+
+class TokenLogin(TokenStorageMixin, PromRequestMixin, OpenIDLoginHandler):
+    def initialize(self, *args, login_url, oauth_url, **kwargs):
+        super().initialize(*args, **kwargs)
+        self.login_url = login_url
+        self.oauth_url = oauth_url
+
+    def get_login_url(self):
+        return self.login_url
+
+    @catch_error
+    async def get(self):
+        if self.get_argument('error', False):
+            err = self.get_argument('error_description', None)
+            if not err:
+                err = 'unknown oauth2 error'
+            raise tornado.web.HTTPError(400, reason=err)
+        elif self.get_argument('code', False):
+            data = self._decode_state(self.get_argument('state'))
+            dataset_id = data['dataset_id']
+            task_name = data['task_name']
+            tokens = await self.get_authenticated_user(
+                redirect_uri=self.get_login_url(),
+                code=self.get_argument('code'),
+                state=data,
+            )
+            assert self.auth
+            await self.put_cred_dataset_task_tokens(
+                dataset_id=dataset_id,
+                task_name=task_name,
+                url=self.oauth_url,
+                access_token=tokens['access_token'],
+                refresh_token=tokens.get('refresh_token'),
+            )
+            if redirect := data.get('redirect', None):
+                self.redirect(redirect)
+        else:
+            self.oauth_client_scope = ['offline_access']
+            if scope := self.get_argument('scope', None):
+                self.oauth_client_scope.extend(scope.split())
+            state = {
+                'dataset_id': self.get_argument('datset_id'),
+                'task_name': self.get_argument('task_name'),
+            }
+            self.start_oauth_authorization(state)
 
 
 class HealthHandler(PublicHandler):
@@ -753,6 +858,7 @@ class DefaultConfig:
     ICEPROD_CRED_ADDRESS : str = 'https://credentials.iceprod.icecube.aq'
     ICEPROD_CRED_CLIENT_ID : str = ''
     ICEPROD_CRED_CLIENT_SECRET : str = ''
+    TOKEN_CLIENTS : str = '{}'
     REDIS_HOST : str = 'localhost'
     REDIS_USER : str = ''
     REDIS_PASSWORD : str = ''
@@ -856,10 +962,13 @@ class Server:
         else:
             raise RuntimeError('ICEPROD_API_CLIENT_ID or ICEPROD_API_CLIENT_SECRET not specified, and CI_TESTING not enabled!')
 
+        token_clients = ClientCreds(config.TOKEN_CLIENTS).get_clients()
+
         handler_args.update({
             'rest_api': rest_address,
             'cred_rest_client': cred_client,
             'system_rest_client': rest_client,
+            'token_clients': token_clients,
         })
         if config.COOKIE_SECRET:
             cookie_secret = config.COOKIE_SECRET
@@ -876,22 +985,34 @@ class Server:
             static_path=static_path,
         )
 
-        server.add_route(r"/", Default, handler_args)
-        server.add_route(r"/submit", Submit, handler_args)
-        server.add_route(r"/config", Config, handler_args)
+        server.add_route("/", Default, handler_args)
+        server.add_route('/submit', Submit, handler_args)
+        server.add_route('/config', Config, handler_args)
         server.add_route(r"/schemas/v3/([\w\.]+)", Schemas, handler_args)
-        server.add_route(r"/dataset", DatasetBrowse, handler_args)
+        server.add_route('/dataset', DatasetBrowse, handler_args)
         server.add_route(r"/dataset/(\w+)", Dataset, handler_args)
         server.add_route(r"/dataset/(\w+)/task", TaskBrowse, handler_args)
         server.add_route(r"/dataset/(\w+)/task/(\w+)", Task, handler_args)
         server.add_route(r"/dataset/(\w+)/job", JobBrowse, handler_args)
         server.add_route(r"/dataset/(\w+)/job/(\w+)", Job, handler_args)
-        server.add_route(r"/help", Help, handler_args)
+        server.add_route('/help', Help, handler_args)
         server.add_route(r"/docs/(.*)", Documentation, handler_args)
         server.add_route(r"/dataset/(\w+)/log/(\w+)", Log, handler_args)
-        server.add_route(r'/profile', Profile, handler_args)
-        server.add_route(r"/login", Login, login_handler_args)
-        server.add_route(r"/logout", Logout, handler_args)
+        server.add_route('/profile', Profile, handler_args)
+        server.add_route('/login', Login, login_handler_args)
+        server.add_route('/logout', Logout, handler_args)
+
+        for client in token_clients:
+            client_handler_args = login_handler_args.copy()
+            client_handler_args['auth'] = client.auth
+            client_handler_args['oauth_client_id'] = client.client_id
+            client_handler_args['oauth_client_secret'] = client.client_secret
+            client_handler_args['oauth_client_scope'] = ''
+            client_handler_args['login_url'] = f'{full_url}/token_clients/{client.id}/login'
+            client_handler_args['oauth_url'] = client.url
+            client_handler_args['cred_rest_client'] = cred_client
+            server.add_route(f'/token_clients/{client.id}/login', TokenLogin, client_handler_args)
+
         server.add_route('/healthz', HealthHandler, handler_args)
         server.add_route(r"/.*", Other, handler_args)
 

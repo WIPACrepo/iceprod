@@ -63,10 +63,6 @@ form button {
         <p>TYPE: {{ user_creds[url]["type"]}}</p>
       </div>
     {% end %}
-      <form method="post">
-        {% module xsrf_form_html() %}
-        <button name="add_icecube_token" value="true" type="submit">Add IceCube Token</button>
-      </form>
       <button onclick="$('#add_user_cred_form').show()">Add New User Credentials</button>
       <form method="post" id="add_user_cred_form" style="display: none">
         {% module xsrf_form_html() %}
