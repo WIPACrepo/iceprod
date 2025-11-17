@@ -76,7 +76,7 @@ class RefreshService:
             new_cred['access_token'] = req['access_token']
             new_cred['refresh_token'] = req['refresh_token']
             new_cred['expiration'] = get_expiration(req['access_token'])
-            new_cred['scope'] = req.get('scope', cred.get('scope', None))
+            new_cred['scope'] = req.get('scope', cred.get('scope', ''))
             logger.debug('%r', new_cred)
 
         return new_cred

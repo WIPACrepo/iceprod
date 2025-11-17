@@ -110,15 +110,15 @@ class BaseCredentialsHandler(APIBase):
                 base_data['scope'] = args['scope']
             data['scope'] = args['scope']
             data['expiration'] = args['expire_date']
+            if data['access_token'] and data.get('expiration') == now:
+                data['expiration'] = get_expiration(data['access_token'])
             data['last_use'] = args['last_use']
             if data['access_token'] and data['scope'] is None:
-                data['scope'] = jwt.decode(data['access_token'], options={"verify_signature": False}).get('scope', None)
+                data['scope'] = jwt.decode(data['access_token'], options={"verify_signature": False}).get('scope', '')
 
             if 'refresh_token' in data and not data['access_token']:
                 new_cred = await self.refresh_service.refresh_cred(data)
                 data.update(new_cred)
-            if (not data['access_token']) and data.get('expiration') == now:
-                data['expiration'] = get_expiration(data['access_token'])
 
         else:
             raise HTTPError(400, 'bad credential type')
