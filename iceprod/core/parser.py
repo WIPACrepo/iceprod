@@ -48,8 +48,8 @@ class safe_eval:
 
     @classmethod
     def __eval(cls,node):
-        if isinstance(node, ast.Num):  # <number>
-            return node.n
+        if isinstance(node, ast.Constant):  # <number>
+            return node.value
         elif isinstance(node, (ast.operator,ast.unaryop)):  # <operator>
             return cls.operators[type(node)]
         elif isinstance(node, ast.BinOp):  # <left> <operator> <right>
@@ -498,6 +498,7 @@ class ExpParser:
             try:
                 return parse_ret_type(safe_eval.eval(param))
             except Exception:
+                logging.info('safe_eval err', exc_info=True)
                 raise GrammarException('Eval is not basic arithmetic')
 
     def reduce_func(self, func, param):
