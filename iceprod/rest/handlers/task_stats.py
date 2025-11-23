@@ -121,8 +121,9 @@ class DatasetsBulkTaskStatsHandler(APIBase):
         task_id = None
         data = []
         n = 0
+
         async def _write_data():
-            nonlocal data, n
+            nonlocal n
             ret = sorted(data, key=lambda x: x['create_date'])
             if keys:
                 ret = [{k:d[k] for k in d if k in keys} for d in ret]

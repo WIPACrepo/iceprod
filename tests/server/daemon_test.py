@@ -28,6 +28,35 @@ import unittest
 
 from iceprod.server import daemon
 
+
+def main(cfgfile,cfgdata):
+    message_queue = multiprocessing.Queue()
+    def handler2(signum, frame):
+        logging.info('Signal handler2 called with signal %s' % signum)
+        logging.info('Stopping...')
+        message_queue.put('stop')
+    def handler3(signum, frame):
+        logging.info('Signal handler3 called with signal %s' % signum)
+        logging.info('Killing...')
+        message_queue.put('kill')
+        time.sleep(2)
+        sys.exit(1)
+    signal.signal(signal.SIGINT, handler2)
+    signal.signal(signal.SIGQUIT, handler3)
+    with open('test','w') as f:
+        f.write('test')
+    while True:
+        try:
+            m = message_queue.get(True,10)
+        except:
+            raise
+        else:
+            if m == 'stop':
+                break
+            elif m == 'kill':
+                break
+
+
 class daemon_test(unittest.TestCase):
     def setUp(self):
         super(daemon_test,self).setUp()
@@ -40,31 +69,6 @@ class daemon_test(unittest.TestCase):
     @unittest_reporter
     def test_01_Daemon(self):
         """Test daemon"""
-        def main(cfgfile,cfgdata):
-            message_queue = multiprocessing.Queue()
-            def handler2(signum, frame):
-               logging.info('Signal handler2 called with signal %s' % signum)
-               logging.info('Stopping...')
-               message_queue.put('stop')
-            def handler3(signum, frame):
-               logging.info('Signal handler3 called with signal %s' % signum)
-               logging.info('Killing...')
-               message_queue.put('kill')
-               time.sleep(2)
-               sys.exit(1)
-            signal.signal(signal.SIGINT, handler2)
-            signal.signal(signal.SIGQUIT, handler3)
-            with open('test','w') as f:
-                f.write('test')
-            while True:
-                try:
-                    m = message_queue.get(True,10)
-                except:
-                    pass
-                if m == 'stop':
-                    break
-                elif m == 'kill':
-                    break
 
         pidfile = os.path.expanduser(os.path.expandvars(
                         os.path.join(self.test_dir,'pidfile')))
