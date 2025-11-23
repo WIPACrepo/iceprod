@@ -52,7 +52,10 @@ class APIBase(AttrAuthMixin, PromRequestMixin, RestHandler):
 
         return username
 
-    def write(self, chunk: dict | list) -> None:  # type: ignore[override]
+    def write(self, chunk: str | bytes | dict | list) -> None:  # type: ignore[override]
         """Write dict or list to json"""
-        self.set_header("Content-Type", "application/json; charset=UTF-8")
-        super().write(json_encode(chunk))
+        if isinstance(chunk, (dict, list)):
+            self.set_header("Content-Type", "application/json; charset=UTF-8")
+            super().write(json_encode(chunk))
+        else:
+            super().write(chunk)
