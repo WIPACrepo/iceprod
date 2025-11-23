@@ -16,7 +16,7 @@ from prometheus_client import Info, start_http_server
 import tornado.web
 from rest_tools.client import RestClient, ClientCredentialsAuth
 from rest_tools.server import catch_error, RestServer, RestHandlerSetup, OpenIDLoginHandler
-from rest_tools.server.session import  Session
+from rest_tools.server.session import Session
 from wipac_dev_tools import from_environment_as_dataclass
 
 from iceprod.util import VERSION_STRING

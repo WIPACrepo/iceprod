@@ -1,7 +1,5 @@
 import logging
 
-import tornado.web
-
 from .base import authenticated, PublicHandler
 
 logger = logging.getLogger('website-job')
@@ -41,4 +39,3 @@ class Job(PublicHandler):
         job['tasks'] = list(tasks.values())
         job['tasks'].sort(key=lambda x:x['task_index'])
         self.render('job_detail.html', dataset=dataset, job=job, passkey=passkey)
-

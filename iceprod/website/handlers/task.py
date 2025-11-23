@@ -1,8 +1,6 @@
 from collections import defaultdict
 import logging
 
-import tornado.web
-
 from .base import authenticated, PublicHandler
 
 logger = logging.getLogger('website-task')

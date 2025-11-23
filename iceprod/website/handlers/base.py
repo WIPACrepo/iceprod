@@ -4,14 +4,13 @@ import re
 from typing import Any
 from urllib.parse import urlencode
 
-from iceprod.core.jsonUtil import json_encode, json_decode
+from iceprod.core.jsonUtil import json_encode
 
-from prometheus_client import Info
 import tornado.web
 import jwt
 import requests.exceptions
 from rest_tools.client import RestClient, OpenIDRestClient
-from rest_tools.server import catch_error, RestHandler, OpenIDCookieHandlerMixin, OpenIDLoginHandler
+from rest_tools.server import catch_error, RestHandler, OpenIDCookieHandlerMixin
 from rest_tools.server.session import SessionMixin
 
 from iceprod.util import VERSION_STRING
@@ -78,7 +77,7 @@ def eval_expression(token, e):
     return [r for r in ret if r]
 
 
-class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):
+class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):  # type: ignore[misc]
     """
     Store/load current user's `OpenIDLoginHandler` tokens in Redis.
     """
@@ -221,30 +220,30 @@ class TokenStorageMixin(RestHandler):
 
     async def get_cred_group_tokens(self, group_name: str, url: str | None = None, scope: str | None = None) -> TokenResult:
         return await self._get_cred_tokens(
-            path = f'/groups/{group_name}/credentials',
-            url = url, 
-            scope = scope,
+            path=f'/groups/{group_name}/credentials',
+            url=url,
+            scope=scope,
         )
 
     async def get_cred_user_tokens(self, username: str, url: str | None = None, scope: str | None = None) -> TokenResult:
         return await self._get_cred_tokens(
-            path = f'/users/{username}/credentials',
-            url = url, 
-            scope = scope,
+            path=f'/users/{username}/credentials',
+            url=url,
+            scope=scope,
         )
 
     async def get_cred_dataset_tokens(self, dataset_id: str, url: str | None = None, scope: str | None = None) -> TokenResult:
         return await self._get_cred_tokens(
-            path = f'/datasets/{dataset_id}/credentials',
-            url = url, 
-            scope = scope,
+            path=f'/datasets/{dataset_id}/credentials',
+            url=url,
+            scope=scope,
         )
 
     async def get_cred_dataset_task_tokens(self, dataset_id: str, task_name: str, url: str | None = None, scope: str | None = None) -> TokenResult:
         return await self._get_cred_tokens(
-            path = f'/datasets/{dataset_id}/tasks/{task_name}/credentials',
-            url = url, 
-            scope = scope,
+            path=f'/datasets/{dataset_id}/tasks/{task_name}/credentials',
+            url=url,
+            scope=scope,
         )
 
     async def _put_cred_tokens(
@@ -252,7 +251,7 @@ class TokenStorageMixin(RestHandler):
         path: str,
         url: str,
         access_token: str,
-        refresh_token: str | None =None
+        refresh_token: str | None = None
     ):
         """
         Store jwt tokens from OpenID-compliant auth source.
@@ -281,8 +280,8 @@ class TokenStorageMixin(RestHandler):
             refresh_token: str | None = None
     ):
         return await self._put_cred_tokens(
-            path = f'/groups/{group_name}/credentials',
-            url = url, 
+            path=f'/groups/{group_name}/credentials',
+            url=url,
             access_token=access_token,
             refresh_token=refresh_token,
         )
@@ -295,8 +294,8 @@ class TokenStorageMixin(RestHandler):
             refresh_token: str | None = None
     ):
         return await self._put_cred_tokens(
-            path = f'/users/{username}/credentials',
-            url = url, 
+            path=f'/users/{username}/credentials',
+            url=url,
             access_token=access_token,
             refresh_token=refresh_token,
         )
@@ -310,8 +309,8 @@ class TokenStorageMixin(RestHandler):
             refresh_token: str | None = None
     ):
         return await self._put_cred_tokens(
-            path = f'/datasets/{dataset_id}/tasks/{task_name}/credentials',
-            url = url, 
+            path=f'/datasets/{dataset_id}/tasks/{task_name}/credentials',
+            url=url,
             access_token=access_token,
             refresh_token=refresh_token,
         )
@@ -329,36 +328,36 @@ class TokenStorageMixin(RestHandler):
 
     async def clear_cred_group_tokens(self, group_name: str, url: str, scope: str | None = None):
         return await self._clear_cred_tokens(
-            path = f'/groups/{group_name}/credentials',
-            url = url, 
-            scope = scope,
+            path=f'/groups/{group_name}/credentials',
+            url=url,
+            scope=scope,
         )
 
     async def clear_cred_user_tokens(self, username: str, url: str, scope: str | None = None):
         return await self._clear_cred_tokens(
-            path = f'/users/{username}/credentials',
-            url = url, 
-            scope = scope,
+            path=f'/users/{username}/credentials',
+            url=url,
+            scope=scope,
         )
 
     async def clear_cred_dataset_tokens(self, dataset_id: str, url: str, scope: str | None = None):
         return await self._clear_cred_tokens(
-            path = f'/datasets/{dataset_id}/credentials',
-            url = url, 
-            scope = scope,
+            path=f'/datasets/{dataset_id}/credentials',
+            url=url,
+            scope=scope,
         )
 
     async def clear_cred_dataset_task_tokens(self, dataset_id: str, task_name: str, url: str, scope: str | None = None):
         return await self._clear_cred_tokens(
-            path = f'/datasets/{dataset_id}/tasks/{task_name}/credentials',
-            url = url, 
-            scope = scope,
+            path=f'/datasets/{dataset_id}/tasks/{task_name}/credentials',
+            url=url,
+            scope=scope,
         )
 
 
-class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler):
+class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler):  # type: ignore[override]
     """Default Handler"""
-    def initialize(
+    def initialize(  # type: ignore[override]
         self,
         *args,
         rest_api: str,

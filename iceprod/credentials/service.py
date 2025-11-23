@@ -10,7 +10,6 @@ from .util import ClientCreds, get_expiration
 logger = logging.getLogger('refresh_service')
 
 
-
 class RefreshService:
     """
     OAuth refresh service
@@ -111,68 +110,73 @@ class RefreshService:
                 'scope': {'$exists': True},
             }
 
-            user_creds = {}
-            async for row in self.db.user_creds.find(filters, {'_id': False}):
-                user_creds[row['url']] = row
-
-            for cred in user_creds.values():
-                if cred['type'] != 'oauth':
-                    continue
-                if not cred['refresh_token']:
-                    logger.info('skipping non-refresh token for user %s, url %s', cred['username'], cred['url'])
-                    continue
-                try:
-                    if self.should_refresh(cred):
-                        args = await self.refresh_cred(cred)
-                        await self.db.user_creds.update_one({'username': cred['username'], 'url': cred['url'], 'scope': cred['scope']}, {'$set': args})
-                        logger.info('refreshed token for user %s, url %s, scope %s', cred['username'], cred['url'], cred['scope'])
-                    else:
-                        logger.info('not yet time to refresh token for user %s, url %s, scope %s', cred['username'], cred['url'], cred['scope'])
-                except Exception:
-                    logger.error('error refreshing token for user %s, url: %s, scope %s', cred['username'], cred['url'], cred['scope'], exc_info=True)
-
-            group_creds = {}
-            async for row in self.db.group_creds.find(filters, {'_id': False}):
-                group_creds[row['url']] = row
-
-            for cred in group_creds.values():
-                if cred['type'] != 'oauth':
-                    continue
-                if not cred['refresh_token']:
-                    logger.info('skipping non-refresh token for group %s, url %s', cred['groupname'], cred['url'])
-                    continue
-                try:
-                    if self.should_refresh(cred):
-                        args = await self.refresh_cred(cred)
-                        await self.db.group_creds.update_one({'groupname': cred['groupname'], 'url': cred['url']}, {'$set': args})
-                        logger.info('refreshed token for group %s, url %s', cred['groupname'], cred['url'])
-                    else:
-                        logger.info('not yet time to refresh token for group %s, url %s', cred['groupname'], cred['url'])
-                except Exception:
-                    logger.error('error refreshing token for group %s, url: %s', cred['groupname'], cred['url'], exc_info=True)
-
-
-            dataset_creds = []
-            async for row in self.db.dataset_creds.find(filters, {'_id': False}):
-                dataset_creds.append(row)
-
-            for cred in dataset_creds:
-                if cred['type'] != 'oauth':
-                    continue
-                if not cred['refresh_token']:
-                    logger.info('skipping non-refresh token for dataset %s, task, %s, url %s', cred['dataset_id'], cred['task_name'], cred['url'])
-                    continue
-                try:
-                    if self.should_refresh(cred):
-                        args = await self.refresh_cred(cred)
-                        await self.db.dataset_creds.update_one({'dataset_id': cred['dataset_id'], 'task_name': cred['task_name'], 'scope': cred['scope'], 'url': cred['url']}, {'$set': args})
-                        logger.info('refreshed token for dataset %s, task, %s, url %s', cred['dataset_id'], cred['task_name'], cred['url'])
-                    else:
-                        logger.info('not yet time to refresh token for dataset %s, task, %s, url %s', cred['dataset_id'], cred['task_name'], cred['url'])
-                except Exception:
-                    logger.error('error refreshing token for dataset %s, task, %s, url %s', cred['dataset_id'], cred['task_name'], cred['url'], exc_info=True)
-
+            await self._run_once_user(filters)
+            await self._run_once_group(filters)
+            await self._run_once_dataset(filters)
 
             self.last_success_time = time.time()
         except Exception:
             logger.error('error running refresh', exc_info=True)
+
+    async def _run_once_user(self, filters):
+        user_creds = {}
+        async for row in self.db.user_creds.find(filters, {'_id': False}):
+            user_creds[row['url']] = row
+
+        for cred in user_creds.values():
+            if cred['type'] != 'oauth':
+                continue
+            if not cred['refresh_token']:
+                logger.info('skipping non-refresh token for user %s, url %s', cred['username'], cred['url'])
+                continue
+            try:
+                if self.should_refresh(cred):
+                    args = await self.refresh_cred(cred)
+                    await self.db.user_creds.update_one({'username': cred['username'], 'url': cred['url'], 'scope': cred['scope']}, {'$set': args})
+                    logger.info('refreshed token for user %s, url %s, scope %s', cred['username'], cred['url'], cred['scope'])
+                else:
+                    logger.info('not yet time to refresh token for user %s, url %s, scope %s', cred['username'], cred['url'], cred['scope'])
+            except Exception:
+                logger.error('error refreshing token for user %s, url: %s, scope %s', cred['username'], cred['url'], cred['scope'], exc_info=True)
+
+    async def _run_once_group(self, filters):
+        group_creds = {}
+        async for row in self.db.group_creds.find(filters, {'_id': False}):
+            group_creds[row['url']] = row
+
+        for cred in group_creds.values():
+            if cred['type'] != 'oauth':
+                continue
+            if not cred['refresh_token']:
+                logger.info('skipping non-refresh token for group %s, url %s', cred['groupname'], cred['url'])
+                continue
+            try:
+                if self.should_refresh(cred):
+                    args = await self.refresh_cred(cred)
+                    await self.db.group_creds.update_one({'groupname': cred['groupname'], 'url': cred['url']}, {'$set': args})
+                    logger.info('refreshed token for group %s, url %s', cred['groupname'], cred['url'])
+                else:
+                    logger.info('not yet time to refresh token for group %s, url %s', cred['groupname'], cred['url'])
+            except Exception:
+                logger.error('error refreshing token for group %s, url: %s', cred['groupname'], cred['url'], exc_info=True)
+
+    async def _run_once_dataset(self, filters):
+        dataset_creds = []
+        async for row in self.db.dataset_creds.find(filters, {'_id': False}):
+            dataset_creds.append(row)
+
+        for cred in dataset_creds:
+            if cred['type'] != 'oauth':
+                continue
+            if not cred['refresh_token']:
+                logger.info('skipping non-refresh token for dataset %s, task, %s, url %s', cred['dataset_id'], cred['task_name'], cred['url'])
+                continue
+            try:
+                if self.should_refresh(cred):
+                    args = await self.refresh_cred(cred)
+                    await self.db.dataset_creds.update_one({'dataset_id': cred['dataset_id'], 'task_name': cred['task_name'], 'scope': cred['scope'], 'url': cred['url']}, {'$set': args})
+                    logger.info('refreshed token for dataset %s, task, %s, url %s', cred['dataset_id'], cred['task_name'], cred['url'])
+                else:
+                    logger.info('not yet time to refresh token for dataset %s, task, %s, url %s', cred['dataset_id'], cred['task_name'], cred['url'])
+            except Exception:
+                logger.error('error refreshing token for dataset %s, task, %s, url %s', cred['dataset_id'], cred['task_name'], cred['url'], exc_info=True)

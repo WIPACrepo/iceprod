@@ -1,17 +1,16 @@
 from collections import defaultdict
 import logging
 import os
+from typing import Any
 
 import tornado.web
-from rest_tools.server import catch_error, RestHandler, OpenIDLoginHandler
-from rest_tools.server.session import SessionMixin
+from rest_tools.server import RestHandler, OpenIDLoginHandler
 
 from iceprod.core.config import Config as DatasetConfig
 from iceprod.core.jsonUtil import json_encode, json_decode
 from iceprod.core.parser import ExpParser
 from iceprod.credentials.util import Client as CredClient
-from iceprod.prom_utils import PromRequestMixin
-from .base import authenticated, PublicHandler, TokenStorageMixin
+from .base import authenticated, PublicHandler
 
 logger = logging.getLogger('website-submit')
 
@@ -45,7 +44,7 @@ class Config(PublicHandler):
 
 
 class TokenClients(RestHandler):
-    def initialize(self, *args, token_clients: dict[str, CredClient], **kwargs):
+    def initialize(self, *args: Any, token_clients: dict[str, CredClient], **kwargs: Any):  # type: ignore[override]
         self.token_clients = token_clients
         return super().initialize(*args, **kwargs)
 
@@ -56,7 +55,7 @@ class TokenClients(RestHandler):
         raise KeyError()
 
 
-class Submit(TokenClients, PublicHandler):
+class Submit(TokenClients, PublicHandler):  # type: ignore[misc]
     """Handle /submit urls"""
     DEFAULT_CONFIG = {
         "categories": [],
@@ -184,7 +183,7 @@ class Submit(TokenClients, PublicHandler):
             self.redirect('/submit/complete')
 
 
-class SubmitDataset(TokenClients, PublicHandler):
+class SubmitDataset(TokenClients, PublicHandler):  # type: ignore[misc]
     @authenticated
     async def get(self):
         if not self.session:
@@ -202,7 +201,7 @@ class SubmitDataset(TokenClients, PublicHandler):
         ntasks = njobs * tasks_per_job
         group = self.session['submit_group']
 
-        args = {    
+        args = {
             'description': description,
             'jobs_submitted': njobs,
             'tasks_submitted': ntasks,

@@ -19,7 +19,6 @@ dependencies = [
     'motor',
     'prometheus-client',
     'psutil',
-    'pyOpenSSL',
     'pymongo',
     'python-dateutil',
     'requests',

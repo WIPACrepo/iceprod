@@ -19,7 +19,7 @@ import subprocess
 import time
 from typing import Generator, NamedTuple
 
-import htcondor2 as htcondor
+import htcondor2 as htcondor  # type: ignore
 from wipac_dev_tools.prometheus_tools import GlobalLabels, AsyncPromWrapper, PromWrapper, AsyncPromTimer, PromTimer
 
 from iceprod.core.config import Task
