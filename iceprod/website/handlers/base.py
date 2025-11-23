@@ -99,9 +99,9 @@ class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):
         if self.session:
             ret = self.session.get('access_token', None)
             if not isinstance(ret, str):
-                logger.warning('bad access token type: not str')
+                logger.info('bad access token type: not str')
                 return None
-            ret = ret.encode('utf-8')
+            return ret.encode('utf-8')
         return None
 
     @auth_access_token.setter
@@ -116,7 +116,7 @@ class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):
         if self.session:
             ret = self.session.get('refresh_token', None)
             if not isinstance(ret, str):
-                logger.warning('bad access token type: not str')
+                logger.info('bad access token type: not str')
                 return None
             return ret.encode('utf-8')
         return None

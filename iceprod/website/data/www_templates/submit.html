@@ -45,25 +45,28 @@
 
 {% block body %}
 <div id="submit_area">
-    <textarea id="submit_box" style="min-height: 400px">{{ json_encode(config, indent=2) }}</textarea>
-    <textarea id="description" placeholder="Description">{{ description }}</textarea>
-    <div class="submit_contents">
-        {% if dataset_id %}
-            {% if edit %}
-        <button id="submit_action" onclick="update()">Update</button>
+    <form>
+        {% module xsrf_form_html() %}
+        <textarea name="submit_box" id="submit_box" style="min-height: 400px">{{ json_encode(config, indent=2) }}</textarea>
+        <textarea name="description" id="description" placeholder="Description">{{ description }}</textarea>
+        <div class="submit_contents">
+            {% if dataset_id %}
+                {% if edit %}
+            <button id="submit_action" onclick="update()">Update</button>
+                {% end %}
+            {% else %}
+            Number of jobs:
+            <input name="number_jobs" id="number_jobs" value="1" min="1" step="1" type="number">
+            Group:
+            <select name="group" id="group">
+                {% for g in groups %}
+                    <option value="{{ g }}">{{ g }}</option>
+                {% end %}
+            </select>
+            <button id="submit_action" onclick="submit()">Submit</button>
             {% end %}
-        {% else %}
-        Number of jobs:
-        <input id="number_jobs" value="1" min="1" step="1", type="number">
-        Group:
-        <select id="group">
-            {% for g in groups %}
-                <option value="{{ g }}">{{ g }}</option>
-            {% end %}
-        </select>
-        <button id="submit_action" onclick="submit()">Submit</button>
-        {% end %}
-    </div>
+        </div>
+    </form>
 </div>
 <div id="error">{{ error }}</div>
 {% end %}

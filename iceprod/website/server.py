@@ -330,15 +330,12 @@ class Server:
         server.add_route('/submit', Submit, submit_handler_args)
         server.add_route('/submit/complete', SubmitDataset, submit_handler_args)
         for client in token_clients.values():
-            client_handler_args = login_handler_args.copy()
-            client_handler_args['auth'] = client.auth
+            client_handler_args = submit_handler_args.copy()
             client_handler_args['oauth_client_id'] = client.client_id
             client_handler_args['oauth_client_secret'] = client.client_secret
             client_handler_args['oauth_client_scope'] = ''
             client_handler_args['login_url'] = f'{full_url}/submit/tokens/{client.id}'
             client_handler_args['oauth_url'] = client.url
-            client_handler_args['cred_rest_client'] = cred_client
-            client_handler_args['token_clients'] = token_clients
             client_handler_args['token_client_id'] = client.id
             server.add_route(f'/submit/tokens/{client.id}', TokenLogin, client_handler_args)
 

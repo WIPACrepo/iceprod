@@ -39,6 +39,7 @@ class Config(PublicHandler):
             'dataset_id':dataset_id,
             'config':config,
             'description':dataset.get('description',''),
+            'error': '',
         }
         self.render('submit.html',**render_args)
 
@@ -47,6 +48,12 @@ class TokenClients(RestHandler):
     def initialize(self, *args, token_clients: dict[str, CredClient], **kwargs):
         self.token_clients = token_clients
         return super().initialize(*args, **kwargs)
+
+    def get_client_by_id(self, _id: str) -> CredClient:
+        for client in self.token_clients.values():
+            if client.id == _id:
+                return client
+        raise KeyError()
 
 
 class Submit(TokenClients, PublicHandler):
@@ -63,6 +70,10 @@ class Submit(TokenClients, PublicHandler):
         "version": 3
     }
 
+    def check_xsrf_cookie(self):
+        logger.info('cookies: %r', self.request.cookies)
+        super().check_xsrf_cookie()
+
     @authenticated
     async def get(self):
         config = self.DEFAULT_CONFIG.copy()
@@ -73,7 +84,7 @@ class Submit(TokenClients, PublicHandler):
                 logger.info('cannot load config from session', exc_info=True)
 
         error = ''
-        if e := self.get_argument('error'):
+        if e := self.get_argument('error', None):
             error = e
         elif self.session and self.session.get('error'):
             error = self.session['error']
@@ -94,10 +105,15 @@ class Submit(TokenClients, PublicHandler):
     def get_scope(path: str, movement: str) -> str:
         prefix = 'storage.read' if movement == 'input' else 'storage.modify'
         try:
-            if i := path.index('$') > 0:
+            if '$' in path:
+                i = path.index('$')
                 path = path[:i]
+                logger.debug('get_scope: $ index = %d, path = %s', i, path)
             path = os.path.dirname(path)
+            if not path:
+                path = '/'
         except Exception:
+            logger.info('error getting scope', exc_info=True)
             path = '/'
         return f'{prefix}:{path}'
 
@@ -108,7 +124,8 @@ class Submit(TokenClients, PublicHandler):
         if not self.session:
             raise tornado.web.HTTPError(500, 'session is missing')
 
-        config_str = self.get_body_argument('config')
+        config_str = self.get_body_argument('submit_box')
+        description = self.get_body_argument('description')
 
         config = self.DEFAULT_CONFIG.copy()
         try:
@@ -128,11 +145,12 @@ class Submit(TokenClients, PublicHandler):
                     for prefix in self.token_clients:
                         if remote.startswith(prefix):
                             if scope := self.get_scope(remote[len(prefix):], data['movement']):
+                                logger.info('adding scope %s for remote %s', scope, remote)
                                 task_token_scopes[self.token_clients[prefix].id].add(scope)
                 for _id,scopes in task_token_scopes.items():
                     token_requests.append((task['name'], _id, ' '.join(scopes)))
 
-            njobs = self.get_body_argument('njobs')
+            njobs = self.get_body_argument('number_jobs')
             group = self.get_body_argument('group')
 
         except Exception as e:
@@ -146,11 +164,13 @@ class Submit(TokenClients, PublicHandler):
                 'description': '',
                 'error': str(e),
             }
+            self.set_status(400)
             self.render('submit.html', **render_args)
             return
 
         self.session['submit_config'] = config_str
-        self.session['submit_tokens'] = json_encode({})
+        self.session['submit_description'] = description
+        self.session['submit_tokens'] = json_encode([])
         self.session['submit_jobs'] = njobs
         self.session['submit_group'] = group
 
@@ -176,7 +196,7 @@ class SubmitDataset(TokenClients, PublicHandler):
         config = json_decode(config_str)
         tokens = json_decode(self.session['submit_tokens'])
 
-        description = config['description']
+        description = self.session['submit_description']
         njobs = int(self.session['submit_jobs'])
         tasks_per_job = len(config['tasks'])
         ntasks = njobs * tasks_per_job
@@ -192,11 +212,13 @@ class SubmitDataset(TokenClients, PublicHandler):
 
         ret = await self.rest_client.request('POST', '/datasets', args)
         dataset_id = ret['result'].split('/')[2]
-        await self.rest_client.request('PUT', f'/config/{dataset_id}', args)
+        await self.rest_client.request('PUT', f'/config/{dataset_id}', config)
 
+        logger.info('token_clients: %r', self.token_clients)
         for task_name, _id, access, refresh in tokens:
+            client = self.get_client_by_id(_id)
             args = {
-                'url': self.token_clients[_id].url,
+                'url': client.url,
                 'type': 'oauth',
                 'access_token': access,
                 'refresh_token': refresh,
@@ -206,7 +228,7 @@ class SubmitDataset(TokenClients, PublicHandler):
         self.redirect(f'/dataset/{dataset_id}')
 
 
-class TokenLogin(TokenStorageMixin, SessionMixin, PromRequestMixin, OpenIDLoginHandler):
+class TokenLogin(TokenClients, OpenIDLoginHandler, PublicHandler):
     def initialize(self, *args, login_url, oauth_url, token_client_id, **kwargs):
         super().initialize(*args, **kwargs)
         self.login_url = login_url
@@ -216,7 +238,7 @@ class TokenLogin(TokenStorageMixin, SessionMixin, PromRequestMixin, OpenIDLoginH
     def get_login_url(self):
         return self.login_url
 
-    @catch_error
+    @authenticated
     async def get(self):
         if self.get_argument('error', False):
             err = self.get_argument('error_description', None)
@@ -250,7 +272,7 @@ class TokenLogin(TokenStorageMixin, SessionMixin, PromRequestMixin, OpenIDLoginH
                 self.redirect('/submit/complete')
 
         else:
-            self.oauth_client_scope = ['offline_access']
+            self.oauth_client_scope = []
             if scope := self.get_argument('scope', None):
                 self.oauth_client_scope.extend(scope.split())
             state = {
