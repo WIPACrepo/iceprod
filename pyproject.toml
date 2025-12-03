@@ -66,7 +66,7 @@ tests = [
     'types-requests',
 ]
 docs = [
-    'sphinx',
+    'sphinx<9',
 ]
 mypy = [
     'beautifulsoup4',
