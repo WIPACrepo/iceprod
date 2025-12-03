@@ -284,7 +284,7 @@ class Server:
         else:
             raise RuntimeError('ICEPROD_API_CLIENT_ID or ICEPROD_API_CLIENT_SECRET not specified, and CI_TESTING not enabled!')
 
-        token_clients = ClientCreds(config.TOKEN_CLIENTS).get_clients_by_prefix()
+        self.token_clients = ClientCreds(config.TOKEN_CLIENTS).get_clients_by_prefix()
 
         handler_args.update({
             'rest_api': rest_address,
@@ -326,17 +326,17 @@ class Server:
         server.add_route('/logout', Logout, handler_args)
 
         submit_handler_args = handler_args.copy()
-        submit_handler_args['token_clients'] = token_clients
+        submit_handler_args['token_clients'] = self.token_clients
         server.add_route('/submit', Submit, submit_handler_args)
         server.add_route('/submit/complete', SubmitDataset, submit_handler_args)
-        for client in token_clients.values():
+        for client in self.token_clients.values():
             client_handler_args = submit_handler_args.copy()
             client_handler_args['oauth_client_id'] = client.client_id
             client_handler_args['oauth_client_secret'] = client.client_secret
             client_handler_args['oauth_client_scope'] = ''
             client_handler_args['login_url'] = f'{full_url}/submit/tokens/{client.id}'
             client_handler_args['oauth_url'] = client.url
-            client_handler_args['token_client_id'] = client.id
+            client_handler_args['token_client'] = client
             server.add_route(f'/submit/tokens/{client.id}', TokenLogin, client_handler_args)
 
         server.add_route('/healthz', HealthHandler, handler_args)

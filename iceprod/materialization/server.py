@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 import json
 import logging
 import time
-from typing import Any
+from typing import Any, Self
 import uuid
 
 from prometheus_client import Info, start_http_server
@@ -289,7 +289,7 @@ class DefaultConfig:
 
 
 class Server:
-    def __init__(self):
+    def __init__(self: Self):
         config = from_environment_as_dataclass(DefaultConfig)
 
         rest_config: dict[str, Any] = {
@@ -315,7 +315,7 @@ class Server:
         logging_url = config.DB_URL.split('@')[-1] if '@' in config.DB_URL else config.DB_URL
         logging.info(f'DB: {logging_url}')
         db_url, db_name = config.DB_URL.rsplit('/', 1)
-        db = motor.motor_asyncio.AsyncIOMotorClient(
+        db = motor.motor_asyncio.AsyncIOMotorClient(  # type: ignore[var-annotated]
             db_url,
             timeoutMS=config.DB_TIMEOUT*1000,
             w=config.DB_WRITE_CONCERN,
@@ -330,6 +330,7 @@ class Server:
             }
         }
 
+        rest_client: RestClient
         if config.ICEPROD_API_CLIENT_ID and config.ICEPROD_API_CLIENT_SECRET:
             logging.info(f'enabling auth via {config.OPENID_URL} for aud "{config.OPENID_AUDIENCE}"')
             rest_client = ClientCredentialsAuth(

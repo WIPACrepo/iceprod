@@ -83,6 +83,7 @@ async def test_credentials_groups_s3(server):
 
     ret = await client.request('GET', f'/groups/{GROUP}/credentials')
     data['groupname'] = GROUP
+    data['transfer_prefix'] = ''
     assert ret == [data]
 
     # test bucket in url
@@ -97,6 +98,7 @@ async def test_credentials_groups_s3(server):
 
     ret = await client.request('GET', f'/groups/{GROUP}/credentials')
     data2['groupname'] = GROUP
+    data2['transfer_prefix'] = ''
     assert ret == [data, data2]
 
     # now overwrite
@@ -112,6 +114,7 @@ async def test_credentials_groups_s3(server):
     ret = await client.request('GET', f'/groups/{GROUP}/credentials')
     data3_out = data3.copy()
     data3_out['groupname'] = GROUP
+    data3_out['transfer_prefix'] = ''
     assert ret == [data3_out, data2]
 
     await client.request('DELETE', f'/groups/{GROUP}/credentials', {'url': 'http://foo'})
@@ -247,6 +250,7 @@ async def test_credentials_users_s3(server):
 
     ret = await client.request('GET', f'/users/{USER}/credentials')
     data['username'] = USER
+    data['transfer_prefix'] = ''
     assert ret == [data]
 
     data2 = {
@@ -260,6 +264,7 @@ async def test_credentials_users_s3(server):
 
     ret = await client.request('GET', f'/users/{USER}/credentials')
     data2['username'] = USER
+    data2['transfer_prefix'] = ''
     assert ret == [data, data2]
 
     # now overwrite
@@ -275,6 +280,7 @@ async def test_credentials_users_s3(server):
     ret = await client.request('GET', f'/users/{USER}/credentials')
     data3_out = data3.copy()
     data3_out['username'] = USER
+    data3_out['transfer_prefix'] = ''
     assert ret == [data3_out, data2]
 
     await client.request('DELETE', f'/users/{USER}/credentials', {'url': 'http://foo'})
@@ -462,6 +468,7 @@ async def test_credentials_datasets_s3(server):
 
     data = {
         'url': 'http://foo',
+        'transfer_prefix': 'http://bar',
         'type': 's3',
         'access_key': 'XXXX',
         'secret_key': 'YYYY',
@@ -476,6 +483,7 @@ async def test_credentials_datasets_s3(server):
 
     data2 = {
         'url': 'http://bar',
+        'transfer_prefix': 'http://bar',
         'type': 's3',
         'access_key': 'XXXX',
         'secret_key': 'YYYY',
@@ -488,9 +496,25 @@ async def test_credentials_datasets_s3(server):
     data2['task_name'] = TASK_NAMES[0]
     assert ret == [data, data2]
 
+    data4 = {
+        'url': 'http://foo',
+        'transfer_prefix': 'http://baz',
+        'type': 's3',
+        'access_key': 'XXXX',
+        'secret_key': 'YYYY',
+        'buckets': ['bar'],
+    }
+    await client.request('POST', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/credentials', data4)
+
+    ret = await client.request('GET', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/credentials')
+    data4['dataset_id'] = DATASETS[0]
+    data4['task_name'] = TASK_NAMES[0]
+    assert ret == [data, data2, data4]
+
     # now overwrite
     data3 = {
         'url': 'http://foo',
+        'transfer_prefix': 'http://bar',
         'type': 's3',
         'access_key': 'XXXX',
         'secret_key': 'YYYY',
@@ -502,7 +526,7 @@ async def test_credentials_datasets_s3(server):
     data3_out = data3.copy()
     data3_out['dataset_id'] = DATASETS[0]
     data3_out['task_name'] = TASK_NAMES[0]
-    assert ret == [data3_out, data2]
+    assert ret == [data3_out, data2, data4]
 
     await client.request('DELETE', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/credentials', {'url': 'http://foo'})
 

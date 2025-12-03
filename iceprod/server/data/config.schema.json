@@ -184,8 +184,22 @@
         }
       },
       "additionalProperties": true
+    },
+    "oauth_condor_client_id": {
+      "description": "OAuth HTCondor client id, for exchanging to HTCondor's managed tokens",
+      "type": "string",
+      "default": ""
+    },
+    "oauth_services": {
+      "description": "OAuth service mapping from url to service name",
+      "type": "object",
+      "default": {},
+      "properties": {},
+      "additionalProperties": {
+        "type": "string"
+      }
     }
   },
-  "required": [ "version", "queue", "rest_api" ],
+  "required": [ "version", "queue", "rest_api", "oauth_services" ],
   "additionalProperties": true
 }

@@ -12,6 +12,7 @@ from rest_tools.client import RestClient
 import requests.exceptions
 from tornado.web import create_signed_value
 
+from iceprod.credentials.util import Client as CredClient
 from iceprod.rest.auth import ROLES, GROUPS
 from iceprod.website.handlers.submit import TokenLogin
 from iceprod.website.server import Server
@@ -48,7 +49,7 @@ async def server(monkeypatch, port):
         'http://token.auth': {
             'client_id': 'client',
             'client_secret': 'secret',
-            'transfer_prefix': 'token://'
+            'transfer_prefix': ['token://'],
         }
     }
     monkeypatch.setenv('TOKEN_CLIENTS', json.dumps(token_clients))
@@ -72,10 +73,11 @@ async def server(monkeypatch, port):
         self._OAUTH_USERINFO_URL = 'http://idp.test/oauth/userinfo'
     monkeypatch.setattr(TokenLogin, 'oauth_setup', oauth_setup)
 
+    auth = Auth('secret')
+    monkeypatch.setattr(CredClient, 'auth', auth)
+
     s = Server()
     await s.start()
-
-    auth = Auth('secret')
 
     def _add_to_data(data, attrs):
         logging.debug('attrs: %r', attrs)

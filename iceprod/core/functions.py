@@ -483,7 +483,7 @@ def delete(url, options={}):
 
 def isurl(url):
     """Determine if this is a supported protocol"""
-    prefixes = ('file:','http:','https:','ftp:','ftps:','gsiftp:')
+    prefixes = ('file:','http:','https:','ftp:','ftps:','gsiftp:','pelican:','osdf:')
     try:
         return url.startswith(prefixes)
     except Exception:

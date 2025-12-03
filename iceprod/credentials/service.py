@@ -80,6 +80,59 @@ class RefreshService:
 
         return new_cred
 
+    async def exchange_cred(self, cred, *, client_id: str):
+        """Exchange a refresh token for one on another client, and return that."""
+        if not cred.get('refresh_token'):
+            raise Exception('cred does not have a refresh token')
+        if not cred.get('access_token'):
+            raise Exception('cred does not have an access token')
+
+        openid_url = jwt.decode(cred['refresh_token'], options={"verify_signature": False})['iss']
+        try:
+            client = self.clients.get_client(openid_url)
+        except KeyError:
+            raise Exception('jwt issuer not registered')
+
+        # try the refresh token
+        args = {
+            'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
+            'client_id': client.client_id,
+            'audience': client_id,  # target client
+            'scope': cred['scope'],
+            'subject_token': cred['access_token'],
+            'subject_token_type': 'urn:ietf:params:oauth:token-type:access_token',
+        }
+        if client.client_secret:
+            args['client_secret'] = client.client_secret
+        if cred.get('scope', None) is not None:
+            args['scope'] = cred['scope']
+
+        logging.warning('exchanging on %s with args %r', client.auth.token_url, args)
+
+        new_cred = {}
+        try:
+            async with httpx.AsyncClient() as http_client:
+                r = await http_client.post(client.auth.token_url, data=args)
+            r.raise_for_status()
+            req = r.json()
+        except httpx.HTTPStatusError as exc:
+            logger.debug('%r', exc.response.text)
+            try:
+                req = exc.response.json()
+            except Exception:
+                req = {}
+            error = req.get('error', '')
+            raise Exception(f'Exchange request failed: {error}') from exc
+        else:
+            logger.debug('OpenID token exchanged')
+            new_cred['access_token'] = req['access_token']
+            new_cred['refresh_token'] = req['refresh_token']
+            new_cred['expiration'] = get_expiration(req['access_token'])
+            new_cred['scope'] = req.get('scope', cred.get('scope', ''))
+            logger.debug('%r', new_cred)
+
+        return new_cred
+
     def should_refresh(self, cred):
         logger.info('should_refresh for cred %r', cred)
         now = time.time()

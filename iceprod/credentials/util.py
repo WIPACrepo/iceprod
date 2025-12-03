@@ -55,7 +55,7 @@ class Client:
     url: str
     client_id: str
     client_secret: str
-    transfer_prefix: str
+    transfer_prefix: list[str]
 
     @property
     def id(self) -> str:
@@ -136,5 +136,6 @@ class ClientCreds:
         ret = {}
         for url in self._config:
             c = self.get_client(url)
-            ret[c.transfer_prefix] = c
+            for prefix in c.transfer_prefix:
+                ret[prefix] = c
         return ret

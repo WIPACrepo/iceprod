@@ -12,9 +12,10 @@ from pathlib import Path
 import socket
 from typing import Any, Protocol
 
-from asyncache import cachedmethod  # type: ignore
+from asyncache import cached, cachedmethod  # type: ignore
 from cachetools import TTLCache
 from cachetools.func import ttl_cache
+from cachetools.keys import methodkey
 from prometheus_client import Info
 import requests.exceptions
 from wipac_dev_tools.prometheus_tools import GlobalLabels, AsyncPromWrapper, AsyncPromTimer
@@ -174,6 +175,12 @@ class BaseGrid:
             except Exception:
                 logger.warning('cannot get task resources for %s.%s', task.dataset.dataset_id, task.task_id, exc_info=True)
                 continue
+            try:
+                # add oauth tokens
+                task.oauth_tokens = await self._get_dataset_credentials(task)
+            except Exception:
+                logger.warning('cannot get oauth tokens for %s.%s', task.dataset.dataset_id, task.task_id, exc_info=True)
+                continue
             tasks.append(task)
 
         tasks_queued2 = len(tasks)
@@ -215,6 +222,16 @@ class BaseGrid:
             raise
 
         return t
+
+    @cached(TTLCache(1024, 60), key=lambda _,t: (t.dataset.dataset_id, t.name))
+    async def _get_dataset_credentials(self, task: Task) -> list[Any]:
+        # todo: handle non-oauth credentials, like s3
+        if client_id := self.cfg['oauth_condor_client_id']:
+            args = {'client_id': client_id}
+            ret = await self.cred_client.request('GET', f'/datasets/{task.dataset.dataset_id}/tasks/{task.name}/exchange', args)
+            return ret
+        else:
+            return []
 
     @staticmethod
     def _get_resources(task):
@@ -485,312 +502,3 @@ class BaseGrid:
                 await self._upload_log(task, 'stdout', stdout.read_text())
             if stderr and stderr.exists():
                 await self._upload_log(task, 'stderr', stderr.read_text())
-
-
-'''
-    @run_on_executor
-    def _delete_dirs(self, dirs):
-        # delete dirs that need deleting
-        for t in dirs:
-            if not t.startswith(self.submit_dir):
-                # some security against nefarious things
-                raise Exception('directory %s not in submit_dir %s'%(t, self.submit_dir))
-            try:
-                logger.info('deleting submit_dir %s', t)
-                functions.removedirs(t)
-            except Exception:
-                logger.warning('could not delete submit dir %s', t, exc_info=True)
-                continue
-
-
-    @ttl_cache(ttl=600)
-    def get_token(self):
-        return self.cred_client.make_access_token()
-
-    @cached(TTLCache(1024, 60))
-    async def get_user_credentials(self, username):
-        ret = await self.cred_client.request('GET', f'/users/{username}/credentials')
-        return ret
-
-    @cached(TTLCache(1024, 60))
-    async def get_group_credentials(self, group):
-        ret = await self.cred_client.request('GET', f'/groups/{group}/credentials')
-        return ret
-
-    async def customize_task_config(self, task_cfg, job_cfg=None, dataset=None):
-        """Transforms for the task config"""
-        logger.info('customize_task_config for %s', job_cfg.get('options', {}).get('task_id', 'unknown'))
-
-        # first expand site temp urls
-        def expand_remote(cfg):
-            new_data = []
-            for d in cfg.get('data', []):
-                if not d['remote']:
-                    try:
-                        remote_base = d.storage_location(job_cfg)
-                        logger.info('expanding remote for %r', d['local'])
-                        d['remote'] = os.path.join(remote_base, d['local'])
-                    except Exception:
-                        # ignore failed expansions, as these are likely local temp paths
-                        pass
-                new_data.append(d)
-            cfg['data'] = new_data
-        expand_remote(task_cfg)
-        for tray in task_cfg['trays']:
-            expand_remote(tray)
-            for module in tray['modules']:
-                expand_remote(module)
-        logger.info('task_cfg: %r', task_cfg)
-
-        # now apply S3 and token credentials
-        creds = self.cfg.get('creds', {})
-        if dataset['group'] == 'users':
-            ret = await self.get_user_credentials(dataset['username'])
-        else:
-            ret = await self.get_group_credentials(dataset['group'])
-        creds.update(ret)
-
-        s3_creds = {url: creds.pop(url) for url in list(creds) if creds[url]['type'] == 's3'}
-        if s3_creds:
-            # if we have any s3 credentials, try presigning urls
-            logger.info('testing job for s3 credentials')
-            try:
-                queued_time = timedelta(seconds=self.queue_cfg['max_task_queued_time'])
-            except Exception:
-                queued_time = timedelta(seconds=86400*2)
-            try:
-                processing_time = timedelta(seconds=self.queue_cfg['max_task_processing_time'])
-            except Exception:
-                processing_time = timedelta(seconds=86400*2)
-            expiration = (queued_time + processing_time).total_seconds()
-            logger.info(f's3 cred expire time: {expiration}')
-
-            def presign_s3(cfg):
-                new_data = []
-                for d in cfg.get('data', []):
-                    for url in s3_creds:
-                        if d['remote'].startswith(url):
-                            logger.info('found data for cred: %s', url)
-                            path = d['remote'][len(url):].lstrip('/')
-                            bucket = None
-                            if '/' in path:
-                                bucket, key = path.split('/', 1)
-                            if (not bucket) or bucket not in s3_creds[url]['buckets']:
-                                key = path
-                                bucket = urlparse(url).hostname.split('.', 1)[0]
-                                if bucket not in s3_creds[url]['buckets']:
-                                    raise RuntimeError('bad s3 bucket')
-
-                            while '//' in key:
-                                key = key.replace('//', '/')
-                            while key.startswith('/'):
-                                key = key[1:]
-
-                            s = S3(url, s3_creds[url]['access_key'], s3_creds[url]['secret_key'], bucket=bucket)
-                            logger.info(f'S3 url={url} bucket={bucket} key={key}')
-                            if d['movement'] == 'input':
-                                d['remote'] = s.get_presigned(key, expiration=expiration)
-                                new_data.append(d)
-                            elif d['movement'] == 'output':
-                                d['remote'] = s.put_presigned(key, expiration=expiration)
-                            elif d['movement'] == 'both':
-                                d['movement'] = 'input'
-                                d['remote'] = s.get_presigned(key, expiration=expiration)
-                                new_data.append(d.copy())
-                                d['movement'] = 'output'
-                                d['remote'] = s.put_presigned(key, expiration=expiration)
-                            else:
-                                raise RuntimeError('unknown s3 data movement')
-                            new_data.append(d)
-                            break
-                    else:
-                        new_data.append(d)
-                cfg['data'] = new_data
-
-            presign_s3(task_cfg)
-            for tray in task_cfg['trays']:
-                presign_s3(tray)
-                for module in tray['modules']:
-                    presign_s3(module)
-
-        oauth_creds = {url: creds.pop(url) for url in list(creds) if creds[url]['type'] == 'oauth'}
-        if oauth_creds:
-            # if we have token-based credentials, add them to the config
-            logger.info('testing job for oauth credentials')
-            cred_keys = set()
-
-            def get_creds(cfg):
-                for d in cfg.get('data', []):
-                    for url in oauth_creds:
-                        if d['remote'].startswith(url):
-                            logger.info('found data for cred: %s', url)
-                            cred_keys.add(url)
-                            break
-
-            get_creds(task_cfg)
-            for tray in task_cfg['trays']:
-                get_creds(tray)
-                for module in tray['modules']:
-                    get_creds(module)
-
-            file_creds = {}
-            for url in cred_keys:
-                cred_name = hashlib.sha1(oauth_creds[url]['access_token'].encode('utf-8')).hexdigest()
-                path = os.path.join(self.credentials_dir, cred_name)
-                if not os.path.exists(path):
-                    with open(path, 'w') as f:
-                        f.write(oauth_creds[url]['access_token'])
-                file_creds[url] = cred_name
-            job_cfg['options']['credentials'] = file_creds
-
-    async def setup_submit_directory(self,task):
-        """Set up submit directory"""
-        # create directory for task
-        submit_dir = self.submit_dir
-        task_dir = os.path.join(submit_dir,task['task_id']+'_'+str(random.randint(0,1000000)))
-        while os.path.exists(task_dir):
-            task_dir = os.path.join(submit_dir,task['task_id']+'_'+str(random.randint(0,1000000)))
-        task_dir = os.path.abspath(os.path.expanduser(os.path.expandvars(task_dir)))
-        os.makedirs(task_dir)
-        task['submit_dir'] = task_dir
-
-        # symlink or copy the .sh file
-        src = get_pkg_binary('iceprod', 'loader.sh')
-        dest = os.path.join(task_dir, 'loader.sh')
-        try:
-            os.symlink(src, dest)
-        except Exception:
-            try:
-                functions.copy(src, dest)
-            except Exception:
-                logger.error('Error creating symlink or copy of .sh file: %s',dest,exc_info=True)
-                raise
-
-        # get passkey
-        # expiration = self.queue_cfg['max_task_queued_time']
-        # expiration += self.queue_cfg['max_task_processing_time']
-        # expiration += self.queue_cfg['max_task_reset_time']
-        # TODO: take expiration into account
-        passkey = self.get_token()
-
-        # write cfg
-        cfg, filelist = self.write_cfg(task)
-
-        # create submit file
-        try:
-            await asyncio.ensure_future(self.generate_submit_file(
-                task,
-                cfg=cfg,
-                passkey=passkey,
-                filelist=filelist
-            ))
-        except Exception:
-            logger.error('Error generating submit file',exc_info=True)
-            raise
-
-    def write_cfg(self, task):
-        """Write the config file for a task-like object"""
-        filename = os.path.join(task['submit_dir'],'task.cfg')
-        filelist = [filename]
-
-        config = self.create_config(task)
-        if creds := config['options'].get('credentials', {}):
-            cred_dir = os.path.join(task['submit_dir'], CRED_SUBMIT_DIR)
-            os.mkdir(cred_dir)
-            for name in creds.values():
-                src = os.path.join(self.credentials_dir, name)
-                dest = os.path.join(cred_dir, name)
-                os.symlink(src, dest)
-            filelist.append(cred_dir)
-        if 'system' in self.cfg and 'remote_cacert' in self.cfg['system']:
-            config['options']['ssl'] = {}
-            config['options']['ssl']['cacert'] = os.path.basename(self.cfg['system']['remote_cacert'])
-            src = self.cfg['system']['remote_cacert']
-            dest = os.path.join(task['submit_dir'],config['options']['ssl']['cacert'])
-            try:
-                os.symlink(src,dest)
-            except Exception:
-                try:
-                    functions.copy(src,dest)
-                except Exception:
-                    logger.error('Error creating symlink or copy of remote_cacert',
-                                 exc_info=True)
-                    raise
-            filelist.append(dest)
-        if 'x509proxy' in self.cfg['queue'] and self.cfg['queue']['x509proxy']:
-            config['options']['x509'] = os.path.basename(self.cfg['queue']['x509proxy'])
-            src = self.cfg['queue']['x509proxy']
-            logger.info('submit_dir %r  x509 %r', task['submit_dir'], config['options']['x509'])
-            dest = os.path.join(task['submit_dir'],config['options']['x509'])
-            try:
-                os.symlink(src,dest)
-            except Exception:
-                try:
-                    functions.copy(src,dest)
-                except Exception:
-                    logger.error('Error creating symlink or copy of x509 proxy',
-                                 exc_info=True)
-                    raise
-            filelist.append(dest)
-        if 'extra_file_tranfers' in self.cfg['queue'] and self.cfg['queue']['extra_file_tranfers']:
-            for f in self.cfg['queue']['extra_file_tranfers']:
-                logger.info('submit_dir %r  extra_files %r', task['submit_dir'], f)
-                dest = os.path.join(task['submit_dir'],os.path.basename(f))
-                try:
-                    os.symlink(os.path.abspath(f),dest)
-                except Exception:
-                    try:
-                        functions.copy(f,dest)
-                    except Exception:
-                        logger.error('Error creating symlink or copy of extra file %s',
-                                     f, exc_info=True)
-                        raise
-                filelist.append(dest)
-        if 'data_movement_stats' in self.cfg['queue'] and self.cfg['queue']['data_movement_stats']:
-            config['options']['data_movement_stats'] = self.cfg['queue']['data_movement_stats']
-        if 'upload_checksum' in self.cfg['queue']:
-            config['options']['upload_checksum'] = self.cfg['queue']['upload_checksum']
-
-        if 'reqs' in task:
-            # add resources
-            config['options']['resources'] = {}
-            for r in task['reqs']:
-                config['options']['resources'][r] = task['reqs'][r]
-
-        # write to file
-        serialization.serialize_json.dump(config, filename)
-
-        c = iceprod.core.exe.Config(config)
-        config = c.parseObject(config, {})
-
-        return (config, filelist)
-
-    # not async: called from executor
-    def get_submit_args(self,task,cfg=None,passkey=None):
-        """Get the submit arguments to start the loader script."""
-        # get website address
-        if ('rest_api' in self.cfg and self.cfg['rest_api'] and
-                'url' in self.cfg['rest_api'] and self.cfg['rest_api']['url']):
-            web_address = self.cfg['rest_api']['url']
-        else:
-            raise Exception('no web address for rest calls')
-
-        args = []
-        if 'software_dir' in self.queue_cfg and self.queue_cfg['software_dir']:
-            args.append('-s {}'.format(self.queue_cfg['software_dir']))
-        if 'iceprod_dir' in self.queue_cfg and self.queue_cfg['iceprod_dir']:
-            args.append('-e {}'.format(self.queue_cfg['iceprod_dir']))
-        if 'x509proxy' in self.cfg['queue'] and self.cfg['queue']['x509proxy']:
-            args.append('-x {}'.format(os.path.basename(self.cfg['queue']['x509proxy'])))
-        if ('download' in self.cfg and 'http_proxy' in self.cfg['download']
-                and self.cfg['download']['http_proxy']):
-            args.apend('-c {}'.format(self.cfg['download']['http_proxy']))
-        args.append('--url {}'.format(web_address))
-        if passkey:
-            args.append('--passkey {}'.format(passkey))
-        if cfg:
-            args.append('--cfgfile task.cfg')
-        if 'debug' in task and task['debug']:
-            args.append('--debug')
-        return args
-'''

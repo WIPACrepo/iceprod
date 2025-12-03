@@ -7,6 +7,7 @@ from __future__ import absolute_import, division, print_function
 import json
 from datetime import date,datetime,time
 import base64
+from typing import Any
 import zlib
 import logging
 import ast
@@ -221,11 +222,11 @@ def recursive_unicode(obj):
         return obj
 
 
-def json_encode(value, indent=None):
+def json_encode(value: dict[Any, Any] | list[Any], indent=None):
     """JSON-encodes the given Python object."""
     return json.dumps(recursive_unicode(value),default=objToJSON,separators=(',',':'), indent=indent).replace("</", "<\\/")
 
 
-def json_decode(value):
+def json_decode(value: str):
     """Returns Python objects for the given JSON string."""
     return json.loads(value,object_hook=JSONToObj)

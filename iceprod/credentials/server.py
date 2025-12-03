@@ -3,10 +3,10 @@ Credentials store and refresh.
 """
 import asyncio
 import dataclasses
-from datetime import datetime
+from datetime import datetime, UTC
 import logging
 import time
-from typing import Any
+from typing import Any, Self
 
 import jwt
 from prometheus_client import Info, start_http_server
@@ -71,6 +71,7 @@ class BaseCredentialsHandler(APIBase):
         argo = ArgumentHandler(ArgumentSource.JSON_BODY_ARGUMENTS, self)
         argo.add_argument('url', type=str, required=True)
         argo.add_argument('type', type=str, choices=['s3', 'oauth'], required=True)
+        argo.add_argument('transfer_prefix', type=str, default='', required=False)
         argo.add_argument('buckets', type=list, default=[], required=False)
         argo.add_argument('access_key', type=str, default='', required=False)
         argo.add_argument('secret_key', type=str, default='', required=False)
@@ -84,6 +85,7 @@ class BaseCredentialsHandler(APIBase):
         credential_type = args['type']
 
         base_data['url'] = url
+        base_data['transfer_prefix'] = args['transfer_prefix']
         data = base_data.copy()
         data.update({
             'type': credential_type,
@@ -133,6 +135,7 @@ class BaseCredentialsHandler(APIBase):
         assert self.refresh_service
         argo = ArgumentHandler(ArgumentSource.JSON_BODY_ARGUMENTS, self)
         argo.add_argument('url', type=str, required=True)
+        argo.add_argument('transfer_prefix', type=str, default='', required=False)
         argo.add_argument('buckets', type=list, default=[], required=False)
         argo.add_argument('access_key', type=str, default='', required=False)
         argo.add_argument('secret_key', type=str, default='', required=False)
@@ -143,6 +146,7 @@ class BaseCredentialsHandler(APIBase):
         argo.add_argument('last_use', type=float, default=0, required=False)
         args = vars(argo.parse_args())
         base_data['url'] = args['url']
+        base_data['transfer_prefix'] = args['transfer_prefix']
 
         data = {}
         for key in ('buckets', 'access_key', 'secret_key', 'access_token', 'refresh_token', 'scope', 'expiration', 'last_use'):
@@ -166,6 +170,8 @@ class BaseCredentialsHandler(APIBase):
         assert self.refresh_service
         if url := self.get_argument('url', None):
             base_data['url'] = url
+        if transfer_prefix := self.get_argument('transfer_prefix', None):
+            base_data['transfer_prefix'] = transfer_prefix
         if scope := self.get_argument('scope', None):
             base_data['scope'] = scope
         logger.info('base_data: %r', base_data)
@@ -195,16 +201,33 @@ class BaseCredentialsHandler(APIBase):
         return ret
 
     async def delete_cred(self, db, base_data):
-        argo = ArgumentHandler(ArgumentSource.JSON_BODY_ARGUMENTS, self)
-        argo.add_argument('url', type=str, default='', required=False)
-        argo.add_argument('scope', type=str, default=None, required=False)
-        body_args = argo.parse_args()
-        if body_args.url:
-            base_data['url'] = body_args.url
-        if body_args.scope is not None:
-            base_data['scope'] = body_args.scope
+        assert self.refresh_service
+        if url := self.get_argument('url', None):
+            base_data['url'] = url
+        if transfer_prefix := self.get_argument('transfer_prefix', None):
+            base_data['transfer_prefix'] = transfer_prefix
+        if scope := self.get_argument('scope', None):
+            base_data['scope'] = scope
+        logger.info('base_data: %r', base_data)
 
         await db.delete_many(base_data)
+
+    async def exchange_cred(self, db, base_data):
+        assert self.refresh_service
+
+        client_id = self.get_argument('client_id')
+
+        # must be oauth for exchange
+        base_data['type'] = 'oauth'
+
+        # get unexpired tokens
+        creds = await self.search_creds(db, base_data)
+
+        ret = []
+        for row in creds:
+            c = await self.refresh_service.exchange_cred(row, client_id=client_id)
+            ret.append(c)
+        return ret
 
 
 class GroupCredentialsHandler(BaseCredentialsHandler):
@@ -218,6 +241,9 @@ class GroupCredentialsHandler(BaseCredentialsHandler):
 
         Args:
             groupname (str): group name
+        Param args:
+            url (str): (optional) url of controlled resource
+            scope (str): (optional) scope of access token
         Returns:
             dict: url: credential dict
         """
@@ -283,7 +309,7 @@ class GroupCredentialsHandler(BaseCredentialsHandler):
 
         Args:
             groupname (str): groupname
-        Body args:
+        Param args:
             url (str): (optional) url of controlled resource
             scope (str): (optional) scope of access token
         """
@@ -292,6 +318,31 @@ class GroupCredentialsHandler(BaseCredentialsHandler):
 
         await self.delete_cred(self.db.group_creds, {'groupname': groupname})
         self.write({})
+
+
+class GroupExchangeHandler(BaseCredentialsHandler):
+    """
+    Handle group exchange requests.
+    """
+    @authorization(roles=['admin', 'system', 'user'])
+    async def get(self, groupname):
+        """
+        Get a group's exchange credentials.
+
+        Args:
+            groupname (str): group name
+        Param args:
+            url (str): (optional) url of controlled resource
+            scope (str): (optional) scope of access token
+            client_id (str): client_id to exchange to
+        Returns:
+            dict: url: credential dict
+        """
+        if self.auth_roles == ['user'] and groupname not in self.auth_groups:
+            raise HTTPError(403, 'unauthorized')
+
+        ret = await self.exchange_cred(self.db.group_creds, {'groupname': groupname})
+        self.write(ret)
 
 
 class UserCredentialsHandler(BaseCredentialsHandler):
@@ -305,6 +356,9 @@ class UserCredentialsHandler(BaseCredentialsHandler):
 
         Args:
             username (str): username
+        Param args:
+            url (str): (optional) url of controlled resource
+            scope (str): (optional) scope of access token
         Returns:
             dict: url: credential dict
         """
@@ -370,7 +424,7 @@ class UserCredentialsHandler(BaseCredentialsHandler):
 
         Args:
             username (str): username
-        Body args:
+        Param args:
             url (str): (optional) url of controlled resource
             scope (str): (optional) scope of access token
         Returns:
@@ -381,6 +435,31 @@ class UserCredentialsHandler(BaseCredentialsHandler):
 
         await self.delete_cred(self.db.user_creds, {'username': username})
         self.write({})
+
+
+class UserExchangeHandler(BaseCredentialsHandler):
+    """
+    Handle user exchange requests.
+    """
+    @authorization(roles=['admin', 'system', 'user'])
+    async def get(self, username):
+        """
+        Get a user's exchange credentials.
+
+        Args:
+            username (str): user name
+        Param args:
+            url (str): (optional) url of controlled resource
+            scope (str): (optional) scope of access token
+            client_id (str): client_id to exchange to
+        Returns:
+            dict: url: credential dict
+        """
+        if self.auth_roles == ['user'] and username != self.current_user:
+            raise HTTPError(403, 'unauthorized')
+
+        ret = await self.exchange_cred(self.db.user_creds, {'username': username})
+        self.write(ret)
 
 
 class DatasetCredentialsHandler(BaseCredentialsHandler):
@@ -394,6 +473,9 @@ class DatasetCredentialsHandler(BaseCredentialsHandler):
 
         Args:
             dataset_id (str): dataset_id
+        Param args:
+            url (str): (optional) url of controlled resource
+            scope (str): (optional) scope of access token
         Returns:
             dict: url: credential dict
         """
@@ -407,7 +489,7 @@ class DatasetCredentialsHandler(BaseCredentialsHandler):
 
         Args:
             dataset_id (str): dataset_id
-        Body args:
+        Param args:
             url (str): (optional) url of controlled resource
             scope (str): (optional) scope of access token
         Returns:
@@ -415,6 +497,28 @@ class DatasetCredentialsHandler(BaseCredentialsHandler):
         """
         await self.delete_cred(self.db.dataset_creds, {'dataset_id': dataset_id})
         self.write({})
+
+
+class DatasetExchangeHandler(BaseCredentialsHandler):
+    """
+    Handle dataset exchange requests.
+    """
+    @authorization(roles=['admin', 'system'])
+    async def get(self, dataset_id):
+        """
+        Get a dataset's exchange credentials.
+
+        Args:
+            dataset_id (str): dataset_id
+        Param args:
+            url (str): (optional) url of controlled resource
+            scope (str): (optional) scope of access token
+            client_id (str): client_id to exchange to
+        Returns:
+            dict: url: credential dict
+        """
+        ret = await self.exchange_cred(self.db.dataset_creds, {'dataset_id': dataset_id})
+        self.write(ret)
 
 
 class DatasetTaskCredentialsHandler(BaseCredentialsHandler):
@@ -429,6 +533,9 @@ class DatasetTaskCredentialsHandler(BaseCredentialsHandler):
         Args:
             dataset_id (str): dataset_id
             task_name (str): task name
+        Param args:
+            url (str): (optional) url of controlled resource
+            scope (str): (optional) scope of access token
         Returns:
             dict: url: credential dict
         """
@@ -488,7 +595,7 @@ class DatasetTaskCredentialsHandler(BaseCredentialsHandler):
         Args:
             dataset_id (str): dataset_id
             task_name (str): task name
-        Body args:
+        Param args:
             url (str): (optional) url of controlled resource
             scope (str): (optional) scope of access token
         Returns:
@@ -496,6 +603,29 @@ class DatasetTaskCredentialsHandler(BaseCredentialsHandler):
         """
         await self.delete_cred(self.db.dataset_creds, {'dataset_id': dataset_id, 'task_name': task_name})
         self.write({})
+
+
+class DatasetTaskExchangeHandler(BaseCredentialsHandler):
+    """
+    Handle dataset task exchange requests.
+    """
+    @authorization(roles=['admin', 'system'])
+    async def get(self, dataset_id, task_name):
+        """
+        Get a dataset's exchange credentials.
+
+        Args:
+            dataset_id (str): dataset_id
+            task_name (str): task name
+        Param args:
+            url (str): (optional) url of controlled resource
+            scope (str): (optional) scope of access token
+            client_id (str): client_id to exchange to
+        Returns:
+            dict: url: credential dict
+        """
+        ret = await self.exchange_cred(self.db.dataset_creds, {'dataset_id': dataset_id, 'task_name': task_name})
+        self.write(ret)
 
 
 class HealthHandler(BaseCredentialsHandler):
@@ -512,7 +642,7 @@ class HealthHandler(BaseCredentialsHandler):
         now = time.time()
         status = {
             'now': nowstr(),
-            'start_time': datetime2str(datetime.utcfromtimestamp(self.refresh_service.start_time)),
+            'start_time': datetime2str(datetime.fromtimestamp(self.refresh_service.start_time, tz=UTC)),
             'last_run_time': "",
             'last_success_time': "",
         }
@@ -568,7 +698,7 @@ class DefaultConfig:
 
 
 class Server:
-    def __init__(self):
+    def __init__(self: Self):
         config = from_environment_as_dataclass(DefaultConfig)
 
         rest_config: dict[str, Any] = {
@@ -598,7 +728,7 @@ class Server:
         logging_url = config.DB_URL.split('@')[-1] if '@' in config.DB_URL else config.DB_URL
         logging.info(f'DB: {logging_url}')
         db_url, db_name = config.DB_URL.rsplit('/', 1)
-        db = motor.motor_asyncio.AsyncIOMotorClient(
+        db = motor.motor_asyncio.AsyncIOMotorClient(  # type: ignore[var-annotated]
             db_url,
             timeoutMS=config.DB_TIMEOUT*1000,
             w=config.DB_WRITE_CONCERN,
@@ -624,6 +754,7 @@ class Server:
             }
         }
 
+        rest_client: RestClient
         if config.ICEPROD_API_CLIENT_ID and config.ICEPROD_API_CLIENT_SECRET:
             logging.info(f'enabling auth via {config.OPENID_URL} for aud "{config.OPENID_AUDIENCE}"')
             rest_client = ClientCredentialsAuth(
@@ -653,9 +784,13 @@ class Server:
         server = RestServer(debug=config.DEBUG)
 
         server.add_route(r'/groups/(?P<groupname>\w+)/credentials', GroupCredentialsHandler, kwargs)
+        server.add_route(r'/groups/(?P<groupname>\w+)/exchange', GroupExchangeHandler, kwargs)
         server.add_route(r'/users/(?P<username>\w+)/credentials', UserCredentialsHandler, kwargs)
+        server.add_route(r'/users/(?P<username>\w+)/exchange', UserExchangeHandler, kwargs)
         server.add_route(r'/datasets/(?P<dataset_id>\w+)/credentials', DatasetCredentialsHandler, kwargs)
+        server.add_route(r'/datasets/(?P<dataset_id>\w+)/exchange', DatasetExchangeHandler, kwargs)
         server.add_route(r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_name>\w+)/credentials', DatasetTaskCredentialsHandler, kwargs)
+        server.add_route(r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_name>\w+)/exchange', DatasetTaskExchangeHandler, kwargs)
         server.add_route('/healthz', HealthHandler, kwargs)
         server.add_route(r'/(.*)', Error)
 

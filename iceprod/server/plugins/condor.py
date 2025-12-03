@@ -6,10 +6,12 @@ Note: Condor was renamed to HTCondor in 2012.
 """
 import asyncio
 from collections import defaultdict
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime, timedelta, UTC
 import enum
 import importlib.resources
+import json
 import logging
 import os
 from pathlib import Path
@@ -17,13 +19,13 @@ import shutil
 import stat
 import subprocess
 import time
-from typing import Generator, NamedTuple
+from typing import Any, Generator, NamedTuple
 
 import htcondor2 as htcondor  # type: ignore
 from wipac_dev_tools.prometheus_tools import GlobalLabels, AsyncPromWrapper, PromWrapper, AsyncPromTimer, PromTimer
 
 from iceprod.core.config import Task
-from iceprod.core.exe import WriteToScript, Transfer
+from iceprod.core.exe import WriteToScript, Transfer, Data
 from iceprod.prom_utils import HistogramBuckets
 from iceprod.server.config import IceProdConfig
 from iceprod.server import grid
@@ -204,6 +206,12 @@ class CondorSubmit:
 
         self.default_container = self.cfg['queue'].get('default_container', 'Undefined')
 
+        # a mapping of url prefix to oauth service name
+        self.oauth_service_mapping = self.cfg['oauth_services']
+
+    def _restart_schedd(self):
+        self.condor_schedd = htcondor.Schedd()
+
     def condor_plugin_discovery(self):
         """Find all available HTCondor transfer plugins, and copy them to the submit_dir"""
         ret = {}
@@ -217,11 +225,35 @@ class CondorSubmit:
                     for line in subprocess.run([str(p), '-classad'], capture_output=True, text=True, check=True).stdout.split('\n'):
                         logger.debug('transfer plugin output: %s', line)
                         if line.startswith('SupportedMethods'):
-                            ret[line.split('=')[-1].strip(' "')] = str(p)
+                            ret[line.split('=')[-1].strip(' ";')] = str(p)
         return ret
 
+    def condor_oauth_block(self, handle_name: str, token_scopes: dict[str, str]) -> tuple[str, dict[str, str]]:
+        """
+        Convert from token scopes to HTCondor oauth syntax.
+
+        Returns: (submit string, transfer prefix transform)
+        """
+        oauth_scopes = {}
+        transfer_transforms = {}
+        for url_prefix, scope in token_scopes.items():
+            if service_name := self.oauth_service_mapping.get(url_prefix, None):
+                oauth_scopes[service_name] = scope
+                transfer_transforms[url_prefix] = f'{service_name}.{handle_name}+{url_prefix}'
+            else:
+                raise RuntimeError('unknown token scope url prefix: %r', url_prefix)
+        oauth_permissions = [
+            f'{service}_oauth_permissions_{handle_name} = {scopes}'
+            for service, scopes in oauth_scopes.items()
+        ]
+        ret = f"""+oauth_file_transform = False
+use_oauth_services = {','.join(oauth_scopes.keys())}
+{'\n'.join(oauth_permissions)}
+"""
+        return (ret, transfer_transforms)
+
     @staticmethod
-    def condor_os_container(os_arch):
+    def condor_os_container(os_arch: list[str] | str) -> str:
         """Convert from OS_ARCH to container image"""
         if isinstance(os_arch, list):
             os_arch = os_arch[0]
@@ -233,7 +265,7 @@ class CondorSubmit:
         return container
 
     @staticmethod
-    def condor_resource_reqs(task: Task):
+    def condor_resource_reqs(task: Task) -> dict[str, str]:
         """Convert from Task requirements to HTCondor requirements"""
         ads = {}
         requirements = []
@@ -254,10 +286,10 @@ class CondorSubmit:
             ads['requirements'] = '('+')&&('.join(requirements)+')'
         return ads
 
-    def condor_infiles(self, infiles):
+    def condor_infiles(self, infiles: Iterable[Data], transfer_transforms: dict[str, str]) -> dict[str, str | list[str]]:
         """Convert from set[Data] to HTCondor classads for input files"""
         files = []
-        mapping = []
+        mapping: list[tuple[str,str]] = []
         x509_proxy = self.cfg['queue'].get('x509proxy', None)
         if x509_proxy:
             files.append(x509_proxy)
@@ -276,7 +308,7 @@ class CondorSubmit:
                     url += '?mapping='+infile.local
                     # mapping.append((basename,infile.local))
             files.append(url)
-        ads = {}
+        ads: dict[str, str | list[str]] = {}
         if mapping:
             ads['PreCmd'] = f'"{self.precmd.name}"'
             ads['PreArguments'] = '"'+' '.join(f"'{k}'='{v}'" for k,v in mapping)+'"'
@@ -285,7 +317,7 @@ class CondorSubmit:
             ads['transfer_input_files'] = files
         return ads
 
-    def condor_outfiles(self, outfiles):
+    def condor_outfiles(self, outfiles: Iterable[Data], transfer_transforms: dict[str, str]) -> dict[str, str | list[str]]:
         """Convert from set[Data] to HTCondor classads for output files"""
         files = []
         mapping = []
@@ -296,7 +328,7 @@ class CondorSubmit:
             else:
                 url = outfile.url
             mapping.append((outfile.local, url))
-        ads = {}
+        ads: dict[str, str | list[str]] = {}
         ads['transfer_output_files'] = files
         ads['transfer_output_remaps'] = ';'.join(f'{name} = {url}' for name,url in mapping)
         return ads
@@ -312,6 +344,47 @@ class CondorSubmit:
             i += 1
         path.mkdir(parents=True)
         return path
+    
+    def add_oauth_tokens(self, provider_transforms: dict, tokens: list[Any]):
+        """
+        Add OAuth tokens to HTCondor
+        """
+        now = time.time()
+        for data in tokens:
+            if data['type'] != 'oauth':
+                logger.warning('unhandled type for token: %s', data['type'])
+                continue
+            prefix = data['transfer_prefix']
+            if transform := provider_transforms.get(prefix, None):
+                s_h = transform.split('+',1)[0]
+                service,handle = s_h.split('.')
+                if token := data.get('access_token', None):
+                    htcondor.Credd().add_user_service_cred(
+                        credtype=htcondor.CredType.OAuth,
+                        credential=json.dumps({
+                            "access_token": token,
+                            "token_type": "bearer",
+                            "expires_in": int(data['expiration'] - now),
+                            "expires_at": data['expiration'],
+                            "scope": data['scope'].split(),
+                        }).encode('utf-8'),
+                        service=service,
+                        handle=handle,
+                        refresh=False,
+                    )
+                if token := data.get('refresh_token', None):
+                    htcondor.Credd().add_user_service_cred(
+                        credtype=htcondor.CredType.OAuth,
+                        credential=json.dumps({
+                            "refresh_token": token,
+                            "scopes": data['scope'],
+                        }).encode('utf-8'),
+                        service=service,
+                        handle=handle,
+                        refresh=True,
+                    )
+            else:
+                logger.warning('unused token for transfer_prefix %r', data['transfer_prefix'])
 
     @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_submit', 'IceProd grid condor.submit calls', buckets=HistogramBuckets.MINUTE))
     @AsyncPromWrapper(lambda self: self.prometheus.histogram('iceprod_grid_condor_schedd_submit', 'IceProd grid htcondor.schedd.submit calls', buckets=HistogramBuckets.MINUTE))
@@ -330,6 +403,16 @@ class CondorSubmit:
         """
         jel_dir = jel.parent
         transfer_plugin_str = ';'.join(f'{k}={v}' for k,v in self.transfer_plugins.items())
+
+        # the tasks all have the same basic config, so just get the first one
+        task_config = tasks[0].get_task_config()
+
+        oauth_handle = f'{tasks[0].dataset.dataset_id}{tasks[0].name}'
+        oauth_block, token_transform = self.condor_oauth_block(oauth_handle, task_config['token_scopes'])
+
+        services_used = set(service.split('.',1)[0] for service in token_transform.values())
+        oauth_reqs = ' && '.join(f'stringListMember("{name}", HasFileTransferPluginMethods)' for name in services_used)
+
         submitfile = f"""
 output = $(initialdir)/condor.out
 error = $(initialdir)/condor.err
@@ -358,6 +441,8 @@ request_disk = $(disk)
 requirements = $($(reqs))
 +SingularityImage= $(container)
 
+{oauth_block}
+
 transfer_plugins = {transfer_plugin_str}
 when_to_transfer_output = ON_EXIT
 should_transfer_files = YES
@@ -371,7 +456,7 @@ transfer_output_remaps = $(outremaps)
 
 """
 
-        for k,v in tasks[0].get_task_config()['batchsys'].get('condor', {}).items():
+        for k,v in task_config['batchsys'].get('condor', {}).items():
             if k.lower() != 'requirements':
                 submitfile += f'+{k} = {v}\n'
 
@@ -390,11 +475,14 @@ transfer_output_remaps = $(outremaps)
             logger.debug('running task with exe %r', executable)
 
             ads = self.AD_DEFAULTS.copy()
-            ads.update(self.condor_infiles(s.infiles))
-            ads.update(self.condor_outfiles(s.outfiles))
+            ads.update(self.condor_infiles(s.infiles, token_transform))
+            ads.update(self.condor_outfiles(s.outfiles, token_transform))
             ads.update(self.condor_resource_reqs(task))
 
-            container = task.get_task_config().get('container')
+            if task.oauth_tokens:
+                self.add_oauth_tokens(token_transform, task.oauth_tokens)
+
+            container = task_config.get('container', None)
             if not container:
                 if os_arch := task.requirements.get('os'):
                     container = self.condor_os_container(os_arch)
@@ -404,13 +492,15 @@ transfer_output_remaps = $(outremaps)
                 container = f'"{container}"'
 
             reqs2 = reqs
-            for k,v in tasks[0].get_task_config()['batchsys'].get('condor', {}).items():
+            for k,v in task_config['batchsys'].get('condor', {}).items():
                 if k.lower() == 'requirements':
-                    reqs2 = f'({reqs}) && ({v})' if reqs else v
+                    reqs2 = f'({reqs}) && ({v})' if reqs else f'({v})'
                     break
 
             if reqs2:
-                ads['requirements'] = f'({ads["requirements"]}) && ({reqs2})'
+                ads['requirements'] = f'{ads["requirements"]} && {reqs2}' if ads.get('requirements', None) else reqs2
+            if oauth_reqs:
+                ads['requirements'] = f'{ads["requirements"]} && {oauth_reqs}' if ads.get('requirements', None) else oauth_reqs
             if ads['requirements']:
                 submitfile += f'reqs{task.task_id} = {ads["requirements"]}\n'
             # stringify everything, quoting the real strings
@@ -447,7 +537,11 @@ transfer_output_remaps = $(outremaps)
 
         with prom_histogram.time():
             s = htcondor.Submit(submitfile)
-            submit_result = self.condor_schedd.submit(s, count=1, itemdata=s.itemdata())
+            try:
+                submit_result = self.condor_schedd.submit(s, count=1, itemdata=s.itemdata())
+            except htcondor.HTCondorException:
+                self._restart_schedd()
+                submit_result = self.condor_schedd.submit(s, count=1, itemdata=s.itemdata())
 
         cluster_id = int(submit_result.cluster())
         ret = {}

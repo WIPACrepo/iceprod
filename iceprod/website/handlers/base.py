@@ -1,6 +1,7 @@
 import functools
 import logging
 import re
+import traceback
 from typing import Any
 from urllib.parse import urlencode
 
@@ -427,10 +428,15 @@ class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler
             self.write('<h2>Internal Error</h2>')
         else:
             self.write('<h2>Request Error</h2>')
-        if 'message' in kwargs:
-            self.write('<br />'.join(kwargs['message'].split('\n')))
-        elif 'reason' in kwargs:
+        if 'exc_info' in kwargs:
+            exception = kwargs["exc_info"][1]
+            logger.info(''.join(traceback.format_exception(exception)))
+            if isinstance(exception, tornado.web.HTTPError) and exception.reason:
+                kwargs['reason'] = exception.reason
+        if 'reason' in kwargs:
             self.write('<br />'.join(kwargs['reason'].split('\n')))
+        elif 'message' in kwargs:
+            self.write('<br />'.join(kwargs['message'].split('\n')))
         elif self._reason:
             self.write('<br />'.join(self._reason.split('\n')))
         self.finish()

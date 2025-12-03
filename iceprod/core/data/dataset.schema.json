@@ -64,6 +64,17 @@
             "default": "",
             "description": "Specify a /cvmfs container path, if this task should run in a container"
           },
+          "token_scopes": {
+            "type": "object",
+            "default": {},
+            "description": "Specify a series of url prefix: scopes for token-based data transfer. Automatically filled on submit",
+            "properties": {},
+            "additionalProperties": {
+              "type": "string",
+              "description": "Scopes as a space-separated string"
+            },
+            "minProperties": 0
+          },
           "trays": {
             "type": "array",
             "items": {
