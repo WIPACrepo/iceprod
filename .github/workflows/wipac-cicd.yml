@@ -74,7 +74,7 @@ jobs:
       - uses: WIPACrepo/wipac-dev-py-setup-action@v5.7
         with:
           mode: PACKAGING_AND_PYPI
-          python_min: 3.11
+          python_min: 3.12
           python_max: 3.14
           pypi_name: iceprod
           author: WIPAC Developers

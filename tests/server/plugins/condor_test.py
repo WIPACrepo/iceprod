@@ -70,35 +70,6 @@ def test_CondorSubmit_init(schedd):
     assert set(sub.transfer_plugins.keys()) == {'gsiftp', 'iceprod-plugin'}
 
 
-def test_CondorSubmit_condor_oauth_scopes(schedd):
-    override = ['queue.type=condor', 'oauth_services.token://=ttt', 'oauth_services.token2=t2']
-    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
-    submit_dir = Path(os.path.expanduser(os.path.expandvars(cfg['queue']['submit_dir'])))
-    cred_dir = Path(os.path.expanduser(os.path.expandvars(cfg['queue']['credentials_dir'])))
-
-    sub = iceprod.server.plugins.condor.CondorSubmit(cfg=cfg, submit_dir=submit_dir, credentials_dir=cred_dir)
-
-    handle = 'handle'
-    scopes = {
-        'token://': 'storage.read:/ storage.write:/data'
-    }
-    _, services = sub.condor_oauth_block(handle, scopes)
-    assert services == {'token://': 'ttt.handle+token://'}
-
-    scopes = {
-        'token://': 'storage.read:/ storage.write:/data',
-        'token2': 'storage.read:/'
-    }
-    _, services = sub.condor_oauth_block(handle, scopes)
-    assert services == {'token://': 'ttt.handle+token://', 'token2': 't2.handle+token2'}
-
-    scopes = {
-        'token3': 'storage.read:/'
-    }
-    with pytest.raises(match='unknown token scope url prefix'):
-        sub.condor_oauth_block(handle, scopes)
-
-
 def test_CondorSubmit_condor_os_container():
     ret = iceprod.server.plugins.condor.CondorSubmit.condor_os_container('RHEL_6_x86_64')
     assert 'el6' in ret
@@ -246,7 +217,36 @@ def test_CondorSubmit_condor_outfiles_maybe(schedd):
     assert ret['transfer_output_remaps'] == 'bar = iceprod-plugin://maybe-http://foo.test/foo'
 
 
-def test_CondorSubmit_condor_oauth_block(schedd):
+def test_CondorSubmit_condor_oauth_block_scopes(schedd):
+    override = ['queue.type=condor', 'oauth_services.token://=ttt', 'oauth_services.token2=t2']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+    submit_dir = Path(os.path.expanduser(os.path.expandvars(cfg['queue']['submit_dir'])))
+    cred_dir = Path(os.path.expanduser(os.path.expandvars(cfg['queue']['credentials_dir'])))
+
+    sub = iceprod.server.plugins.condor.CondorSubmit(cfg=cfg, submit_dir=submit_dir, credentials_dir=cred_dir)
+
+    handle = 'handle'
+    scopes = {
+        'token://': 'storage.read:/ storage.write:/data'
+    }
+    _, services = sub.condor_oauth_block(handle, scopes)
+    assert services == {'token://': 'ttt.handle+token://'}
+
+    scopes = {
+        'token://': 'storage.read:/ storage.write:/data',
+        'token2': 'storage.read:/'
+    }
+    _, services = sub.condor_oauth_block(handle, scopes)
+    assert services == {'token://': 'ttt.handle+token://', 'token2': 't2.handle+token2'}
+
+    scopes = {
+        'token3': 'storage.read:/'
+    }
+    with pytest.raises(RuntimeError, match='unknown token scope url prefix'):
+        sub.condor_oauth_block(handle, scopes)
+
+
+def test_CondorSubmit_condor_oauth_block_lines(schedd):
     override = ['queue.type=condor', 'queue.site_temp=http://foo.bar']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
     cfg['queue']['x509proxy'] = '/tmp/x509'

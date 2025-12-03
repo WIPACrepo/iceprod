@@ -344,7 +344,7 @@ use_oauth_services = {','.join(oauth_scopes.keys())}
             i += 1
         path.mkdir(parents=True)
         return path
-    
+
     def add_oauth_tokens(self, provider_transforms: dict, tokens: list[Any]):
         """
         Add OAuth tokens to HTCondor
