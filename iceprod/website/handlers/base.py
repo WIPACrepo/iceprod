@@ -94,20 +94,20 @@ class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):  # type: 
         return None
 
     @property
-    def auth_access_token(self) -> bytes | None:
+    def auth_access_token(self) -> str | None:
         assert self.auth
         if self.session:
             ret = self.session.get('access_token', None)
             if not isinstance(ret, str):
                 logger.info('bad access token type: not str')
                 return None
-            return ret.encode('utf-8')
+            return ret
         return None
 
     @auth_access_token.setter
-    def auth_access_token(self, val: bytes):
+    def auth_access_token(self, val: str):
         if self.session:
-            self.session['access_token'] = val.decode('utf-8')
+            self.session['access_token'] = val
         else:
             raise RuntimeError('no valid session')
 
@@ -121,10 +121,10 @@ class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):  # type: 
             return ret.encode('utf-8')
         return None
 
-    @auth_refresh_token.setter  # type: ignore[override]
-    def auth_refresh_token(self, val: bytes):
+    @auth_refresh_token.setter
+    def auth_refresh_token(self, val: str):
         if self.session:
-            self.session['refresh_token'] = val.decode('utf-8')
+            self.session['refresh_token'] = val
         else:
             raise RuntimeError('no valid session')
 
@@ -392,11 +392,15 @@ class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler
         namespace['rest_api'] = self.rest_api
         return namespace
 
-    def update_refresh_token(self, access, refresh):
+    def update_refresh_token(self, access: str | bytes, refresh: str | bytes | None):
         if access:
-            self.auth_access_token = access
+            if isinstance(access, bytes):
+                access = access.decode('utf-8')
+            self.auth_access_token = access  # type: ignore
         if refresh:
-            self.auth_refresh_token = refresh
+            if isinstance(refresh, bytes):
+                refresh = refresh.decode('utf-8')
+            self.auth_refresh_token = refresh  # type: ignore
 
     async def get_current_user_async(self) -> str | None:
         try:
