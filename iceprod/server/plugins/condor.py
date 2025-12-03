@@ -706,18 +706,20 @@ class Grid(grid.BaseGrid):
             tasks_by_dataset[f'{task.dataset.dataset_num}-{task.name}'].append(task)
         for key in tasks_by_dataset:
             tasks = tasks_by_dataset[key]
-            dataset_num, task_name = key.split('-')[:2]
+            dataset_num, task_name = key.split('-', 1)
             success = 'success'
             try:
                 ret = await self.submitter.submit(tasks, cur_jel)
                 self.jobs.update(ret)
             except Exception as e:
-                logger.warning('submit failed for dataset %s', key, exc_info=True)
+                logger.warning('submit failed for dataset %s task %s', dataset_num, task_name, exc_info=True)
                 async with asyncio.TaskGroup() as tg:
                     for task in tasks:
                         j = CondorJob(dataset_id=task.dataset.dataset_id, task_id=task.task_id, instance_id=task.instance_id)
                         tg.create_task(self.task_reset(j, reason=f'HTCondor submit failed: {e}'))
                 success = 'fail'
+            else:
+                logger.info('submit succeeded for dataset %s task %s', dataset_num, task_name)
             prom_counter.labels({'dataset': dataset_num, 'task': task_name, 'success': success}).inc(len(tasks))
 
     @PromWrapper(lambda self: self.prometheus.gauge('iceprod_grid_queue_num', 'IceProd grid queue status gauges', labels=['status'], finalize=False))
