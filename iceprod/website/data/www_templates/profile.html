@@ -63,6 +63,7 @@ form button {
         <p>TYPE: {{ user_creds[url]["type"]}}</p>
       </div>
     {% end %}
+    {#
       <button onclick="$('#add_user_cred_form').show()">Add New User Credentials</button>
       <form method="post" id="add_user_cred_form" style="display: none">
         {% module xsrf_form_html() %}
@@ -97,6 +98,7 @@ form button {
         </div>
         <button name="add_user_cred" value="true" type="submit">Submit</button>
       </form>
+      #}
     </div>
     {% if groups != ['users'] %}
     <h4>Group Credentials</h4>
@@ -109,6 +111,7 @@ form button {
           <p>TYPE: {{ group_creds[g][url]["type"]}}</p>
         </div>
       {% end %}
+      {#
         <button onclick="$('#add_group_{{ g }}_cred_form').show()">Add New Group Credentials</button>
         <form method="post" id="add_group_{{ g }}_cred_form" style="display: none">
           {% module xsrf_form_html() %}
@@ -144,6 +147,7 @@ form button {
           </div>
           <button name="add_group_cred" value="true" type="submit">Submit</button>
         </form>
+        #}
       </div>
     {% end %}
     {% end %}
