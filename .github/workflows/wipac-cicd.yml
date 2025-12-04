@@ -222,7 +222,7 @@ jobs:
       image_namespace: wipacrepo
       image_name: iceprod
       mode: CVMFS_BUILD
-      cvmfs_dest_dir: "iceprod"
+      cvmfs_dest_dir: "iceprod/wipacrepo"
       build_args: |
         SETUPTOOLS_SCM_PRETEND_VERSION=${{ needs.release-version.outputs.next-version }}
       extra_build_tag: ${{ needs.release-version.outputs.next-version }}
