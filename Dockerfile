@@ -21,4 +21,4 @@ RUN python3 -m venv $VIRTUAL_ENV
 
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
-RUN --mount=type=bind,source=.git,target=.git,ro pip install --no-cache .
+RUN --mount=type=bind,source=.git,target=.git,ro pip install --no-cache -e .
