@@ -86,10 +86,10 @@ class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):  # type: 
         """Get the current username from the cookie"""
         try:
             assert self.auth
-            username = self.get_secure_cookie('iceprod_username')
-            if not username:
+            user = self.get_secure_cookie('iceprod_username')
+            if not user:
                 raise RuntimeError('missing iceprod_username cookie')
-            username = username.decode('utf-8')
+            username = user.decode('utf-8')
             if session := self._session_mgr.get_session(username):
                 if refresh_token := session.get('refresh_token', None):
                     self.auth.validate(refresh_token)
