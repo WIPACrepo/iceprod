@@ -95,7 +95,7 @@ class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):  # type: 
                     self.auth.validate(refresh_token)
             return username
         except Exception:
-            logger.info('failed to get username')
+            logger.info('failed to get username', exc_info=True)
         return None
 
     @property
