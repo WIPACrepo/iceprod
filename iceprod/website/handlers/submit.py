@@ -127,6 +127,7 @@ class Submit(TokenClients, PublicHandler):  # type: ignore[misc]
             raise tornado.web.HTTPError(500, 'session is missing')
 
         config_str = self.get_body_argument('submit_box')
+        logger.info('config_str: %r', config_str)
         description = self.get_body_argument('description')
 
         config = self.DEFAULT_CONFIG.copy()
