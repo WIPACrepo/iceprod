@@ -427,6 +427,33 @@ class CondorSubmit:
             else:
                 logger.warning('unused token for transfer_prefix %r', data['transfer_prefix'])
 
+    def oauth_submit(self, task: Task) -> tuple[dict[str, str], str, str]:
+        """Do oauth stuff for submit"""
+        task_config = task.get_task_config()
+
+        handle = f'{task.dataset.dataset_id}{task.name}'
+        token_transform = self.condor_oauth_url_transform(handle, task_config['token_scopes'])
+
+        services_used = defaultdict(set)
+        for service in token_transform.values():
+            s,h = service.split('+',1)[0].split('.',1)
+            services_used[s].add(h)
+
+        scratch = self.condor_oauth_scratch(task)
+        if scratch:
+            parts = scratch.split()[0].split('_')
+            services_used[parts[0]].add(parts[-1])
+
+        block = f"""+oauth_file_transform = False
+{'use_oauth_services = ' + scratch.split('_',1)[0] if scratch else ''}
++OAuthServicesNeeded = "{' '.join(f'{s}*{h}' for s,handles in services_used.items() for h in handles)}"
+{scratch}
+"""
+
+        reqs = ' && '.join(f'stringListMember("{name}", HasFileTransferPluginMethods)' for name in services_used)
+
+        return token_transform, block, reqs
+
     @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_submit', 'IceProd grid condor.submit calls', buckets=HistogramBuckets.MINUTE))
     @AsyncPromWrapper(lambda self: self.prometheus.histogram('iceprod_grid_condor_schedd_submit', 'IceProd grid htcondor.schedd.submit calls', buckets=HistogramBuckets.MINUTE))
     async def submit(self, prom_histogram, tasks: list[Task], jel: Path) -> dict[CondorJobId, CondorJob]:
@@ -448,26 +475,7 @@ class CondorSubmit:
         # the tasks all have the same basic config, so just get the first one
         task_config = tasks[0].get_task_config()
 
-        oauth_handle = f'{tasks[0].dataset.dataset_id}{tasks[0].name}'
-        token_transform = self.condor_oauth_url_transform(oauth_handle, task_config['token_scopes'])
-
-        oauth_services_used = defaultdict(set)
-        for service in token_transform.values():
-            s,h = service.split('+',1)[0].split('.',1)
-            oauth_services_used[s].add(h)
-
-        oauth_scratch = self.condor_oauth_scratch(tasks[0])
-        if oauth_scratch:
-            parts = oauth_scratch.split()[0].split('_')
-            oauth_services_used[parts[0]].add(parts[-1])
-
-        oauth_block = f"""+oauth_file_transform = False
-{'use_oauth_services = ' + oauth_scratch.split('_',1)[0] if oauth_scratch else ''}
-+OAuthServicesNeeded = "{' '.join(f'{s}*{h}' for s,handles in oauth_services_used.items() for h in handles)}"
-{oauth_scratch}
-"""
-
-        oauth_reqs = ' && '.join(f'stringListMember("{name}", HasFileTransferPluginMethods)' for name in oauth_services_used)
+        oauth_file_transform, oauth_block, oauth_reqs = self.oauth_submit(tasks[0])
 
         submitfile = f"""
 output = $(initialdir)/condor.out
@@ -531,12 +539,12 @@ transfer_output_remaps = $(outremaps)
             logger.debug('running task with exe %r', executable)
 
             ads = self.AD_DEFAULTS.copy()
-            ads.update(self.condor_infiles(script.infiles, token_transform))
-            ads.update(self.condor_outfiles(script.outfiles, token_transform))
+            ads.update(self.condor_infiles(script.infiles, oauth_file_transform))
+            ads.update(self.condor_outfiles(script.outfiles, oauth_file_transform))
             ads.update(self.condor_resource_reqs(task))
 
             if task.oauth_tokens:
-                self.add_oauth_tokens(token_transform, task.oauth_tokens)
+                self.add_oauth_tokens(oauth_file_transform, task.oauth_tokens)
 
             container = task_config.get('container', None)
             if not container:
