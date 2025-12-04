@@ -228,29 +228,68 @@ class CondorSubmit:
                             ret[line.split('=')[-1].strip(' ";')] = str(p)
         return ret
 
-    def condor_oauth_block(self, handle_name: str, token_scopes: dict[str, str]) -> tuple[str, dict[str, str]]:
+    def condor_oauth_url_transform(self, handle_name: str, token_scopes: dict[str, str]) -> dict[str, str]:
         """
-        Convert from token scopes to HTCondor oauth syntax.
+        Convert from token scopes to HTCondor oauth url prefixes.
 
-        Returns: (submit string, transfer prefix transform)
+        Returns: transfer prefix transform
         """
-        oauth_scopes = {}
         transfer_transforms = {}
-        for url_prefix, scope in token_scopes.items():
+        for url_prefix in token_scopes:
             if service_name := self.oauth_service_mapping.get(url_prefix, None):
-                oauth_scopes[service_name] = scope
                 transfer_transforms[url_prefix] = f'{service_name}.{handle_name}+{url_prefix}'
             else:
                 raise RuntimeError('unknown token scope url prefix: %r', url_prefix)
-        oauth_permissions = [
-            f'{service}_oauth_permissions_{handle_name} = {scopes}'
-            for service, scopes in oauth_scopes.items()
-        ]
-        ret = f"""+oauth_file_transform = False
-use_oauth_services = {','.join(oauth_scopes.keys())}
-{'\n'.join(oauth_permissions)}
-"""
-        return (ret, transfer_transforms)
+        return transfer_transforms
+    
+    def condor_oauth_scratch(self, task: Task) -> str | None:
+        """
+        Test if scratch is in use, and if so ask for a token.
+        """
+        # should have filled from grid._convert_to_task()
+        site_temp = task.dataset.config['options']['site_temp']
+        service_name = ''
+        scope_path = ''
+        for url_prefix in self.oauth_service_mapping:
+            if site_temp.startswith(url_prefix):
+                service_name = self.oauth_service_mapping[url_prefix]
+                scope_path = site_temp.split(url_prefix,1)[1]
+                logger.info('scope_path: %s', scope_path)
+                logger.info('site_temp: %s', site_temp)
+                logger.info('url_prefix: %s', url_prefix)
+                break
+        else:
+            return None
+
+        in_scratch = False
+        out_scratch = False
+        def eval_data(data):
+            nonlocal in_scratch, out_scratch
+            for d in data:
+                if d['type'] != 'permanent':
+                    if d['movement'] in ('input', 'both'):
+                        in_scratch = True
+                    if d['movement'] in ('output', 'both'):
+                        out_scratch = True
+        if task.task_files:
+            eval_data(task.task_files)
+        task_config = task.get_task_config()
+        eval_data(task_config.get('data',[]))
+        for tray in task_config['trays']:
+            eval_data(tray.get('data',[]))
+            for module in tray['modules']:
+                eval_data(module.get('data',[]))
+
+        scopes = []
+        if in_scratch:
+            scopes.append(f'storage.read:{scope_path}')
+        if out_scratch:
+            scopes.append(f'storage.modify:{scope_path}')
+        
+        if scopes:
+            return f'{service_name}_oauth_permissions_scratch = {" ".join(scopes)}'
+        else:
+            return None
 
     @staticmethod
     def condor_os_container(os_arch: list[str] | str) -> str:
@@ -408,10 +447,25 @@ use_oauth_services = {','.join(oauth_scopes.keys())}
         task_config = tasks[0].get_task_config()
 
         oauth_handle = f'{tasks[0].dataset.dataset_id}{tasks[0].name}'
-        oauth_block, token_transform = self.condor_oauth_block(oauth_handle, task_config['token_scopes'])
+        token_transform = self.condor_oauth_url_transform(oauth_handle, task_config['token_scopes'])
 
-        services_used = set(service.split('.',1)[0] for service in token_transform.values())
-        oauth_reqs = ' && '.join(f'stringListMember("{name}", HasFileTransferPluginMethods)' for name in services_used)
+        oauth_services_used = defaultdict(set)
+        for service in token_transform.values():
+            s,h = service.split('+',1)[0].split('.',1)
+            oauth_services_used[s].add(h)
+
+        oauth_scratch = self.condor_oauth_scratch(tasks[0])
+        if oauth_scratch:
+            parts = oauth_scratch.split()[0].split('_')
+            oauth_services_used[parts[0]].add(parts[-1])
+
+        oauth_block = f"""+oauth_file_transform = False
+{'use_oauth_services = ' + oauth_scratch.split('_',1)[0] if oauth_scratch else ''}
++OAuthServicesNeeded = "{' '.join(f'{s}*{h}' for s,handles in oauth_services_used.items() for h in handles)}"
+{oauth_scratch}
+"""
+
+        oauth_reqs = ' && '.join(f'stringListMember("{name}", HasFileTransferPluginMethods)' for name in oauth_services_used)
 
         submitfile = f"""
 output = $(initialdir)/condor.out

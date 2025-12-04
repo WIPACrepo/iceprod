@@ -191,7 +191,7 @@
       "default": ""
     },
     "oauth_services": {
-      "description": "OAuth service mapping from url to service name",
+      "description": "OAuth service mapping from transfer url prefix to service name",
       "type": "object",
       "default": {},
       "properties": {},

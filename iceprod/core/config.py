@@ -172,5 +172,5 @@ class Task:
             data.append(d)
         self.task_files = data
 
-    def get_task_config(self):
+    def get_task_config(self) -> dict[Any, Any]:
         return self.dataset.config['tasks'][self.task_index]

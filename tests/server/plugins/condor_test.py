@@ -217,7 +217,7 @@ def test_CondorSubmit_condor_outfiles_maybe(schedd):
     assert ret['transfer_output_remaps'] == 'bar = iceprod-plugin://maybe-http://foo.test/foo'
 
 
-def test_CondorSubmit_condor_oauth_block_scopes(schedd):
+def test_CondorSubmit_condor_oauth_transform(schedd):
     override = ['queue.type=condor', 'oauth_services.token://=ttt', 'oauth_services.token2=t2']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
     submit_dir = Path(os.path.expanduser(os.path.expandvars(cfg['queue']['submit_dir'])))
@@ -229,25 +229,25 @@ def test_CondorSubmit_condor_oauth_block_scopes(schedd):
     scopes = {
         'token://': 'storage.read:/ storage.write:/data'
     }
-    _, services = sub.condor_oauth_block(handle, scopes)
+    services = sub.condor_oauth_url_transform(handle, scopes)
     assert services == {'token://': 'ttt.handle+token://'}
 
     scopes = {
         'token://': 'storage.read:/ storage.write:/data',
         'token2': 'storage.read:/'
     }
-    _, services = sub.condor_oauth_block(handle, scopes)
+    services = sub.condor_oauth_url_transform(handle, scopes)
     assert services == {'token://': 'ttt.handle+token://', 'token2': 't2.handle+token2'}
 
     scopes = {
         'token3': 'storage.read:/'
     }
     with pytest.raises(RuntimeError, match='unknown token scope url prefix'):
-        sub.condor_oauth_block(handle, scopes)
+        sub.condor_oauth_url_transform(handle, scopes)
 
 
-def test_CondorSubmit_condor_oauth_block_lines(schedd):
-    override = ['queue.type=condor', 'queue.site_temp=http://foo.bar']
+def test_CondorSubmit_condor_oauth_scratch(schedd):
+    override = ['queue.type=condor']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
     cfg['queue']['x509proxy'] = '/tmp/x509'
     cfg['oauth_services'] = {
@@ -258,18 +258,67 @@ def test_CondorSubmit_condor_oauth_block_lines(schedd):
 
     sub = iceprod.server.plugins.condor.CondorSubmit(cfg=cfg, submit_dir=submit_dir, credentials_dir=cred_dir)
 
-    scopes = {
-        'token://foo.bar': 'storage.modify:/baz'
-    }
-    lines, transforms = sub.condor_oauth_block('datasettaskname', scopes)
 
-    assert transforms == {
-        'token://foo.bar': 'token.datasettaskname+token://foo.bar'
+    dataset = MagicMock()
+    dataset.dataset_id = 'dataset'
+    dataset.dataset_num = 0
+    dataset.config = {
+        'options': {
+            'site_temp': 'token://foo.bar/scratch',
+        },
+        'steering': {
+            'parameters': {},
+        },
+        'tasks': [{
+            'name': 'generate',
+            'batchsys': {},
+            'requirements': {},
+            'token_scopes': {},
+            'trays': [{
+                'iterations': 1,
+                'modules': [{
+                    'name': 'foo',
+                    'src': 'foo.py',
+                    'args': '',
+                    'env_shell': None,
+                    'env_clear': True,
+                    'configs': None,
+                }]
+            }],
+            'data': [{
+                'movement': 'output',
+                'local': 'foo.tgz',
+                'remote': '',
+                'type': 'job_temp',
+                'transfer': True,
+            }]
+        }]
     }
-    assert lines == """+oauth_file_transform = False
-use_oauth_services = token
-token_oauth_permissions_datasettaskname = storage.modify:/baz
-"""
+    dataset.fill_defaults()
+    dataset.validate()
+    logging.info('config: %r', dataset.config)
+    job = Job(
+        dataset=dataset,
+        job_id='job',
+        job_index=1,
+        status='processing',
+    )
+    task = Task(
+        dataset=dataset,
+        job=job,
+        task_id='task',
+        task_index=0,
+        name='generate',
+        depends=[],
+        requirements={'cpu': 1},
+        status='queued',
+        site='site',
+        stats={},
+    )
+
+    line = sub.condor_oauth_scratch(task)
+
+    assert line == 'token_oauth_permissions_scratch = storage.modify:/scratch'
 
 
 def test_CondorSubmit_add_oauth_tokens(schedd, credd):
@@ -321,11 +370,11 @@ def test_CondorSubmit_add_oauth_tokens(schedd, credd):
 
 
 async def test_CondorSubmit_submit(schedd):
-    override = ['queue.type=condor', 'queue.site_temp=http://foo.bar']
+    override = ['queue.type=condor', 'queue.site_temp=pelican://foo.bar/scratch']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
-    cfg['queue']['x509proxy'] = '/tmp/x509'
     cfg['oauth_services'] = {
-        'token://foo.bar': 'token'
+        'osdf:///': 'token',
+        'pelican://foo.bar': 'pelican',
     }
     submit_dir = Path(os.path.expanduser(os.path.expandvars(cfg['queue']['submit_dir'])))
     cred_dir = Path(os.path.expanduser(os.path.expandvars(cfg['queue']['credentials_dir'])))
@@ -340,7 +389,7 @@ async def test_CondorSubmit_submit(schedd):
     dataset.dataset_num = 0
     dataset.config = {
         'options': {
-            'site_temp': 'http://foo.bar',
+            'site_temp': 'pelican://foo.bar/scratch',
         },
         'steering': {
             'parameters': {},
@@ -350,7 +399,7 @@ async def test_CondorSubmit_submit(schedd):
             'batchsys': {},
             'requirements': {},
             'token_scopes': {
-                'token://foo.bar': 'storage.modify:/baz',
+                'osdf:///': 'storage.modify:/baz',
             },
             'trays': [{
                 'iterations': 1,
@@ -379,7 +428,7 @@ async def test_CondorSubmit_submit(schedd):
                 'movement': 'output',
                 'type': 'permanent',
                 'local': '',
-                'remote': 'token://foo.bar/baz',
+                'remote': 'osdf:///baz',
                 'transfer': 'maybe',
             }]
         }]
@@ -393,7 +442,7 @@ async def test_CondorSubmit_submit(schedd):
     tokens = [
         {
             'url': 'http://issuer.bar',
-            'transfer_prefix': 'token://foo.bar',
+            'transfer_prefix': 'osdf:///',
             'access_token': 'access',
             'refresh_token': 'refresh',
         }
@@ -424,12 +473,23 @@ async def test_CondorSubmit_submit(schedd):
     assert sub.condor_schedd.submit.call_count == 1
     itemdata = list(sub.condor_schedd.submit.call_args.kwargs['itemdata'])[0]
     logging.info('itemdata: %r', itemdata)
-    assert itemdata['infiles'].strip('"') == '/tmp/x509'
-    assert itemdata['outremaps'].strip('"') == 'foo.tgz = http://foo.bar/0/1/foo.tgz'
+    assert itemdata['infiles'].strip('"') == ''
+    assert itemdata['outfiles'].strip('"') == ''
+    assert itemdata['outremaps'].strip('"') == ''
 
     assert sub.add_oauth_tokens.call_count == 1
-    assert sub.add_oauth_tokens.call_args.args == ({'token://foo.bar': 'token.datasetgenerate+token://foo.bar'}, tokens)
+    assert sub.add_oauth_tokens.call_args.args == ({'osdf:///': 'token.datasetgenerate+osdf:///'}, tokens)
 
+    submitfile = sub.condor_schedd.submit.call_args.args[0]
+    logging.info('submitfile: %s', submitfile)
+    assert submitfile['use_oauth_services'] == 'pelican'
+    assert submitfile['My.OAuthServicesNeeded'] == '"token*datasetgenerate pelican*scratch"'
+
+    exe = open(submit_dir / 'today' / 'task' / 'task_runner.sh').read()
+    logging.info('exe: %s', exe)
+    assert 'pelican object put foo.tgz pelican://foo.bar/scratch/0/1/foo.tgz' in exe
+    assert 'if [ -f baz ]' in exe
+    assert 'pelican object put baz osdf:///baz' in exe
 
 async def test_Grid_save_load_timestamp(schedd, i3prod_path):
     override = ['queue.type=htcondor']
