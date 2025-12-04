@@ -2,8 +2,31 @@ import logging
 import pytest
 from rest_tools.client import RestClient
 
-from iceprod.core.config import Dataset, Job, Task
+from iceprod.core.config import Config, Dataset, Job, Task
 from iceprod.server.util import nowstr
+
+
+def test_config():
+    config = {'tasks':[
+        {
+            'name': 'testing',
+            'trays': [{
+                'modules': [{
+                    'src': '/usr/bin/python3',
+                    'args': ''
+                }]
+            }],
+            'data': [
+                {
+                    'remote': 'token:///data/sim/IceCube/2025/file.i3.zst',
+                    'movement': 'input'
+                }
+            ]
+        }
+    ]}
+    c = Config(config)
+    c.fill_defaults()
+    c.validate()
 
 
 def test_dataset_dataclasses():

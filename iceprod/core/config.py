@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import importlib.resources
 import json
 import logging
+from typing import Any
 try:
     from typing import Self
 except ImportError:
@@ -128,8 +129,9 @@ class Task:
     status: str
     site: str
     stats: dict
-    task_files: list | None = None
+    task_files: list[dict[Any, Any]] | None = None
     instance_id: str | None = None
+    oauth_tokens: list[Any] | None = None
 
     @classmethod
     async def load_from_api(cls, dataset_id: str, task_id: str, rest_client: RestClient) -> Self:
@@ -170,5 +172,5 @@ class Task:
             data.append(d)
         self.task_files = data
 
-    def get_task_config(self):
+    def get_task_config(self) -> dict[Any, Any]:
         return self.dataset.config['tasks'][self.task_index]

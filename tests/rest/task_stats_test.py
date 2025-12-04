@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 import pytest
 import requests.exceptions
@@ -51,6 +52,7 @@ async def test_rest_task_stats_bulk(server):
     url, kwargs = client._prepare('GET', f'/datasets/{data["dataset_id"]}/bulk/task_stats', {'buffer_size': 2})
     ret = await asyncio.wrap_future(client.session.request('GET', url, **kwargs))
     ret.raise_for_status()
+    logging.info('ret.content: %r', ret.content)
     task_stats = [json_decode(r) for r in ret.content.split(b'\n') if r.strip()]
     ret_task_ids = [t['task_stat_id'] for t in task_stats]
     assert ret_task_ids == [task_stat_id, task_stat_id2, task_stat_id3]

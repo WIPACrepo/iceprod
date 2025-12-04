@@ -25,6 +25,7 @@ accomplished via an internal evironment for each scope.
 Data movement should be defined at the task level.
 """
 
+from collections.abc import Iterable
 from contextlib import contextmanager
 import copy
 from dataclasses import dataclass
@@ -32,7 +33,7 @@ from enum import StrEnum
 import logging
 import os
 from pathlib import Path
-from typing import Any, Iterator, Optional
+from typing import Any, Iterator, Optional, TextIO
 
 
 from iceprod.core import config
@@ -405,7 +406,7 @@ class WriteToScript:
         self.options['task'] = self.task.name
         self.options['debug'] = self.task.dataset.debug
 
-    def _add_input_files(self, files, f=None):
+    def _add_input_files(self, files: Iterable[Data], f: TextIO | None = None):
         if f:
             for data in files:
                 if data.transfer is Transfer.FALSE:
@@ -419,12 +420,19 @@ class WriteToScript:
                     print(f'# Input: {data}', file=f)
                     print(' '.join(cmd), file=f)
                     print('', file=f)
+                elif data.url.startswith('pelican://') or data.url.startswith('osdf://'):
+                    cmd = [
+                        'pelican', 'object', 'get', data.url, data.local
+                    ]
+                    print(f'# Input: {data}', file=f)
+                    print(' '.join(cmd), file=f)
+                    print('', file=f)
                 else:
                     self.infiles.add(data)
         else:
             self.infiles.update(files)
 
-    def _add_output_files(self, files, f=None):
+    def _add_output_files(self, files: Iterable[Data], f: TextIO | None = None):
         if f:
             for data in files:
                 if data.transfer is Transfer.FALSE:
@@ -434,6 +442,19 @@ class WriteToScript:
                     cmd_core = [
                         '/cvmfs/icecube.opensciencegrid.org/iceprod/v2.7.1/env-shell.sh',
                         'python', '-', "<<____HERE\n" + python_cmd + '\n____HERE\n',
+                    ]
+                    if data.transfer is Transfer.MAYBE:
+                        cmd = [f'if [ -f {data.local} ]; then\n']
+                        cmd.extend(cmd_core)
+                        cmd += ['fi']
+                    else:
+                        cmd = cmd_core
+                    print(f'# Output: {data}', file=f)
+                    print(' '.join(cmd), file=f)
+                    print('', file=f)
+                elif data.url.startswith('pelican://') or data.url.startswith('osdf://'):
+                    cmd_core = [
+                        'pelican', 'object', 'put', data.local, data.url
                     ]
                     if data.transfer is Transfer.MAYBE:
                         cmd = [f'if [ -f {data.local} ]; then\n']

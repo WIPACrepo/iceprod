@@ -2,6 +2,7 @@ import logging
 import json
 import uuid
 
+from iceprod.core.jsonUtil import json_encode
 import tornado.web
 
 from ..base_handler import APIBase
@@ -120,39 +121,33 @@ class DatasetsBulkTaskStatsHandler(APIBase):
         task_id = None
         data = []
         n = 0
+
+        async def _write_data():
+            nonlocal n
+            ret = sorted(data, key=lambda x: x['create_date'])
+            if keys:
+                ret = [{k:d[k] for k in d if k in keys} for d in ret]
+            if last:
+                self.write(json_encode(ret[-1]) + '\n')
+            else:
+                for ret in data:
+                    self.write(json_encode(ret) + '\n')
+            n += 1
+            if n >= buffer_size:
+                n = 0
+                await self.flush()
+
         async for row in self.db.task_stats.find(query, projection=projection).sort([('task_id',1)]):
             if row['task_id'] == task_id:
                 data.append(row)
                 continue
             if data:
-                ret = sorted(data, key=lambda x: x['create_date'])
-                if keys:
-                    ret = [{k:d[k] for k in d if k in keys} for d in ret]
-                if last:
-                    self.write(ret[-1])
-                    self.write('\n')
-                else:
-                    for ret in data:
-                        self.write(ret)
-                        self.write('\n')
-                n += 1
-                if n >= buffer_size:
-                    n = 0
-                    await self.flush()
+                await _write_data()
             data = [row]
             task_id = row['task_id']
 
         if data:
-            ret = sorted(data, key=lambda x: x['create_date'])
-            if keys:
-                ret = [{k:d[k] for k in d if k in keys} for d in ret]
-            if last:
-                self.write(ret[-1])
-                self.write('\n')
-            else:
-                for ret in data:
-                    self.write(ret)
-                    self.write('\n')
+            await _write_data()
         self.finish()
 
 

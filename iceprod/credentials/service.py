@@ -1,47 +1,13 @@
 import asyncio
-import json
 import logging
 import time
 
-from cachetools.func import ttl_cache
 import httpx
 import jwt
-from rest_tools.utils.auth import OpenIDAuth
+
+from .util import ClientCreds, get_expiration
 
 logger = logging.getLogger('refresh_service')
-
-
-@ttl_cache(maxsize=256, ttl=3600)
-def get_auth(url):
-    return OpenIDAuth(url)
-
-
-def get_expiration(token):
-    """
-    Find a token's expiration time.
-
-    Args:
-        token (str): jwt token
-    Returns:
-        float: expiration unix time
-    """
-    return jwt.decode(token, options={"verify_signature": False})['exp']
-
-
-def is_expired(cred):
-    """
-    Check if an OAuth credential is expired.
-
-    Will mark credential as expired if the access token has less than 5 seconds left.
-
-    Args:
-        cred (dict): credential dict
-    Returns:
-        bool: True if expired
-    """
-    if cred['type'] != 'oauth':
-        return False
-    return cred['expiration'] < (time.time() + 5)
 
 
 class RefreshService:
@@ -57,7 +23,8 @@ class RefreshService:
     """
     def __init__(self, database, clients, refresh_window, expire_buffer, service_run_interval):
         self.db = database
-        self.clients = json.loads(clients)
+        self.clients = ClientCreds(clients)
+        self.clients.validate()
         self.refresh_window = refresh_window * 3600
         self.expire_buffer = expire_buffer * 3600
 
@@ -71,26 +38,31 @@ class RefreshService:
             raise Exception('cred does not have a refresh token')
 
         openid_url = jwt.decode(cred['refresh_token'], options={"verify_signature": False})['iss']
-        if openid_url not in self.clients:
+        try:
+            client = self.clients.get_client(openid_url)
+        except KeyError:
             raise Exception('jwt issuer not registered')
-        auth = get_auth(openid_url)
 
         # try the refresh token
         args = {
             'grant_type': 'refresh_token',
             'refresh_token': cred['refresh_token'],
-            'client_id': self.clients[openid_url][0],
+            'client_id': client.client_id,
         }
-        if len(self.clients[openid_url]) > 1:
-            args['client_secret'] = self.clients[openid_url][1]
+        if client.client_secret:
+            args['client_secret'] = client.client_secret
+        if cred.get('scope', None) is not None:
+            args['scope'] = cred['scope']
+
+        logging.warning('refreshing on %s with args %r', client.auth.token_url, args)
 
         new_cred = {}
         try:
-            async with httpx.AsyncClient() as client:
-                r = await client.post(auth.token_url, data=args)
+            async with httpx.AsyncClient() as http_client:
+                r = await http_client.post(client.auth.token_url, data=args)
             r.raise_for_status()
             req = r.json()
-        except httpx.HTTPError as exc:
+        except httpx.HTTPStatusError as exc:
             logger.debug('%r', exc.response.text)
             try:
                 req = exc.response.json()
@@ -103,11 +75,66 @@ class RefreshService:
             new_cred['access_token'] = req['access_token']
             new_cred['refresh_token'] = req['refresh_token']
             new_cred['expiration'] = get_expiration(req['access_token'])
+            new_cred['scope'] = req.get('scope', cred.get('scope', ''))
+            logger.debug('%r', new_cred)
+
+        return new_cred
+
+    async def exchange_cred(self, cred, *, client_id: str):
+        """Exchange a refresh token for one on another client, and return that."""
+        if not cred.get('refresh_token'):
+            raise Exception('cred does not have a refresh token')
+        if not cred.get('access_token'):
+            raise Exception('cred does not have an access token')
+
+        openid_url = jwt.decode(cred['refresh_token'], options={"verify_signature": False})['iss']
+        try:
+            client = self.clients.get_client(openid_url)
+        except KeyError:
+            raise Exception('jwt issuer not registered')
+
+        # try the refresh token
+        args = {
+            'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
+            'client_id': client.client_id,
+            'audience': client_id,  # target client
+            'scope': cred['scope'],
+            'subject_token': cred['access_token'],
+            'subject_token_type': 'urn:ietf:params:oauth:token-type:access_token',
+        }
+        if client.client_secret:
+            args['client_secret'] = client.client_secret
+        if cred.get('scope', None) is not None:
+            args['scope'] = cred['scope']
+
+        logging.warning('exchanging on %s with args %r', client.auth.token_url, args)
+
+        new_cred = {}
+        try:
+            async with httpx.AsyncClient() as http_client:
+                r = await http_client.post(client.auth.token_url, data=args)
+            r.raise_for_status()
+            req = r.json()
+        except httpx.HTTPStatusError as exc:
+            logger.debug('%r', exc.response.text)
+            try:
+                req = exc.response.json()
+            except Exception:
+                req = {}
+            error = req.get('error', '')
+            raise Exception(f'Exchange request failed: {error}') from exc
+        else:
+            logger.debug('OpenID token exchanged')
+            new_cred['access_token'] = req['access_token']
+            new_cred['refresh_token'] = req['refresh_token']
+            new_cred['expiration'] = get_expiration(req['access_token'])
+            new_cred['scope'] = req.get('scope', cred.get('scope', ''))
             logger.debug('%r', new_cred)
 
         return new_cred
 
     def should_refresh(self, cred):
+        logger.info('should_refresh for cred %r', cred)
         now = time.time()
         refresh_exp = now + self.expire_buffer
         last_use_date = now - self.refresh_window
@@ -133,49 +160,76 @@ class RefreshService:
                 'type': 'oauth',
                 'last_use': {'$gt': last_use_check},
                 'expiration': {'$lt': exp_check},
+                'scope': {'$exists': True},
             }
 
-            user_creds = {}
-            async for row in self.db.user_creds.find(filters, {'_id': False}):
-                user_creds[row['url']] = row
-
-            for cred in user_creds.values():
-                if cred['type'] != 'oauth':
-                    continue
-                if not cred['refresh_token']:
-                    logger.info('skipping non-refresh token for user %s, url %s', cred['username'], cred['url'])
-                    continue
-                logger.debug('cred: %r', cred)
-                try:
-                    if self.should_refresh(cred):
-                        args = await self.refresh_cred(cred)
-                        await self.db.user_creds.update_one({'username': cred['username'], 'url': cred['url']}, {'$set': args})
-                        logger.info('refreshed token for user %s, url %s', cred['username'], cred['url'])
-                    else:
-                        logger.info('not yet time to refresh token for user %s, url %s', cred['username'], cred['url'])
-                except Exception:
-                    logger.error('error refreshing token for user %s, url: %s', cred['username'], cred['url'], exc_info=True)
-
-            group_creds = {}
-            async for row in self.db.group_creds.find(filters, {'_id': False}):
-                group_creds[row['url']] = row
-
-            for cred in group_creds.values():
-                if cred['type'] != 'oauth':
-                    continue
-                if not cred['refresh_token']:
-                    logger.info('skipping non-refresh token for group %s, url %s', cred['groupname'], cred['url'])
-                    continue
-                try:
-                    if self.should_refresh(cred):
-                        args = await self.refresh_cred(cred)
-                        await self.db.group_creds.update_one({'groupname': cred['groupname'], 'url': cred['url']}, {'$set': args})
-                        logger.info('refreshed token for group %s, url %s', cred['groupname'], cred['url'])
-                    else:
-                        logger.info('not yet time to refresh token for group %s, url %s', cred['groupname'], cred['url'])
-                except Exception:
-                    logger.error('error refreshing token for group %s, url: %s', cred['groupname'], cred['url'], exc_info=True)
+            await self._run_once_user(filters)
+            await self._run_once_group(filters)
+            await self._run_once_dataset(filters)
 
             self.last_success_time = time.time()
         except Exception:
             logger.error('error running refresh', exc_info=True)
+
+    async def _run_once_user(self, filters):
+        user_creds = {}
+        async for row in self.db.user_creds.find(filters, {'_id': False}):
+            user_creds[row['url']] = row
+
+        for cred in user_creds.values():
+            if cred['type'] != 'oauth':
+                continue
+            if not cred['refresh_token']:
+                logger.info('skipping non-refresh token for user %s, url %s', cred['username'], cred['url'])
+                continue
+            try:
+                if self.should_refresh(cred):
+                    args = await self.refresh_cred(cred)
+                    await self.db.user_creds.update_one({'username': cred['username'], 'url': cred['url'], 'scope': cred['scope']}, {'$set': args})
+                    logger.info('refreshed token for user %s, url %s, scope %s', cred['username'], cred['url'], cred['scope'])
+                else:
+                    logger.info('not yet time to refresh token for user %s, url %s, scope %s', cred['username'], cred['url'], cred['scope'])
+            except Exception:
+                logger.error('error refreshing token for user %s, url: %s, scope %s', cred['username'], cred['url'], cred['scope'], exc_info=True)
+
+    async def _run_once_group(self, filters):
+        group_creds = {}
+        async for row in self.db.group_creds.find(filters, {'_id': False}):
+            group_creds[row['url']] = row
+
+        for cred in group_creds.values():
+            if cred['type'] != 'oauth':
+                continue
+            if not cred['refresh_token']:
+                logger.info('skipping non-refresh token for group %s, url %s', cred['groupname'], cred['url'])
+                continue
+            try:
+                if self.should_refresh(cred):
+                    args = await self.refresh_cred(cred)
+                    await self.db.group_creds.update_one({'groupname': cred['groupname'], 'url': cred['url']}, {'$set': args})
+                    logger.info('refreshed token for group %s, url %s', cred['groupname'], cred['url'])
+                else:
+                    logger.info('not yet time to refresh token for group %s, url %s', cred['groupname'], cred['url'])
+            except Exception:
+                logger.error('error refreshing token for group %s, url: %s', cred['groupname'], cred['url'], exc_info=True)
+
+    async def _run_once_dataset(self, filters):
+        dataset_creds = []
+        async for row in self.db.dataset_creds.find(filters, {'_id': False}):
+            dataset_creds.append(row)
+
+        for cred in dataset_creds:
+            if cred['type'] != 'oauth':
+                continue
+            if not cred['refresh_token']:
+                logger.info('skipping non-refresh token for dataset %s, task, %s, url %s', cred['dataset_id'], cred['task_name'], cred['url'])
+                continue
+            try:
+                if self.should_refresh(cred):
+                    args = await self.refresh_cred(cred)
+                    await self.db.dataset_creds.update_one({'dataset_id': cred['dataset_id'], 'task_name': cred['task_name'], 'scope': cred['scope'], 'url': cred['url']}, {'$set': args})
+                    logger.info('refreshed token for dataset %s, task, %s, url %s', cred['dataset_id'], cred['task_name'], cred['url'])
+                else:
+                    logger.info('not yet time to refresh token for dataset %s, task, %s, url %s', cred['dataset_id'], cred['task_name'], cred['url'])
+            except Exception:
+                logger.error('error refreshing token for dataset %s, task, %s, url %s', cred['dataset_id'], cred['task_name'], cred['url'], exc_info=True)

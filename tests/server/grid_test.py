@@ -160,6 +160,54 @@ async def test_grid_convert_to_task():
     assert ret.dataset == DATASET
     assert ret.dataset.config['options']['site_temp'] == 'http://foo.bar'
 
+
+async def test_grid_get_dataset_credentials():
+    override = ['queue.type=test', 'queue.check_time=0', 'queue.site_temp=http://foo.bar', 'oauth_condor_client_id=client']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+
+    rc = MagicMock()
+    rc.request = AsyncMock()
+    cred_client = MagicMock()
+    cred_client.request = AsyncMock(return_value=['creds'])
+    g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=cred_client)
+
+    d = Dataset(
+        dataset_id='1234',
+        dataset_num=1234,
+        jobs_submitted=10,
+        tasks_submitted=10,
+        tasks_per_job=1,
+        status='processing',
+        priority=.5,
+        group='group',
+        user='user',
+        debug=False,
+        config={},
+    )
+    j = Job(dataset=d, job_id='5678', job_index=3, status='processing')
+    t = Task(
+        dataset=d,
+        job=j,
+        task_id='91011',
+        task_index=0,
+        name='generate',
+        depends=[],
+        requirements={},
+        status='queued',
+        site='site',
+        stats={},
+    )
+
+    ret = await g._get_dataset_credentials(t)
+    assert ret == ['creds']
+    assert cred_client.request.call_count == 1
+    assert cred_client.request.call_args == [('GET', '/datasets/1234/tasks/generate/exchange', {'client_id': 'client'}),]
+
+    cred_client.request = AsyncMock(return_value=['creds2'])
+    ret = await g._get_dataset_credentials(t)
+    assert ret == ['creds']
+    assert cred_client.request.call_count == 0
+
     
 def test_grid_get_resources(i3prod_path):
     d = Dataset(

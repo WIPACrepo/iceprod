@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 
 import pymongo
 
@@ -41,7 +41,7 @@ class MaterializationService:
 
             # periodically cleanup
             if (not self.last_cleanup_time) or self.last_run_time - self.last_cleanup_time > 3600*self.cleanup_hours:
-                clean_time = datetime2str(datetime.utcfromtimestamp(self.last_run_time)-timedelta(hours=self.cleanup_hours))
+                clean_time = datetime2str(datetime.fromtimestamp(self.last_run_time, tz=UTC)-timedelta(hours=self.cleanup_hours))
                 await self.db.materialization.delete_many({'status': {'$in': ['complete', 'error']}, 'modify_timestamp': {'$lt': clean_time}})
                 await self.db.materialization.update_many({'status': 'processing', 'modify_timestamp': {'$lt': clean_time}}, {'$set': {'status': 'waiting', 'modify_timestamp': now}})
                 self.last_cleanup_time = time.time()

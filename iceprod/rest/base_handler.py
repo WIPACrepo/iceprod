@@ -3,6 +3,7 @@ from typing import Any
 
 import motor.motor_asyncio
 from rest_tools.server import RestHandlerSetup, RestHandler
+from tornado.escape import json_encode
 
 from iceprod.util import VERSION_STRING
 from iceprod.prom_utils import PromRequestMixin
@@ -50,3 +51,11 @@ class APIBase(AttrAuthMixin, PromRequestMixin, RestHandler):
                 logger.info('could not find auth username')
 
         return username
+
+    def write(self, chunk: str | bytes | dict | list) -> None:  # type: ignore[override]
+        """Write dict or list to json"""
+        if isinstance(chunk, (dict, list)):
+            self.set_header("Content-Type", "application/json; charset=UTF-8")
+            super().write(json_encode(chunk))
+        else:
+            super().write(chunk)

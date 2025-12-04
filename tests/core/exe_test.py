@@ -689,6 +689,11 @@ async def test_write_to_script_data_transfer(tmp_path):
                         'transfer': True,
                         'remote': 'gsiftp://foo.bar/stats2',
                         'local': 'stats2',
+                    }, {
+                        'movement': 'both',
+                        'type': 'permanent',
+                        'transfer': 'maybe',
+                        'remote': 'osdf://icecube/wipac/data/file'
                     }]
                 }],
                 'data': [{
@@ -710,6 +715,10 @@ async def test_write_to_script_data_transfer(tmp_path):
     assert 'if [ -f stats ' in script
     assert 'gsiftp://foo.bar/stats2' in script
     assert 'if [ -f stats2 ' not in script
+    assert 'pelican object get' in script
+    assert 'pelican object put' in script
+    assert ' osdf://icecube/wipac/data/file ' in script
+    assert 'if [ -f file ' in script
 
     assert ws.infiles == {Data('https://foo.bar/foo_bar_baz', 'foo_bar_baz', Transfer.TRUE)}
     assert ws.outfiles == set()

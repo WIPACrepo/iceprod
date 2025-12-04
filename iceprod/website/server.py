@@ -6,372 +6,34 @@ This is the external website users will see when interacting with IceProd.
 It has been broken down into several sub-handlers for easier maintenance.
 """
 
-from collections import defaultdict
 import dataclasses as dc
-from datetime import datetime, timedelta, UTC
-import functools
 import importlib.resources
 import logging
 import os
 import random
-import re
-from typing import Any
-from urllib.parse import urlencode
 
-from iceprod.core.jsonUtil import json_encode
-
-from cachetools.func import ttl_cache
 from prometheus_client import Info, start_http_server
 import tornado.web
-import tornado.httpserver
-import tornado.gen
-import jwt
-import tornado.concurrent
 from rest_tools.client import RestClient, ClientCredentialsAuth
-from rest_tools.server import catch_error, RestServer, RestHandlerSetup, RestHandler, OpenIDCookieHandlerMixin, OpenIDLoginHandler
-from rest_tools.server.session import SessionMixin, Session
+from rest_tools.server import catch_error, RestServer, RestHandlerSetup, OpenIDLoginHandler
+from rest_tools.server.session import Session
 from wipac_dev_tools import from_environment_as_dataclass
 
 from iceprod.util import VERSION_STRING
+from iceprod.credentials.util import ClientCreds
 from iceprod.prom_utils import AsyncMonitor, PromRequestMixin
-from iceprod.roles_groups import GROUPS
 from iceprod.core.config import CONFIG_SCHEMA as DATASET_SCHEMA
 from iceprod.server.config import CONFIG_SCHEMA as SERVER_SCHEMA
-import iceprod.core.functions
 from iceprod.server import documentation
-import iceprod.server.states
-from iceprod.server.util import datetime2str, nowstr
+from iceprod.server.util import nowstr
+
+from .handlers.base import authenticated, LoginMixin, PublicHandler
+from .handlers.submit import Config, Submit, SubmitDataset, TokenLogin
+from .handlers.dataset import Dataset, DatasetBrowse
+from .handlers.job import Job, JobBrowse
+from .handlers.task import Task, TaskBrowse
 
 logger = logging.getLogger('website')
-
-
-def authenticated(method):
-    """Decorate methods with this to require that the user be logged in.
-
-    If the user is not logged in, they will be redirected to the configured
-    `login url <RequestHandler.get_login_url>`.
-
-    If you configure a login url with a query parameter, Tornado will
-    assume you know what you're doing and use it as-is.  If not, it
-    will add a `next` parameter so the login page knows where to send
-    you once you're logged in.
-    """
-    @catch_error
-    @functools.wraps(method)
-    async def wrapper(self, *args, **kwargs):
-        if not await self.get_current_user_async():
-            if self.request.method in ("GET", "HEAD"):
-                try:
-                    url = self.get_login_url()
-                    if "?" not in url:
-                        next_url = self.request.uri
-                        url += "?" + urlencode(dict(next=next_url))
-                    self.redirect(url)
-                    return None
-                except Exception:
-                    logger.warning('failed to make redirect', exc_info=True)
-                    raise tornado.web.HTTPError(403, reason='auth failed')
-            raise tornado.web.HTTPError(403, reason='auth failed')
-        return await method(self, *args, **kwargs)
-    return wrapper
-
-
-def eval_expression(token, e):
-    """from rest_tools.server.decorators.token_attribute_role_mapping_auth"""
-    name, val = e.split('=',1)
-    if name == 'scope':
-        # special handling to split into string
-        token_val = token.get('scope','').split()
-    else:
-        prefix = name.split('.')[:-1]
-        while prefix:
-            token = token.get(prefix[0], {})
-            prefix = prefix[1:]
-        token_val = token.get(name.split('.')[-1], None)
-
-    logger.debug('token_val = %r', token_val)
-    if token_val is None:
-        return []
-
-    prog = re.compile(val)
-    if isinstance(token_val, list):
-        ret = (prog.fullmatch(v) for v in token_val)
-    else:
-        ret = [prog.fullmatch(token_val)]
-    return [r for r in ret if r]
-
-
-class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):  # type: ignore[misc]
-    """
-    Store/load current user's `OpenIDLoginHandler` tokens in Redis.
-    """
-    def get_current_user(self) -> str | None:
-        """Get the current username from the cookie"""
-        try:
-            username = self.get_secure_cookie('iceprod_username')
-            if not username:
-                raise RuntimeError('missing iceprod_username cookie')
-            return username.decode('utf-8')
-        except Exception:
-            logger.info('failed to get username')
-        return None
-
-    @property
-    def auth_access_token(self) -> bytes | None:
-        if self.session:
-            ret = self.session.get('access_token', None)
-            if not isinstance(ret, str):
-                logger.warning('bad access token type: not str')
-                return None
-            return ret.encode('utf-8')
-        return None
-
-    @auth_access_token.setter
-    def auth_access_token(self, val: bytes):
-        if self.session:
-            self.session['access_token'] = val.decode('utf-8')
-        else:
-            raise RuntimeError('no valid session')
-
-    @property
-    def auth_refresh_token(self) -> bytes | None:
-        if self.session:
-            ret = self.session.get('refresh_token', None)
-            if not isinstance(ret, str):
-                logger.warning('bad access token type: not str')
-                return None
-            return ret.encode('utf-8')
-        return None
-
-    @auth_refresh_token.setter  # type: ignore[override]
-    def auth_refresh_token(self, val: bytes):
-        if self.session:
-            self.session['refresh_token'] = val.decode('utf-8')
-        else:
-            raise RuntimeError('no valid session')
-
-    @property
-    def auth_groups(self) -> list[str]:
-        assert self.auth
-        if not self.auth_access_token:
-            return []
-        try:
-            data = self.auth.validate(self.auth_access_token)
-        except jwt.ExpiredSignatureError:
-            logger.debug('user access_token expired')
-            return []
-
-        # lookup groups
-        groups: set[str] = set()
-        try:
-            for name in GROUPS:
-                for expression in GROUPS[name]:
-                    ret = eval_expression(data, expression)
-                    groups.update(match.expand(name) for match in ret)
-        except Exception:
-            logger.info('cannot determine groups', exc_info=True)
-        return sorted(groups)
-
-    def store_tokens(
-        self,
-        access_token,
-        access_token_exp,
-        refresh_token=None,
-        refresh_token_exp=None,
-        user_info=None,
-        user_info_exp=None,
-    ):
-        """
-        Store jwt tokens and user info from OpenID-compliant auth source.
-
-        Args:
-            access_token (str): jwt access token
-            access_token_exp (int): access token expiration in seconds
-            refresh_token (str): jwt refresh token
-            refresh_token_exp (int): refresh token expiration in seconds
-            user_info (dict): user info (from id token or user info lookup)
-            user_info_exp (int): user info expiration in seconds
-        """
-        assert self.auth
-        if not user_info:
-            user_info = self.auth.validate(access_token)
-        username = user_info.get('preferred_username')
-        if not username:
-            username = user_info.get('upn')
-        if not username:
-            raise tornado.web.HTTPError(400, reason='no username in token')
-
-        data = {
-            'access_token': access_token,
-            'refresh_token': refresh_token,
-        }
-        self._session_mgr.set(username, data)
-
-        self.set_secure_cookie('iceprod_username', username, expires_days=30)
-
-    def clear_tokens(self):
-        """
-        Clear token data, usually on logout.
-        """
-        username = self.current_user
-        self.clear_cookie('iceprod_username')
-        if username:
-            self._session_mgr.delete_session(username)
-
-
-class TokenStorageMixin(OpenIDCookieHandlerMixin, RestHandler):
-    """
-    Store/load current user's `OpenIDLoginHandler` tokens in iceprod credentials API.
-    """
-    def initialize(self, cred_rest_client: RestClient, full_url: str, **kwargs):  # type: ignore
-        super().initialize(**kwargs)
-        self.cred_rest_client = cred_rest_client
-        self.full_url = full_url
-
-    def get_current_user(self):
-        return None
-
-    async def get_current_user_async(self):
-        """Get the current user, and set auth-related attributes."""
-        try:
-            assert self.auth
-            username = self.get_secure_cookie('iceprod_username')
-            if not username:
-                return None
-            if isinstance(username, bytes):
-                username = username.decode('utf-8')
-            creds = await self.cred_rest_client.request('GET', f'/users/{username}/credentials', {'url': self.full_url})
-            cred = creds[self.full_url]
-            access_token = cred['access_token']
-            try:
-                data = self.auth.validate(access_token)
-            except jwt.ExpiredSignatureError:
-                logger.debug('user access_token expired')
-                return None
-            self.auth_data = data
-
-            # lookup groups
-            auth_groups = set()
-            try:
-                for name in GROUPS:
-                    for expression in GROUPS[name]:
-                        ret = eval_expression(data, expression)
-                        auth_groups.update(match.expand(name) for match in ret)
-            except Exception:
-                logger.info('cannot determine groups', exc_info=True)
-            self.auth_groups = sorted(auth_groups)
-
-            self.auth_access_token = access_token
-            self.auth_refresh_token = cred.get('refresh_token', '')
-            return username
-
-        except Exception:
-            logger.debug('failed auth', exc_info=True)
-        return None
-
-    def store_tokens(
-        self,
-        access_token,
-        access_token_exp,
-        refresh_token=None,
-        refresh_token_exp=None,
-        user_info=None,
-        user_info_exp=None,
-    ):
-        """
-        Store jwt tokens and user info from OpenID-compliant auth source.
-
-        Args:
-            access_token (str): jwt access token
-            access_token_exp (int): access token expiration in seconds
-            refresh_token (str): jwt refresh token
-            refresh_token_exp (int): refresh token expiration in seconds
-            user_info (dict): user info (from id token or user info lookup)
-            user_info_exp (int): user info expiration in seconds
-        """
-        assert self.auth
-        if not user_info:
-            user_info = self.auth.validate(access_token)
-        username = user_info.get('preferred_username')
-        if not username:
-            username = user_info.get('upn')
-        if not username:
-            raise tornado.web.HTTPError(400, reason='no username in token')
-        args = {
-            'url': self.full_url,
-            'type': 'oauth',
-            'access_token': access_token,
-        }
-        if refresh_token:
-            args['refresh_token'] = refresh_token
-
-        self.cred_rest_client.request_seq('POST', f'/users/{username}/credentials', args)
-
-        self.set_secure_cookie('iceprod_username', username, expires_days=30)
-
-    def clear_tokens(self):
-        """
-        Clear token data, usually on logout.
-        """
-        self.clear_cookie('iceprod_username')
-
-
-class Login(LoginMixin, PromRequestMixin, OpenIDLoginHandler):  # type: ignore
-    pass
-
-
-class PublicHandler(LoginMixin, PromRequestMixin, RestHandler):
-    """Default Handler"""
-    def initialize(self, rest_api, cred_rest_client, system_rest_client, **kwargs):  # type: ignore
-        """
-        Get some params from the website module
-
-        :param rest_api: the rest api url
-        :param cred_rest_client: the rest api url for the cred service
-        :param system_rest_client: the rest client for the system role
-        """
-        super().initialize(**kwargs)
-        self.rest_api = rest_api
-        self.cred_rest_client = cred_rest_client
-        self.system_rest_client = system_rest_client
-        self.rest_client: RestClient | None = None
-
-    def get_template_namespace(self) -> dict[str, Any]:
-        namespace = super().get_template_namespace()
-        namespace['version'] = VERSION_STRING
-        if self.request.uri:
-            namespace['section'] = self.request.uri.lstrip('/').split('?')[0].split('/')[0]
-        namespace['json_encode'] = json_encode
-        namespace['states'] = iceprod.server.states
-        namespace['rest_api'] = self.rest_api
-        return namespace
-
-    async def get_current_user_async(self) -> str | None:
-        try:
-            if self.current_user and self.auth_access_token:
-                self.rest_client = RestClient(self.rest_api, self.auth_access_token, timeout=50, retries=1)
-            elif not self.current_user:
-                logger.info('no current user')
-            else:
-                logger.info('no access token')
-        except Exception:
-            logger.info('failed to create user rest client', exc_info=True)
-        return self.current_user
-
-    def write_error(self, status_code: int = 500, **kwargs) -> None:
-        """Write out custom error page."""
-        self.set_status(status_code)
-        if status_code >= 500:
-            self.write('<h2>Internal Error</h2>')
-        else:
-            self.write('<h2>Request Error</h2>')
-        if 'message' in kwargs:
-            self.write('<br />'.join(kwargs['message'].split('\n')))
-        elif 'reason' in kwargs:
-            self.write('<br />'.join(kwargs['reason'].split('\n')))
-        elif self._reason:
-            self.write('<br />'.join(self._reason.split('\n')))
-        self.finish()
 
 
 class Default(PublicHandler):
@@ -393,245 +55,6 @@ class Schemas(PublicHandler):
             self.write(SERVER_SCHEMA)
         else:
             raise tornado.web.HTTPError(404, reason='unknown schema')
-
-
-class Submit(PublicHandler):
-    """Handle /submit urls"""
-    @authenticated
-    async def get(self):
-        logger.info('here')
-        token = self.auth_access_token
-        groups = self.auth_groups
-        default_config = {
-            "categories": [],
-            "dataset": 0,
-            "description": "",
-            "difplus": None,
-            "options": {},
-            "parent_id": 0,
-            "steering": None,
-            "tasks": [],
-            "version": 3
-        }
-        render_args = {
-            'passkey':token,
-            'edit':False,
-            'dataset': '',
-            'dataset_id':'',
-            'config':default_config,
-            'groups':groups,
-            'description':'',
-        }
-        self.render('submit.html', **render_args)
-
-
-class Config(PublicHandler):
-    """Handle /config urls"""
-    @authenticated
-    async def get(self):
-        assert self.rest_client
-        dataset_id = self.get_argument('dataset_id',default=None)
-        if not dataset_id:
-            self.write_error(400,message='must provide dataset_id')
-            return
-        dataset = await self.rest_client.request('GET','/datasets/{}'.format(dataset_id))
-        edit = self.get_argument('edit',default=False)
-        if edit:
-            passkey = self.auth_access_token
-        else:
-            passkey = None
-        config = await self.rest_client.request('GET','/config/{}'.format(dataset_id))
-        render_args = {
-            'edit':edit,
-            'passkey':passkey,
-            'dataset': dataset.get('dataset',''),
-            'dataset_id':dataset_id,
-            'config':config,
-            'description':dataset.get('description',''),
-        }
-        self.render('submit.html',**render_args)
-
-
-class DatasetBrowse(PublicHandler):
-    """Handle /dataset urls"""
-    @ttl_cache(maxsize=256, ttl=600)
-    async def get_usernames(self):
-        ret = await self.system_rest_client.request('GET', '/users')
-        return [x['username'] for x in ret['results']]
-
-    @authenticated
-    async def get(self):
-        assert self.rest_client
-        usernames = await self.get_usernames()
-        filter_options = {
-            'status': ['processing', 'suspended', 'errors', 'complete', 'truncated'],
-            'groups': list(GROUPS.keys()),
-            'users': usernames,
-        }
-        filter_results = {n: self.get_arguments(n) for n in filter_options}
-
-        args = {'keys': 'dataset_id|dataset|status|description|group|username'}
-        for name in filter_results:
-            val = filter_results[name]
-            if not val:
-                continue
-            if any(v not in filter_options[name] for v in val):
-                raise tornado.web.HTTPError(400, reason='Bad filter '+name+' value')
-            args[name] = '|'.join(val)
-
-        url = '/datasets'
-
-        ret = await self.rest_client.request('GET', url, args)
-        datasets = sorted(ret.values(), key=lambda x:x.get('dataset',0), reverse=True)
-        logger.debug('datasets: %r', datasets)
-        datasets = filter(lambda x: 'dataset' in x, datasets)
-        self.render(
-            'dataset_browse.html',
-            datasets=datasets,
-            filter_options=filter_options,
-            filter_results=filter_results,
-        )
-
-
-class Dataset(PublicHandler):
-    """Handle /dataset urls"""
-    @authenticated
-    async def get(self, dataset_id):
-        assert self.rest_client
-        if dataset_id.isdigit():
-            try:
-                d_num = int(dataset_id)
-                if d_num < 10000000:
-                    all_datasets = await self.rest_client.request('GET', '/datasets', {'keys': 'dataset_id|dataset'})
-                    for d in all_datasets.values():
-                        if d['dataset'] == d_num:
-                            dataset_id = d['dataset_id']
-                            break
-            except Exception:
-                pass
-        try:
-            dataset = await self.rest_client.request('GET','/datasets/{}'.format(dataset_id))
-        except Exception:
-            raise tornado.web.HTTPError(404, reason='Dataset not found')
-        dataset_num = dataset['dataset']
-
-        passkey = self.auth_access_token
-
-        jobs = await self.rest_client.request('GET','/datasets/{}/job_counts/status'.format(dataset_id))
-        tasks = await self.rest_client.request('GET','/datasets/{}/task_counts/status'.format(dataset_id))
-        task_info = await self.rest_client.request('GET','/datasets/{}/task_counts/name_status'.format(dataset_id))
-        task_stats = await self.rest_client.request('GET','/datasets/{}/task_stats'.format(dataset_id))
-        try:
-            config = await self.rest_client.request('GET','/config/{}'.format(dataset_id))
-        except Exception:
-            config = {}
-        for t in task_info:
-            logger.info('task_info[%s] = %r', t, task_info[t])
-            type_ = 'UNK'
-            for task in config.get('tasks', []):
-                if 'name' in task and task['name'] == t:
-                    type_ = 'GPU' if 'requirements' in task and 'gpu' in task['requirements'] and task['requirements']['gpu'] else 'CPU'
-                    break
-            task_info[t] = {
-                'name': t,
-                'type': type_,
-                'idle': task_info[t].get('idle', 0),
-                'waiting': task_info[t].get('waiting', 0),
-                'queued': task_info[t].get('queued', 0),
-                'running': task_info[t].get('processing', 0),
-                'complete': task_info[t].get('complete', 0),
-                'error': task_info[t].get('failed', 0) + task_info[t].get('suspended', 0),
-            }
-        self.render('dataset_detail.html', dataset_id=dataset_id, dataset_num=dataset_num,
-                    dataset=dataset, jobs=jobs, tasks=tasks, task_info=task_info,
-                    task_stats=task_stats, passkey=passkey)
-
-
-class TaskBrowse(PublicHandler):
-    """Handle /task urls"""
-    @authenticated
-    async def get(self, dataset_id):
-        assert self.rest_client
-        status = self.get_argument('status',default=None)
-        if status:
-            tasks = await self.rest_client.request('GET','/datasets/{}/tasks?status={}'.format(dataset_id,status))
-            for t in tasks:
-                if 'job_index' not in tasks[t]:
-                    job = await self.rest_client.request('GET', '/datasets/{}/jobs/{}'.format(dataset_id, tasks[t]['job_id']))
-                    tasks[t]['job_index'] = job['job_index']
-            passkey = self.auth_access_token
-            self.render('task_browse.html',tasks=tasks, passkey=passkey)
-        else:
-            status = await self.rest_client.request('GET','/datasets/{}/task_counts/status'.format(dataset_id))
-            self.render('tasks.html',status=status)
-
-
-class Task(PublicHandler):
-    """Handle /task urls"""
-    @authenticated
-    async def get(self, dataset_id, task_id):
-        assert self.rest_client
-        status = self.get_argument('status', default=None)
-        passkey = self.auth_access_token
-
-        dataset = await self.rest_client.request('GET', '/datasets/{}'.format(dataset_id))
-        task_details = await self.rest_client.request('GET','/datasets/{}/tasks/{}?status={}'.format(dataset_id, task_id, status))
-        task_stats = await self.rest_client.request('GET','/datasets/{}/tasks/{}/task_stats?last=true'.format(dataset_id, task_id))
-        if task_stats:
-            task_stats = list(task_stats.values())[0]
-        try:
-            ret = await self.rest_client.request('GET','/datasets/{}/tasks/{}/logs?group=true'.format(dataset_id, task_id))
-            logs = ret['logs']
-            # logger.info("logs: %r", logs)
-            ret2 = await self.rest_client.request('GET','/datasets/{}/tasks/{}/logs?keys=log_id|name|timestamp'.format(dataset_id, task_id))
-            logs2 = ret2['logs']
-            logger.info("logs2: %r", logs2)
-            log_by_name = defaultdict(list)
-            for log in sorted(logs2,key=lambda lg:lg['timestamp'] if 'timestamp' in lg else '',reverse=True):
-                log_by_name[log['name']].append(log)
-            for log in logs:
-                if 'data' not in log or not log['data']:
-                    log['data'] = ''
-                log_by_name[log['name']][0] = log
-        except Exception:
-            log_by_name = {}
-        self.render('task_detail.html', dataset=dataset, task=task_details, task_stats=task_stats, logs=log_by_name, passkey=passkey)
-
-
-class JobBrowse(PublicHandler):
-    """Handle /job urls"""
-    @authenticated
-    async def get(self, dataset_id):
-        assert self.rest_client
-        status = self.get_argument('status',default=None)
-        passkey = self.auth_access_token
-
-        jobs = await self.rest_client.request('GET', '/datasets/{}/jobs'.format(dataset_id))
-        if status:
-            for t in list(jobs):
-                if jobs[t]['status'] != status:
-                    del jobs[t]
-                    continue
-        self.render('job_browse.html', jobs=jobs, passkey=passkey)
-
-
-class Job(PublicHandler):
-    """Handle /job urls"""
-    @authenticated
-    async def get(self, dataset_id, job_id):
-        assert self.rest_client
-        status = self.get_argument('status',default=None)
-        passkey = self.auth_access_token
-
-        dataset = await self.rest_client.request('GET', '/datasets/{}'.format(dataset_id))
-        job = await self.rest_client.request('GET', '/datasets/{}/jobs/{}'.format(dataset_id,job_id))
-        args = {'job_id': job_id}
-        if status:
-            args['status'] = status
-        tasks = await self.rest_client.request('GET', f'/datasets/{dataset_id}/tasks', args)
-        job['tasks'] = list(tasks.values())
-        job['tasks'].sort(key=lambda x:x['task_index'])
-        self.render('job_detail.html', dataset=dataset, job=job, passkey=passkey)
 
 
 class Documentation(PublicHandler):
@@ -691,57 +114,14 @@ class Profile(PublicHandler):
         group_creds = {}
         for g in groups:
             if g != 'users':
-                ret = await self.cred_rest_client.request('GET', f'/groups/{g}/credentials')
-                group_creds[g] = ret
-        user_creds = await self.cred_rest_client.request('GET', f'/users/{username}/credentials')
+                group_creds[g] = await self.get_cred_group_tokens(group_name=g)
+        user_creds = await self.get_cred_user_tokens(username=username)
         self.render('profile.html', username=username, groups=groups,
                     group_creds=group_creds, user_creds=user_creds)
 
-    @authenticated
-    async def post(self):
-        username = self.current_user
 
-        if self.get_argument('add_icecube_token', ''):
-            args = {
-                'url': 'https://data.icecube.aq',
-                'type': 'oauth',
-                'access_token': self.auth_access_token,
-            }
-            if self.auth_refresh_token:
-                args['refresh_token'] = self.auth_refresh_token
-                args['expiration'] = datetime2str(datetime.now(UTC) + timedelta(days=30))
-            await self.cred_rest_client.request('POST', f'/users/{username}/credentials', args)
-
-        else:
-            type_ = self.get_argument('type')
-            args = {
-                'url': self.get_argument('url'),
-                'type': type_,
-            }
-            if type_ == 's3':
-                args['buckets'] = [x for x in self.get_argument('buckets').split('\n') if x]
-                args['access_key'] = self.get_argument('access_key')
-                args['secret_key'] = self.get_argument('secret_key')
-            elif type_ == 'oauth':
-                if acc := self.get_argument('refresh_token', ''):
-                    args['refresh_token'] = acc
-                if ref := self.get_argument('refresh_token', ''):
-                    args['refresh_token'] = ref
-                if not (acc or ref):
-                    raise tornado.web.HTTPError(400, reason='need access or refresh token')
-            else:
-                raise tornado.web.HTTPError(400, reason='bad cred type')
-
-            if self.get_argument('add_user_cred', ''):
-                await self.cred_rest_client.request('POST', f'/users/{username}/credentials', args)
-            elif self.get_argument('add_group_cred', ''):
-                groupname = self.get_argument('group')
-                if groupname not in self.auth_groups or groupname == 'users':
-                    raise tornado.web.HTTPError(400, reason='bad group name')
-                await self.cred_rest_client.request('POST', f'/groups/{groupname}/credentials', args)
-
-        # now show the profile page
-        await self.get()
+class Login(LoginMixin, PromRequestMixin, OpenIDLoginHandler):  # type: ignore
+    pass
 
 
 class Logout(PublicHandler):
@@ -800,6 +180,7 @@ class DefaultConfig:
     ICEPROD_CRED_ADDRESS : str = 'https://credentials.iceprod.icecube.aq'
     ICEPROD_CRED_CLIENT_ID : str = ''
     ICEPROD_CRED_CLIENT_SECRET : str = ''
+    TOKEN_CLIENTS : str = '{}'
     REDIS_HOST : str = 'localhost'
     REDIS_USER : str = ''
     REDIS_PASSWORD : str = ''
@@ -869,7 +250,6 @@ class Server:
             raise RuntimeError('ICEPROD_CRED_CLIENT_ID or ICEPROD_CRED_CLIENT_SECRET not specified, and CI_TESTING not enabled!')
 
         handler_args = RestHandlerSetup(rest_config)
-        handler_args['cred_rest_client'] = cred_client
         if config.CI_TESTING:
             self.session = Session()
         else:
@@ -904,9 +284,15 @@ class Server:
         else:
             raise RuntimeError('ICEPROD_API_CLIENT_ID or ICEPROD_API_CLIENT_SECRET not specified, and CI_TESTING not enabled!')
 
+        self.token_clients = ClientCreds(config.TOKEN_CLIENTS).get_clients_by_prefix()
+
         handler_args.update({
             'rest_api': rest_address,
+            'cred_rest_client': cred_client,
             'system_rest_client': rest_client,
+            'auth_url': config.OPENID_URL,
+            'auth_client_id': config.ICEPROD_API_CLIENT_ID,
+            'auth_client_secret': config.ICEPROD_API_CLIENT_SECRET,
         })
         if config.COOKIE_SECRET:
             cookie_secret = config.COOKIE_SECRET
@@ -923,22 +309,36 @@ class Server:
             static_path=static_path,
         )
 
-        server.add_route(r"/", Default, handler_args)
-        server.add_route(r"/submit", Submit, handler_args)
-        server.add_route(r"/config", Config, handler_args)
+        server.add_route("/", Default, handler_args)
+        server.add_route('/config', Config, handler_args)
         server.add_route(r"/schemas/v3/([\w\.]+)", Schemas, handler_args)
-        server.add_route(r"/dataset", DatasetBrowse, handler_args)
+        server.add_route('/dataset', DatasetBrowse, handler_args)
         server.add_route(r"/dataset/(\w+)", Dataset, handler_args)
         server.add_route(r"/dataset/(\w+)/task", TaskBrowse, handler_args)
         server.add_route(r"/dataset/(\w+)/task/(\w+)", Task, handler_args)
         server.add_route(r"/dataset/(\w+)/job", JobBrowse, handler_args)
         server.add_route(r"/dataset/(\w+)/job/(\w+)", Job, handler_args)
-        server.add_route(r"/help", Help, handler_args)
+        server.add_route('/help', Help, handler_args)
         server.add_route(r"/docs/(.*)", Documentation, handler_args)
         server.add_route(r"/dataset/(\w+)/log/(\w+)", Log, handler_args)
-        server.add_route(r'/profile', Profile, handler_args)
-        server.add_route(r"/login", Login, login_handler_args)
-        server.add_route(r"/logout", Logout, handler_args)
+        server.add_route('/profile', Profile, handler_args)
+        server.add_route('/login', Login, login_handler_args)
+        server.add_route('/logout', Logout, handler_args)
+
+        submit_handler_args = handler_args.copy()
+        submit_handler_args['token_clients'] = self.token_clients
+        server.add_route('/submit', Submit, submit_handler_args)
+        server.add_route('/submit/complete', SubmitDataset, submit_handler_args)
+        for client in self.token_clients.values():
+            client_handler_args = submit_handler_args.copy()
+            client_handler_args['oauth_client_id'] = client.client_id
+            client_handler_args['oauth_client_secret'] = client.client_secret
+            client_handler_args['oauth_client_scope'] = ''
+            client_handler_args['login_url'] = f'{full_url}/submit/tokens/{client.id}'
+            client_handler_args['oauth_url'] = client.url
+            client_handler_args['token_client'] = client
+            server.add_route(f'/submit/tokens/{client.id}', TokenLogin, client_handler_args)
+
         server.add_route('/healthz', HealthHandler, handler_args)
         server.add_route(r"/.*", Other, handler_args)
 

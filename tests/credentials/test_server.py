@@ -58,13 +58,15 @@ async def server(monkeypatch, port, mongo_url, mongo_clear):
 
 GROUP = 'simprod'
 USER = 'username'
+DATASETS = ['dataset1', 'dataset2']
+TASK_NAMES = ['alpha', 'bravo']
 
 
 async def test_credentials_groups_empty(server):
     client = server(roles=['system'])
 
     ret = await client.request('GET', f'/groups/{GROUP}/credentials')
-    assert ret == {}
+    assert ret == []
 
 
 async def test_credentials_groups_s3(server):
@@ -81,7 +83,8 @@ async def test_credentials_groups_s3(server):
 
     ret = await client.request('GET', f'/groups/{GROUP}/credentials')
     data['groupname'] = GROUP
-    assert ret == {data['url']: data}
+    data['transfer_prefix'] = ''
+    assert ret == [data]
 
     # test bucket in url
     data2 = {
@@ -95,7 +98,8 @@ async def test_credentials_groups_s3(server):
 
     ret = await client.request('GET', f'/groups/{GROUP}/credentials')
     data2['groupname'] = GROUP
-    assert ret == {data['url']: data, data2['url']: data2}
+    data2['transfer_prefix'] = ''
+    assert ret == [data, data2]
 
     # now overwrite
     data3 = {
@@ -110,18 +114,19 @@ async def test_credentials_groups_s3(server):
     ret = await client.request('GET', f'/groups/{GROUP}/credentials')
     data3_out = data3.copy()
     data3_out['groupname'] = GROUP
-    assert ret == {data['url']: data3_out, data2['url']: data2}
+    data3_out['transfer_prefix'] = ''
+    assert ret == [data3_out, data2]
 
     await client.request('DELETE', f'/groups/{GROUP}/credentials', {'url': 'http://foo'})
 
     ret = await client.request('GET', f'/groups/{GROUP}/credentials')
-    assert ret == {data2['url']: data2}
+    assert ret == [data2]
 
     await client.request('POST', f'/groups/{GROUP}/credentials', data3)
     await client.request('DELETE', f'/groups/{GROUP}/credentials')
 
     ret = await client.request('GET', f'/groups/{GROUP}/credentials')
-    assert ret == {}
+    assert ret == []
     
 async def test_credentials_groups_s3_bad(server):
     client = server(roles=['system'])
@@ -180,7 +185,7 @@ async def test_credentials_groups_oauth(server):
 
     ret = await client.request('GET', f'/groups/{GROUP}/credentials')
     for k in data:
-        assert ret[data['url']][k] == data[k]
+        assert ret[0][k] == data[k]
 
 
 async def test_credentials_groups_user(server):
@@ -195,7 +200,7 @@ async def test_credentials_groups_user(server):
 
     ret = await client.request('GET', f'/groups/{GROUP}/credentials')
     for k in data:
-        assert ret[data['url']][k] == data[k]
+        assert ret[0][k] == data[k]
 
     data2 = {
         'url': 'http://foo',
@@ -204,13 +209,13 @@ async def test_credentials_groups_user(server):
     }
     await client.request('PATCH', f'/groups/{GROUP}/credentials', data2)
     ret = await client.request('GET', f'/groups/{GROUP}/credentials')
-    assert ret[data2['url']]['refresh_token'] == data2['refresh_token']
+    assert ret[0]['refresh_token'] == data2['refresh_token']
 
     await client.request('DELETE', f'/groups/{GROUP}/credentials')
 
     # bad user
     client = server(roles=['user'], groups=['users'])
-    
+
     with pytest.raises(requests.exceptions.HTTPError) as exc_info:
         await client.request('POST', f'/groups/{GROUP}/credentials', data)
     assert exc_info.value.response.status_code == 403
@@ -228,7 +233,7 @@ async def test_credentials_users_empty(server):
     client = server(roles=['system'])
 
     ret = await client.request('GET', f'/users/{USER}/credentials')
-    assert ret == {}
+    assert ret == []
 
 
 async def test_credentials_users_s3(server):
@@ -245,7 +250,8 @@ async def test_credentials_users_s3(server):
 
     ret = await client.request('GET', f'/users/{USER}/credentials')
     data['username'] = USER
-    assert ret == {data['url']: data}
+    data['transfer_prefix'] = ''
+    assert ret == [data]
 
     data2 = {
         'url': 'http://bar',
@@ -258,7 +264,8 @@ async def test_credentials_users_s3(server):
 
     ret = await client.request('GET', f'/users/{USER}/credentials')
     data2['username'] = USER
-    assert ret == {data['url']: data, data2['url']: data2}
+    data2['transfer_prefix'] = ''
+    assert ret == [data, data2]
 
     # now overwrite
     data3 = {
@@ -273,18 +280,19 @@ async def test_credentials_users_s3(server):
     ret = await client.request('GET', f'/users/{USER}/credentials')
     data3_out = data3.copy()
     data3_out['username'] = USER
-    assert ret == {data['url']: data3_out, data2['url']: data2}
+    data3_out['transfer_prefix'] = ''
+    assert ret == [data3_out, data2]
 
     await client.request('DELETE', f'/users/{USER}/credentials', {'url': 'http://foo'})
 
     ret = await client.request('GET', f'/users/{USER}/credentials')
-    assert ret == {data2['url']: data2}
+    assert ret == [data2]
 
     await client.request('POST', f'/users/{USER}/credentials', data3)
     await client.request('DELETE', f'/users/{USER}/credentials')
 
     ret = await client.request('GET', f'/users/{USER}/credentials')
-    assert ret == {}
+    assert ret == []
 
 
 async def test_credentials_users_oauth(server):
@@ -299,7 +307,7 @@ async def test_credentials_users_oauth(server):
 
     ret = await client.request('GET', f'/users/{USER}/credentials')
     for k in data:
-        assert ret[data['url']][k] == data[k]
+        assert ret[0][k] == data[k]
 
 
 async def test_credentials_users_user(server):
@@ -314,7 +322,7 @@ async def test_credentials_users_user(server):
 
     ret = await client.request('GET', f'/users/{USER}/credentials')
     for k in data:
-        assert ret[data['url']][k] == data[k]
+        assert ret[0][k] == data[k]
 
     data2 = {
         'url': 'http://foo',
@@ -323,7 +331,7 @@ async def test_credentials_users_user(server):
     }
     await client.request('PATCH', f'/users/{USER}/credentials', data2)
     ret = await client.request('GET', f'/users/{USER}/credentials', {'norefresh': 'true'})
-    assert ret[data2['url']]['last_use'] == data2['last_use']
+    assert ret[0]['last_use'] == data2['last_use']
 
     await client.request('DELETE', f'/users/{USER}/credentials')
 
@@ -341,6 +349,210 @@ async def test_credentials_users_user(server):
     with pytest.raises(requests.exceptions.HTTPError) as exc_info:
         await client.request('DELETE', f'/users/{USER}/credentials')
     assert exc_info.value.response.status_code == 403
+
+
+async def test_credentials_datasets_user_fail(server):
+    client = server(roles=['user'], groups=['users', GROUP])
+    
+    data = {
+        'url': 'http://foo',
+        'type': 'oauth',
+    }
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('GET', f'/datasets/{DATASETS[0]}/credentials', data)
+    assert exc_info.value.response.status_code == 403
+
+    data = {
+        'url': 'http://foo',
+        'type': 'oauth',
+        'access_token': str(client.access_token),
+    }
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('POST', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/credentials', data)
+    assert exc_info.value.response.status_code == 403
+
+
+async def test_credentials_datasets(server):
+    client = server(roles=['system'])
+    auth = Auth('secret')
+
+    data = {
+        'url': 'http://foo',
+        'type': 'oauth',
+        'access_token': str(client.access_token),
+    }
+    await client.request('POST', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/credentials', data)
+
+    ret = await client.request('GET', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/credentials')
+    for k in data:
+        assert ret[0][k] == data[k]
+
+    ret = await client.request('GET', f'/datasets/{DATASETS[0]}/credentials')
+    for k in data:
+        assert ret[0][k] == data[k]
+
+    data2 = {
+        'url': 'http://foo',
+        'access_token': str(client.access_token),
+        'last_use': time.time()
+    }
+    await client.request('PATCH', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/credentials', data2)
+    ret = await client.request('GET', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/credentials', {'norefresh': 'true'})
+    assert ret[0]['last_use'] == data2['last_use']
+
+    # now for the second task
+    data3 = {
+        'url': 'http://foo',
+        'type': 'oauth',
+        'access_token': auth.create_token('sub2'),
+    }
+    await client.request('POST', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[1]}/credentials', data3)
+
+    ret = await client.request('GET', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/credentials')
+    assert len(ret) == 1
+    assert ret[0]['access_token'] == data2['access_token']
+
+    ret = await client.request('GET', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[1]}/credentials')
+    assert len(ret) == 1
+    assert ret[0]['access_token'] == data3['access_token']
+
+    ret = await client.request('GET', f'/datasets/{DATASETS[0]}/credentials')
+    assert len(ret) == 2
+    assert ret[0]['access_token'] == data2['access_token']
+    assert ret[1]['access_token'] == data3['access_token']
+
+    # now for a different dataset
+    data4 = {
+        'url': 'http://foo',
+        'type': 'oauth',
+        'access_token': auth.create_token('sub3'),
+    }
+    await client.request('POST', f'/datasets/{DATASETS[1]}/tasks/{TASK_NAMES[1]}/credentials', data4)
+
+    ret = await client.request('GET', f'/datasets/{DATASETS[1]}/tasks/{TASK_NAMES[0]}/credentials')
+    assert len(ret) == 0
+
+    ret = await client.request('GET', f'/datasets/{DATASETS[1]}/tasks/{TASK_NAMES[1]}/credentials')
+    assert len(ret) == 1
+    assert ret[0]['access_token'] == data4['access_token']
+
+    ret = await client.request('GET', f'/datasets/{DATASETS[1]}/credentials')
+    assert len(ret) == 1
+    assert ret[0]['access_token'] == data4['access_token']
+    
+    # delete
+    await client.request('DELETE', f'/datasets/{DATASETS[0]}/credentials')
+    ret = await client.request('GET', f'/datasets/{DATASETS[0]}/credentials')
+    assert len(ret) == 0
+    
+    ret = await client.request('GET', f'/datasets/{DATASETS[1]}/credentials')
+    assert len(ret) == 1
+    assert ret[0]['access_token'] == data4['access_token']
+
+    await client.request('DELETE', f'/datasets/{DATASETS[1]}/credentials')
+    ret = await client.request('GET', f'/datasets/{DATASETS[0]}/credentials')
+    assert len(ret) == 0
+    ret = await client.request('GET', f'/datasets/{DATASETS[1]}/credentials')
+    assert len(ret) == 0
+
+
+async def test_credentials_datasets_empty(server):
+    client = server(roles=['system'])
+
+    ret = await client.request('GET', f'/datasets/{DATASETS[0]}/credentials')
+    assert ret == []
+
+
+async def test_credentials_datasets_s3(server):
+    client = server(roles=['system'])
+
+    data = {
+        'url': 'http://foo',
+        'transfer_prefix': 'http://bar',
+        'type': 's3',
+        'access_key': 'XXXX',
+        'secret_key': 'YYYY',
+        'buckets': ['bar'],
+    }
+    await client.request('POST', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/credentials', data)
+
+    ret = await client.request('GET', f'/datasets/{DATASETS[0]}/credentials')
+    data['dataset_id'] = DATASETS[0]
+    data['task_name'] = TASK_NAMES[0]
+    assert ret == [data]
+
+    data2 = {
+        'url': 'http://bar',
+        'transfer_prefix': 'http://bar',
+        'type': 's3',
+        'access_key': 'XXXX',
+        'secret_key': 'YYYY',
+        'buckets': ['bar'],
+    }
+    await client.request('POST', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/credentials', data2)
+
+    ret = await client.request('GET', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/credentials')
+    data2['dataset_id'] = DATASETS[0]
+    data2['task_name'] = TASK_NAMES[0]
+    assert ret == [data, data2]
+
+    data4 = {
+        'url': 'http://foo',
+        'transfer_prefix': 'http://baz',
+        'type': 's3',
+        'access_key': 'XXXX',
+        'secret_key': 'YYYY',
+        'buckets': ['bar'],
+    }
+    await client.request('POST', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/credentials', data4)
+
+    ret = await client.request('GET', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/credentials')
+    data4['dataset_id'] = DATASETS[0]
+    data4['task_name'] = TASK_NAMES[0]
+    assert ret == [data, data2, data4]
+
+    # now overwrite
+    data3 = {
+        'url': 'http://foo',
+        'transfer_prefix': 'http://bar',
+        'type': 's3',
+        'access_key': 'XXXX',
+        'secret_key': 'YYYY',
+        'buckets': ['baz'],
+    }
+    await client.request('POST', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/credentials', data3)
+
+    ret = await client.request('GET', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/credentials')
+    data3_out = data3.copy()
+    data3_out['dataset_id'] = DATASETS[0]
+    data3_out['task_name'] = TASK_NAMES[0]
+    assert ret == [data3_out, data2, data4]
+
+    await client.request('DELETE', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/credentials', {'url': 'http://foo'})
+
+    ret = await client.request('GET', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/credentials')
+    assert ret == [data2]
+
+    await client.request('POST', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/credentials', data3)
+    await client.request('DELETE', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/credentials')
+
+    ret = await client.request('GET', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/credentials')
+    assert ret == []
+
+
+async def test_credentials_datasets_oauth(server):
+    client = server(roles=['system'])
+
+    data = {
+        'url': 'http://foo',
+        'type': 'oauth',
+        'access_token': str(client.access_token),
+    }
+    await client.request('POST', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/credentials', data)
+
+    ret = await client.request('GET', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/credentials')
+    for k in data:
+        assert ret[0][k] == data[k]
 
 
 async def test_credentials_healthz(server):
