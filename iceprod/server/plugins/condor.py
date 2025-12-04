@@ -21,6 +21,7 @@ import subprocess
 import time
 from typing import Any, Generator, NamedTuple
 
+import classad2 as classad
 import htcondor2 as htcondor  # type: ignore
 from wipac_dev_tools.prometheus_tools import GlobalLabels, AsyncPromWrapper, PromWrapper, AsyncPromTimer, PromTimer
 
@@ -657,7 +658,7 @@ transfer_output_remaps = $(outremaps)
         for ad in self.condor_schedd.history(
             constraint=f'IceProdSite =?= "{self.cfg["queue"].get("site", "unknown")}"',
             projection=['ClusterId', 'ProcId'] + self.AD_PROJECTION_HISTORY,
-            since=f'CompletionDate<{since}' if since else '',
+            since=classad.ExprTree(f'CompletionDate<{since}') if since else None,  # type: ignore
         ):
             job_id = CondorJobId(cluster_id=ad['ClusterId'], proc_id=ad['ProcId'])
 
