@@ -241,7 +241,7 @@ class CondorSubmit:
             else:
                 raise RuntimeError('unknown token scope url prefix: %r', url_prefix)
         return transfer_transforms
-    
+
     def condor_oauth_scratch(self, task: Task) -> str | None:
         """
         Test if scratch is in use, and if so ask for a token.
@@ -263,6 +263,7 @@ class CondorSubmit:
 
         in_scratch = False
         out_scratch = False
+
         def eval_data(data):
             nonlocal in_scratch, out_scratch
             for d in data:
@@ -271,6 +272,7 @@ class CondorSubmit:
                         in_scratch = True
                     if d['movement'] in ('output', 'both'):
                         out_scratch = True
+
         if task.task_files:
             eval_data(task.task_files)
         task_config = task.get_task_config()
@@ -285,7 +287,7 @@ class CondorSubmit:
             scopes.append(f'storage.read:{scope_path}')
         if out_scratch:
             scopes.append(f'storage.modify:{scope_path}')
-        
+
         if scopes:
             return f'{service_name}_oauth_permissions_scratch = {" ".join(scopes)}'
         else:
@@ -524,13 +526,13 @@ transfer_output_remaps = $(outremaps)
         jobset = []
         for task in tasks:
             submit_dir = self.create_submit_dir(task, jel_dir)
-            s = WriteToScript(task=task, workdir=submit_dir)
-            executable = await s.convert(transfer=True)
+            script = WriteToScript(task=task, workdir=submit_dir)
+            executable = await script.convert(transfer=True)
             logger.debug('running task with exe %r', executable)
 
             ads = self.AD_DEFAULTS.copy()
-            ads.update(self.condor_infiles(s.infiles, token_transform))
-            ads.update(self.condor_outfiles(s.outfiles, token_transform))
+            ads.update(self.condor_infiles(script.infiles, token_transform))
+            ads.update(self.condor_outfiles(script.outfiles, token_transform))
             ads.update(self.condor_resource_reqs(task))
 
             if task.oauth_tokens:
