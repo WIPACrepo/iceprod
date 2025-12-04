@@ -45,9 +45,9 @@
 
 {% block body %}
 <div id="submit_area">
-    <form>
+    <form method="post">
         {% module xsrf_form_html() %}
-        <textarea name="submit_box" id="submit_box" style="min-height: 400px">{{ json_encode(config, indent=2) }}</textarea>
+        <textarea name="submit_box" id="submit_box" style="min-height: 500px">{{ json_encode(config, indent=2) }}</textarea>
         <textarea name="description" id="description" placeholder="Description">{{ description }}</textarea>
         <div class="submit_contents">
             {% if dataset_id %}
@@ -63,7 +63,7 @@
                     <option value="{{ g }}">{{ g }}</option>
                 {% end %}
             </select>
-            <button id="submit_action" onclick="submit()">Submit</button>
+            <button id="submit_action">Submit</button>
             {% end %}
         </div>
     </form>
