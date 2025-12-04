@@ -110,6 +110,8 @@ packages = [
     'iceprod.rest.handlers',
     'iceprod.scheduled_tasks',
     'iceprod.server',
+    'iceprod.server.data',
+    'iceprod.server.data.condor_transfer_plugins',
     'iceprod.server.plugins',
     'iceprod.website',
     'iceprod.website.handlers',
