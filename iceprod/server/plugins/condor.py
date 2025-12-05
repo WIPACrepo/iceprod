@@ -394,9 +394,12 @@ class CondorSubmit:
         now = time.time()
         logger.info('add_tokens: %r', tokens)
         for data in tokens:
-            if data.get('type', None) != 'oauth':
+            if data.get('type', 'oauth') != 'oauth':
                 logger.warning('unhandled type for token: %r', data)
                 continue
+            if 'transfer_prefix' not in data:
+                logger.warning('missing transfer_prefix from token: %r', data)
+                break
             prefix = data['transfer_prefix']
             if transform := provider_transforms.get(prefix, None):
                 s_h = transform.split('+',1)[0]

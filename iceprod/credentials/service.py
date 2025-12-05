@@ -109,7 +109,7 @@ class RefreshService:
 
         logging.warning('exchanging on %s with args %r', client.auth.token_url, args)
 
-        new_cred = {}
+        new_cred = cred.copy()
         try:
             async with httpx.AsyncClient() as http_client:
                 r = await http_client.post(client.auth.token_url, data=args)
