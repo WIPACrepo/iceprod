@@ -40,8 +40,8 @@ class Materialize:
         if only_dataset:
             datasets = [only_dataset]
         else:
-            ret = await self.rest_client.request('GET', '/dataset_summaries/status')
-            datasets = ret.get('processing', [])
+            ret2 = await self.rest_client.request('GET', '/dataset_summaries/status')
+            datasets = ret2.get('processing', [])
 
         for dataset_id in datasets:
             try:
