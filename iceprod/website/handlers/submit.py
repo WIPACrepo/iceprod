@@ -282,7 +282,8 @@ class TokenLogin(TokenClients, OpenIDLoginHandler, PublicHandler):  # type: igno
                 args['task_name'] = scope
             if scope := self.get_argument('prefix', None):
                 args['prefix'] = scope
-            url = tornado.httputil.url_concat('/login', args)
+            next_url = tornado.httputil.url_concat(self.get_login_url(), args)
+            url = tornado.httputil.url_concat('/login', {'next': next_url})
             self.redirect(url)
             return
 
