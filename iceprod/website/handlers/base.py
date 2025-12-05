@@ -87,17 +87,10 @@ class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):  # type: 
     def get_current_user(self) -> str | None:
         """Get the current username from the cookie"""
         try:
-            user = self.get_secure_cookie('iceprod_username')
-            if not user:
+            username = self.get_secure_cookie('iceprod_username')
+            if not username:
                 raise RuntimeError('missing iceprod_username cookie')
-            username = user.decode('utf-8')
-            if session := self._session_mgr.get_session(username):
-                if refresh_token := session.get('refresh_token', None):
-                    logger.debug('refresh_token: %r', refresh_token)
-                    if get_expiration(refresh_token) < time.time()+60:
-                        logger.info("refresh token is expired, so logout")
-                        return None
-            return username
+            return username.decode('utf-8')
         except Exception:
             logger.info('failed to get username', exc_info=True)
         return None
@@ -424,7 +417,9 @@ class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler
                     timeout=50,
                     retries=1,
                 )
-            elif self.current_user and self.auth_access_token:
+                # verify refresh works
+                self.rest_client._get_token()
+            elif self.current_user and self.auth_access_token and get_expiration(self.auth_access_token) > time.time():
                 self.rest_client = RestClient(self.rest_api, self.auth_access_token, timeout=50, retries=1)
             elif not self.current_user:
                 logger.info('no current user')
