@@ -457,6 +457,9 @@ class CondorSubmit:
 
         reqs = ' && '.join(f'stringListMember("{name}", HasFileTransferPluginMethods)' for name in services_used)
 
+        logger.info('oauth_submit lines: \n%s', block)
+        logger.info('oauth_submit reqs: %s', reqs)
+
         return token_transform, block, reqs
 
     @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_submit', 'IceProd grid condor.submit calls', buckets=HistogramBuckets.MINUTE))
@@ -606,6 +609,9 @@ transfer_output_remaps = $(outremaps)
 
         with prom_histogram.time():
             s = htcondor.Submit(submitfile)
+            if '_oauth_permissions_' in oauth_block:
+                # this requires tokens to be issued
+                s.issue_credentials()
             try:
                 submit_result = self.condor_schedd.submit(s, count=1, itemdata=s.itemdata())
             except htcondor.HTCondorException:
