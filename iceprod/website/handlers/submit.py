@@ -322,4 +322,12 @@ class TokenLogin(TokenClients, OpenIDLoginHandler, PublicHandler):
                 'prefix': self.get_argument('prefix'),
                 'scope': scope,
             }
-            self.start_oauth_authorization(state)
+            extra_params = {"state": self._encode_state(state)}
+
+            self.authorize_redirect(
+                redirect_uri=self.get_login_url(),
+                client_id=self.oauth_client_id,
+                scope=self.oauth_client_scope,
+                extra_params=extra_params,
+                response_type='code'
+            )
