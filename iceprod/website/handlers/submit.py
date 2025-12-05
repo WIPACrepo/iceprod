@@ -6,13 +6,13 @@ from typing import Any, Self
 from urllib.parse import urlencode
 
 import tornado.web
-from rest_tools.server import RestHandler, OpenIDLoginHandler
+from rest_tools.server import RestHandler, OpenIDLoginHandler, catch_error
 
 from iceprod.core.config import Config as DatasetConfig
 from iceprod.core.jsonUtil import json_encode, json_decode
 from iceprod.core.parser import ExpParser
 from iceprod.credentials.util import Client as CredClient
-from .base import authenticated, PublicHandler
+from .base import authenticated, LoginMixin, PublicHandler
 
 logger = logging.getLogger('website-submit')
 
@@ -271,8 +271,21 @@ class TokenLogin(TokenClients, OpenIDLoginHandler, PublicHandler):  # type: igno
     def get_login_url(self) -> str:
         return self.login_url
 
-    @authenticated
+    @catch_error
     async def get(self: Self):
+        if not await self.get_current_user_async():
+            logger.info('user not logged in!')
+            args = {}
+            if scope := self.get_argument('scope', None):
+                args['scope'] = scope
+            if scope := self.get_argument('task_name', None):
+                args['task_name'] = scope
+            if scope := self.get_argument('prefix', None):
+                args['prefix'] = scope
+            url = tornado.httputil.url_concat('/login', args)
+            self.redirect(url)
+            return
+
         if self.get_argument('error', False):
             err = self.get_argument('error_description', None)
             if not err:
