@@ -252,10 +252,10 @@ class SubmitDataset(TokenClients, PublicHandler):  # type: ignore[misc]
 
 class TokenLogin(TokenClients, OpenIDLoginHandler, PublicHandler):
     def initialize(self, *args, login_url: str, oauth_url: str, token_client: CredClient, **kwargs):  # type: ignore[override]
-        super().initialize(*args, **kwargs)
         self.login_url = login_url
         self.oauth_url = oauth_url
         self.token_client = token_client
+        super().initialize(*args, **kwargs)
 
     def oauth_setup(self):
         # this is separate so it can be mocked out in testing

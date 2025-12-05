@@ -7,6 +7,17 @@ from iceprod.materialization.materialize import Materialize
 def test_materialize_init():
     Materialize(MagicMock())
 
+async def test_materialize_run_none(requests_mock):
+    rc = RestClient('http://test.iceprod')
+    m = Materialize(rc)
+    m.buffer_job = AsyncMock(return_value=1)
+
+    requests_mock.get('http://test.iceprod/dataset_summaries/status', json={})
+
+    ret = await m.run_once(num=1)
+    assert ret is True
+    assert m.buffer_job.call_count == 0
+
 async def test_materialize_run_one_job(requests_mock):
     rc = RestClient('http://test.iceprod')
     m = Materialize(rc)
