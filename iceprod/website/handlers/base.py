@@ -104,6 +104,8 @@ class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):  # type: 
                 logger.info('bad access token type: not str')
                 return None
             return ret
+        else:
+            logger.info('no session to get access token from')
         return None
 
     @auth_access_token.setter
@@ -114,13 +116,15 @@ class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):  # type: 
             raise RuntimeError('no valid session')
 
     @property
-    def auth_refresh_token(self) -> bytes | None:
+    def auth_refresh_token(self) -> str | None:
         if self.session:
             ret = self.session.get('refresh_token', None)
             if not isinstance(ret, str):
                 logger.info('bad access token type: not str')
                 return None
-            return ret.encode('utf-8')
+            return ret
+        else:
+            logger.info('no session to get refresh token from')
         return None
 
     @auth_refresh_token.setter  # type: ignore[override]
@@ -418,15 +422,20 @@ class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler
                     retries=1,
                 )
                 # verify refresh works
-                self.rest_client._get_token()
+                if not self.rest_client._openid_token():
+                    logger.info('cannot refresh token')
+                    return None
             elif self.current_user and self.auth_access_token and get_expiration(self.auth_access_token) > time.time():
                 self.rest_client = RestClient(self.rest_api, self.auth_access_token, timeout=50, retries=1)
             elif not self.current_user:
                 logger.info('no current user')
+                return None
             else:
                 logger.info('no access token')
+                return None
         except Exception:
             logger.info('failed to create user rest client', exc_info=True)
+            return None
         return self.current_user
 
     def write_error(self, status_code: int = 500, **kwargs) -> None:
