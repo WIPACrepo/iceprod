@@ -93,6 +93,7 @@ class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):  # type: 
             username = user.decode('utf-8')
             if session := self._session_mgr.get_session(username):
                 if refresh_token := session.get('refresh_token', None):
+                    logger.debug('refresh_token: %r', refresh_token)
                     if get_expiration(refresh_token) < time.time()+60:
                         logger.info("refresh token is expired, so logout")
                         return None
