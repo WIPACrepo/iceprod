@@ -262,7 +262,7 @@ class TokenLogin(TokenClients, OpenIDLoginHandler, PublicHandler):
         auth = self.token_client.auth
         self._OAUTH_AUTHORIZE_URL = auth.provider_info['authorization_endpoint']
         self._OAUTH_ACCESS_TOKEN_URL = auth.provider_info['token_endpoint']
-        self._OAUTH_LOGOUT_URL = auth.provider_info['end_session_endpoint']
+        #self._OAUTH_LOGOUT_URL = auth.provider_info['end_session_endpoint']
         self._OAUTH_USERINFO_URL = auth.provider_info['userinfo_endpoint']
 
     def validate_new_token(self, token) -> dict[str, Any]:
