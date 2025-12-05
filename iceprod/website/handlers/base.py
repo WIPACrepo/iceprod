@@ -80,7 +80,7 @@ def eval_expression(token, e):
     return [r for r in ret if r]
 
 
-class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):  # type: ignore[misc]
+class LoginMixin(SessionMixin, RestHandler):  # type: ignore[misc]
     """
     Store/load current user's `OpenIDLoginHandler` tokens in Redis.
     """

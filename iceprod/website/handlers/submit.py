@@ -250,7 +250,7 @@ class SubmitDataset(TokenClients, PublicHandler):  # type: ignore[misc]
         self.redirect(f'/dataset/{dataset_id}')
 
 
-class TokenLogin(TokenClients, OpenIDLoginHandler, PublicHandler):
+class TokenLogin(TokenClients, OpenIDLoginHandler, PublicHandler):  # type: ignore[misc]
     def initialize(self, *args, login_url: str, oauth_url: str, token_client: CredClient, **kwargs):  # type: ignore[override]
         self.login_url = login_url
         self.oauth_url = oauth_url
