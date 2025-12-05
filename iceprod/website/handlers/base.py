@@ -12,7 +12,7 @@ import tornado.web
 import jwt
 import requests.exceptions
 from rest_tools.client import RestClient, OpenIDRestClient
-from rest_tools.server import catch_error, RestHandler, OpenIDCookieHandlerMixin
+from rest_tools.server import catch_error, RestHandler
 from rest_tools.server.session import SessionMixin
 
 from iceprod.credentials.util import get_expiration

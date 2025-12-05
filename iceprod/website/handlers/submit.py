@@ -12,7 +12,7 @@ from iceprod.core.config import Config as DatasetConfig
 from iceprod.core.jsonUtil import json_encode, json_decode
 from iceprod.core.parser import ExpParser
 from iceprod.credentials.util import Client as CredClient
-from .base import authenticated, LoginMixin, PublicHandler
+from .base import authenticated, PublicHandler
 
 logger = logging.getLogger('website-submit')
 
@@ -262,7 +262,7 @@ class TokenLogin(TokenClients, OpenIDLoginHandler, PublicHandler):  # type: igno
         auth = self.token_client.auth
         self._OAUTH_AUTHORIZE_URL = auth.provider_info['authorization_endpoint']
         self._OAUTH_ACCESS_TOKEN_URL = auth.provider_info['token_endpoint']
-        #self._OAUTH_LOGOUT_URL = auth.provider_info['end_session_endpoint']
+        # self._OAUTH_LOGOUT_URL = auth.provider_info['end_session_endpoint']
         self._OAUTH_USERINFO_URL = auth.provider_info['userinfo_endpoint']
 
     def validate_new_token(self, token) -> dict[str, Any]:
