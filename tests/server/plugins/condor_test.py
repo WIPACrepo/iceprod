@@ -494,7 +494,7 @@ async def test_CondorSubmit_submit(schedd):
 
     assert sub.add_oauth_tokens.call_count == 2
     assert sub.add_oauth_tokens.call_args_list[1].args == ({'osdf:///': 'token.datasetgenerate+osdf:///'}, tokens)
-    assert sub.add_oauth_tokens.call_args_list[0].args == ({'pelican://foo.bar': 'pelican.scratch+pelican://foo.bar/scratch'}, [cred])
+    assert sub.add_oauth_tokens.call_args_list[0].args == ({'pelican://foo.bar/scratch': 'pelican.scratch+pelican://foo.bar/scratch'}, [cred])
 
     submitfile = sub.condor_schedd.submit.call_args.args[0]
     logging.info('submitfile: %s', submitfile)

@@ -104,8 +104,6 @@ class RefreshService:
         }
         if client.client_secret:
             args['client_secret'] = client.client_secret
-        if cred.get('scope', None) is not None:
-            args['scope'] = cred['scope']
 
         logging.warning('exchanging on %s with args %r', client.auth.token_url, args)
 

@@ -421,7 +421,7 @@ class CondorSubmit:
             svc = self.oauth_service_mapping[prefix]
             services_used[svc].add('scratch')
             transform = f'{svc}.scratch+{site_temp}'
-            self.add_oauth_tokens({prefix: transform}, [cred])
+            self.add_oauth_tokens({site_temp: transform}, [cred])
             # token_transform[site_temp] = transform
 
         block = f"""+oauth_file_transform = False
