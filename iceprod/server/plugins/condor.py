@@ -21,7 +21,7 @@ import subprocess
 import time
 from typing import Any, Generator, NamedTuple
 
-import classad2 as classad
+import classad2 as classad  # type: ignore
 import htcondor2 as htcondor  # type: ignore
 from wipac_dev_tools.prometheus_tools import GlobalLabels, AsyncPromWrapper, PromWrapper, AsyncPromTimer, PromTimer
 

@@ -251,7 +251,7 @@ class SubmitDataset(TokenClients, PublicHandler):  # type: ignore[misc]
 
 
 class TokenLogin(TokenClients, OpenIDLoginHandler, PublicHandler):
-    def initialize(self, *args, login_url: str, oauth_url: str, token_client: CredClient, **kwargs):
+    def initialize(self, *args, login_url: str, oauth_url: str, token_client: CredClient, **kwargs):  # type: ignore[override]
         super().initialize(*args, **kwargs)
         self.login_url = login_url
         self.oauth_url = oauth_url
