@@ -251,11 +251,22 @@ class SubmitDataset(TokenClients, PublicHandler):  # type: ignore[misc]
 
 
 class TokenLogin(TokenClients, OpenIDLoginHandler, PublicHandler):
-    def initialize(self, *args, login_url, oauth_url, token_client, **kwargs):
+    def initialize(self, *args, login_url: str, oauth_url: str, token_client: CredClient, **kwargs):
         super().initialize(*args, **kwargs)
         self.login_url = login_url
         self.oauth_url = oauth_url
         self.token_client = token_client
+
+    def oauth_setup(self):
+        # this is separate so it can be mocked out in testing
+        auth = self.token_client.auth
+        self._OAUTH_AUTHORIZE_URL = auth.provider_info['authorization_endpoint']
+        self._OAUTH_ACCESS_TOKEN_URL = auth.provider_info['token_endpoint']
+        self._OAUTH_LOGOUT_URL = auth.provider_info['end_session_endpoint']
+        self._OAUTH_USERINFO_URL = auth.provider_info['userinfo_endpoint']
+
+    def validate_new_token(self, token) -> dict[str, Any]:
+        return self.token_client.auth.validate(token)
 
     def get_login_url(self) -> str:
         return self.login_url
