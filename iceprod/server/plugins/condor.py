@@ -392,9 +392,10 @@ class CondorSubmit:
         Add OAuth tokens to HTCondor
         """
         now = time.time()
+        logger.info('add_tokens: %r', tokens)
         for data in tokens:
-            if data['type'] != 'oauth':
-                logger.warning('unhandled type for token: %s', data['type'])
+            if data.get('type', None) != 'oauth':
+                logger.warning('unhandled type for token: %r', data)
                 continue
             prefix = data['transfer_prefix']
             if transform := provider_transforms.get(prefix, None):

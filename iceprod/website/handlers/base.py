@@ -87,7 +87,6 @@ class LoginMixin(SessionMixin, RestHandler):  # type: ignore[misc]
     def get_current_user(self) -> str | None:
         """Get the current username from the cookie"""
         try:
-            logger.info('here!!!')
             username = self.get_secure_cookie('iceprod_username')
             if not username:
                 raise RuntimeError('missing iceprod_username cookie')
@@ -423,7 +422,7 @@ class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler
                     timeout=50,
                     retries=1,
                 )
-                # verify refresh works
+                # verify refresh works  (note: this contacts Keycloak every time!)
                 if not self.rest_client._openid_token():
                     logger.info('cannot refresh token')
                     return None
