@@ -1,6 +1,7 @@
 import functools
 import logging
 import re
+import time
 import traceback
 from typing import Any
 from urllib.parse import urlencode
@@ -14,6 +15,7 @@ from rest_tools.client import RestClient, OpenIDRestClient
 from rest_tools.server import catch_error, RestHandler, OpenIDCookieHandlerMixin
 from rest_tools.server.session import SessionMixin
 
+from iceprod.credentials.util import get_expiration
 from iceprod.util import VERSION_STRING
 from iceprod.prom_utils import PromRequestMixin
 from iceprod.roles_groups import GROUPS
@@ -85,14 +87,15 @@ class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):  # type: 
     def get_current_user(self) -> str | None:
         """Get the current username from the cookie"""
         try:
-            assert self.auth
             user = self.get_secure_cookie('iceprod_username')
             if not user:
                 raise RuntimeError('missing iceprod_username cookie')
             username = user.decode('utf-8')
             if session := self._session_mgr.get_session(username):
                 if refresh_token := session.get('refresh_token', None):
-                    self.auth.validate(refresh_token)
+                    if get_expiration(refresh_token) < time.time()+60:
+                        logger.info("refresh token is expired, so logout")
+                        return None
             return username
         except Exception:
             logger.info('failed to get username', exc_info=True)
