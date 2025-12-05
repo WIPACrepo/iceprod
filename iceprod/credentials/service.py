@@ -122,7 +122,8 @@ class RefreshService:
             except Exception:
                 req = {}
             error = req.get('error', '')
-            raise Exception(f'Exchange request failed: {error}') from exc
+            desc = req.get('error_description', '')
+            raise Exception(f'Exchange request failed: {error} - {desc}') from exc
         else:
             logger.debug('OpenID token exchanged')
             new_cred['access_token'] = req['access_token']
