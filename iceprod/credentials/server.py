@@ -123,13 +123,16 @@ class BaseCredentialsHandler(APIBase):
                 data.update(new_cred)
 
         else:
-            raise HTTPError(400, 'bad credential type')
+            raise HTTPError(400, reason='bad credential type')
 
-        await db.update_one(
-            base_data,
-            {'$set': data},
-            upsert=True,
-        )
+        try:
+            await db.update_one(
+                base_data,
+                {'$set': data},
+                upsert=True,
+            )
+        except pymongo.errors.DuplicateKeyError:
+            raise HTTPError(409, reason='credential already exists')
 
     async def patch_cred(self, db, base_data):
         assert self.refresh_service
@@ -740,17 +743,17 @@ class Server:
         self.db = db[db_name]
         self.indexes = {
             'group_creds': {
-                'group_index': {'keys': [('groupname', pymongo.DESCENDING), ('url', pymongo.DESCENDING)], 'unique': True},
+                'group_index2': {'keys': [('groupname', pymongo.DESCENDING), ('transfer_prefix', pymongo.DESCENDING)], 'unique': True},
             },
             'user_creds': {
-                'username_index': {'keys': [('username', pymongo.DESCENDING), ('url', pymongo.DESCENDING)], 'unique': True},
+                'username_index2': {'keys': [('username', pymongo.DESCENDING), ('transfer_prefix', pymongo.DESCENDING)], 'unique': True},
             },
             'dataset_creds': {
-                'dataset_index': {
+                'dataset_index2': {
                     'keys': [
                         ('dataset_id', pymongo.DESCENDING),
                         ('task_name', pymongo.DESCENDING),
-                        ('url', pymongo.DESCENDING)
+                        ('transfer_prefix', pymongo.DESCENDING)
                     ],
                     'unique': True,
                 },
@@ -820,6 +823,10 @@ class Server:
                     logging.info('DB: creating index %s:%s', collection, name)
                     kwargs = self.indexes[collection][name]
                     await self.db[collection].create_index(name=name, **kwargs)
+            for name in existing:
+                if name not in self.indexes[collection]:
+                    logging.info('DB: drop index %s:%s', collection, name)
+                    await self.db[collection].drop_index(name)
 
         if not self.refresh_service_task:
             self.refresh_service_task = asyncio.create_task(self.refresh_service.run())
