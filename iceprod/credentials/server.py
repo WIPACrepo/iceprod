@@ -792,8 +792,8 @@ class Server:
         server.add_route(r'/users/(?P<username>\w+)/exchange', UserExchangeHandler, kwargs)
         server.add_route(r'/datasets/(?P<dataset_id>\w+)/credentials', DatasetCredentialsHandler, kwargs)
         server.add_route(r'/datasets/(?P<dataset_id>\w+)/exchange', DatasetExchangeHandler, kwargs)
-        server.add_route(r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_name>\w+)/credentials', DatasetTaskCredentialsHandler, kwargs)
-        server.add_route(r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_name>\w+)/exchange', DatasetTaskExchangeHandler, kwargs)
+        server.add_route(r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_name>[^\/\?\#]+)/credentials', DatasetTaskCredentialsHandler, kwargs)
+        server.add_route(r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_name>[^\/\?\#]+)/exchange', DatasetTaskExchangeHandler, kwargs)
         server.add_route('/healthz', HealthHandler, kwargs)
         server.add_route(r'/(.*)', Error)
 
