@@ -96,7 +96,7 @@ class Submit(TokenClients, PublicHandler):  # type: ignore[misc]
         }
         self.render('submit.html', **render_args)
 
-    SCOPE_RE = re.compile(r'(.*?(?:\d{4,}\-\d{4,}|\$))')
+    SCOPE_RE = re.compile(r'(.*?(?:\d{4,}\-\d{4,}|\$|(?:IceCube\/20\d\d\/filtered\/.*?\/\d{4})))')
 
     @staticmethod
     def get_scope(path: str, movement: str) -> str:
@@ -105,6 +105,7 @@ class Submit(TokenClients, PublicHandler):  # type: ignore[misc]
 
         Special cases to trim:
         * subdirectories: example: 000000-000999
+        * run months: example: 0123
         * unexpanded variables: anything wth $
         """
         prefix = 'storage.read' if movement == 'input' else 'storage.modify'
