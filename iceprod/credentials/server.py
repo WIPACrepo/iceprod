@@ -824,7 +824,7 @@ class Server:
                     kwargs = self.indexes[collection][name]
                     await self.db[collection].create_index(name=name, **kwargs)
             for name in existing:
-                if name not in self.indexes[collection]:
+                if (not name.startswith('_')) and name not in self.indexes[collection]:
                     logging.info('DB: drop index %s:%s', collection, name)
                     await self.db[collection].drop_index(name)
 
