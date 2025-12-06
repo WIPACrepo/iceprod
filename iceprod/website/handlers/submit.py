@@ -145,6 +145,8 @@ class Submit(TokenClients, PublicHandler):  # type: ignore[misc]
             for task in config['tasks']:
                 task_token_scopes = defaultdict(set)
                 for data in task['data']:
+                    if data['type'] != 'permanent':
+                        continue
                     remote = parser.parse(data['remote'], job=config)
                     for prefix in self.token_clients:
                         if remote.startswith(prefix):
@@ -195,6 +197,7 @@ class Submit(TokenClients, PublicHandler):  # type: ignore[misc]
 
         if token_requests:
             # start oauth2 redirect dance
+            logger.info('token requests: %r', token_requests)
             first_request = token_requests.pop(0)
             self.session['token_requests'] = json_encode(token_requests)
             _id = first_request.pop('client_id')
