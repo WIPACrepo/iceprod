@@ -29,6 +29,47 @@ def test_config():
     c.validate()
 
 
+def test_config_dups():
+    config = {'tasks':[
+        {
+            'name': 'testing',
+            'trays': [{
+                'modules': [{
+                    'src': '/usr/bin/python3',
+                    'args': ''
+                }]
+            }],
+            'data': [
+                {
+                    'remote': 'token:///data/sim/IceCube/2025/file.i3.zst',
+                    'movement': 'input'
+                }
+            ]
+        },
+        {
+            'name': 'testing2',
+            'trays': [{
+                'modules': [{
+                    'src': '/usr/bin/python3',
+                    'args': ''
+                }]
+            }],
+            'data': [
+                {
+                    'remote': 'token:///data/sim/IceCube/2025/file.i3.zst',
+                    'movement': 'input'
+                }
+            ]
+        }
+    ]}
+    c = Config(config)
+    c.fill_defaults()
+    c.validate()
+
+    c.config['tasks'][0]['token_scopes']['foo'] = 'bar'
+    assert 'foo' not in c.config['tasks'][1]['token_scopes']
+
+
 def test_dataset_dataclasses():
     with pytest.raises(Exception):
         Dataset()
