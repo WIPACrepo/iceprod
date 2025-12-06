@@ -6,19 +6,15 @@ IceProd Config Pelican Migration:
 import argparse
 import asyncio
 from collections import defaultdict
-from getpass import getpass
 import json
 import os
 import jsonschema
 import re
 import logging
-from pathlib import Path
-from pprint import pprint
-import urllib.parse
 
 import requests
 from pymongo import MongoClient
-from rest_tools.client import ClientCredentialsAuth, RestClient
+from rest_tools.client import RestClient
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 from iceprod.core.config import Config
 from iceprod.core.parser import ExpParser
@@ -74,42 +70,65 @@ async def cred_token(dataset_id: str, username: str, task_name: str, prefix: str
         username = 'ice3simusr'
     if cred_client:
         # not in dry-run
-        data = {
-            'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
-            'requested_subject': username,
-            'requested_token_type': 'urn:ietf:params:oauth:token-type:refresh_token',
-            'scope': scope,
-        }
-        req = requests.post(token_client.url+'/token', data=data, auth=(token_client.client_id, token_client.client_secret))
-        try:
-            req.raise_for_status()
-        except Exception:
-            logging.error('error response: %s', req.text)
-            logging.error('request headers: %r', req.request.headers)
-            logging.error('request body: %r', req.request.body)
-            raise
-        req_data = req.json()
 
         args = {
             'url': token_client.url,
             'transfer_prefix': prefix,
             'type': 'oauth',
-            'refresh_token': req_data['refresh_token'],
-            'scope': scope,
         }
-        try:
-            await cred_client.request('POST', f'/datasets/{dataset_id}/tasks/{task_name}/credentials', args)
-        except Exception:
-            await cred_client.request('PATCH', f'/datasets/{dataset_id}/tasks/{task_name}/credentials', args)
+        ret = await cred_client.request('GET', f'/datasets/{dataset_id}/tasks/{task_name}/credentials', args)
+        if ret and ret[0]['scope'] == scope:
+            logging.warning('cred tokens arlready present')
+        else:
+            logging.warning('need to add cred tokens')
+            data = {
+                'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
+                'requested_subject': username,
+                'requested_token_type': 'urn:ietf:params:oauth:token-type:refresh_token',
+                'scope': scope,
+            }
+            req = requests.post(token_client.url+'/token', data=data, auth=(token_client.client_id, token_client.client_secret))
+            try:
+                req.raise_for_status()
+            except Exception:
+                logging.error('error response: %s', req.text)
+                logging.error('request headers: %r', req.request.headers)
+                logging.error('request body: %r', req.request.body)
+                raise
+            req_data = req.json()
+
+            args = {
+                'url': token_client.url,
+                'transfer_prefix': prefix,
+                'type': 'oauth',
+                'refresh_token': req_data['refresh_token'],
+                'scope': scope,
+            }
+            try:
+                await cred_client.request('POST', f'/datasets/{dataset_id}/tasks/{task_name}/credentials', args)
+            except Exception:
+                await cred_client.request('PATCH', f'/datasets/{dataset_id}/tasks/{task_name}/credentials', args)
 
 
-async def get_tokens(config, username, task_files: list[dict], token_clients: dict[str, CredClient], cred_client: RestClient | None = None):
-    dataset_id = config['dataset_id']
+async def get_tokens(config, dataset, task_files: list[dict], token_clients: dict[str, CredClient], cred_client: RestClient | None = None):
+    dataset_id = dataset['dataset_id']
     parser = ExpParser()
+    username = dataset['username']
+    config = config.copy()
 
     # get token requests
     for task in config['tasks']:
         logging.info('get_tokens() for dataset %s task %s', dataset_id, task['name'])
+
+        options = {
+            'dataset_id': dataset_id,
+            'dataset': dataset['dataset'],
+            'job': 0,
+            'jobs_submitted': dataset['jobs_submitted'],
+            'task': task['name'],
+        }
+        options.update(config['options'])
+        config['options'] = options
         task_token_scopes = defaultdict(set)
         task_data = task['data'].copy()
         for tray in task.get('trays', []):
@@ -135,10 +154,13 @@ async def get_tokens(config, username, task_files: list[dict], token_clients: di
                 if scope:
                     task_token_scopes[prefix].add(scope)
         # set token_requests
-        logging.info('scopes: %r', task_token_scopes)
+        logging.warning('scopes for task %s: %r', task['name'], dict(task_token_scopes))
         for prefix,scopes in task_token_scopes.items():
             sorted_scope_str = ' '.join(sorted(scopes))
             task['token_scopes'][prefix] = sorted_scope_str
+
+            if '$' in sorted_scope_str:
+                raise Exception('bad scope!')
 
             await cred_token(dataset_id, username, task['name'], prefix, sorted_scope_str, token_clients[prefix], cred_client)
 
@@ -197,11 +219,12 @@ def do_mongo(server, *, dataset_id=None, output=None, token_clients: dict[str, C
 
     datasets = {}
     search = {}
+    projection = {"_id": False, "dataset_id": True, "dataset": True, "status": True, "username": True, "jobs_submitted": True}
 
     if dataset_id:
         search = {'dataset_id': dataset_id}
 
-    for d in client.datasets.datasets.find(search, projection={"_id": False, "dataset_id": True, "dataset": True, "status": True, "username": True}):
+    for d in client.datasets.datasets.find(search, projection=projection):
         if d['dataset'] > 22000 or dataset_id:
             datasets[d['dataset_id']] = d
 
@@ -224,8 +247,55 @@ def do_mongo(server, *, dataset_id=None, output=None, token_clients: dict[str, C
         assert config['dataset_id'] == new_config['dataset_id']
 
         logging.warning('Dataset %r config okay, now getting tokens', dataset['dataset'])
+        search = {"dataset_id": config['dataset_id'], 'remote': {'$not': { '$type': 'object' }}}
+
+        # exclude bad datasets in task_files
+        # if config['dataset_id'] in [
+        #     "4e402bd823c911eda570141877284d92",
+        #     "3aaa2dfc223a11eda2f2141877284d92",
+        #     "1157fac62b9d11ed8a6d141877284d92",
+        #     "03f187c22a4d11ed8a6d141877284d92",
+        #     "cf90ba78d77411eca198141877284d92",
+        #     "02a47d3a2dfd11eda570141877284d92",
+        #     "97860d2c2ba211edb99a141877284d92",
+        #     "bab161fc2c0111eda570141877284d92",
+        #     "aaea07461e7911edb75b141877284d92",
+        #     "97cbb1ba2a6211edaa4c141877284d92",
+        #     "9465e234223d11ed8a6d141877284d92",
+        #     "74738da0230a11edaa4c141877284d92",
+        #     "cd4b93522b9b11edb75b141877284d92",
+        #     "0fa86c32204511ed8a6d141877284d92",
+        #     "4123dd342b9211eda570141877284d92",
+        #     "0b5387cc2d8111edb75b141877284d92",
+        #     "d700e330223f11edb75b141877284d92",
+        #     "701b96101f6a11edb99a141877284d92",
+        #     "3aaa2dfc223a11eda2f2141877284d92",
+        #     "1157fac62b9d11ed8a6d141877284d92",
+        #     "4e402bd823c911eda570141877284d92",
+        #     "921661582d7711eda2f2141877284d92",
+        #     "6edac3440a5611ed8006141877284d92",
+        #     "cf90ba78d77411eca198141877284d92",
+        #     "8a5b238c2b9b11eda570141877284d92",
+        #     "10b73e422bf211ed8a6d141877284d92",
+        #     "03f187c22a4d11ed8a6d141877284d92",
+        #     "d3a0081a230c11eda570141877284d92",
+        #     "b424423a1e8411ed8a6d141877284d92",
+        #     "f85e716e231611eda2f2141877284d92",
+        #     "d33fcb500a5511edb80b141877284d92",
+        #     "4fd54f6c242011eda570141877284d92",
+        #     "5787250824c211edb99a141877284d92",
+        #     "c3f29700230911edaa4c141877284d92",
+        #     "ff6f79922b4c11edb75b141877284d92",
+        #     "ff2a91842d9e11ed8a6d141877284d92",
+        #     "3c2646aa2da411eda570141877284d92",
+        #     "9d9085d81eb111eda2f2141877284d92",
+        #     "51d9be4a231411edb75b141877284d92",
+        #     "efb1b3fec0b211f0be81fe2e65be79b2"
+        # ]:
+        #     task_files = []
+        # else:
         task_files = client.tasks.dataset_files.find(search).to_list(1000)
-        asyncio.run(get_tokens(new_config, dataset['username'], task_files, token_clients=token_clients, cred_client=cred_client))
+        asyncio.run(get_tokens(new_config, dataset, task_files, token_clients=token_clients, cred_client=cred_client))
 
         if output == '-':
             print(json.dumps(new_config, indent=2, sort_keys=True))
@@ -236,7 +306,8 @@ def do_mongo(server, *, dataset_id=None, output=None, token_clients: dict[str, C
         if not dryrun:
             db.config.find_one_and_replace({'dataset_id': config['dataset_id']}, new_config)
             if task_files:
-                client.tasks.dataset_files.update_many(search, {
+                logging.warning('updating task_files (this may take a while)')
+                client.tasks.dataset_files.update_many(search, [{
                     '$set': {
                         'remote': {
                             '$replaceOne': {
@@ -246,7 +317,7 @@ def do_mongo(server, *, dataset_id=None, output=None, token_clients: dict[str, C
                             }
                         }
                     }
-                })
+                }])
         logging.warning('Completed %r', dataset['dataset'])
 
 
@@ -258,18 +329,19 @@ def main():
     parser.add_argument('-o', '--output', default=None, help='output config json to file (or "-" for stdout)')
     parser.add_argument('--dataset-id', default=None, help='dataset id (for mongo)')
     parser.add_argument('--token-clients', required=True, help='json of token client info')
+    parser.add_argument('--log-level', default='WARNING')
     add_auth_to_argparse(parser)
     parser.add_argument('--dry-run', action='store_true', default=False, help='do a dry run (for mongo)')
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=getattr(logging, args.log_level.upper()))
 
     token_clients = ClientCreds(args.token_clients).get_clients_by_prefix()
 
     if args.dry_run:
         cred_client = None
     else:
-        cred_client = create_rest_client(args)
+        cred_client = create_rest_client(args, retries=0, timeout=5)
 
     if args.config:
         logging.info('Opening config at %s', args.config)
