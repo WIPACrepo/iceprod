@@ -5,6 +5,7 @@ that inherit from this class.
 """
 
 import asyncio
+import json
 import os
 import logging
 from copy import deepcopy
@@ -231,6 +232,15 @@ class BaseGrid:
             return ret
         else:
             return []
+
+    @cached(TTLCache(10, 60), key=lambda _: 'self')
+    async def get_scratch_credentials(self):
+        if client_id := self.cfg['oauth_condor_client_id']:
+            args = {'client_id': client_id, 'transfer_prefix': self.cfg['queue']['site_temp']}
+            ret = await self.cred_client.request('GET', '/users/ice3simusr/exchange', args)
+            if ret:
+                with open(self.credentials_dir / 'scratch', 'w') as f:
+                    json.dump(ret, f)
 
     @staticmethod
     def _get_resources(task):

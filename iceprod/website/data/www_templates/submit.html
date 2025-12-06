@@ -45,8 +45,8 @@
 
 {% block body %}
 <div id="submit_area">
-    <form method="post">
-        {% module xsrf_form_html() %}
+    {% if not edit %}<form method="post">
+        {% module xsrf_form_html() %}{% end %}
         <textarea name="submit_box" id="submit_box" style="min-height: 500px">{{ json_encode(config, indent=2) }}</textarea>
         <textarea name="description" id="description" placeholder="Description">{{ description }}</textarea>
         <div class="submit_contents">
@@ -66,7 +66,7 @@
             <button id="submit_action">Submit</button>
             {% end %}
         </div>
-    </form>
+    {% if not edit %}</form>{% end %}
 </div>
 <div id="error">{{ error }}</div>
 {% end %}

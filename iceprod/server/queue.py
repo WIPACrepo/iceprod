@@ -122,6 +122,7 @@ class Queue:
                     token_url=self.cfg['rest_api']['oauth_url'],
                     client_id=self.cfg['rest_api']['oauth_client_id'],
                     client_secret=self.cfg['rest_api']['oauth_client_secret'],
+                    retries=1,
                 )
             except Exception:
                 logger.warning('failed to connect to rest api: %r',

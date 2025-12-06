@@ -258,6 +258,12 @@ def test_CondorSubmit_condor_oauth_scratch(schedd):
 
     sub = iceprod.server.plugins.condor.CondorSubmit(cfg=cfg, submit_dir=submit_dir, credentials_dir=cred_dir)
 
+    cred_dir.mkdir(parents=True)
+    cred_path = cred_dir / 'scratch'
+    exp = time.time() + 100
+    cred = {"type":"oauth","refresh_token":"refresh","access_token":"access","expiration":exp}
+    with open(cred_path, 'w') as f:
+        json.dump([cred], f)
 
     dataset = MagicMock()
     dataset.dataset_id = 'dataset'
@@ -316,9 +322,11 @@ def test_CondorSubmit_condor_oauth_scratch(schedd):
         stats={},
     )
 
-    line = sub.condor_oauth_scratch(task)
-
-    assert line == 'token_oauth_permissions_scratch = storage.modify:/scratch'
+    ret = sub.condor_oauth_scratch(task)
+    assert ret
+    prefix, ret_cred = ret
+    assert prefix == 'token://foo.bar'
+    assert ret_cred == cred
 
 
 def test_CondorSubmit_add_oauth_tokens(schedd, credd):
@@ -378,6 +386,13 @@ async def test_CondorSubmit_submit(schedd):
     }
     submit_dir = Path(os.path.expanduser(os.path.expandvars(cfg['queue']['submit_dir'])))
     cred_dir = Path(os.path.expanduser(os.path.expandvars(cfg['queue']['credentials_dir'])))
+
+    cred_dir.mkdir(parents=True)
+    cred_path = cred_dir / 'scratch'
+    exp = time.time() + 100
+    cred = {"type":"oauth","refresh_token":"refresh","access_token":"access","expiration":exp}
+    with open(cred_path, 'w') as f:
+        json.dump([cred], f)
 
     sub = iceprod.server.plugins.condor.CondorSubmit(cfg=cfg, submit_dir=submit_dir, credentials_dir=cred_dir)
     sub.condor_schedd.submit = MagicMock()
@@ -477,12 +492,12 @@ async def test_CondorSubmit_submit(schedd):
     assert itemdata['outfiles'].strip('"') == ''
     assert itemdata['outremaps'].strip('"') == ''
 
-    assert sub.add_oauth_tokens.call_count == 1
-    assert sub.add_oauth_tokens.call_args.args == ({'osdf:///': 'token.datasetgenerate+osdf:///'}, tokens)
+    assert sub.add_oauth_tokens.call_count == 2
+    assert sub.add_oauth_tokens.call_args_list[1].args == ({'osdf:///': 'token.datasetgenerate+osdf:///'}, tokens)
+    assert sub.add_oauth_tokens.call_args_list[0].args == ({'pelican://foo.bar/scratch': 'pelican.scratch+pelican://foo.bar/scratch'}, [cred])
 
     submitfile = sub.condor_schedd.submit.call_args.args[0]
     logging.info('submitfile: %s', submitfile)
-    assert submitfile['use_oauth_services'] == 'pelican'
     assert submitfile['My.OAuthServicesNeeded'] == '"token*datasetgenerate pelican*scratch"'
 
     exe = open(submit_dir / 'today' / 'task' / 'task_runner.sh').read()
@@ -546,6 +561,7 @@ async def test_Grid_submit(schedd, i3prod_path):
 
     rc = MagicMock()
     g = iceprod.server.plugins.condor.Grid(cfg=cfg, rest_client=rc, cred_client=None)
+    g.get_scratch_credentials = AsyncMock()
 
     g.get_queue_num = MagicMock(return_value=5)
     tasks = [MagicMock(), MagicMock()]
@@ -570,6 +586,7 @@ async def test_Grid_submit_error(schedd, i3prod_path):
 
     rc = MagicMock()
     g = iceprod.server.plugins.condor.Grid(cfg=cfg, rest_client=rc, cred_client=None)
+    g.get_scratch_credentials = AsyncMock()
 
     g.get_queue_num = MagicMock(return_value=5)
     tasks = [MagicMock(), MagicMock()]

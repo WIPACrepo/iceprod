@@ -21,7 +21,7 @@ import subprocess
 import time
 from typing import Any, Generator, NamedTuple
 
-import classad2 as classad
+import classad2 as classad  # type: ignore
 import htcondor2 as htcondor  # type: ignore
 from wipac_dev_tools.prometheus_tools import GlobalLabels, AsyncPromWrapper, PromWrapper, AsyncPromTimer, PromTimer
 
@@ -243,56 +243,26 @@ class CondorSubmit:
                 raise RuntimeError('unknown token scope url prefix: %r', url_prefix)
         return transfer_transforms
 
-    def condor_oauth_scratch(self, task: Task) -> str | None:
+    def condor_oauth_scratch(self, task: Task) -> tuple[str, dict[str, Any]] | None:
         """
         Test if scratch is in use, and if so ask for a token.
         """
+        cred_path = self.credentials_dir / 'scratch'
+        if cred_path.exists():
+            with cred_path.open() as f:
+                creds = json.load(f)
+            scratch_cred = creds[0]
+        else:
+            return None
+
         # should have filled from grid._convert_to_task()
         site_temp = task.dataset.config['options']['site_temp']
-        service_name = ''
-        scope_path = ''
         for url_prefix in self.oauth_service_mapping:
             if site_temp.startswith(url_prefix):
-                service_name = self.oauth_service_mapping[url_prefix]
-                scope_path = site_temp.split(url_prefix,1)[1]
-                logger.info('scope_path: %s', scope_path)
                 logger.info('site_temp: %s', site_temp)
                 logger.info('url_prefix: %s', url_prefix)
-                break
-        else:
-            return None
-
-        in_scratch = False
-        out_scratch = False
-
-        def eval_data(data):
-            nonlocal in_scratch, out_scratch
-            for d in data:
-                if d['type'] != 'permanent':
-                    if d['movement'] in ('input', 'both'):
-                        in_scratch = True
-                    if d['movement'] in ('output', 'both'):
-                        out_scratch = True
-
-        if task.task_files:
-            eval_data(task.task_files)
-        task_config = task.get_task_config()
-        eval_data(task_config.get('data',[]))
-        for tray in task_config['trays']:
-            eval_data(tray.get('data',[]))
-            for module in tray['modules']:
-                eval_data(module.get('data',[]))
-
-        scopes = []
-        if in_scratch:
-            scopes.append(f'storage.read:{scope_path}')
-        if out_scratch:
-            scopes.append(f'storage.modify:{scope_path}')
-
-        if scopes:
-            return f'{service_name}_oauth_permissions_scratch = {" ".join(scopes)}'
-        else:
-            return None
+                return url_prefix, scratch_cred
+        return None
 
     @staticmethod
     def condor_os_container(os_arch: list[str] | str) -> str:
@@ -392,10 +362,14 @@ class CondorSubmit:
         Add OAuth tokens to HTCondor
         """
         now = time.time()
+        logger.info('add_tokens: %r', tokens)
         for data in tokens:
-            if data['type'] != 'oauth':
-                logger.warning('unhandled type for token: %s', data['type'])
+            if data.get('type', 'oauth') != 'oauth':
+                logger.warning('unhandled type for token: %r', data)
                 continue
+            if 'transfer_prefix' not in data:
+                logger.warning('missing transfer_prefix from token: %r', data)
+                break
             prefix = data['transfer_prefix']
             if transform := provider_transforms.get(prefix, None):
                 s_h = transform.split('+',1)[0]
@@ -442,16 +416,22 @@ class CondorSubmit:
 
         scratch = self.condor_oauth_scratch(task)
         if scratch:
-            parts = scratch.split()[0].split('_')
-            services_used[parts[0]].add(parts[-1])
+            site_temp = task.dataset.config['options']['site_temp']
+            prefix,cred = scratch
+            svc = self.oauth_service_mapping[prefix]
+            services_used[svc].add('scratch')
+            transform = f'{svc}.scratch+{site_temp}'
+            self.add_oauth_tokens({site_temp: transform}, [cred])
+            # token_transform[site_temp] = transform
 
         block = f"""+oauth_file_transform = False
-{'use_oauth_services = ' + scratch.split('_',1)[0] if scratch else ''}
 +OAuthServicesNeeded = "{' '.join(f'{s}*{h}' for s,handles in services_used.items() for h in handles)}"
-{scratch}
 """
 
         reqs = ' && '.join(f'stringListMember("{name}", HasFileTransferPluginMethods)' for name in services_used)
+
+        logger.info('oauth_submit lines: \n%s', block)
+        logger.info('oauth_submit reqs: %s', reqs)
 
         return token_transform, block, reqs
 
@@ -764,6 +744,9 @@ class Grid(grid.BaseGrid):
         logger.info("Attempting to submit %d tasks", num_to_submit)
         tasks = await self.get_tasks_to_queue(num_to_submit)
         cur_jel = self.get_current_JEL()
+
+        # pre-load the scratch credentials
+        await self.get_scratch_credentials()
 
         # split into datasets and task types
         tasks_by_dataset = defaultdict(list)

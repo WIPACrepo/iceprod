@@ -204,6 +204,7 @@ async def test_credentials_groups_user(server):
 
     data2 = {
         'url': 'http://foo',
+        'type': 'oauth',
         'refresh_token': str(client.access_token),
         'expiration': time.time()+100,
     }
@@ -326,6 +327,7 @@ async def test_credentials_users_user(server):
 
     data2 = {
         'url': 'http://foo',
+        'type': 'oauth',
         'access_token': str(client.access_token),
         'last_use': time.time()
     }
@@ -393,6 +395,7 @@ async def test_credentials_datasets(server):
 
     data2 = {
         'url': 'http://foo',
+        'type': 'oauth',
         'access_token': str(client.access_token),
         'last_use': time.time()
     }

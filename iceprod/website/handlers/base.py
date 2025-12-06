@@ -1,6 +1,7 @@
 import functools
 import logging
 import re
+import time
 import traceback
 from typing import Any
 from urllib.parse import urlencode
@@ -11,9 +12,10 @@ import tornado.web
 import jwt
 import requests.exceptions
 from rest_tools.client import RestClient, OpenIDRestClient
-from rest_tools.server import catch_error, RestHandler, OpenIDCookieHandlerMixin
+from rest_tools.server import catch_error, RestHandler
 from rest_tools.server.session import SessionMixin
 
+from iceprod.credentials.util import get_expiration
 from iceprod.util import VERSION_STRING
 from iceprod.prom_utils import PromRequestMixin
 from iceprod.roles_groups import GROUPS
@@ -78,24 +80,19 @@ def eval_expression(token, e):
     return [r for r in ret if r]
 
 
-class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):  # type: ignore[misc]
+class LoginMixin(SessionMixin, RestHandler):  # type: ignore[misc]
     """
     Store/load current user's `OpenIDLoginHandler` tokens in Redis.
     """
     def get_current_user(self) -> str | None:
         """Get the current username from the cookie"""
         try:
-            assert self.auth
             username = self.get_secure_cookie('iceprod_username')
             if not username:
                 raise RuntimeError('missing iceprod_username cookie')
-            username = username.decode('utf-8')
-            if session := self._session_mgr.get_session(username):
-                if refresh_token := session.get('refresh_token', None):
-                    self.auth.validate(refresh_token)
-            return username
+            return username.decode('utf-8')
         except Exception:
-            logger.info('failed to get username')
+            logger.info('failed to get username', exc_info=True)
         return None
 
     @property
@@ -107,6 +104,8 @@ class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):  # type: 
                 logger.info('bad access token type: not str')
                 return None
             return ret
+        else:
+            logger.info('no session to get access token from')
         return None
 
     @auth_access_token.setter
@@ -117,13 +116,15 @@ class LoginMixin(SessionMixin, OpenIDCookieHandlerMixin, RestHandler):  # type: 
             raise RuntimeError('no valid session')
 
     @property
-    def auth_refresh_token(self) -> bytes | None:
+    def auth_refresh_token(self) -> str | None:
         if self.session:
             ret = self.session.get('refresh_token', None)
             if not isinstance(ret, str):
                 logger.info('bad access token type: not str')
                 return None
-            return ret.encode('utf-8')
+            return ret
+        else:
+            logger.info('no session to get refresh token from')
         return None
 
     @auth_refresh_token.setter  # type: ignore[override]
@@ -409,6 +410,7 @@ class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler
 
     async def get_current_user_async(self) -> str | None:
         try:
+            self.current_user = LoginMixin.get_current_user(self)
             if self.current_user and self.auth_refresh_token:
                 self.rest_client = OpenIDRestClient(
                     address=self.rest_api,
@@ -420,14 +422,24 @@ class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler
                     timeout=50,
                     retries=1,
                 )
+                # verify refresh works  (note: this contacts Keycloak every time!)
+                if not self.rest_client._openid_token():
+                    logger.info('cannot refresh token')
+                    return None
             elif self.current_user and self.auth_access_token:
+                if get_expiration(self.auth_access_token) <= time.time():
+                    logger.info('access token expired')
+                    return None
                 self.rest_client = RestClient(self.rest_api, self.auth_access_token, timeout=50, retries=1)
             elif not self.current_user:
                 logger.info('no current user')
+                return None
             else:
                 logger.info('no access token')
+                return None
         except Exception:
             logger.info('failed to create user rest client', exc_info=True)
+            return None
         return self.current_user
 
     def write_error(self, status_code: int = 500, **kwargs) -> None:

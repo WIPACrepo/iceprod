@@ -104,12 +104,10 @@ class RefreshService:
         }
         if client.client_secret:
             args['client_secret'] = client.client_secret
-        if cred.get('scope', None) is not None:
-            args['scope'] = cred['scope']
 
         logging.warning('exchanging on %s with args %r', client.auth.token_url, args)
 
-        new_cred = {}
+        new_cred = cred.copy()
         try:
             async with httpx.AsyncClient() as http_client:
                 r = await http_client.post(client.auth.token_url, data=args)
@@ -122,7 +120,8 @@ class RefreshService:
             except Exception:
                 req = {}
             error = req.get('error', '')
-            raise Exception(f'Exchange request failed: {error}') from exc
+            desc = req.get('error_description', '')
+            raise Exception(f'Exchange request failed: {error} - {desc}') from exc
         else:
             logger.debug('OpenID token exchanged')
             new_cred['access_token'] = req['access_token']

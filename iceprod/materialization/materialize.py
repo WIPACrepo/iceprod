@@ -20,7 +20,7 @@ class Materialize:
         self.config_cache = {}
         self.prio = None
 
-    async def run_once(self, only_dataset=None, set_status=None, num=10000, dryrun=False):
+    async def run_once(self, only_dataset=None, set_status=None, num=10000, dryrun=False) -> bool:
         """
         Actual materialization work.
 
@@ -29,6 +29,9 @@ class Materialize:
             set_status (str): status of new tasks
             num (int): max number of jobs to buffer
             dryrun (bool): if true, do not modify DB, just log changes
+
+        Returns:
+            bool: whether the run completed successfully or timed out
         """
         if set_status and set_status not in TASK_STATUS:
             raise Exception('set_status is not a valid task status')
@@ -40,8 +43,8 @@ class Materialize:
         if only_dataset:
             datasets = [only_dataset]
         else:
-            ret = await self.rest_client.request('GET', '/dataset_summaries/status')
-            datasets = ret.get('processing', [])
+            ret2 = await self.rest_client.request('GET', '/dataset_summaries/status')
+            datasets = ret2.get('processing', [])
 
         for dataset_id in datasets:
             try:

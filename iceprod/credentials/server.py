@@ -135,6 +135,7 @@ class BaseCredentialsHandler(APIBase):
         assert self.refresh_service
         argo = ArgumentHandler(ArgumentSource.JSON_BODY_ARGUMENTS, self)
         argo.add_argument('url', type=str, required=True)
+        argo.add_argument('type', type=str, choices=['s3', 'oauth'], required=True)
         argo.add_argument('transfer_prefix', type=str, default='', required=False)
         argo.add_argument('buckets', type=list, default=[], required=False)
         argo.add_argument('access_key', type=str, default='', required=False)
@@ -146,7 +147,9 @@ class BaseCredentialsHandler(APIBase):
         argo.add_argument('last_use', type=float, default=0, required=False)
         args = vars(argo.parse_args())
         base_data['url'] = args['url']
-        base_data['transfer_prefix'] = args['transfer_prefix']
+        base_data['type'] = args['type']
+        if args['transfer_prefix']:
+            base_data['transfer_prefix'] = args['transfer_prefix']
 
         data = {}
         for key in ('buckets', 'access_key', 'secret_key', 'access_token', 'refresh_token', 'scope', 'expiration', 'last_use'):

@@ -422,7 +422,11 @@ class WriteToScript:
                     print('', file=f)
                 elif data.url.startswith('pelican://') or data.url.startswith('osdf://'):
                     cmd = [
-                        'pelican', 'object', 'get', data.url, data.local
+                        '/cvmfs/icecube.opensciencegrid.org/users/dschultz/pelican-7.21.1/pelican',
+                        'object',
+                        'get',
+                        data.url,
+                        data.local
                     ]
                     print(f'# Input: {data}', file=f)
                     print(' '.join(cmd), file=f)
@@ -454,7 +458,11 @@ class WriteToScript:
                     print('', file=f)
                 elif data.url.startswith('pelican://') or data.url.startswith('osdf://'):
                     cmd_core = [
-                        'pelican', 'object', 'put', data.local, data.url
+                        '/cvmfs/icecube.opensciencegrid.org/users/dschultz/pelican-7.21.1/pelican',
+                        'object',
+                        'put',
+                        data.local,
+                        data.url
                     ]
                     if data.transfer is Transfer.MAYBE:
                         cmd = [f'if [ -f {data.local} ]; then\n']

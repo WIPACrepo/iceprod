@@ -6,7 +6,7 @@ from typing import Any, Self
 from urllib.parse import urlencode
 
 import tornado.web
-from rest_tools.server import RestHandler, OpenIDLoginHandler
+from rest_tools.server import RestHandler, OpenIDLoginHandler, catch_error
 
 from iceprod.core.config import Config as DatasetConfig
 from iceprod.core.jsonUtil import json_encode, json_decode
@@ -127,6 +127,7 @@ class Submit(TokenClients, PublicHandler):  # type: ignore[misc]
             raise tornado.web.HTTPError(500, 'session is missing')
 
         config_str = self.get_body_argument('submit_box')
+        logger.info('config_str: %r', config_str)
         description = self.get_body_argument('description')
 
         config = self.DEFAULT_CONFIG.copy()
@@ -144,6 +145,8 @@ class Submit(TokenClients, PublicHandler):  # type: ignore[misc]
             for task in config['tasks']:
                 task_token_scopes = defaultdict(set)
                 for data in task['data']:
+                    if data['type'] != 'permanent':
+                        continue
                     remote = parser.parse(data['remote'], job=config)
                     for prefix in self.token_clients:
                         if remote.startswith(prefix):
@@ -194,6 +197,7 @@ class Submit(TokenClients, PublicHandler):  # type: ignore[misc]
 
         if token_requests:
             # start oauth2 redirect dance
+            logger.info('token requests: %r', token_requests)
             first_request = token_requests.pop(0)
             self.session['token_requests'] = json_encode(token_requests)
             _id = first_request.pop('client_id')
@@ -249,18 +253,43 @@ class SubmitDataset(TokenClients, PublicHandler):  # type: ignore[misc]
         self.redirect(f'/dataset/{dataset_id}')
 
 
-class TokenLogin(TokenClients, OpenIDLoginHandler, PublicHandler):
-    def initialize(self, *args, login_url, oauth_url, token_client, **kwargs):
-        super().initialize(*args, **kwargs)
+class TokenLogin(TokenClients, OpenIDLoginHandler, PublicHandler):  # type: ignore[misc]
+    def initialize(self, *args, login_url: str, oauth_url: str, token_client: CredClient, **kwargs):  # type: ignore[override]
         self.login_url = login_url
         self.oauth_url = oauth_url
         self.token_client = token_client
+        super().initialize(*args, **kwargs)
+
+    def oauth_setup(self):
+        # this is separate so it can be mocked out in testing
+        auth = self.token_client.auth
+        self._OAUTH_AUTHORIZE_URL = auth.provider_info['authorization_endpoint']
+        self._OAUTH_ACCESS_TOKEN_URL = auth.provider_info['token_endpoint']
+        # self._OAUTH_LOGOUT_URL = auth.provider_info['end_session_endpoint']
+        self._OAUTH_USERINFO_URL = auth.provider_info['userinfo_endpoint']
+
+    def validate_new_token(self, token) -> dict[str, Any]:
+        return self.token_client.auth.validate(token)
 
     def get_login_url(self) -> str:
         return self.login_url
 
-    @authenticated
+    @catch_error
     async def get(self: Self):
+        if not await self.get_current_user_async():
+            logger.info('user not logged in!')
+            args = {}
+            if scope := self.get_argument('scope', None):
+                args['scope'] = scope
+            if scope := self.get_argument('task_name', None):
+                args['task_name'] = scope
+            if scope := self.get_argument('prefix', None):
+                args['prefix'] = scope
+            next_url = tornado.httputil.url_concat(self.get_login_url(), args)
+            url = tornado.httputil.url_concat('/login', {'next': next_url})
+            self.redirect(url)
+            return
+
         if self.get_argument('error', False):
             err = self.get_argument('error_description', None)
             if not err:
@@ -321,4 +350,12 @@ class TokenLogin(TokenClients, OpenIDLoginHandler, PublicHandler):
                 'prefix': self.get_argument('prefix'),
                 'scope': scope,
             }
-            self.start_oauth_authorization(state)
+            extra_params = {"state": self._encode_state(state)}
+
+            self.authorize_redirect(
+                redirect_uri=self.get_login_url(),
+                client_id=self.oauth_client_id,
+                scope=self.oauth_client_scope,
+                extra_params=extra_params,
+                response_type='code'
+            )

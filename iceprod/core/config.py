@@ -1,4 +1,5 @@
 import asyncio
+from copy import deepcopy
 from dataclasses import dataclass
 import importlib.resources
 import json
@@ -36,6 +37,8 @@ class _ConfigMixin:
             for prop in schema['properties']:
                 schema_value = _load_ref(schema['properties'][prop])
                 v = schema_value.get('default', None)
+                if isinstance(v, (dict, list)):
+                    v = deepcopy(v)  # make a copy to not use the same instance multiple times
                 if prop not in user and v is not None:
                     user[prop] = v
             for k in user:
