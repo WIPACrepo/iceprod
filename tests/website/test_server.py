@@ -130,6 +130,8 @@ async def test_website_submit_invalid(server):
     ('/data/user/$(iter)/foo', 'input', 'storage.read:/data/user'),
     ('/data/user$/$(iter)/foo', 'input', 'storage.read:/data'),
     ('/data/user/foo/000000-000999/bar', 'input', 'storage.read:/data/user/foo'),
+    ('/data/exp/IceCube/2025/filtered/PFFilt/0612/PFFilt_PhysicsFiltering_Run00141027_Subrun00000000_00000074.tar.bz', 'input', 'storage.read:/data/exp/IceCube/2025/filtered/PFFilt'),
+    ('/data/exp/IceCube/2025/filtered/dev/off.7/0612/Run00141027_89/Offline_IC86.2025_data_Run00141027_Subrun00000000_00000073.i3.zst.sha512', 'input', 'storage.read:/data/exp/IceCube/2025/filtered/dev/off.7'),
 ])
 def test_website_submit_scope(path, movement, scope):
     assert Submit.get_scope(path, movement) == scope
