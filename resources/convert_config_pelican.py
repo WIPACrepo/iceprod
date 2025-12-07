@@ -146,7 +146,7 @@ async def get_tokens(config, dataset, task_files: list[dict], token_clients: dic
             logging.info('adding task_files')
             task_data.extend(task_files)
         for data in task_data:
-            if data['type'] != 'permanent':
+            if data['remote'] == '':
                 continue
             remote = parser.parse(data['remote'], job=config)
             remote = gsiftp_replacement(remote)
@@ -190,6 +190,8 @@ def convert(config):
                 for d in data:
                     if remote := d.get('remote',None):
                         d['remote'] = gsiftp_replacement(remote)
+                        if d['type'] != 'permanent':
+                            d['type'] = 'permanent'
 
     for i,task in enumerate(config.get('tasks', [])):
         if 'name' not in task:
