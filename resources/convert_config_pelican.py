@@ -38,7 +38,7 @@ def gsiftp_replacement(value):
         return value
 
 
-SCOPE_RE = re.compile(r'(.*?(?:\d{4,}\-\d{4,}|\$|(?:IceCube\/20\d\d\/filtered\/.*?\/\d{4})))')
+SCOPE_RE = re.compile(r'(.*?\$|.*?\d{4,}\-\d{4,}|.*?\/IceCube\/20\d\d\/filtered\/.*?\/[01]\d{3})')
 
 def get_scope(path: str, movement: str) -> str:
     """
@@ -52,10 +52,13 @@ def get_scope(path: str, movement: str) -> str:
     prefix = 'storage.read' if movement == 'input' else 'storage.modify'
     try:
         if match := SCOPE_RE.match(path):
+            logging.info('matched scope from RE: %s', match.group(0))
+            logging.info('original path: %s', path)
             path = match.group(0)
         path = os.path.dirname(path)
         if not path:
             path = '/'
+        path = path.replace('//', '/')
     except Exception:
         logging.warning('error getting scope', exc_info=True)
         raise
@@ -106,8 +109,11 @@ async def cred_token(dataset_id: str, username: str, task_name: str, prefix: str
             }
             try:
                 await cred_client.request('POST', f'/datasets/{dataset_id}/tasks/{task_name}/credentials', args)
-            except Exception:
-                await cred_client.request('PATCH', f'/datasets/{dataset_id}/tasks/{task_name}/credentials', args)
+            except requests.exceptions.HTTPError as e:
+                if e.response.status_code == 409:
+                    await cred_client.request('PATCH', f'/datasets/{dataset_id}/tasks/{task_name}/credentials', args)
+                else:
+                    raise
 
 
 async def get_tokens(config, dataset, task_files: list[dict], token_clients: dict[str, CredClient], cred_client: RestClient | None = None):
@@ -126,6 +132,7 @@ async def get_tokens(config, dataset, task_files: list[dict], token_clients: dic
             'job': 0,
             'jobs_submitted': dataset['jobs_submitted'],
             'task': task['name'],
+            'iter': 0,
         }
         options.update(config['options'])
         config['options'] = options
@@ -149,10 +156,10 @@ async def get_tokens(config, dataset, task_files: list[dict], token_clients: dic
                         logging.debug('adding scope %s for remote %s', scope, remote)
                         task_token_scopes[prefix].add(scope)
         # add in manual scopes
-        for prefix,scope_str in task['token_scopes'].items():
-            for scope in scope_str.split():
-                if scope:
-                    task_token_scopes[prefix].add(scope)
+        #for prefix,scope_str in task['token_scopes'].items():
+        #    for scope in scope_str.split():
+        #        if scope and '$' not in scope:
+        #            task_token_scopes[prefix].add(scope)
         # set token_requests
         logging.warning('scopes for task %s: %r', task['name'], dict(task_token_scopes))
         for prefix,scopes in task_token_scopes.items():
@@ -162,7 +169,8 @@ async def get_tokens(config, dataset, task_files: list[dict], token_clients: dic
             if '$' in sorted_scope_str:
                 raise Exception('bad scope!')
 
-            await cred_token(dataset_id, username, task['name'], prefix, sorted_scope_str, token_clients[prefix], cred_client)
+            if dataset['status'] == 'processing':
+                await cred_token(dataset_id, username, task['name'], prefix, sorted_scope_str, token_clients[prefix], cred_client)
 
 
 def convert(config):
@@ -212,26 +220,27 @@ def conversion(config, output=None):
     return c.config
 
 
-def do_mongo(server, *, dataset_id=None, output=None, token_clients: dict[str, CredClient], cred_client=None, dryrun=False):
+def do_mongo(server, *, dataset_id=None, min_dataset_num, output=None, token_clients: dict[str, CredClient], cred_client=None, dryrun=False):
 
     client = MongoClient(server)
     db = client.config
 
     datasets = {}
-    search = {}
+    search = {'dataset': {'$gte': min_dataset_num}}
     projection = {"_id": False, "dataset_id": True, "dataset": True, "status": True, "username": True, "jobs_submitted": True}
 
     if dataset_id:
         search = {'dataset_id': dataset_id}
 
     for d in client.datasets.datasets.find(search, projection=projection):
-        if d['dataset'] > 22000 or dataset_id:
+        if d['dataset'] >= min_dataset_num or dataset_id:
             datasets[d['dataset_id']] = d
 
-    for config in db.config.find(search, projection={'_id': False}):
-        if config['dataset_id'] not in datasets:
+    for dataset in sorted(datasets.values(), key=lambda v: v['dataset']):
+        config = db.config.find_one({"dataset_id": dataset['dataset_id']}, projection={'_id': False})
+        if not config:
+            logging.warning('no config for dataset %s', dataset['dataset'])
             continue
-        dataset = datasets[config['dataset_id']]
         try:
             logging.warning('Processing %r', dataset['dataset'])
             new_config = conversion(config, output=output)
@@ -328,6 +337,7 @@ def main():
     group.add_argument('--mongo-server', default=None, help='mongodb server address')
     parser.add_argument('-o', '--output', default=None, help='output config json to file (or "-" for stdout)')
     parser.add_argument('--dataset-id', default=None, help='dataset id (for mongo)')
+    parser.add_argument('--min-dataset-num', default=22001, type=int, help='min dataset num')
     parser.add_argument('--token-clients', required=True, help='json of token client info')
     parser.add_argument('--log-level', default='WARNING')
     add_auth_to_argparse(parser)
@@ -349,7 +359,7 @@ def main():
             config = json.load(f)
         conversion(config, output=args.output)
     elif args.mongo_server:
-        do_mongo(args.mongo_server, dataset_id=args.dataset_id, output=args.output, token_clients=token_clients, cred_client=cred_client, dryrun=args.dry_run)
+        do_mongo(args.mongo_server, dataset_id=args.dataset_id, min_dataset_num=args.min_dataset_num, output=args.output, token_clients=token_clients, cred_client=cred_client, dryrun=args.dry_run)
 
 if __name__ == '__main__':
     main()
