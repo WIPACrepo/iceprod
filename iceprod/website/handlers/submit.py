@@ -96,7 +96,7 @@ class Submit(TokenClients, PublicHandler):  # type: ignore[misc]
         }
         self.render('submit.html', **render_args)
 
-    SCOPE_RE = re.compile(r'(.*?(?:\d{4,}\-\d{4,}|\$|(?:IceCube\/20\d\d\/filtered\/.*?\/\d{4})))')
+    SCOPE_RE = re.compile(r'(.*?\$|.*?\d{4,}\-\d{4,}|.*?\/IceCube\/20\d\d\/filtered\/.*?\/[01]\d{3})')
 
     @staticmethod
     def get_scope(path: str, movement: str) -> str:
