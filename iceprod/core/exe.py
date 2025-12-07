@@ -467,7 +467,7 @@ class WriteToScript:
                     if data.transfer is Transfer.MAYBE:
                         cmd = [f'if [ -f {data.local} ]; then\n']
                         cmd.extend(cmd_core)
-                        cmd += ['fi']
+                        cmd += ['\nfi']
                     else:
                         cmd = cmd_core
                     print(f'# Output: {data}', file=f)
