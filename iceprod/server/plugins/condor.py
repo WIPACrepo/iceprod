@@ -544,8 +544,10 @@ transfer_output_remaps = $(outremaps)
 
             if reqs2:
                 ads['requirements'] = f'{ads["requirements"]} && {reqs2}' if ads.get('requirements', None) else reqs2
-            if oauth_reqs:
-                ads['requirements'] = f'{ads["requirements"]} && {oauth_reqs}' if ads.get('requirements', None) else oauth_reqs
+            # ignore oauth_reqs for now
+            # todo: when we actually start using condor file transfer, this needs to be re-enabled
+            #if oauth_reqs:
+            #    ads['requirements'] = f'{ads["requirements"]} && {oauth_reqs}' if ads.get('requirements', None) else oauth_reqs
             if ads['requirements']:
                 submitfile += f'reqs{task.task_id} = {ads["requirements"]}\n'
             # stringify everything, quoting the real strings
