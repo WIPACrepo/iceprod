@@ -34,8 +34,8 @@ async def test_website_submit(server):
 
     description = 'Test dataset'
 
-    config = Config({'tasks':[
-        {
+    config = Config({
+        'tasks':[{
             'name': 'testing',
             'trays': [{
                 'modules': [{
@@ -43,8 +43,9 @@ async def test_website_submit(server):
                     'args': ''
                 }]
             }]
-        }
-    ]})
+        }],
+        'version': 3.2,
+    })
     config.fill_defaults()
     config.validate()
 
@@ -119,7 +120,7 @@ async def test_website_submit_invalid(server):
         assert ret.status_code == 400
         doc = BeautifulSoup(ret.text, 'html.parser')
         error = doc.find('div', {'id': 'error'}).text  # type: ignore
-        assert 'Failed validating' in error
+        assert 'Validation error' in error
 
 
 @pytest.mark.parametrize('path,movement,scope', [
@@ -142,8 +143,8 @@ async def test_website_submit_tokens(server, monkeypatch):
 
     description = 'Test dataset'
 
-    config = {'tasks':[
-        {
+    config = {
+        'tasks':[{
             'name': 'testing',
             'trays': [{
                 'modules': [{
@@ -157,8 +158,9 @@ async def test_website_submit_tokens(server, monkeypatch):
                     'movement': 'input'
                 }
             ]
-        }
-    ]}
+        }],
+        'version': 3.2,
+    }
     d = Config(config)
     d.fill_defaults()
     d.validate()
@@ -236,13 +238,67 @@ async def test_website_submit_tokens(server, monkeypatch):
         assert cred_mock.call_count == 1
 
 
+async def test_website_submit_bad_data(server, monkeypatch):
+    client = server(username='username', roles=['user'], groups=['users', 'simprod'])
+
+    description = 'Test dataset'
+
+    config = {
+        'tasks':[{
+            'name': 'testing',
+            'trays': [{
+                'modules': [{
+                    'src': '/usr/bin/python3',
+                    'args': '',
+                    'data': [
+                        {
+                            'remote': 'token:///data/sim/IceCube/2025/file.i3.zst',
+                            'movement': 'input'
+                        }
+                    ]
+                }]
+            }]
+        }]
+    }
+    d = Config(config)
+    d.fill_defaults()
+    d.validate()
+
+    tokens = {}
+    get_auth_user = AsyncMock(return_value=tokens)
+    monkeypatch.setattr(TokenLogin, 'get_authenticated_user', get_auth_user)
+
+    async with client.get_http_client() as http_client:
+        ret = await client.request_raw(http_client, 'GET', '/submit')
+        ret.raise_for_status()
+        #logging.info('ret: %r', ret.text)
+        doc = BeautifulSoup(ret.text, 'html.parser')
+        xsrf = doc.find('input', {'name': '_xsrf'}).get('value')  # type: ignore
+        logging.info('xsrf: %r', xsrf)
+        logging.info('cookies: %r', http_client.cookies)
+
+        config_str = json.dumps(config)
+
+        ret = await client.request_raw(http_client, 'POST', '/submit', form_data={
+            '_xsrf': xsrf,
+            'submit_box': config_str,
+            'description': description,
+            'number_jobs': 10,
+            'group': 'users',
+        })
+        assert ret.status_code == 400
+        doc = BeautifulSoup(ret.text, 'html.parser')
+        error = doc.find('div', {'id': 'error'}).text  # type: ignore
+        assert 'Validation error' in error
+
+
 async def test_website_submit_tokens_bad_scope(server, monkeypatch):
     client = server(username='username', roles=['user'], groups=['users', 'simprod'])
 
     description = 'Test dataset'
 
-    config = {'tasks':[
-        {
+    config = {
+        'tasks':[{
             'name': 'testing',
             'trays': [{
                 'modules': [{
@@ -256,8 +312,9 @@ async def test_website_submit_tokens_bad_scope(server, monkeypatch):
                     'movement': 'input'
                 }
             ]
-        }
-    ]}
+        }],
+        'version': 3.2,
+    }
     d = Config(config)
     d.fill_defaults()
     d.validate()
@@ -319,8 +376,8 @@ async def test_website_submit_tokens_manual_scope(server, monkeypatch):
 
     description = 'Test dataset'
 
-    config = {'tasks':[
-        {
+    config = {
+        'tasks':[{
             'name': 'testing',
             'trays': [{
                 'modules': [{
@@ -337,8 +394,9 @@ async def test_website_submit_tokens_manual_scope(server, monkeypatch):
             'token_scopes': {
                 'token://': 'storage.write:/foo/bar'
             }
-        }
-    ]}
+        }],
+        'version': 3.2,
+    }
     d = Config(config)
     d.fill_defaults()
     d.validate()

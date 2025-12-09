@@ -141,7 +141,7 @@ async def test_grid_submit_none():
     assert g._get_resources.call_count == 0
 
 
-async def test_grid_convert_to_task():
+async def test_grid_convert_to_task(monkeypatch):
     override = ['queue.type=test', 'queue.check_time=0', 'queue.site_temp=http://foo.bar']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
@@ -150,14 +150,13 @@ async def test_grid_convert_to_task():
     g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
 
     TASK = MagicMock()
-    TASK.load_task_files_from_api = AsyncMock()
     DATASET = MagicMock()
-    DATASET.config = {'options':{}}
+    DATASET.config = {'options':{}, 'version': 3.2}
     g.dataset_lookup = AsyncMock(return_value=DATASET)
+    rc.request.return_value = {'files': []}
 
     ret = await g._convert_to_task(TASK)
 
-    assert ret.dataset == DATASET
     assert ret.dataset.config['options']['site_temp'] == 'http://foo.bar'
 
 

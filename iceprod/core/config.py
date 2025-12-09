@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import Iterable
 from copy import deepcopy
 from dataclasses import dataclass
 import importlib.resources
@@ -10,24 +11,40 @@ try:
 except ImportError:
     from typing_extensions import Self
 
+from cachetools.func import ttl_cache
 import jsonschema
 from rest_tools.client import RestClient
 
 
-CONFIG_SCHEMA = json.loads((importlib.resources.files('iceprod.core')/'data'/'dataset.schema.json').read_text())
+class ConfigSchema:
+    @ttl_cache
+    @staticmethod
+    def schema(version: float = 3.1) -> dict[str, Any]:
+        rounded_ver = round(version, 1)
+        path = importlib.resources.files('iceprod.core') / 'data' / f'dataset_v{rounded_ver}.schema.json'
+        return json.loads(path.read_text())
 
-DATA_DEFAULTS = {key: value.get('default', None) for key,value in CONFIG_SCHEMA['$defs']['data']['items']['properties'].items()}
+    @ttl_cache
+    @staticmethod
+    def data_defaults(version: float = 3.1) -> dict[str, Any]:
+        schema = ConfigSchema.schema(version)
+        return {key: value.get('default', None) for key,value in schema['$defs']['data']['items']['properties'].items()}
 
 
 class _ConfigMixin:
     config: dict
 
     def fill_defaults(self):
+        """Fill in config defaults"""
+        ver = self.config.get('version', None)
+        if isinstance(ver, str):
+            ver = float(ver)
+        config_schema = ConfigSchema.schema(ver) if ver else ConfigSchema.schema()
         def _load_ref(schema_value):
             if '$ref' in list(schema_value.keys()):
                 # load from ref
                 parts = schema_value['$ref'].split('/')[1:]
-                schema_value = CONFIG_SCHEMA
+                schema_value = config_schema
                 while parts:
                     schema_value = schema_value.get(parts.pop(0), {})
                 logging.debug('loading from ref: %r', schema_value)
@@ -60,10 +77,27 @@ class _ConfigMixin:
                 if isinstance(item, dict):
                     _fill_dict(item, schema['items'])
 
-        _fill_dict(self.config, CONFIG_SCHEMA)
+        _fill_dict(self.config, config_schema)
 
     def validate(self):
-        jsonschema.validate(self.config, CONFIG_SCHEMA)
+        """Validate config"""
+        ver = self.config['version']
+        if isinstance(ver, str):
+            ver = float(ver)
+            self.config['version'] = ver
+        try:
+            jsonschema.validate(self.config, ConfigSchema.schema(ver))
+        except jsonschema.ValidationError as e:
+            try:
+                logging.warning("raising! %r", e.path)
+                path = ''.join(f'[{p!r}]' for p in e.path)
+                if isinstance(e.schema, Iterable) and 'error_msg' in e.schema:
+                    msg = e.schema['error_msg']
+                else:
+                    msg = str(e).split('\n',1)[0]
+                raise Exception(f'Validation error in config{path}: {msg}') from e
+            except AttributeError:
+                raise e
 
 
 @dataclass
@@ -169,8 +203,9 @@ class Task:
     async def load_task_files_from_api(self, rest_client: RestClient):
         ret = await rest_client.request('GET', f'/datasets/{self.dataset.dataset_id}/files/{self.task_id}', {})
         data = []
+        data_defaults = ConfigSchema.data_defaults(self.dataset.config['version'])
         for r in ret['files']:
-            d = DATA_DEFAULTS.copy()
+            d = data_defaults.copy()
             d.update(r)
             data.append(d)
         self.task_files = data

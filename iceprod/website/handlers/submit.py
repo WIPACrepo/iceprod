@@ -135,6 +135,7 @@ class Submit(TokenClients, PublicHandler):  # type: ignore[misc]
         try:
             # validate config
             dc = DatasetConfig(json_decode(config_str))
+            dc.config['version'] = 3.2  # force 3.2 config validation
             dc.fill_defaults()
             dc.validate()
             config = dc.config
