@@ -11,6 +11,7 @@ import importlib.resources
 import logging
 import os
 import random
+import re
 
 from prometheus_client import Info, start_http_server
 import tornado.web
@@ -22,7 +23,7 @@ from wipac_dev_tools import from_environment_as_dataclass
 from iceprod.util import VERSION_STRING
 from iceprod.credentials.util import ClientCreds
 from iceprod.prom_utils import AsyncMonitor, PromRequestMixin
-from iceprod.core.config import CONFIG_SCHEMA as DATASET_SCHEMA
+from iceprod.core.config import ConfigSchema as DATASET_SCHEMA
 from iceprod.server.config import CONFIG_SCHEMA as SERVER_SCHEMA
 from iceprod.server import documentation
 from iceprod.server.util import nowstr
@@ -50,9 +51,12 @@ class Schemas(PublicHandler):
     @catch_error
     async def get(self, schema):
         if schema == 'dataset.schema.json':
-            self.write(DATASET_SCHEMA)
+            self.write(DATASET_SCHEMA.schema())
         elif schema == 'config.schema.json':
             self.write(SERVER_SCHEMA)
+        elif ver := re.match(r'dataset_v(\d\.\d).schema.json', schema):
+            ver = float(ver.group(0))
+            self.write(DATASET_SCHEMA.schema(ver))
         else:
             raise tornado.web.HTTPError(404, reason='unknown schema')
 

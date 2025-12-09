@@ -1,0 +1,312 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://iceprod.icecube.aq/schemas/v3/dataset_v3.2.schema.json",
+  "title": "IceProd Dataset Config",
+  "description": "The schema for an IceProd Dataset Config",
+  "type": "object",
+  "properties": {
+    "version": {
+      "description": "Schema version",
+      "type": "number",
+      "default": 3.2
+    },
+    "description": {
+        "description": "Dataset description",
+        "type": "string",
+        "default": "Test Dataset"
+    },
+    "options": {
+      "description": "Internal parameters attached to a dataset",
+      "type": "object",
+      "default": {},
+      "properties": {},
+      "additionalProperties": true
+    },
+    "steering": {
+      "description": "General paramters, used as references elsewhere in the config",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "parameters": { "$ref": "#/$defs/parameters" },
+        "batchsys": { "$ref": "#/$defs/batchsys" },
+        "data": { "$ref": "#/$defs/data" }
+      },
+      "additionalProperties": false
+    },
+    "tasks": {
+      "description": "Tasks to execute - individual batch jobs",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "title": "Task",
+        "description": "An individual batch job",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Unique name of task"
+          },
+          "depends": {
+            "type": "array",
+            "description": "Task dependency names",
+            "items": { "type": "string" }
+          },
+          "task_files": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable to use the task files API"
+          },
+          "data": { "$ref": "#/$defs/data" },
+          "parameters": { "$ref": "#/$defs/parameters" },
+          "batchsys": { "$ref": "#/$defs/batchsys" },
+          "requirements": { "$ref": "#/$defs/requirements" },
+          "container": {
+            "type": "string",
+            "default": "",
+            "description": "Specify a /cvmfs container path, if this task should run in a container"
+          },
+          "token_scopes": {
+            "type": "object",
+            "default": {},
+            "description": "Specify a series of url prefix: scopes for token-based data transfer. Automatically filled on submit",
+            "properties": {},
+            "additionalProperties": {
+              "type": "string",
+              "description": "Scopes as a space-separated string"
+            }
+          },
+          "trays": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "title": "Tray",
+              "description": "Collection of modules",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "default": "",
+                  "description": "Name of tray"
+                },
+                "iterations": {
+                  "type": "integer",
+                  "default": 1,
+                  "description": "Number of times to execute this tray"
+                },
+                "parameters": { "$ref": "#/$defs/parameters" },
+                "modules": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "title": "Module",
+                    "description": "The actual thing to execute, usually a script",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "default": "",
+                        "description": "Name of module"
+                      },
+                      "parameters": { "$ref": "#/$defs/parameters" },
+                      "src": {
+                        "type": "string",
+                        "default": "",
+                        "description": "a script or executable file"
+                      },
+                      "running_class": {
+                        "type": "string",
+                        "default": "",
+                        "description": "an iceprod v1 python class",
+                        "deprecated": true
+                      },
+                      "args": {
+                        "anyOf": [
+                          { "type": "string" },
+                          { "type": "array", "items": { "type": "string" } },
+                          { "type": "object" }
+                        ],
+                        "default": "",
+                        "description": "args to give to a class or script"
+                      },
+                      "env_shell": {
+                        "type": "string",
+                        "default": "",
+                        "description": "src of script which sets env and calls args"
+                      },
+                      "env_clear": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "clear the env before calling the module"
+                      },
+                      "configs": {
+                        "type": "object",
+                        "default": {},
+                        "description": "any json config files that should be written in $PWD (format is {filename: data})",
+                        "properties": {}
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": []
+                  },
+                  "minItems": 1
+                }
+              },
+              "additionalProperties": false,
+              "required": ["modules"]
+            },
+            "minItems": 1
+          }
+        },
+        "required": ["name", "trays"],
+        "allOf":[
+          {
+            "if": {
+              "properties": {
+                "task_files": {
+                  "const": true
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "token_scopes": {
+                  "additionalProperties": {
+                    "minLength": 10
+                  },
+                  "minProperties": 1,
+                  "error_msg": "token_scopes are required when task_files=true"
+                }
+              },
+              "requried": ["token_scopes"]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "required": [ "version", "tasks", "description" ],
+
+  "$defs": {
+    "parameters": {
+      "type": "object",
+      "description": "Config parameters",
+      "default": {},
+      "properties": {},
+      "additionalProperties": true
+    },
+    "batchsys": {
+      "type": "object",
+      "description": "Overrides for batch system properties: {batchsys: {propname: propvalue}}",
+      "default": {},
+      "properties": {},
+      "additionalProperties": {
+        "type": "object"
+      }
+    },
+    "requirements": {
+      "type": "object",
+      "description": "Task requirements",
+      "properties": {
+        "cpu": {
+          "type": "integer",
+          "default": 1,
+          "description": "CPU cores required"
+        },
+        "gpu": {
+          "type": "integer",
+          "description": "GPUs required"
+        },
+        "memory": {
+          "anyOf": [{"type": "string"}, {"type": "number"}],
+          "default": 1.0,
+          "description": "Memory required in GB"
+        },
+        "disk": {
+          "anyOf": [{"type": "string"}, {"type": "number"}],
+          "default": 1.0,
+          "description": "Disk required in GB"
+        },
+        "time": {
+          "anyOf": [{"type": "string"}, {"type": "number"}],
+          "default": 1.0,
+          "description": "Time required in hours"
+        },
+        "os": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "description": "OS required in CVMFS format"
+        },
+        "site": {
+          "type": "string",
+          "description": "Site required"
+        }
+      }
+    },
+    "data": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "object",
+        "description": "A data file, to upload or download",
+        "properties": {
+          "remote": {
+            "type": "string",
+            "default": "",
+            "description": "remote url (can leave blank for temp files)"
+          },
+          "local": {
+            "type": "string",
+            "default": "",
+            "description": "local file name (will use basename of remote if available)"
+          },
+          "type": {
+            "enum": ["permanent", "job_temp", "dataset_temp", "site_temp"],
+            "default": "permanent",
+            "description": "type of data"
+          },
+          "movement": {
+            "enum": ["input", "output", "both"],
+            "default": "input",
+            "description": "movement of data"
+          },
+          "transfer": {
+            "anyOf": [{"type": "string"}, {"type": "integer"}, {"type": "boolean"}],
+            "enum": [true, false, "maybe", "yes", "no", "y", "n", "1", "0", 1, 0],
+            "default": true,
+            "description": "should the data be transferred"
+          }
+        },
+        "required": ["type"],
+        "if": {
+          "properties": {
+            "type": {
+              "const": "permanent"
+            }
+          }
+        },
+        "then": {
+          "required": ["remote"],
+          "properties": {
+            "remote": {
+              "minLength": 3
+            }
+          },
+          "error_msg": "remote is required when type=permanent"
+        },
+        "else": {
+          "required": ["local"],
+          "properties": {
+            "remote": {
+              "maxLength": 0,
+              "error_msg": "remote should be empty when type is temporary"
+            },
+            "local": {
+              "minLength": 3,
+              "error_msg": "local is required when type is temporary"
+            }
+          }
+        }
+      }
+    }
+  }
+}

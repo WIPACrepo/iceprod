@@ -29,6 +29,70 @@ def test_config():
     c.validate()
 
 
+def test_config_str_ver():
+    config = {
+        'version': '3.2',
+        'tasks':[{
+            'name': 'testing',
+            'trays': [{
+                'modules': [{
+                    'src': '/usr/bin/python3',
+                    'args': ''
+                }]
+            }]
+        }
+    ]}
+    c = Config(config)
+    c.fill_defaults()
+    c.validate()
+
+
+def test_config_invalid_data():
+    config = {
+        'version': 3.2,
+        'tasks':[{
+            'name': 'testing',
+            'trays': [{
+                'modules': [{
+                    'src': '/usr/bin/python3',
+                    'args': ''
+                }]
+            }],
+            'data': [
+                {
+                    'type': 'job_temp',
+                    'remote': 'token:///data/sim/IceCube/2025/file.i3.zst',
+                    'movement': 'input'
+                }
+            ]
+        }
+    ]}
+    c = Config(config)
+    c.fill_defaults()
+    with pytest.raises(Exception, match="remote should be empty"):
+        c.validate()
+
+
+def test_config_manual_scope():
+    config = {
+        'version': 3.2,
+        'tasks':[{
+            'name': 'testing',
+            'trays': [{
+                'modules': [{
+                    'src': '/usr/bin/python3',
+                    'args': ''
+                }]
+            }],
+            'task_files': True,
+        }
+    ]}
+    c = Config(config)
+    c.fill_defaults()
+    with pytest.raises(Exception, match="token_scopes are required"):
+        c.validate()
+
+
 def test_config_dups():
     config = {'tasks':[
         {
@@ -373,7 +437,20 @@ async def test_task_load_from_api(requests_mock):
 
 
 async def test_task_load_stats(requests_mock):
-    d = Dataset('did123', 123, 2, 1, 1, 'processing', 0.5, 'grp', 'usr', False, {'tasks':[1,2,3]})
+    config = {'tasks':[
+        {
+            'name': 'testing',
+            'trays': [{
+                'modules': [{
+                    'src': '/usr/bin/python3',
+                    'args': ''
+                }]
+            }]
+        }
+    ]}
+    d = Dataset('did123', 123, 2, 1, 1, 'processing', 0.5, 'grp', 'usr', False, config)
+    d.fill_defaults()
+    d.validate()
     j = Job(d, 'j123', 1, 'processing')
     t = Task(d, j, 't123', 0, 'foo', [], {}, 'waiting', '', {})
 
@@ -393,7 +470,21 @@ async def test_task_load_stats(requests_mock):
 
 
 async def test_task_load_task_files(requests_mock):
-    d = Dataset('did123', 123, 2, 1, 1, 'processing', 0.5, 'grp', 'usr', False, {'tasks':[1,2,3]})
+    config = {'tasks':[
+        {
+            'name': 'testing',
+            'trays': [{
+                'modules': [{
+                    'src': '/usr/bin/python3',
+                    'args': ''
+                }]
+            }],
+            'task_files': True
+        }
+    ]}
+    d = Dataset('did123', 123, 2, 1, 1, 'processing', 0.5, 'grp', 'usr', False, config)
+    d.fill_defaults()
+    d.validate()
     j = Job(d, 'j123', 1, 'processing')
     t = Task(d, j, 't123', 0, 'foo', [], {}, 'waiting', '', {})
 
@@ -409,6 +500,7 @@ async def test_task_load_task_files(requests_mock):
     r = RestClient('http://test.iceprod')
     await t.load_task_files_from_api(r)
 
+    assert t.task_files
     assert len(t.task_files) == len(data)
     assert t.task_files[0]['local'] == data[0]['local']
     assert t.task_files[0]['remote'] == data[0]['remote']
