@@ -70,7 +70,7 @@ def getType(output):
             try:
                 output = json.loads(output.replace("'",'"'))
             except Exception:
-                logging.debug('error formatting json', exc_info=True)
+                logger.debug('error formatting json', exc_info=True)
                 if output.lower() == 'true':
                     output = True
                 elif output.lower() == 'false':
@@ -498,7 +498,7 @@ class ExpParser:
             try:
                 return parse_ret_type(safe_eval.eval(param))
             except Exception:
-                logging.info('safe_eval err', exc_info=True)
+                logger.debug('safe_eval err', exc_info=True)
                 raise GrammarException('Eval is not basic arithmetic')
 
     def reduce_func(self, func, param):
