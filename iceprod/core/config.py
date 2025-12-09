@@ -16,6 +16,10 @@ import jsonschema
 from rest_tools.client import RestClient
 
 
+class ValidationError(Exception):
+    pass
+
+
 class ConfigSchema:
     @ttl_cache
     @staticmethod
@@ -40,6 +44,7 @@ class _ConfigMixin:
         if isinstance(ver, str):
             ver = float(ver)
         config_schema = ConfigSchema.schema(ver) if ver else ConfigSchema.schema()
+
         def _load_ref(schema_value):
             if '$ref' in list(schema_value.keys()):
                 # load from ref
@@ -95,7 +100,7 @@ class _ConfigMixin:
                     msg = e.schema['error_msg']
                 else:
                     msg = str(e).split('\n',1)[0]
-                raise Exception(f'Validation error in config{path}: {msg}') from e
+                raise ValidationError(f'Validation error in config{path}: {msg}') from e
             except AttributeError:
                 raise e
 

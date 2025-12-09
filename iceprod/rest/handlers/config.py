@@ -2,12 +2,11 @@ import logging
 import json
 import copy
 
-from jsonschema.exceptions import ValidationError
 import tornado.web
 
 from ..base_handler import APIBase
 from ..auth import authorization, attr_auth
-from iceprod.core.config import Config
+from iceprod.core.config import Config, ValidationError
 
 logger = logging.getLogger('rest.config')
 
@@ -84,7 +83,7 @@ class ConfigHandler(APIBase):
             c.fill_defaults()
             c.validate()
         except ValidationError as e:
-            raise tornado.web.HTTPError(400, reason=str(e).split('\n', 1)[0])
+            raise tornado.web.HTTPError(400, reason=str(e))
         except Exception:
             logger.warning('unknown config validation error', exc_info=True)
             raise tornado.web.HTTPError(400, reason='unknown validation error')
