@@ -502,9 +502,9 @@ async def test_CondorSubmit_submit(schedd):
 
     exe = open(submit_dir / 'today' / 'task' / 'task_runner.sh').read()
     logging.info('exe: %s', exe)
-    assert 'pelican object put foo.tgz pelican://foo.bar/scratch/0/1/foo.tgz' in exe
+    assert 'object put foo.tgz pelican://foo.bar/scratch/0/1/foo.tgz' in exe
     assert 'if [ -f baz ]' in exe
-    assert 'pelican object put baz osdf:///baz' in exe
+    assert 'object put baz osdf:///baz' in exe
 
 async def test_Grid_save_load_timestamp(schedd, i3prod_path):
     override = ['queue.type=htcondor']

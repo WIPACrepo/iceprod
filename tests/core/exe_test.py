@@ -715,8 +715,8 @@ async def test_write_to_script_data_transfer(tmp_path):
     assert 'if [ -f stats ' in script
     assert 'gsiftp://foo.bar/stats2' in script
     assert 'if [ -f stats2 ' not in script
-    assert 'pelican object get' in script
-    assert 'pelican object put' in script
+    assert 'object get' in script
+    assert 'object put' in script
     assert ' osdf://icecube/wipac/data/file ' in script
     assert 'if [ -f file ' in script
 
