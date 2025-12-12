@@ -118,3 +118,9 @@ test.json
 etc/
 
 kubernetes/*secret*
+
+
+tmp/
+.vscode
+.iceprod-auth
+
