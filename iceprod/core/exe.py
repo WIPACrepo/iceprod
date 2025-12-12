@@ -423,6 +423,7 @@ class WriteToScript:
                 elif data.url.startswith('pelican://') or data.url.startswith('osdf://'):
                     cmd = [
                         '/cvmfs/icecube.opensciencegrid.org/users/dschultz/dumb_pelican_client-0.0.2/dumb_pelican_client',
+                        '--log-level=info',
                         'object',
                         'get',
                         data.url,
@@ -459,6 +460,7 @@ class WriteToScript:
                 elif data.url.startswith('pelican://') or data.url.startswith('osdf://'):
                     cmd_core = [
                         '/cvmfs/icecube.opensciencegrid.org/users/dschultz/dumb_pelican_client-0.0.2/dumb_pelican_client',
+                        '--log-level=info',
                         'object',
                         'put',
                         data.local,
