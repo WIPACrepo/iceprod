@@ -129,10 +129,10 @@ async def get_tokens(config, dataset, task_files: list[dict], token_clients: dic
         options = {
             'dataset_id': dataset_id,
             'dataset': dataset['dataset'],
-            'job': 0,
+#            'job': 0,
             'jobs_submitted': dataset['jobs_submitted'],
             'task': task['name'],
-            'iter': 0,
+#            'iter': 0,
         }
         options.update(config['options'])
         config['options'] = options
@@ -175,6 +175,9 @@ async def get_tokens(config, dataset, task_files: list[dict], token_clients: dic
 
 def convert(config):
     logging.info('Now converting config')
+
+    if config['version'] < 3.1:
+        config['version'] = 3.1
 
     if (steering := config.get('steering', {})) and steering.get('system', None):
         del config['steering']['system']
