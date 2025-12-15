@@ -278,7 +278,8 @@ class TokenLogin(TokenClients, OpenIDLoginHandler, PublicHandler):  # type: igno
 
     @catch_error
     async def get(self: Self):
-        if not await self.get_current_user_async():
+        username = await self.get_current_user_async()
+        if not username:
             logger.info('user not logged in!')
             args = {}
             if scope := self.get_argument('scope', None):
@@ -296,28 +297,44 @@ class TokenLogin(TokenClients, OpenIDLoginHandler, PublicHandler):  # type: igno
             err = self.get_argument('error_description', None)
             if not err:
                 err = 'unknown oauth2 error'
-            raise tornado.web.HTTPError(400, reason=err)
+            raise tornado.web.HTTPError(400, reason=f'Error while getting tokens: {err}')
         elif self.get_argument('code', False):
             data = self._decode_state(self.get_argument('state'))
             task_name = data['task_name']
             prefix = data['prefix']
             scope = data['scope']
-            tokens = await self.get_authenticated_user(
-                redirect_uri=self.get_login_url(),
-                code=self.get_argument('code'),
-                state=data,
-            )
+            try:
+                tokens = await self.get_authenticated_user(
+                    redirect_uri=self.get_login_url(),
+                    code=self.get_argument('code'),
+                    state=data,
+                )
+            except tornado.httpclient.HTTPClientError as e:
+                try:
+                    assert e.response
+                    body = json_decode(e.response.body.decode('utf-8'))
+                    logger.info('error gettting tokens for %s: %r', username, body)
+                    if body['error'] == 'invalid_scope':
+                        raise tornado.web.HTTPError(400, reason=f'Invalid permissions for task {task_name} tokens: '+scope)
+                    else:
+                        err = body.get('error_description', body['error'])
+                        raise tornado.web.HTTPError(400, reason=f'Error while getting task {task_name} tokens: ' + err)
+                except tornado.web.HTTPError:
+                    raise
+                except Exception:
+                    logger.warning('error gettting tokens for %s', username, exc_info=e)
+                    raise tornado.web.HTTPError(400, reason=f'Unknown error while getting task {task_name} tokens!')
 
             # check token scope
             try:
                 token_data = self.token_client.auth.validate(tokens['access_token'])
             except Exception:
                 logger.warning('invalid token', exc_info=True)
-                raise tornado.web.HTTPError(400, reason='access token is invalid')
+                raise tornado.web.HTTPError(400, reason=f'Error while getting task {task_name} tokens: access token is invalid')
             else:
                 if set(scope.split()) != set(token_data['scope'].split()):
                     logger.warning('scope mismatch: %r != %r', scope, token_data['scope'])
-                    raise tornado.web.HTTPError(400, reason='scopes do not match')
+                    raise tornado.web.HTTPError(400, reason=f'Error while getting task {task_name} tokens: scopes do not match')
 
             assert self.session
             prev_tokens: list = json_decode(self.session.get('submit_tokens', '[]'))
