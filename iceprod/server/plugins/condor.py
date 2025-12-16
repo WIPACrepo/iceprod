@@ -15,6 +15,7 @@ import json
 import logging
 import os
 from pathlib import Path
+import re
 import shutil
 import stat
 import subprocess
@@ -406,7 +407,7 @@ class CondorSubmit:
         """Do oauth stuff for submit"""
         task_config = task.get_task_config()
 
-        handle = f'{task.dataset.dataset_id}{task.name}'
+        handle = re.sub(r'[^a-zA-Z0-9]', '', f'{task.dataset.dataset_id}{task.name}')
         token_transform = self.condor_oauth_url_transform(handle, task_config['token_scopes'])
 
         services_used = defaultdict(set)
