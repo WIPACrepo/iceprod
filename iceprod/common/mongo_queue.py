@@ -12,7 +12,7 @@ class AsyncMongoQueue:
     Will retry after a timeout, and can rank messages by priority (lower is better).
     """
     def __init__(self, *, uri: str, db_name: str, collection_name: str, worker_id: str | None = None):
-        self.client = AsyncMongoClient(uri)
+        self.client: AsyncMongoClient = AsyncMongoClient(uri)
         self.db = self.client[db_name]
         self.collection = self.db[collection_name]
         self.worker_id = worker_id or str(uuid.uuid4())

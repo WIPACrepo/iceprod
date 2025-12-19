@@ -11,7 +11,7 @@ from .auth import AttrAuthMixin
 
 logger = logging.getLogger('rest')
 
-DB = AsyncMongoClient | AsyncDatabase
+type DB = AsyncMongoClient | AsyncDatabase
 
 
 def IceProdRestConfig(config: dict[str, Any], database: DB, auth_database: AsyncDatabase | None = None, s3conn=None):
@@ -26,7 +26,7 @@ def IceProdRestConfig(config: dict[str, Any], database: DB, auth_database: Async
 
 class APIBase(AttrAuthMixin, PromRequestMixin, RestHandler):
     """Default REST handler"""
-    def initialize(self, *args, database: DB, auth_database, s3=None, **kwargs):
+    def initialize(self, *args, database: DB, auth_database, s3=None, **kwargs):  # type: ignore[override]
         super().initialize(*args, **kwargs)
         self.db = database
         self.auth_db = auth_database

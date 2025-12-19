@@ -15,7 +15,7 @@ class Mongo:
             db_url = url
             db_name = None
 
-        self.client = AsyncMongoClient(
+        self.client: AsyncMongoClient = AsyncMongoClient(
             db_url,
             timeoutMS=timeout*1000,
             w=write_concern,
