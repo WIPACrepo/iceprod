@@ -5,6 +5,7 @@ import time
 import httpx
 import jwt
 
+from iceprod.common.mongo import AsyncDatabase
 from .util import ClientCreds, get_expiration
 
 logger = logging.getLogger('refresh_service')
@@ -15,13 +16,13 @@ class RefreshService:
     OAuth refresh service
 
     Args:
-        database (:motor.motor_asyncio.AsyncIOMotorClient:): mongo database
+        database: mongo database
         clients (str): json string of {url: [client id, client secret]}
         refresh_window (float): how long after last use to keep refreshing (in hours)
         expire_buffer (float): how long before expiration to refresh (in hours)
         service_run_interval (float): seconds between refresh runs
     """
-    def __init__(self, database, clients, refresh_window, expire_buffer, service_run_interval):
+    def __init__(self, database: AsyncDatabase, clients, refresh_window, expire_buffer, service_run_interval):
         self.db = database
         self.clients = ClientCreds(clients)
         self.clients.validate()

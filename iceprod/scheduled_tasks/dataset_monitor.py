@@ -14,7 +14,7 @@ from prometheus_client import Gauge, Histogram, Info, start_http_server
 
 from iceprod.util import VERSION_STRING
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
-from iceprod.prom_utils import HistogramBuckets
+from iceprod.common.prom_utils import HistogramBuckets
 from iceprod.server import states
 
 logger = logging.getLogger('dataset_monitor')

@@ -536,7 +536,7 @@ class TaskCountsStatusHandler(APIBase):
                 match['$or'] = [{"requirements.gpu": {"$exists": False}}, {"requirements.gpu": {"$lte": 0}}]
 
         ret = {}
-        cursor = self.db.tasks.aggregate([
+        cursor = await self.db.tasks.aggregate([
             {'$match': match},
             {'$group': {'_id': '$status', 'total': {'$sum': 1}}},
         ])
@@ -604,7 +604,7 @@ class DatasetTaskCountsNameStatusHandler(APIBase):
         Returns:
             dict: {<name>: {<status>: num}}
         """
-        cursor = self.db.tasks.aggregate([
+        cursor = await self.db.tasks.aggregate([
             {'$match':{'dataset_id': dataset_id}},
             {'$group':{
                 '_id':{'name': '$name', 'status': '$status'},
@@ -640,7 +640,7 @@ class DatasetTaskStatsHandler(APIBase):
         Returns:
             dict: {<name>: {<stat>: <value>}}
         """
-        cursor = self.db.tasks.aggregate([
+        cursor = await self.db.tasks.aggregate([
             {'$match':{'dataset_id':dataset_id, 'status':'complete'}},
             {'$group':{
                 '_id':'$name',

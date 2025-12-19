@@ -25,7 +25,7 @@ from iceprod.core import functions
 from iceprod.core.config import Task, Job, Dataset
 from iceprod.core.defaults import add_default_options
 from iceprod.core.resources import Resources
-from iceprod.prom_utils import HistogramBuckets
+from iceprod.common.prom_utils import HistogramBuckets
 from iceprod.server.states import JOB_STATUS_START
 from iceprod.server.util import nowstr
 
@@ -226,12 +226,19 @@ class BaseGrid:
     @cached(TTLCache(1024, 60), key=lambda _,t: (t.dataset.dataset_id, t.name))
     async def _get_dataset_credentials(self, task: Task) -> list[Any]:
         # todo: handle non-oauth credentials, like s3
+        # todo: delayed get to see if we already have these tokens in condor
+        ret = []
         if client_id := self.cfg['oauth_condor_client_id']:
+            # do dataset creds, with downscoping
+            for prefix, scope in task.get_task_config().get('token_scopes', {}).items():
+                args = {'client_id': client_id, 'transfer_prefix': prefix, 'scope': scope}
+                ret2 = await self.cred_client.request('GET', f'/datasets/{task.dataset.dataset_id}/exchange', args)
+                ret.extend(ret2)
+            # do dataset-task creds
             args = {'client_id': client_id}
-            ret = await self.cred_client.request('GET', f'/datasets/{task.dataset.dataset_id}/tasks/{task.name}/exchange', args)
-            return ret
-        else:
-            return []
+            ret2 = await self.cred_client.request('GET', f'/datasets/{task.dataset.dataset_id}/tasks/{task.name}/exchange', args)
+            ret.extend(ret2)
+        return ret
 
     @cached(TTLCache(10, 60), key=lambda _: 'self')
     async def get_scratch_credentials(self):

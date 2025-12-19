@@ -28,7 +28,7 @@ from wipac_dev_tools.prometheus_tools import GlobalLabels, AsyncPromWrapper, Pro
 
 from iceprod.core.config import Task
 from iceprod.core.exe import WriteToScript, Transfer, Data
-from iceprod.prom_utils import HistogramBuckets
+from iceprod.common.prom_utils import HistogramBuckets
 from iceprod.server.config import IceProdConfig
 from iceprod.server import grid
 from iceprod.server.util import str2datetime

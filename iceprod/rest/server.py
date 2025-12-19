@@ -9,14 +9,14 @@ import logging
 from pathlib import Path
 import pkgutil
 
-import motor.motor_asyncio
 from prometheus_client import Info, start_http_server
 from rest_tools.server import RestServer
 from tornado.web import RequestHandler, HTTPError
 from wipac_dev_tools import from_environment_as_dataclass
 
+from iceprod.common.mongo import Mongo
 from iceprod.util import VERSION_STRING
-from ..prom_utils import AsyncMonitor
+from ..common.prom_utils import AsyncMonitor
 from ..s3 import boto3, S3
 from .base_handler import IceProdRestConfig
 
@@ -96,18 +96,14 @@ class Server:
         else:
             logger.warning('S3 is not available!')
 
-        logging_url = config.DB_URL.split('@')[-1] if '@' in config.DB_URL else config.DB_URL
-        logging.info(f'DB: {logging_url}')
-        db_url, db_name = config.DB_URL.rsplit('/', 1)
-        self.db = motor.motor_asyncio.AsyncIOMotorClient(
-            db_url,
-            timeoutMS=config.DB_TIMEOUT*1000,
-            w=config.DB_WRITE_CONCERN,
+        self.db_client = Mongo(
+            url=config.DB_URL,
+            timeout=config.DB_TIMEOUT,
+            write_concern=config.DB_WRITE_CONCERN
         )
-        logging.info(f'DB name: {db_name}')
         self.indexes = defaultdict(partial(defaultdict, dict))
 
-        kwargs = IceProdRestConfig(rest_config, database=self.db, s3conn=s3conn)
+        kwargs = IceProdRestConfig(rest_config, database=self.db_client.client, s3conn=s3conn)
 
         server = RestServer(debug=config.DEBUG, max_body_size=config.MAX_BODY_SIZE)
 
@@ -143,17 +139,12 @@ class Server:
             self.async_monitor = AsyncMonitor(labels={'type': 'api'})
             await self.async_monitor.start()
 
-        for database in self.indexes:
-            db = self.db[database]
-            for collection in self.indexes[database]:
-                existing = await db[collection].index_information()
-                for name in self.indexes[database][collection]:
-                    if name not in existing:
-                        kwargs = self.indexes[database][collection][name]
-                        logging.info('DB: creating index %s/%s:%s %r', database, collection, name, kwargs)
-                        await db[collection].create_index(name=name, **kwargs)
+        await self.db_client.ping()
+        for database, indexes in self.indexes.items():
+            await self.db_client.create_indexes(db_name=database, indexes=indexes)
 
     async def stop(self):
         await self.server.stop()
         if self.async_monitor:
             await self.async_monitor.stop()
+        await self.db_client.close()
