@@ -3,18 +3,18 @@ from functools import wraps
 from typing import Protocol
 import uuid
 
-import motor.motor_asyncio
 import pymongo
 from rest_tools.server import catch_error, token_attribute_role_mapping_auth, TokenAttributeRoleMappingProtocol, RestHandler
 from tornado.web import HTTPError
 
+from iceprod.common.mongo import AsyncDatabase
 from iceprod.roles_groups import ROLES, GROUPS
 
 logger = logging.getLogger('rest-auth')
 
 
 class AuthProtocol(Protocol):
-    auth_db: motor.motor_asyncio.AsyncIOMotorClient
+    auth_db: AsyncDatabase
 
 
 class AttrAuthMixin(TokenAttributeRoleMappingProtocol, AuthProtocol, RestHandler):

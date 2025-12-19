@@ -503,7 +503,7 @@ class DatasetJobCountsStatusHandler(APIBase):
         Returns:
             dict: {<status>: [<job_id>,]}
         """
-        cursor = self.db.jobs.aggregate([
+        cursor = await self.db.jobs.aggregate([
             {'$match': {'dataset_id': dataset_id}},
             {'$group': {'_id':'$status', 'total': {'$sum':1}}},
         ])

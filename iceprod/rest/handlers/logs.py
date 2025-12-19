@@ -353,7 +353,7 @@ class DatasetTaskLogsHandler(APIBase):
             steps.append({'$limit': num})
         logger.debug('steps: %r', steps)
 
-        cur = self.db.logs.aggregate(steps, allowDiskUse=True)
+        cur = await self.db.logs.aggregate(steps, allowDiskUse=True)
         ret = []
         async for entry in cur:
             ret.append(entry)

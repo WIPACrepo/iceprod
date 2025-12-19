@@ -1,8 +1,8 @@
 import time
 import json
 from unittest.mock import MagicMock
-import motor.motor_asyncio
 import jwt
+from pymongo import AsyncMongoClient
 import pytest
 
 import iceprod.credentials.service
@@ -51,7 +51,7 @@ async def test_credentials_service_refresh_cred(respx_mock, monkeypatch):
 
 
 async def test_credentials_service_refresh_empty(mongo_url, mongo_clear, respx_mock):
-    db = motor.motor_asyncio.AsyncIOMotorClient(mongo_url)['creds']
+    db = AsyncMongoClient(mongo_url)['creds']
     clients = '{}'
     rs = iceprod.credentials.service.RefreshService(db, clients, 1, 1, 60)
 
@@ -60,7 +60,7 @@ async def test_credentials_service_refresh_empty(mongo_url, mongo_clear, respx_m
 
 @pytest.mark.respx(using="httpx", assert_all_called=False)
 async def test_credentials_service_refresh_not_exp(mongo_url, mongo_clear, respx_mock):
-    db = motor.motor_asyncio.AsyncIOMotorClient(mongo_url)['creds']
+    db = AsyncMongoClient(mongo_url)['creds']
     clients = '{}'
     rs = iceprod.credentials.service.RefreshService(db, clients, 1, 1, 60)
 
@@ -87,7 +87,7 @@ async def test_credentials_service_refresh_not_exp(mongo_url, mongo_clear, respx
 
 @pytest.mark.respx(using="httpx")
 async def test_credentials_service_refresh_group(mongo_url, mongo_clear, respx_mock, monkeypatch):
-    db = motor.motor_asyncio.AsyncIOMotorClient(mongo_url)['creds']
+    db = AsyncMongoClient(mongo_url)['creds']
     clients = json.dumps({
         'http://iceprod.test': {'client_id': 'id', 'client_secret': 'secret'}
     })
@@ -127,7 +127,7 @@ async def test_credentials_service_refresh_group(mongo_url, mongo_clear, respx_m
 
 @pytest.mark.respx(using="httpx")
 async def test_credentials_service_refresh_user(mongo_url, mongo_clear, respx_mock, monkeypatch):
-    db = motor.motor_asyncio.AsyncIOMotorClient(mongo_url)['creds']
+    db = AsyncMongoClient(mongo_url)['creds']
     clients = json.dumps({
         'http://iceprod.test': {'client_id': 'id', 'client_secret': 'secret'}
     })
@@ -168,7 +168,7 @@ async def test_credentials_service_refresh_user(mongo_url, mongo_clear, respx_mo
 
 @pytest.mark.respx(using="httpx")
 async def test_credentials_service_refresh_dataset(mongo_url, mongo_clear, respx_mock, monkeypatch):
-    db = motor.motor_asyncio.AsyncIOMotorClient(mongo_url)['creds']
+    db = AsyncMongoClient(mongo_url)['creds']
     clients = json.dumps({
         'http://iceprod.test': {'client_id': 'id', 'client_secret': 'secret'}
     })

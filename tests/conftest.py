@@ -3,7 +3,7 @@ import socket
 
 import boto3
 from moto import mock_aws
-import motor.motor_asyncio
+from pymongo import AsyncMongoClient
 import pytest
 import pytest_asyncio
 from wipac_dev_tools import from_environment
@@ -29,7 +29,7 @@ async def mongo_clear():
     }
     config = from_environment(default_config)
     db_url, db_name = config['DB_URL'].rsplit('/', 1)
-    client = motor.motor_asyncio.AsyncIOMotorClient(db_url, serverSelectionTimeoutMS=10)
+    client = AsyncMongoClient(db_url, serverSelectionTimeoutMS=10)
 
     async def _clean(db_name):
         db = client[db_name]

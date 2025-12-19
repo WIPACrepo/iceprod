@@ -1,21 +1,20 @@
 import logging
 from typing import Any
 
-import motor.motor_asyncio
 from rest_tools.server import RestHandlerSetup, RestHandler
 from tornado.escape import json_encode
 
+from ..common.mongo import AsyncMongoClient, AsyncDatabase
 from iceprod.util import VERSION_STRING
-from iceprod.prom_utils import PromRequestMixin
+from iceprod.common.prom_utils import PromRequestMixin
 from .auth import AttrAuthMixin
 
 logger = logging.getLogger('rest')
 
+DB = AsyncMongoClient | AsyncDatabase
 
-DB = motor.motor_asyncio.AsyncIOMotorDatabase | motor.motor_asyncio.AsyncIOMotorClient
 
-
-def IceProdRestConfig(config: dict[str, Any], database: DB, auth_database=None, s3conn=None):
+def IceProdRestConfig(config: dict[str, Any], database: DB, auth_database: AsyncDatabase | None = None, s3conn=None):
     if config:
         config['server_header'] = 'IceProd/' + VERSION_STRING
     ret = RestHandlerSetup(config)
@@ -27,7 +26,7 @@ def IceProdRestConfig(config: dict[str, Any], database: DB, auth_database=None, 
 
 class APIBase(AttrAuthMixin, PromRequestMixin, RestHandler):
     """Default REST handler"""
-    def initialize(self, *args, database, auth_database, s3=None, **kwargs):
+    def initialize(self, *args, database: DB, auth_database, s3=None, **kwargs):
         super().initialize(*args, **kwargs)
         self.db = database
         self.auth_db = auth_database

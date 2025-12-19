@@ -22,7 +22,7 @@ from wipac_dev_tools import from_environment_as_dataclass
 
 from iceprod.util import VERSION_STRING
 from iceprod.credentials.util import ClientCreds
-from iceprod.prom_utils import AsyncMonitor, PromRequestMixin
+from iceprod.common.prom_utils import AsyncMonitor, PromRequestMixin
 from iceprod.core.config import ConfigSchema as DATASET_SCHEMA
 from iceprod.server.config import CONFIG_SCHEMA as SERVER_SCHEMA
 from iceprod.server import documentation

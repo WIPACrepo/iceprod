@@ -21,7 +21,8 @@ from tornado.web import RequestHandler as TornadoRequestHandler
 from wipac_dev_tools import from_environment_as_dataclass
 
 from iceprod.util import VERSION_STRING
-from ..prom_utils import AsyncMonitor
+from ..common.mongo import Mongo
+from ..common.prom_utils import AsyncMonitor
 from iceprod.rest.auth import authorization
 from iceprod.rest.base_handler import IceProdRestConfig, APIBase
 from iceprod.server.util import nowstr, datetime2str
@@ -731,16 +732,11 @@ class Server:
         self.prometheus_port = config.PROMETHEUS_PORT if config.PROMETHEUS_PORT > 0 else None
         self.async_monitor = None
 
-        logging_url = config.DB_URL.split('@')[-1] if '@' in config.DB_URL else config.DB_URL
-        logging.info(f'DB: {logging_url}')
-        db_url, db_name = config.DB_URL.rsplit('/', 1)
-        db = motor.motor_asyncio.AsyncIOMotorClient(  # type: ignore[var-annotated]
-            db_url,
-            timeoutMS=config.DB_TIMEOUT*1000,
-            w=config.DB_WRITE_CONCERN,
+        self.db_client = Mongo(
+            url=config.DB_URL,
+            timeout=config.DB_TIMEOUT,
+            write_concern=config.DB_WRITE_CONCERN
         )
-        logging.info(f'DB name: {db_name}')
-        self.db = db[db_name]
         self.indexes = {
             'group_creds': {
                 'group_index2': {'keys': [('groupname', pymongo.DESCENDING), ('transfer_prefix', pymongo.DESCENDING)], 'unique': True},
@@ -775,7 +771,7 @@ class Server:
             raise RuntimeError('ICEPROD_API_CLIENT_ID or ICEPROD_API_CLIENT_SECRET not specified, and CI_TESTING not enabled!')
 
         self.refresh_service = RefreshService(
-            database=self.db,
+            database=self.db_client.db,
             clients=config.TOKEN_CLIENTS,
             refresh_window=config.TOKEN_REFRESH_WINDOW,
             expire_buffer=config.TOKEN_EXPIRE_BUFFER,
@@ -783,7 +779,7 @@ class Server:
         )
         self.refresh_service_task = None
 
-        kwargs = IceProdRestConfig(rest_config, database=self.db)
+        kwargs = IceProdRestConfig(rest_config, database=self.db_client.db)
         kwargs['refresh_service'] = self.refresh_service
         kwargs['rest_client'] = rest_client
 
@@ -816,17 +812,8 @@ class Server:
             self.async_monitor = AsyncMonitor(labels={'type': 'credentials'})
             await self.async_monitor.start()
 
-        for collection in self.indexes:
-            existing = await self.db[collection].index_information()
-            for name in self.indexes[collection]:
-                if name not in existing:
-                    logging.info('DB: creating index %s:%s', collection, name)
-                    kwargs = self.indexes[collection][name]
-                    await self.db[collection].create_index(name=name, **kwargs)
-            for name in existing:
-                if (not name.startswith('_')) and name not in self.indexes[collection]:
-                    logging.info('DB: drop index %s:%s', collection, name)
-                    await self.db[collection].drop_index(name)
+        await self.db_client.ping()
+        await self.db_client.create_indexes(indexes=self.indexes)
 
         if not self.refresh_service_task:
             self.refresh_service_task = asyncio.create_task(self.refresh_service.run())
@@ -843,3 +830,4 @@ class Server:
                 self.refresh_service_task = None
         if self.async_monitor:
             await self.async_monitor.stop()
+        await self.db_client.close()

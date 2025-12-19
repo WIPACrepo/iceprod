@@ -12,8 +12,6 @@ import uuid
 
 from prometheus_client import Info, start_http_server
 import pymongo
-import pymongo.errors
-import motor.motor_asyncio
 import requests.exceptions
 from rest_tools.client import RestClient, ClientCredentialsAuth
 from rest_tools.server import RestServer
@@ -21,8 +19,9 @@ from tornado.web import HTTPError
 from tornado.web import RequestHandler as TornadoRequestHandler
 from wipac_dev_tools import from_environment_as_dataclass
 
+from iceprod.common.mongo import Mongo
 from iceprod.util import VERSION_STRING
-from ..prom_utils import AsyncMonitor
+from ..common.prom_utils import AsyncMonitor
 from iceprod.rest.auth import authorization, attr_auth
 from iceprod.rest.base_handler import IceProdRestConfig, APIBase
 from iceprod.server.util import nowstr, datetime2str
@@ -312,16 +311,11 @@ class Server:
         self.prometheus_port = config.PROMETHEUS_PORT if config.PROMETHEUS_PORT > 0 else None
         self.async_monitor = None
 
-        logging_url = config.DB_URL.split('@')[-1] if '@' in config.DB_URL else config.DB_URL
-        logging.info(f'DB: {logging_url}')
-        db_url, db_name = config.DB_URL.rsplit('/', 1)
-        db = motor.motor_asyncio.AsyncIOMotorClient(  # type: ignore[var-annotated]
-            db_url,
-            timeoutMS=config.DB_TIMEOUT*1000,
-            w=config.DB_WRITE_CONCERN,
+        self.db_client = Mongo(
+            url=config.DB_URL,
+            timeout=config.DB_TIMEOUT,
+            write_concern=config.DB_WRITE_CONCERN
         )
-        logging.info(f'DB name: {db_name}')
-        self.db = db[db_name]
         self.indexes = {
             'materialization': {
                 'materialization_id_index': {'keys': 'materialization_id', 'unique': True},
@@ -344,10 +338,10 @@ class Server:
         else:
             raise RuntimeError('ICEPROD_API_CLIENT_ID or ICEPROD_API_CLIENT_SECRET not specified, and CI_TESTING not enabled!')
 
-        self.materialization_service = MaterializationService(self.db, rest_client)
+        self.materialization_service = MaterializationService(self.db_client.db, rest_client)
         self.materialization_service_task = None
 
-        kwargs = IceProdRestConfig(rest_config, database=self.db)
+        kwargs = IceProdRestConfig(rest_config, database=self.db_client.db)
         kwargs['materialization_service'] = self.materialization_service
         kwargs['rest_client'] = rest_client
 
@@ -376,13 +370,8 @@ class Server:
             self.async_monitor = AsyncMonitor(labels={'type': 'materialization'})
             await self.async_monitor.start()
 
-        for collection in self.indexes:
-            existing = await self.db[collection].index_information()
-            for name in self.indexes[collection]:
-                if name not in existing:
-                    logging.info('DB: creating index %s:%s', collection, name)
-                    kwargs = self.indexes[collection][name]
-                    await self.db[collection].create_index(name=name, **kwargs)
+        await self.db_client.ping()
+        await self.db_client.create_indexes(indexes=self.indexes)
 
         if not self.materialization_service_task:
             self.materialization_service_task = asyncio.create_task(self.materialization_service.run())
@@ -399,3 +388,4 @@ class Server:
                 self.materialization_service_task = None
         if self.async_monitor:
             await self.async_monitor.stop()
+        await self.db_client.close()

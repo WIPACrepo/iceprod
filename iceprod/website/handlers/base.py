@@ -17,7 +17,7 @@ from rest_tools.server.session import SessionMixin
 
 from iceprod.credentials.util import get_expiration
 from iceprod.util import VERSION_STRING
-from iceprod.prom_utils import PromRequestMixin
+from iceprod.common.prom_utils import PromRequestMixin
 from iceprod.roles_groups import GROUPS
 import iceprod.server.states
 
