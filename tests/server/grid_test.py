@@ -181,7 +181,7 @@ async def test_grid_get_dataset_credentials():
         group='group',
         user='user',
         debug=False,
-        config={},
+        config={'tasks':[{'task_scopes':{}}]},
     )
     j = Job(dataset=d, job_id='5678', job_index=3, status='processing')
     t = Task(
