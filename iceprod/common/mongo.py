@@ -1,8 +1,9 @@
 import logging
 from typing import Any
 
-from pymongo import AsyncMongoClient, ASCENDING, DESCENDING
+from pymongo import AsyncMongoClient
 from pymongo.asynchronous.database import AsyncDatabase
+
 
 class Mongo:
     def __init__(self, *, url: str, timeout: int = 60, write_concern: int = 1):
@@ -22,7 +23,7 @@ class Mongo:
         self._db_name = db_name
 
     @property
-    def db(self, name: str|None = None) -> AsyncDatabase:
+    def db(self, name: str | None = None) -> AsyncDatabase:
         db_name = name if name else self._db_name
         logging.info(f'DB name: {db_name}')
         if not db_name:

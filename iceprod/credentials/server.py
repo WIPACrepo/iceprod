@@ -12,7 +12,6 @@ import jwt
 from prometheus_client import Info, start_http_server
 import pymongo
 import pymongo.errors
-import motor.motor_asyncio
 import requests.exceptions
 from rest_tools.client import RestClient, ClientCredentialsAuth
 from rest_tools.server import RestServer, ArgumentHandler, ArgumentSource

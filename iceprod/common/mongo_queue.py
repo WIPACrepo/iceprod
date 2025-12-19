@@ -20,8 +20,8 @@ class AsyncMongoQueue:
     async def init_indexes(self):
         """Initializes indexes for performance and priority fetching."""
         await self.collection.create_index([
-            ("status", 1), 
-            ("priority", -1), 
+            ("status", 1),
+            ("priority", -1),
             ("created_at", 1)
         ])
 
@@ -48,7 +48,7 @@ class AsyncMongoQueue:
                 {"status": "processing", "locked_at": {"$lt": timeout_cutoff}}
             ]
         }
-        
+
         update = {
             "$set": {
                 "status": "processing",
@@ -56,7 +56,7 @@ class AsyncMongoQueue:
                 "worker_id": self.worker_id
             }
         }
-        
+
         # Atomically find and update
         return await self.collection.find_one_and_update(
             query,
