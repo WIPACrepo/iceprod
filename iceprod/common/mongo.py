@@ -23,12 +23,16 @@ class Mongo:
         self._db_name = db_name
 
     @property
-    def db(self, name: str | None = None) -> AsyncDatabase:
-        db_name = name if name else self._db_name
+    def db(self) -> AsyncDatabase:
+        db_name = self._db_name
         logging.info(f'DB name: {db_name}')
         if not db_name:
-            raise RuntimeError('must specify database name either in __init__ url or as an argument')
+            raise RuntimeError('must specify database name in __init__ url')
         return self.client[db_name]
+
+    def __getitem__(self, name: str) -> AsyncDatabase:
+        logging.info(f'DB name: {name}')
+        return self.client[name]
 
     async def ping(self):
         await self.client.admin.command('ping')
