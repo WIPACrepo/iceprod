@@ -61,8 +61,16 @@ class AsyncMongoQueue:
         }
         await self.client.create_indexes(indexes=indexes)
 
-    async def push(self, payload: Payload, priority: int = 0):
-        """Adds a new message to the queue."""
+    async def push(self, payload: Payload, priority: int = 0) -> str:
+        """
+        Adds a new message to the queue.
+
+        Args:
+            payload: message data
+
+        Returns:
+            Message id
+        """
         message = Message(
             uuid=uuid.uuid4().hex,
             payload=payload,
@@ -70,8 +78,19 @@ class AsyncMongoQueue:
             priority=priority,
             created_at=datetime.now(timezone.utc),
         )
-        result = await self.collection.insert_one(asdict(message))
-        return result.inserted_id
+        await self.collection.insert_one(asdict(message))
+        return message.uuid
+
+    async def get_status(self, message_id: str) -> None | str:
+        """Get the status if a message exists"""
+        ret = await self.collection.find_one(
+            {'uuid': message_id},
+            projection={'_id': False, 'status': True}
+        )
+        if ret:
+            return ret['status']
+        else:
+            return None
 
     async def pop(self, timeout_seconds: int = 300) -> Message | None:
         """Atomically grabs the next available message (or an abandoned timed-out one)."""

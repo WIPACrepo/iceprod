@@ -24,11 +24,11 @@ def port():
 @pytest_asyncio.fixture
 async def mongo_clear():
     default_config = {
-        'DB_URL': 'mongodb://localhost/datasets',
+        'DB_URL': 'mongodb://localhost/iceprod',
         'DATABASES': '',
     }
     config = from_environment(default_config)
-    db_url, db_name = config['DB_URL'].rsplit('/', 1)
+    db_url, db_name = config['DB_URL'].rsplit('/', 1)  # type: ignore
     client = AsyncMongoClient(db_url, serverSelectionTimeoutMS=10)
 
     async def _clean(db_name):
@@ -40,7 +40,7 @@ async def mongo_clear():
     if not config['DATABASES']:
         await _clean(db_name)
     else:
-        for db_name in config['DATABASES'].split('|'):
+        for db_name in config['DATABASES'].split('|'):  # type: ignore
             await _clean(db_name)
 
 

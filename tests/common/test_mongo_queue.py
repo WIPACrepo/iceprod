@@ -1,5 +1,6 @@
 from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
+import os
 import uuid
 
 from iceprod.common.mongo_queue import AsyncMongoQueue, Message
@@ -27,16 +28,29 @@ async def test_message():
     }
 
 
-async def test_queue_basics(mongo_clear):
-    queue = AsyncMongoQueue(url='mongodb://localhost/foo', collection_name='bar')
+async def test_queue_basics(mongo_url, mongo_clear):
+    url = os.environ['DB_URL']
+    queue = AsyncMongoQueue(url=url, collection_name='bar')
     await queue.setup()
 
-    data = {'1': 2, '3': 4}
-    await queue.push(data)
+    # check queue is empty
+    ret = await queue.pop()
+    assert not ret
 
+    # put data on the queue
+    data = {'1': 2, '3': 4}
+    id_ = await queue.push(data)
+
+    ret2 = await queue.get_status(id_)
+    assert ret2 == 'queued'
+
+    # get it from the queue
     ret = await queue.pop()
     assert ret
     assert ret.payload == data
+
+    ret2 = await queue.get_status(id_)
+    assert ret2 == 'processing'
 
     # check that there's only the one message
     ret2 = await queue.pop()
@@ -44,6 +58,9 @@ async def test_queue_basics(mongo_clear):
 
     # put it back
     await queue.fail(ret.uuid)
+
+    ret2 = await queue.get_status(id_)
+    assert ret2 == 'queued'
 
     # now get it again
     ret = await queue.pop()
@@ -53,14 +70,15 @@ async def test_queue_basics(mongo_clear):
     await queue.complete(ret.uuid)
 
     # check that it's not on the queue anymore
-    ret2 = await queue.pop()
+    ret2 = await queue.get_status(id_)
     assert not ret2
 
     await queue.close()
 
 
-async def test_queue_context(mongo_clear):
-    queue = AsyncMongoQueue(url='mongodb://localhost/foo', collection_name='bar')
+async def test_queue_context(mongo_url, mongo_clear):
+    url = os.environ['DB_URL']
+    queue = AsyncMongoQueue(url=url, collection_name='bar')
     await queue.setup()
 
     data = {'1': 2, '3': 4}
