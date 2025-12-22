@@ -1,90 +1,100 @@
 import asyncio
 import logging
 import time
-from datetime import datetime, timedelta, UTC
+from typing import Any
 
-import pymongo
+from rest_tools.client import RestClient, ClientCredentialsAuth
 
-from ..server.util import nowstr, datetime2str
-from .materialize import Materialize
+from .config import get_config
+from ..common.mongo_queue import AsyncMongoQueue
+from ..core.logger import stderr_logger
+from .materialize import Materialize, DATASET_CYCLE_TIMEOUT
 
 logger = logging.getLogger('materialization_service')
 
 
+class TimeoutException(Exception):
+    pass
+
+
 class MaterializationService:
     """Materialization service."""
-    def __init__(self, database, rest_client, cleanup_hours=6):
-        self.db = database
+    def __init__(self, message_queue: AsyncMongoQueue, rest_client: RestClient):
+        self.message_queue = message_queue
         self.materialize = Materialize(rest_client)
-        self.cleanup_hours = cleanup_hours
 
-        self.start_time = time.time()
-        self.last_run_time = None
-        self.last_cleanup_time = None
-        self.last_success_time = None
-
-    async def run(self):
+    async def run(self, loop: bool = True):
         """
         Run loop.
         """
         while True:
-            ret = await self._run_once()
-            if ret == 'sleep':
-                logger.info('materialization service has nothing to do. sleeping')
-                await asyncio.sleep(60)
+            sleep_time = 0
+            try:
+                start_time = time.time()
+                async with self.message_queue.process_next(timeout_seconds=DATASET_CYCLE_TIMEOUT+10) as data:
+                    if data:
+                        await self._run_once(data)
+                    else:
+                        logger.info('materialization service has nothing to do. sleeping')
+                        sleep_time = time.time() - start_time + 60
+            except TimeoutException:
+                pass
+            except Exception:
+                logger.error('error running materialization', exc_info=True)
 
-    async def _run_once(self):
-        materialization_id = None
-        try:
-            self.last_run_time = time.time()
-            now = nowstr()
+            if not loop:
+                break
 
-            # periodically cleanup
-            if (not self.last_cleanup_time) or self.last_run_time - self.last_cleanup_time > 3600*self.cleanup_hours:
-                clean_time = datetime2str(datetime.fromtimestamp(self.last_run_time, tz=UTC)-timedelta(hours=self.cleanup_hours))
-                await self.db.materialization.delete_many({'status': {'$in': ['complete', 'error']}, 'modify_timestamp': {'$lt': clean_time}})
-                await self.db.materialization.update_many({'status': 'processing', 'modify_timestamp': {'$lt': clean_time}}, {'$set': {'status': 'waiting', 'modify_timestamp': now}})
-                self.last_cleanup_time = time.time()
+            if sleep_time:
+                await asyncio.sleep(sleep_time)
 
-            # get next materialization from DB
-            ret = await self.db.materialization.find_one_and_update(
-                {'status': 'waiting'},
-                {'$set': {'status': 'processing', 'modify_timestamp': now}},
-                projection={'_id':False},
-                sort=[('modify_timestamp', 1)],
-                return_document=pymongo.ReturnDocument.AFTER,
-            )
-            if not ret:
-                return 'sleep'
+    async def _run_once(self, data: dict[str, Any]):
+        # run materialization
+        logger.warning(f'running materialization request: {data}')
+        kwargs = {}
+        if 'dataset_id' in data and data['dataset_id']:
+            kwargs['only_dataset'] = data['dataset_id']
+        if 'num' in data and data['num']:
+            kwargs['num'] = data['num']
+        if 'set_status' in data and data['set_status']:
+            kwargs['set_status'] = data['set_status']
+        ret = await self.materialize.run_once(**kwargs)
+        logger.info('ret: %r', ret)
 
-            # run materialization
-            materialization_id = ret["materialization_id"]
-            logger.warning(f'running materialization request {materialization_id}')
-            kwargs = {}
-            if 'dataset_id' in ret and ret['dataset_id']:
-                kwargs['only_dataset'] = ret['dataset_id']
-            if 'num' in ret and ret['num']:
-                kwargs['num'] = ret['num']
-            if 'set_status' in ret and ret['set_status']:
-                kwargs['set_status'] = ret['set_status']
-            ret = await self.materialize.run_once(**kwargs)
+        if not ret:
+            logger.warning(f'materialization request took too long, bumping to end of queue for another run')
+            raise TimeoutException()
 
-            if ret:
-                await self.db.materialization.update_one(
-                    {'materialization_id': materialization_id},
-                    {'$set': {'status': 'complete'}},
-                )
-            else:
-                logger.warning(f'materialization request {materialization_id} took too long, bumping to end of queue for another run')
-                await self.db.materialization.update_one(
-                    {'materialization_id': materialization_id},
-                    {'$set': {'status': 'waiting', 'modify_timestamp': nowstr()}},
-                )
-            self.last_success_time = time.time()
-        except Exception:
-            logger.error('error running materialization', exc_info=True)
-            if materialization_id:
-                await self.db.materialization.update_one(
-                    {'materialization_id': materialization_id},
-                    {'$set': {'status': 'error'}},
-                )
+
+async def main():
+    config = get_config()
+
+    message_queue = AsyncMongoQueue(
+        url=config.DB_URL,
+        collection_name='materialization_queue',
+        extra_indexes={'dataset_id_index': {'keys': 'dataset_id', 'unique': False}},
+        timeout=config.DB_TIMEOUT,
+        write_concern=config.DB_WRITE_CONCERN
+    )
+
+    rest_client: RestClient
+    if config.ICEPROD_API_CLIENT_ID and config.ICEPROD_API_CLIENT_SECRET:
+        logging.info(f'enabling auth via {config.OPENID_URL} for aud "{config.OPENID_AUDIENCE}"')
+        rest_client = ClientCredentialsAuth(
+            address=config.ICEPROD_API_ADDRESS,
+            token_url=config.OPENID_URL,
+            client_id=config.ICEPROD_API_CLIENT_ID,
+            client_secret=config.ICEPROD_API_CLIENT_SECRET,
+        )
+    elif config.CI_TESTING:
+        rest_client = RestClient(config.ICEPROD_API_ADDRESS, timeout=1, retries=0)
+    else:
+        raise RuntimeError('ICEPROD_API_CLIENT_ID or ICEPROD_API_CLIENT_SECRET not specified, and CI_TESTING not enabled!')
+
+    ms = MaterializationService(message_queue=message_queue, rest_client=rest_client)
+    await ms.run()
+
+
+if __name__ == '__main__':
+    stderr_logger()
+    asyncio.run(main())

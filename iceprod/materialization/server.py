@@ -1,12 +1,9 @@
 """
 Materialization service for dataset late materialization.
 """
-import asyncio
-import dataclasses
-from datetime import UTC, datetime
+from dataclasses import asdict
 import json
 import logging
-import time
 from typing import Any, Self
 import uuid
 
@@ -17,26 +14,36 @@ from rest_tools.client import RestClient, ClientCredentialsAuth
 from rest_tools.server import RestServer
 from tornado.web import HTTPError
 from tornado.web import RequestHandler as TornadoRequestHandler
-from wipac_dev_tools import from_environment_as_dataclass
 
-from iceprod.common.mongo import Mongo
+from .config import get_config
+from iceprod.common.mongo_queue import AsyncMongoQueue
 from iceprod.util import VERSION_STRING
-from ..common.prom_utils import AsyncMonitor
+from iceprod.common.prom_utils import AsyncMonitor
 from iceprod.rest.auth import authorization, attr_auth
 from iceprod.rest.base_handler import IceProdRestConfig, APIBase
-from iceprod.server.util import nowstr, datetime2str
-from .service import MaterializationService
+from iceprod.server.util import nowstr
 
 logger = logging.getLogger('server')
 
 
 class BaseHandler(APIBase):
-    def initialize(self, *args, materialization_service=None, rest_client=None, **kwargs):
+    def initialize(self, *args, materialization_queue: AsyncMongoQueue, rest_client: RestClient, **kwargs):
         super().initialize(*args, **kwargs)
-        self.materialization_service = materialization_service
+        self.materialization_queue = materialization_queue
         self.rest_client = rest_client
 
     async def new_request(self, args):
+        """
+        Validates a new materialization request.
+        
+        Deduplicates with existing requests with the same args that are in 'queued' status.
+
+        Arguments:
+            args: dict of args for request
+
+        Returns:
+            dict: data fields
+        """
         # validate first
         fields = {
             'dataset_id': str,
@@ -53,10 +60,6 @@ class BaseHandler(APIBase):
         # set some fields
         now = nowstr()
         data = {
-            'materialization_id': uuid.uuid1().hex,
-            'status': 'waiting',
-            'create_timestamp': now,
-            'modify_timestamp': now,
             'creator': self.auth_data.get('username', None),
             'role': self.auth_data.get('role', None),
         }
@@ -64,8 +67,15 @@ class BaseHandler(APIBase):
             if k in args:
                 data[k] = args[k]
 
-        # insert
-        await self.db.materialization.insert_one(data)
+        # check if exists
+        ret = await self.materialization_queue.lookup_by_payload(data)
+        if ret and ret.status == 'queued':
+            data['materialization_id'] = ret.uuid
+        else:
+            # insert
+            ret = await self.materialization_queue.push(data)
+            data['materialization_id'] = ret
+
         return data
 
     async def check_attr_auth(self, arg, val, role):
@@ -114,12 +124,14 @@ class StatusHandler(BaseHandler):
         Returns:
             dict: materialization metadata
         """
-        ret = await self.db.materialization.find_one({'materialization_id':materialization_id},
-                                                     projection={'_id':False})
+        ret = await self.materialization_queue.get_status(materialization_id)
         if not ret:
             self.send_error(404, reason="Materialization request not found")
         else:
-            self.write(ret)
+            self.write({
+                'materialization_id': materialization_id,
+                'status': ret,
+            })
 
 
 class RequestHandler(BaseHandler):
@@ -197,15 +209,18 @@ class DatasetStatusHandler(BaseHandler):
         Returns:
             dict: materialization metadata
         """
-        ret = await self.db.materialization.find_one(
+        ret = await self.materialization_queue.lookup_by_payload(
             {'dataset_id': dataset_id},
-            projection={'_id':False},
             sort=[('modify_timestamp', pymongo.DESCENDING)],
         )
         if not ret:
             self.send_error(404, reason="Materialization request not found")
         else:
-            self.write(ret)
+            data = ret.payload
+            data['materialization_id'] = ret.uuid
+            data['status'] = ret.status
+            data['create_date'] = ret.created_at.isoformat()
+            self.write(data)
 
 
 class HealthHandler(BaseHandler):
@@ -218,51 +233,22 @@ class HealthHandler(BaseHandler):
 
         Returns based on exit code, 200 = ok, 400 = failure
         """
-        assert self.materialization_service
-        now = time.time()
         status = {
             'now': nowstr(),
-            'start_time': datetime2str(datetime.fromtimestamp(self.materialization_service.start_time, tz=UTC)),
-            'last_run_time': "",
-            'last_success_time': "",
-            'last_cleanup_time': "",
             'num_requests': -1,
         }
-        try:
-            if self.materialization_service.last_run_time is None and self.materialization_service.start_time + 3600 < now:
-                self.send_error(500, reason='materialization was never run')
-                return
-            if self.materialization_service.last_run_time is not None:
-                if self.materialization_service.last_run_time + 3600 < now:
-                    self.send_error(500, reason='materialization has stopped running')
-                    return
-                status['last_run_time'] = datetime2str(datetime.fromtimestamp(self.materialization_service.last_run_time, tz=UTC))
-            if self.materialization_service.last_success_time is None and self.materialization_service.start_time + 86400 < now:
-                self.send_error(500, reason='materialization was never successful')
-                return
-            if self.materialization_service.last_success_time is not None:
-                if self.materialization_service.last_success_time + 86400 < now:
-                    self.send_error(500, reason='materialization has stopped being successful')
-                    return
-                status['last_success_time'] = datetime2str(datetime.fromtimestamp(self.materialization_service.last_success_time, tz=UTC))
-            if self.materialization_service.last_cleanup_time is not None:
-                status['last_cleanup_time'] = datetime2str(datetime.fromtimestamp(self.materialization_service.last_cleanup_time, tz=UTC))
-        except Exception:
-            logger.info('error from materialization service', exc_info=True)
-            self.send_error(500, reason='error from materialization service')
-            return
 
         try:
-            ret = await self.db.materialization.count_documents({'status':{'$in':['waiting','processing']}}, maxTimeMS=1000)
+            ret = await self.materialization_queue.count()
         except Exception:
             logger.info('bad db request', exc_info=True)
             self.send_error(500, reason='bad db request')
-            return
-        if ret is None:
-            self.send_error(500, reason='bad db result')
         else:
-            status['num_requests'] = ret
-            self.write(status)
+            if ret is None:
+                self.send_error(500, reason='bad db result')
+            else:
+                status['num_requests'] = ret
+                self.write(status)
 
 
 class Error(TornadoRequestHandler):
@@ -270,26 +256,9 @@ class Error(TornadoRequestHandler):
         raise HTTPError(404, 'invalid api route')
 
 
-@dataclasses.dataclass
-class DefaultConfig:
-    HOST: str = 'localhost'
-    PORT: int = 8080
-    DEBUG: bool = False
-    OPENID_URL: str = ''
-    OPENID_AUDIENCE: str = ''
-    ICEPROD_API_ADDRESS: str = 'https://iceprod2-api.icecube.wisc.edu'
-    ICEPROD_API_CLIENT_ID: str = ''
-    ICEPROD_API_CLIENT_SECRET: str = ''
-    DB_URL: str = 'mongodb://localhost/datasets'
-    DB_TIMEOUT: int = 60
-    DB_WRITE_CONCERN: int = 1
-    PROMETHEUS_PORT: int = 0
-    CI_TESTING: str = ''
-
-
 class Server:
     def __init__(self: Self):
-        config = from_environment_as_dataclass(DefaultConfig)
+        config = get_config()
 
         rest_config: dict[str, Any] = {
             'debug': config.DEBUG,
@@ -311,18 +280,13 @@ class Server:
         self.prometheus_port = config.PROMETHEUS_PORT if config.PROMETHEUS_PORT > 0 else None
         self.async_monitor = None
 
-        self.db_client = Mongo(
+        self.message_queue = AsyncMongoQueue(
             url=config.DB_URL,
+            collection_name='materialization_queue',
+            extra_indexes={'dataset_id_index': {'keys': 'dataset_id', 'unique': False}},
             timeout=config.DB_TIMEOUT,
             write_concern=config.DB_WRITE_CONCERN
         )
-        self.indexes = {
-            'materialization': {
-                'materialization_id_index': {'keys': 'materialization_id', 'unique': True},
-                'dataset_id_index': {'keys': 'dataset_id', 'unique': False},
-                'status_timestamp_index': {'keys': [('status', pymongo.ASCENDING), ('timestamp', pymongo.ASCENDING)], 'unique': False},
-            }
-        }
 
         rest_client: RestClient
         if config.ICEPROD_API_CLIENT_ID and config.ICEPROD_API_CLIENT_SECRET:
@@ -338,11 +302,8 @@ class Server:
         else:
             raise RuntimeError('ICEPROD_API_CLIENT_ID or ICEPROD_API_CLIENT_SECRET not specified, and CI_TESTING not enabled!')
 
-        self.materialization_service = MaterializationService(self.db_client.db, rest_client)
-        self.materialization_service_task = None
-
-        kwargs = IceProdRestConfig(rest_config, database=self.db_client.db)
-        kwargs['materialization_service'] = self.materialization_service
+        kwargs = IceProdRestConfig(rest_config)
+        kwargs['materialization_queue'] = self.message_queue
         kwargs['rest_client'] = rest_client
 
         server = RestServer(debug=config.DEBUG)
@@ -370,22 +331,19 @@ class Server:
             self.async_monitor = AsyncMonitor(labels={'type': 'materialization'})
             await self.async_monitor.start()
 
-        await self.db_client.ping()
-        await self.db_client.create_indexes(indexes=self.indexes)
+        await self.message_queue.setup()
 
-        if not self.materialization_service_task:
-            self.materialization_service_task = asyncio.create_task(self.materialization_service.run())
+        # do migration
+        # TODO: remove this code after one version release
+        collection = self.message_queue.client.db['materialization']
+        payload_fields = ['dataset_id', 'set_status', 'num', 'creator', 'role']
+        async for row in collection.find({}):
+            payload = {k: row[k] for k in payload_fields}
+            await self.message_queue.push(payload=payload, priority=0)
+        await collection.delete_many({})
 
     async def stop(self):
         await self.server.stop()
-        if self.materialization_service_task:
-            self.materialization_service_task.cancel()
-            try:
-                await self.materialization_service_task
-            except asyncio.CancelledError:
-                pass
-            finally:
-                self.materialization_service_task = None
         if self.async_monitor:
             await self.async_monitor.stop()
-        await self.db_client.close()
+        await self.message_queue.close()

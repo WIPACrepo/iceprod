@@ -75,7 +75,7 @@ async def test_materialization_server_request(server):
     assert 'result' in ret
 
     ret = await client.request('GET', f'/status/{ret["result"]}')
-    assert ret['status'] == 'waiting'
+    assert ret['status'] == 'queued'
 
 async def test_materialization_server_request_bad_role(server):
     client = server(roles=['user'])
@@ -91,15 +91,18 @@ async def test_materialization_server_request_dataset(server, requests_mock):
 
     client = server(roles=['user'])
     ret = await client.request('POST', '/request/d123', {})
-    ret = await client.request('POST', '/request/d123', {})
     mat_id = ret['result']
-    
+    ret = await client.request('POST', '/request/d123', {})
+    mat_id2 = ret['result']
+
+    assert mat_id == mat_id2
+
     with pytest.raises(requests.exceptions.HTTPError) as exc_info:
         await client.request('GET', f'/status/{ret["result"]}')
     assert exc_info.value.response.status_code == 403
 
     ret = await client.request('GET', '/request/d123/status')
-    assert ret['status'] == 'waiting'
+    assert ret['status'] == 'queued'
     assert ret['dataset_id'] == 'd123'
     assert ret['materialization_id'] == mat_id
 

@@ -5,6 +5,30 @@ from pymongo import AsyncMongoClient
 from pymongo.asynchronous.database import AsyncDatabase
 
 
+type CollectionIndexes = dict[str, dict[str, Any]]
+"""
+Indexes for a collection.
+
+Dict of index name : dict of keywords to create index.
+
+Example:
+    {
+        "my_index": {
+            "keys": [
+                ("status": pymongo.ASCENDING),
+                ("name": pymongo.DESCENDING)
+            ]
+        },
+        "id_index": {
+            "keys": [
+                ("uuid": pymongo.ASCENDING)
+            ],
+            "unique": True
+        }
+    }
+"""
+
+
 class Mongo:
     def __init__(self, *, url: str, timeout: int = 60, write_concern: int = 1):
         logging_url = url.split('@')[-1] if '@' in url else url
@@ -40,7 +64,7 @@ class Mongo:
     async def close(self):
         await self.client.close()
 
-    async def create_indexes(self, *, db_name: str | None = None, indexes: dict[str, dict[str, dict[str, Any]]]):
+    async def create_indexes(self, *, db_name: str | None = None, indexes: dict[str, CollectionIndexes]):
         database: AsyncDatabase = self.client[db_name] if db_name else self.db
         for collection in indexes:
             existing = await database[collection].index_information()

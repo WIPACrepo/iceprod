@@ -1,19 +1,21 @@
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, asdict, KW_ONLY
 from datetime import datetime, timedelta, timezone
+import logging
 from typing import Any, AsyncIterator, Literal
 import uuid
 
 from pymongo import ReturnDocument, ASCENDING, DESCENDING
 
-from .mongo import Mongo
+from .mongo import Mongo, CollectionIndexes
 
 
-type Payload = str | dict[str, Any]
+type Payload = dict[str, Any]
 
 
 @dataclass
 class Message:
+    """Mongo Queue Message"""
     payload: Payload
     _: KW_ONLY
     uuid: str
@@ -30,11 +32,12 @@ class AsyncMongoQueue:
 
     Will retry after a timeout, and can rank messages by priority (lower is better).
     """
-    def __init__(self, *, url: str, collection_name: str, worker_id: str | None = None, **mongo_args):
+    def __init__(self, *, url: str, collection_name: str, worker_id: str | None = None, extra_indexes: CollectionIndexes | None = None, **mongo_args):
         self.client = Mongo(url=url, **mongo_args)
         self.collection_name = collection_name
         self.collection = self.client.db[collection_name]
         self.worker_id = worker_id or uuid.uuid4().hex
+        self.extra_indexes = extra_indexes
 
     async def close(self):
         await self.client.close()
@@ -59,6 +62,8 @@ class AsyncMongoQueue:
                 }
             }
         }
+        if self.extra_indexes:
+            indexes[self.collection_name].update(self.extra_indexes)
         await self.client.create_indexes(indexes=indexes)
 
     async def push(self, payload: Payload, priority: int = 0) -> str:
@@ -91,6 +96,30 @@ class AsyncMongoQueue:
             return ret['status']
         else:
             return None
+
+    async def lookup_by_payload(self, payload_lookup: Payload, **extra_args) -> Message | None:
+        """
+        Lookup a message by payload details.
+
+        Must use mongo `.` notation for nested keys.
+        """
+        query = {
+            f'payload.{name}': value for name,value in payload_lookup.items()
+        }
+        logging.info('payload_lookup query = %r', query)
+        ret = await self.collection.find_one(
+            query,
+            projection={'_id': False},
+            **extra_args
+        )
+        if ret:
+            ret = Message(**ret)
+        return ret
+
+    async def count(self) -> int:
+        """Count how many requests are in the queue."""
+        ret = await self.collection.count_documents({}, maxTimeMS=1000)
+        return ret
 
     async def pop(self, timeout_seconds: int = 300) -> Message | None:
         """Atomically grabs the next available message (or an abandoned timed-out one)."""

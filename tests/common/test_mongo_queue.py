@@ -37,9 +37,15 @@ async def test_queue_basics(mongo_url, mongo_clear):
     ret = await queue.pop()
     assert not ret
 
+    ret = await queue.count()
+    assert ret == 0
+
     # put data on the queue
     data = {'1': 2, '3': 4}
     id_ = await queue.push(data)
+
+    ret = await queue.count()
+    assert ret == 1
 
     ret2 = await queue.get_status(id_)
     assert ret2 == 'queued'
@@ -72,6 +78,9 @@ async def test_queue_basics(mongo_url, mongo_clear):
     # check that it's not on the queue anymore
     ret2 = await queue.get_status(id_)
     assert not ret2
+
+    ret = await queue.count()
+    assert ret == 0
 
     await queue.close()
 
@@ -110,3 +119,21 @@ async def test_queue_context(mongo_url, mongo_clear):
     assert not ret2
 
     await queue.close()
+
+
+async def test_queue_extras(mongo_url, mongo_clear):
+    url = os.environ['DB_URL']
+    queue = AsyncMongoQueue(url=url, collection_name='bar', extra_indexes={
+        'dataset_id': {
+            'keys': [('dataset_id', 1)]
+        }
+    })
+    await queue.setup()
+
+    data = {'dataset_id': 2, '3': 4}
+    id_ = await queue.push(data)
+
+    ret = await queue.lookup_by_payload({'dataset_id': 2})
+    assert ret
+    assert ret.uuid == id_
+

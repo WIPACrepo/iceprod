@@ -2,13 +2,14 @@
 Logfile setup
 """
 
-from __future__ import absolute_import, division, print_function
-
+import dataclasses
 import os
 import time
 import logging
 import logging.handlers
 import gzip
+
+from wipac_dev_tools import from_environment_as_dataclass
 
 setlevel = {
     'CRITICAL': logging.CRITICAL,  # execution cannot continue
@@ -60,6 +61,32 @@ def set_logger(loglevel='INFO', logfile=None, timedrotate=True, logsize=2**28, l
 
     rootLogger.info('loglevel %s, logfile %s, logsize %d, lognum %d',
                     loglevel, logfile, logsize, lognum)
+
+
+def stderr_logger(log_level: str | None = None):
+    """
+    Set up a stderr logger when invoking a script.
+
+    Setting the log level:
+    1. By argument
+    2. By env variable LOG_LEVEL
+    3. Defaults to Info
+    """
+    if not log_level:
+        @dataclasses.dataclass(frozen=True)
+        class DefaultConfig:
+            LOG_LEVEL: str = 'INFO'
+
+        config = from_environment_as_dataclass(DefaultConfig)
+        log_level = config.LOG_LEVEL
+
+    log_level = log_level.upper()
+    if log_level not in setlevel:
+        raise RuntimeError('log_level is not a proper log level')
+
+    logformat = '%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
+
+    logging.basicConfig(format=logformat, level=setlevel[log_level])
 
 
 def set_log_level(loglevel='INFO'):
