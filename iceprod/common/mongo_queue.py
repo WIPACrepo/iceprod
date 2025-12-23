@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, asdict, KW_ONLY
 from datetime import datetime, timedelta, timezone
@@ -31,12 +32,30 @@ class AsyncMongoQueue:
     A basic queue system using MongoDB.
 
     Will retry after a timeout, and can rank messages by priority (lower is better).
+
+    Args:
+        url: mongo url
+        collection_name: mongo collection
+        worker_id: unique id for consumer / worker
+        deadline: number of days messages should remain on the queue in any state
+        extra_indexes: payload indexes to apply
+        **mongo_args: any extra args to Mongo, such as write concern or timeout
     """
-    def __init__(self, *, url: str, collection_name: str, worker_id: str | None = None, extra_indexes: CollectionIndexes | None = None, **mongo_args):
+    def __init__(
+            self,
+            *,
+            url: str,
+            collection_name: str,
+            worker_id: str | None = None,
+            deadline: float = 1.0,
+            extra_indexes: CollectionIndexes | None = None,
+            **mongo_args
+        ):
         self.client = Mongo(url=url, **mongo_args)
         self.collection_name = collection_name
         self.collection = self.client.db[collection_name]
         self.worker_id = worker_id or uuid.uuid4().hex
+        self.deadline = deadline
         self.extra_indexes = extra_indexes
 
     async def close(self):
@@ -65,6 +84,7 @@ class AsyncMongoQueue:
         if self.extra_indexes:
             indexes[self.collection_name].update(self.extra_indexes)
         await self.client.create_indexes(indexes=indexes)
+        asyncio.create_task(self.clean_task())
 
     async def push(self, payload: Payload, priority: int = 0) -> str:
         """
@@ -154,7 +174,10 @@ class AsyncMongoQueue:
 
     async def complete(self, message_id: str):
         """Acknowledges and removes the message upon successful processing."""
-        await self.collection.delete_one({'uuid': message_id})
+        await self.collection.update_one(
+            {'uuid': message_id},
+            {'$set': {'status': 'complete'}}
+        )
 
     async def fail(self, message_id: str):
         """Re-releases the message back to 'queued' state."""
@@ -180,3 +203,20 @@ class AsyncMongoQueue:
         except Exception:
             await self.fail(message_id=message.uuid)
             raise
+    
+    async def clean(self):
+        """Clean out old messages"""
+        await self.collection.delete_many({
+            'created_at': {'$lt': datetime.now(timezone.utc) - timedelta(days=self.deadline)},
+        })
+    
+    async def clean_task(self):
+        """Periodically run the clean function."""
+        while True:
+            try:
+                await self.clean()
+            except Exception:
+                logging.info('mongo_queue.clean failed', exc_info=True)
+
+            # make sure to run at least 10 times more often than the deadline interval
+            await asyncio.sleep(self.deadline*8640)
