@@ -5,9 +5,9 @@ from typing import Any
 
 from rest_tools.client import RestClient, ClientCredentialsAuth
 
+from iceprod.common.mongo_queue import AsyncMongoQueue
+from iceprod.core.logger import stderr_logger
 from .config import get_config
-from ..common.mongo_queue import AsyncMongoQueue
-from ..core.logger import stderr_logger
 from .materialize import Materialize, DATASET_CYCLE_TIMEOUT
 
 logger = logging.getLogger('materialization_service')

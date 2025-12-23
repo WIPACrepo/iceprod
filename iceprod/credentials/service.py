@@ -17,17 +17,17 @@ class RefreshService:
 
     Args:
         database: mongo database
-        clients (str): json string of {url: [client id, client secret]}
-        refresh_window (float): how long after last use to keep refreshing (in hours)
-        expire_buffer (float): how long before expiration to refresh (in hours)
-        service_run_interval (float): seconds between refresh runs
+        clients: json string of {url: [client id, client secret]}
+        refresh_window: how long after last use to keep refreshing (in hours)
+        expire_buffer: how long before expiration to refresh (in minutes)
+        service_run_interval: seconds between refresh runs
     """
-    def __init__(self, database: AsyncDatabase, clients, refresh_window, expire_buffer, service_run_interval):
+    def __init__(self, database: AsyncDatabase, clients: str, refresh_window: float, expire_buffer: int, service_run_interval: float):
         self.db = database
         self.clients = ClientCreds(clients)
         self.clients.validate()
-        self.refresh_window = refresh_window * 3600
-        self.expire_buffer = expire_buffer * 3600
+        self.refresh_window = refresh_window * 3600.
+        self.expire_buffer = expire_buffer
 
         self.start_time = time.time()
         self.service_run_interval = service_run_interval
@@ -129,6 +129,58 @@ class RefreshService:
             new_cred['refresh_token'] = req['refresh_token']
             new_cred['expiration'] = get_expiration(req['access_token'])
             new_cred['scope'] = req.get('scope', cred.get('scope', ''))
+            logger.debug('%r', new_cred)
+
+        return new_cred
+
+    async def create_cred(self, *, url: str, transfer_prefix: str, username: str, scope: str):
+        """Do an impersonation token exchange workflow to generate a cred for a user."""
+        try:
+            client = self.clients.get_client(url)
+        except KeyError:
+            raise Exception('url not registered')
+        if transfer_prefix not in client.transfer_prefix:
+            raise Exception('client transfer prefix does not match')
+
+        # try the refresh token
+        args = {
+            'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
+            'client_id': client.client_id,
+            'scope': scope,
+            'requested_subject': username
+        }
+        if client.client_secret:
+            args['client_secret'] = client.client_secret
+
+        logging.warning('exchanging on %s with args %r', client.auth.token_url, args)
+
+        new_cred = {
+            'url': url,
+            'type': 'oauth',
+            'transfer_prefix': transfer_prefix,
+            'scope': scope,
+        }
+        try:
+            async with httpx.AsyncClient() as http_client:
+                r = await http_client.post(client.auth.token_url, data=args)
+            r.raise_for_status()
+            req = r.json()
+        except httpx.HTTPStatusError as exc:
+            logger.debug('%r', exc.response.text)
+            try:
+                req = exc.response.json()
+            except Exception:
+                req = {}
+            error = req.get('error', '')
+            desc = req.get('error_description', '')
+            raise Exception(f'Exchange request failed: {error} - {desc}') from exc
+        else:
+            logger.debug('OpenID token exchanged')
+            new_cred['access_token'] = req['access_token']
+            new_cred['refresh_token'] = req['refresh_token']
+            new_cred['expiration'] = get_expiration(req['access_token'])
+            if 'scope' in req and req['scope'] != scope:
+                raise Exception('scopes do not match!')
             logger.debug('%r', new_cred)
 
         return new_cred

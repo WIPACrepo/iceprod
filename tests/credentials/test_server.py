@@ -24,6 +24,8 @@ async def server(monkeypatch, port, mongo_url, mongo_clear):
     # await s.start()
 
     s.refresh_service.refresh_cred = AsyncMock(return_value={})
+    s.refresh_service.exchange_cred = AsyncMock(return_value={})
+    s.refresh_service.create_cred = AsyncMock(return_value={})
 
     auth = Auth('secret')
 
@@ -51,7 +53,7 @@ async def server(monkeypatch, port, mongo_url, mongo_clear):
         return RestClient(f'http://localhost:{port}', token, timeout=timeout, retries=0)
 
     try:
-        yield client
+        yield client, s.refresh_service
     finally:
         await s.stop()
 
@@ -62,15 +64,34 @@ DATASETS = ['dataset1', 'dataset2']
 TASK_NAMES = ['alpha', 'bravo']
 
 
+async def test_credentials_create(server):
+    client = server[0](roles=['system'])
+    refresh = server[1]
+
+    refresh.create_cred.return_value = {
+        'foo': 'bar'
+    }
+
+    data = {
+        'username': 'foo',
+        'scope': 'storage.modify:/foo/bar storage.read:/',
+        'url': 'http://foo',
+        'transfer_prefix': 'foo://',
+    }
+    ret = await client.request('POST', f'/create', data)
+    assert ret == refresh.create_cred.return_value
+    assert refresh.create_cred.call_args.kwargs == data
+
+
 async def test_credentials_groups_empty(server):
-    client = server(roles=['system'])
+    client = server[0](roles=['system'])
 
     ret = await client.request('GET', f'/groups/{GROUP}/credentials')
     assert ret == []
 
 
 async def test_credentials_groups_s3(server):
-    client = server(roles=['system'])
+    client = server[0](roles=['system'])
 
     data = {
         'url': 'http://foo',
@@ -129,7 +150,7 @@ async def test_credentials_groups_s3(server):
     assert ret == []
     
 async def test_credentials_groups_s3_bad(server):
-    client = server(roles=['system'])
+    client = server[0](roles=['system'])
 
     data = {
         'url': 'http://foo',
@@ -174,7 +195,7 @@ async def test_credentials_groups_s3_bad(server):
 
 
 async def test_credentials_groups_oauth(server):
-    client = server(roles=['system'])
+    client = server[0](roles=['system'])
 
     data = {
         'url': 'http://foo',
@@ -189,7 +210,7 @@ async def test_credentials_groups_oauth(server):
 
 
 async def test_credentials_groups_user(server):
-    client = server(roles=['user'], groups=['users', GROUP])
+    client = server[0](roles=['user'], groups=['users', GROUP])
 
     data = {
         'url': 'http://foo',
@@ -215,7 +236,7 @@ async def test_credentials_groups_user(server):
     await client.request('DELETE', f'/groups/{GROUP}/credentials')
 
     # bad user
-    client = server(roles=['user'], groups=['users'])
+    client = server[0](roles=['user'], groups=['users'])
 
     with pytest.raises(requests.exceptions.HTTPError) as exc_info:
         await client.request('POST', f'/groups/{GROUP}/credentials', data)
@@ -231,14 +252,14 @@ async def test_credentials_groups_user(server):
 
 
 async def test_credentials_users_empty(server):
-    client = server(roles=['system'])
+    client = server[0](roles=['system'])
 
     ret = await client.request('GET', f'/users/{USER}/credentials')
     assert ret == []
 
 
 async def test_credentials_users_s3(server):
-    client = server(roles=['system'])
+    client = server[0](roles=['system'])
 
     data = {
         'url': 'http://foo',
@@ -297,7 +318,7 @@ async def test_credentials_users_s3(server):
 
 
 async def test_credentials_users_oauth(server):
-    client = server(roles=['system'])
+    client = server[0](roles=['system'])
 
     data = {
         'url': 'http://foo',
@@ -312,7 +333,7 @@ async def test_credentials_users_oauth(server):
 
 
 async def test_credentials_users_user(server):
-    client = server(username=USER, roles=['user'], groups=['users'])
+    client = server[0](username=USER, roles=['user'], groups=['users'])
 
     data = {
         'url': 'http://foo',
@@ -338,7 +359,7 @@ async def test_credentials_users_user(server):
     await client.request('DELETE', f'/users/{USER}/credentials')
 
     # bad user
-    client = server(username='foo', roles=['user'], groups=['users'])
+    client = server[0](username='foo', roles=['user'], groups=['users'])
     
     with pytest.raises(requests.exceptions.HTTPError) as exc_info:
         await client.request('POST', f'/users/{USER}/credentials', data)
@@ -354,7 +375,7 @@ async def test_credentials_users_user(server):
 
 
 async def test_credentials_datasets_user_fail(server):
-    client = server(roles=['user'], groups=['users', GROUP])
+    client = server[0](roles=['user'], groups=['users', GROUP])
     
     data = {
         'url': 'http://foo',
@@ -375,7 +396,7 @@ async def test_credentials_datasets_user_fail(server):
 
 
 async def test_credentials_datasets(server):
-    client = server(roles=['system'])
+    client = server[0](roles=['system'])
     auth = Auth('secret')
 
     data = {
@@ -460,14 +481,14 @@ async def test_credentials_datasets(server):
 
 
 async def test_credentials_datasets_empty(server):
-    client = server(roles=['system'])
+    client = server[0](roles=['system'])
 
     ret = await client.request('GET', f'/datasets/{DATASETS[0]}/credentials')
     assert ret == []
 
 
 async def test_credentials_datasets_s3(server):
-    client = server(roles=['system'])
+    client = server[0](roles=['system'])
 
     data = {
         'url': 'http://foo',
@@ -544,7 +565,7 @@ async def test_credentials_datasets_s3(server):
 
 
 async def test_credentials_datasets_oauth(server):
-    client = server(roles=['system'])
+    client = server[0](roles=['system'])
 
     data = {
         'url': 'http://foo',
@@ -556,10 +577,32 @@ async def test_credentials_datasets_oauth(server):
     ret = await client.request('GET', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/credentials')
     for k in data:
         assert ret[0][k] == data[k]
+        
+
+async def test_credentials_dataset_task_exchange(server):
+    client = server[0](roles=['system'])
+    refresh = server[1]
+
+    refresh.exchange_cred.return_value = {
+        'new_cred': 'true'
+    }
+
+    data = {
+        'url': 'http://foo',
+        'type': 'oauth',
+        'access_token': str(client.access_token),
+        'refresh_token': 'xxxxxxxxx'
+    }
+    await client.request('POST', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/credentials', data)
+
+    data['client_id'] = 'my_client'
+    ret = await client.request('GET', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/exchange', data)
+
+    assert ret == [refresh.exchange_cred.return_value]
 
 
 async def test_credentials_healthz(server):
-    client = server(username=USER, roles=['user'], groups=['users'])
+    client = server[0](username=USER, roles=['user'], groups=['users'])
 
     ret = await client.request('GET', '/healthz')
 
@@ -572,7 +615,7 @@ async def test_credentials_healthz(server):
 
     
 async def test_credentials_bad_route(server):
-    client = server(username=USER, roles=['user'], groups=['users'])
+    client = server[0](username=USER, roles=['user'], groups=['users'])
 
     with pytest.raises(requests.exceptions.HTTPError):
         await client.request('GET', '/foo')
