@@ -13,7 +13,7 @@ class DefaultConfig:
     ICEPROD_API_ADDRESS: str = 'https://iceprod2-api.icecube.wisc.edu'
     ICEPROD_API_CLIENT_ID: str = ''
     ICEPROD_API_CLIENT_SECRET: str = ''
-    DB_URL: str = 'mongodb://localhost/datasets'
+    DB_URL: str = 'mongodb://localhost/iceprod'
     DB_TIMEOUT: int = 60
     DB_WRITE_CONCERN: int = 1
     PROMETHEUS_PORT: int = 0

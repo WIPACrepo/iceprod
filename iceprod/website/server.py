@@ -20,6 +20,7 @@ from rest_tools.server import catch_error, RestServer, RestHandlerSetup, OpenIDL
 from rest_tools.server.session import Session
 from wipac_dev_tools import from_environment_as_dataclass
 
+from iceprod.common.mongo_queue import AsyncMongoQueue
 from iceprod.util import VERSION_STRING
 from iceprod.credentials.util import ClientCreds
 from iceprod.common.prom_utils import AsyncMonitor, PromRequestMixin
@@ -28,6 +29,7 @@ from iceprod.server.config import CONFIG_SCHEMA as SERVER_SCHEMA
 from iceprod.server import documentation
 from iceprod.server.util import nowstr
 
+from .config import get_config
 from .handlers.base import authenticated, LoginMixin, PublicHandler
 from .handlers.submit import Config, Submit, SubmitDataset, TokenLogin
 from .handlers.dataset import Dataset, DatasetBrowse
@@ -170,33 +172,9 @@ class HealthHandler(PublicHandler):
         self.write(status)
 
 
-@dc.dataclass(frozen=True)
-class DefaultConfig:
-    HOST : str = 'localhost'
-    PORT : int = 8080
-    DEBUG : bool = False
-    OPENID_URL : str = ''
-    OPENID_AUDIENCE : str = ''
-    ICEPROD_WEB_URL : str = 'https://iceprod2.icecube.wisc.edu'
-    ICEPROD_API_ADDRESS : str = 'https://iceprod2-api.icecube.wisc.edu'
-    ICEPROD_API_CLIENT_ID : str = ''
-    ICEPROD_API_CLIENT_SECRET : str = ''
-    ICEPROD_CRED_ADDRESS : str = 'https://credentials.iceprod.icecube.aq'
-    ICEPROD_CRED_CLIENT_ID : str = ''
-    ICEPROD_CRED_CLIENT_SECRET : str = ''
-    TOKEN_CLIENTS : str = '{}'
-    REDIS_HOST : str = 'localhost'
-    REDIS_USER : str = ''
-    REDIS_PASSWORD : str = ''
-    REDIS_TLS : bool = False
-    COOKIE_SECRET : str = ''
-    PROMETHEUS_PORT : int = 0
-    CI_TESTING : str = ''
-
-
 class Server:
     def __init__(self):
-        config = from_environment_as_dataclass(DefaultConfig)
+        config = get_config()
 
         # get package data
         static_path = str(importlib.resources.files('iceprod.website')/'data'/'www')
