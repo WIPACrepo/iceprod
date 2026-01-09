@@ -531,6 +531,51 @@ class DatasetCredentialsHandler(BaseCredentialsHandler):
         self.write(ret)
 
     @authorization(roles=['admin', 'system'])
+    async def post(self, dataset_id):
+        """
+        Set a dataset credential.  Overwrites an existing credential for the specified url.
+
+        Common body args:
+            url (str): url of controlled resource
+            transfer_prefix (str): transfer prefix for file transfer
+            type (str): credential type (`s3` or `oauth`)
+
+        S3 body args:
+            buckets (list): list of buckets for this url, or [] if using virtual-hosted buckets in the url
+            access_key (str): access key
+            secret_key (str): secret key
+
+        OAuth body args:
+            access_token (str): access token
+            refresh_token (str): refresh token
+            scope (str): scope of access token
+            expire_date (str): access token expiration, ISO date time in UTC (optional)
+
+        Args:
+            dataset_id (str): dataset_id
+        """
+        await self.create(self.db.dataset_creds, {'dataset_id': dataset_id})
+        self.write({})
+
+    @authorization(roles=['admin', 'system'])
+    async def patch(self, dataset_id):
+        """
+        Update a dataset credential.  Usually used to update a specifc field.
+
+        Body args:
+            url (str): url of controlled resource
+            transfer_prefix (str): transfer prefix for file transfer
+            scope (str): (optional) scope of access token
+
+        Other body args will update a credential.
+
+        Args:
+            dataset_id (str): dataset_id
+        """
+        await self.patch_cred(self.db.dataset_creds, {'dataset_id': dataset_id})
+        self.write({})
+
+    @authorization(roles=['admin', 'system'])
     async def delete(self, dataset_id):
         """
         Delete a dataset's credentials.

@@ -274,14 +274,17 @@ class RefreshService:
             if cred['type'] != 'oauth':
                 continue
             if not cred['refresh_token']:
-                logger.info('skipping non-refresh token for dataset %s, task, %s, url %s', cred['dataset_id'], cred['task_name'], cred['url'])
+                logger.info('skipping non-refresh token for dataset %s, task, %s, url %s', cred['dataset_id'], cred.get('task_name',''), cred['url'])
                 continue
             try:
                 if self.should_refresh(cred):
                     args = await self.refresh_cred(cred)
-                    await self.db.dataset_creds.update_one({'dataset_id': cred['dataset_id'], 'task_name': cred['task_name'], 'scope': cred['scope'], 'url': cred['url']}, {'$set': args})
-                    logger.info('refreshed token for dataset %s, task, %s, url %s', cred['dataset_id'], cred['task_name'], cred['url'])
+                    cred_filter = {'dataset_id': cred['dataset_id'], 'scope': cred['scope'], 'url': cred['url']}
+                    if task_name := cred.get('task_name', ''):
+                        cred_filter['task_name'] = task_name
+                    await self.db.dataset_creds.update_one(cred_filter, {'$set': args})
+                    logger.info('refreshed token for dataset %s, task, %s, url %s', cred['dataset_id'], cred.get('task_name',''), cred['url'])
                 else:
-                    logger.info('not yet time to refresh token for dataset %s, task, %s, url %s', cred['dataset_id'], cred['task_name'], cred['url'])
+                    logger.info('not yet time to refresh token for dataset %s, task, %s, url %s', cred['dataset_id'], cred.get('task_name','') cred['url'])
             except Exception:
-                logger.error('error refreshing token for dataset %s, task, %s, url %s', cred['dataset_id'], cred['task_name'], cred['url'], exc_info=True)
+                logger.error('error refreshing token for dataset %s, task, %s, url %s', cred['dataset_id'], cred.get('task_name',''), cred['url'], exc_info=True)
