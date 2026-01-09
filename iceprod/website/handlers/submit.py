@@ -195,7 +195,7 @@ class SubmitStatus(PublicHandler):
             self.render('submit.html', **render_args)
             return
         elif status == 'complete' and dataset_id:
-            self.set_status(201)
+            self.set_status(303)
             self.set_header('Location', f'/dataset/{dataset_id}')
             error = f'Dataset created at /dataset/{dataset_id}'
 

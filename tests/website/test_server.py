@@ -245,7 +245,7 @@ async def test_website_submit_status_complete(server):
         ret.raise_for_status()
         logging.info('headers %r', ret.headers)
 
-        assert ret.status_code == 201
+        assert ret.status_code == 303
         assert ret.headers['location'].endswith('/dataset/456')
 
 

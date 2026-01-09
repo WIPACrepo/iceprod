@@ -10,15 +10,15 @@
 
 
 {% block body %}
-<h3>Please wait while the dataset submission is processed.</h3>
-<div>
+<div style="margin: 1rem;max-width:40rem">
+    <p>Please wait while the dataset submission is processed.</p>
+    <img src="/static/Gray_circles_rotate.gif" style="width: 50px;margin: 1rem" />
     <p>Status: {{ status }}</p>
     {% if message %}
     <p>Message:</p>
     <div id="error">{{ message }}</div>
     {% end %}
-    <br><br>
-    <p>If the page does not reload every second, please manually reload. Dataset submission should normally take less than 10 seconds.</p>
+    <p style="margin-top:5rem">If the page does not reload every second, please manually reload. Dataset submission should normally take less than 10 seconds.</p>
 </div>
 {% end %}
 
