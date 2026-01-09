@@ -285,6 +285,6 @@ class RefreshService:
                     await self.db.dataset_creds.update_one(cred_filter, {'$set': args})
                     logger.info('refreshed token for dataset %s, task, %s, url %s', cred['dataset_id'], cred.get('task_name',''), cred['url'])
                 else:
-                    logger.info('not yet time to refresh token for dataset %s, task, %s, url %s', cred['dataset_id'], cred.get('task_name','') cred['url'])
+                    logger.info('not yet time to refresh token for dataset %s, task, %s, url %s', cred['dataset_id'], cred.get('task_name',''), cred['url'])
             except Exception:
                 logger.error('error refreshing token for dataset %s, task, %s, url %s', cred['dataset_id'], cred.get('task_name',''), cred['url'], exc_info=True)
