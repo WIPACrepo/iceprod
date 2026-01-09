@@ -154,6 +154,7 @@ class Action(BaseAction):
             'jobs_submitted': submit_data.jobs_submitted,
             'tasks_submitted': ntasks,
             'tasks_per_job': tasks_per_job,
+            'username': submit_data.username,
             'group': submit_data.group,
         }
 
