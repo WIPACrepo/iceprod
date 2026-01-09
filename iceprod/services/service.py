@@ -20,7 +20,7 @@ async def main() -> None:
 
     message_queue = AsyncMongoQueue(
         url=config.DB_URL,
-        collection_name='materialization_queue',
+        collection_name='services_queue',
         timeout=config.DB_TIMEOUT,
         write_concern=config.DB_WRITE_CONCERN
     )
