@@ -1,8 +1,60 @@
+import re
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+import requests
 from rest_tools.client import RestClient
 
-from iceprod.materialization.materialize import Materialize
+from iceprod.services.actions.materialization.materialize import Materialize
+
+
+async def test_materialization_server_request(server):
+    client = server(roles=['system'])
+    args = {
+        'dataset_id': 'd123',
+    }
+    ret = await client.request('POST', '/actions/materialization', args)
+    assert 'result' in ret
+
+    ret = await client.request('GET', f'/actions/materialization/{ret["result"]}')
+    assert ret['status'] == 'queued'
+
+
+async def test_materialization_server_request_dataset(server, requests_mock):
+    requests_mock.register_uri('GET', re.compile('localhost'), real_http=True)
+    requests_mock.register_uri('POST', re.compile('localhost'), real_http=True)
+
+    requests_mock.post('http://test.iceprod/auths', status_code=200, json={})
+
+    # test system auth
+    client = server(roles=['system'])
+    ret = await client.request('POST', '/actions/materialization/datasets/d123', {})
+    mat_id = ret['result']
+    ret = await client.request('POST', '/actions/materialization/datasets/d123', {})
+    mat_id2 = ret['result']
+
+    assert mat_id == mat_id2
+
+    # test user auth
+    client = server(roles=['user'])
+    ret = await client.request('POST', '/actions/materialization/datasets/d123', {})
+    mat_id = ret['result']
+    ret = await client.request('POST', '/actions/materialization/datasets/d123', {})
+    mat_id2 = ret['result']
+
+    assert mat_id == mat_id2
+
+    ret = await client.request('GET', '/actions/materialization/datasets/d123')
+    assert ret['status'] == 'queued'
+    assert ret['id'] == mat_id
+
+    # test no auth
+    requests_mock.post('http://test.iceprod/auths', status_code=403, json={})
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('GET', '/actions/materialization/datasets/d123')
+    assert exc_info.value.response.status_code == 403
+
+
 
 def test_materialize_init():
     Materialize(MagicMock())
@@ -98,7 +150,7 @@ async def test_materialize_buffer_job_incomplete(monkeypatch, requests_mock):
     }
     m.get_config = AsyncMock(return_value=config)
     prio_mock = MagicMock()
-    monkeypatch.setattr('iceprod.materialization.materialize.Priority', prio_mock)
+    monkeypatch.setattr('iceprod.services.actions.materialization.materialize.Priority', prio_mock)
     prio_mock.return_value.get_task_prio = AsyncMock(return_value=1.)
 
     requests_mock.get('http://test.iceprod/datasets/did123', json={
@@ -160,7 +212,7 @@ async def test_materialize_buffer_job_no_tasks(monkeypatch, requests_mock):
     }
     m.get_config = AsyncMock(return_value=config)
     prio_mock = MagicMock()
-    monkeypatch.setattr('iceprod.materialization.materialize.Priority', prio_mock)
+    monkeypatch.setattr('iceprod.services.actions.materialization.materialize.Priority', prio_mock)
     prio_mock.return_value.get_task_prio = AsyncMock(return_value=1.)
 
     requests_mock.get('http://test.iceprod/datasets/did123', json={

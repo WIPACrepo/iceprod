@@ -14,17 +14,23 @@ from .mongo import Mongo, CollectionIndexes
 type Payload = dict[str, Any]
 
 
+class FailMessage(Exception):
+    pass
+
+
 @dataclass
 class Message:
     """Mongo Queue Message"""
     payload: Payload
     _: KW_ONLY
     uuid: str
-    status: Literal['queued', 'processing']
+    status: Literal['queued', 'processing', 'error', 'complete']
     priority: int
     created_at: datetime
+    attempts: int = 0
     locked_at: None | datetime = None
     worker_id: None | str = None
+    error_message: None | str = None
 
 
 class AsyncMongoQueue:
@@ -76,6 +82,7 @@ class AsyncMongoQueue:
                     'keys': [
                         ("status", ASCENDING),
                         ("priority", DESCENDING),
+                        ("attempts", ASCENDING),
                         ("created_at", ASCENDING)
                     ],
                 }
@@ -92,6 +99,7 @@ class AsyncMongoQueue:
 
         Args:
             payload: message data
+            priority: priority of the message (higher is better)
 
         Returns:
             Message id
@@ -106,6 +114,42 @@ class AsyncMongoQueue:
         await self.collection.insert_one(asdict(message))
         return message.uuid
 
+    async def push_if_not_exists(self, payload: Payload, filter_payload: Payload | None = None, priority: int = 0) -> str:
+        """
+        Adds a new message to the queue, deduplicating on payload.
+
+        Args:
+            payload: message data
+            filter_payload: different payload to filter on for deduplication (if None, uses payload)
+            priority: priority of the message (higher is better)
+
+        Returns:
+            Message id
+        """
+        message = Message(
+            uuid=uuid.uuid4().hex,
+            payload=payload,
+            status='queued',
+            priority=priority,
+            created_at=datetime.now(timezone.utc),
+        )
+        payload_lookup = filter_payload if filter_payload is not None else payload
+        query = {
+            f'payload.{name}': value for name,value in payload_lookup.items()
+        }
+        query['status'] = {'$in': ['queued', 'processing']}
+        update = {
+            '$setOnInsert': asdict(message),
+        }
+        ret = await self.collection.find_one_and_update(
+            filter=query,
+            update=update,
+            projection={'_id': False},
+            return_document=ReturnDocument.AFTER,
+            upsert=True
+        )
+        return ret['uuid']
+
     async def get_status(self, message_id: str) -> None | str:
         """Get the status if a message exists"""
         ret = await self.collection.find_one(
@@ -114,6 +158,27 @@ class AsyncMongoQueue:
         )
         if ret:
             return ret['status']
+        else:
+            return None
+
+    async def get_error(self, message_id: str) -> None | str:
+        """Get the error message if a message exists"""
+        ret = await self.collection.find_one(
+            {'uuid': message_id},
+            projection={'_id': False, 'status': True, 'error_message': True}
+        )
+        if ret and ret['status'] == 'error':
+            return ret.get('error_message', None)
+        else:
+            return None
+
+    async def get_payload(self, message_id: str) -> None | Payload:
+        ret = await self.collection.find_one(
+            {'uuid': message_id},
+            projection={'_id': False}
+        )
+        if ret:
+            return ret['payload']
         else:
             return None
 
@@ -136,12 +201,14 @@ class AsyncMongoQueue:
             ret = Message(**ret)
         return ret
 
-    async def count(self) -> int:
+    async def count(self, query: dict[str, Any] | None = None) -> int:
         """Count how many requests are in the queue."""
-        ret = await self.collection.count_documents({}, maxTimeMS=1000)
+        if not query:
+            query = {}
+        ret = await self.collection.count_documents(query, maxTimeMS=1000)
         return ret
 
-    async def pop(self, timeout_seconds: int = 300) -> Message | None:
+    async def pop(self, timeout_seconds: float = 300.) -> Message | None:
         """Atomically grabs the next available message (or an abandoned timed-out one)."""
         timeout_cutoff = datetime.now(timezone.utc) - timedelta(seconds=timeout_seconds)
 
@@ -157,14 +224,15 @@ class AsyncMongoQueue:
                 'status': 'processing',
                 'locked_at': datetime.now(timezone.utc),
                 'worker_id': self.worker_id
-            }
+            },
+            '$inc': {'attempts': 1},
         }
 
         # Atomically find and update
         ret = await self.collection.find_one_and_update(
             query,
             update,
-            sort=[('priority', -1), ('created_at', 1)],
+            sort=[('priority', DESCENDING), ('attempts', ASCENDING), ('created_at', ASCENDING)],
             projection={'_id': False},
             return_document=ReturnDocument.AFTER
         )
@@ -172,18 +240,38 @@ class AsyncMongoQueue:
             ret = Message(**ret)
         return ret
 
+    async def update_payload(self, message_id: str, payload: Payload):
+        """Update a payload"""
+        update = {
+            f'payload.{name}': value for name,value in payload.items()
+        }
+        await self.collection.update_one(
+            {'uuid': message_id},
+            {'$set': update}
+        )
+
     async def complete(self, message_id: str):
-        """Acknowledges and removes the message upon successful processing."""
+        """Acknowledges and sets the state to 'completed' upon successful processing."""
         await self.collection.update_one(
             {'uuid': message_id},
             {'$set': {'status': 'complete'}}
         )
 
-    async def fail(self, message_id: str):
+    async def release(self, message_id: str):
         """Re-releases the message back to 'queued' state."""
         await self.collection.update_one(
             {'uuid': message_id},
             {'$set': {'status': 'queued', 'locked_at': None, 'worker_id': None}}
+        )
+
+    async def fail(self, message_id: str, error_message: str | None = None):
+        """Acknowledges and sets the state to 'error' upon a failed processing."""
+        data = {'status': 'error'}
+        if error_message:
+            data['error_message'] = error_message
+        await self.collection.update_one(
+            {'uuid': message_id},
+            {'$set': data}
         )
 
     @asynccontextmanager
@@ -200,16 +288,16 @@ class AsyncMongoQueue:
         try:
             yield message.payload
             await self.complete(message.uuid)
-        except Exception:
-            await self.fail(message_id=message.uuid)
+        except Exception as e:
+            await self.fail(message_id=message.uuid, error_message=str(e))
             raise
-    
+
     async def clean(self):
         """Clean out old messages"""
         await self.collection.delete_many({
             'created_at': {'$lt': datetime.now(timezone.utc) - timedelta(days=self.deadline)},
         })
-    
+
     async def clean_task(self):
         """Periodically run the clean function."""
         while True:

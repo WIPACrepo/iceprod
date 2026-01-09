@@ -31,7 +31,7 @@ from iceprod.server.util import nowstr
 
 from .config import get_config
 from .handlers.base import authenticated, LoginMixin, PublicHandler
-from .handlers.submit import Config, Submit, SubmitDataset, TokenLogin
+from .handlers.submit import Config, Submit, SubmitStatus
 from .handlers.dataset import Dataset, DatasetBrowse
 from .handlers.job import Job, JobBrowse
 from .handlers.task import Task, TaskBrowse
@@ -266,8 +266,6 @@ class Server:
         else:
             raise RuntimeError('ICEPROD_API_CLIENT_ID or ICEPROD_API_CLIENT_SECRET not specified, and CI_TESTING not enabled!')
 
-        self.token_clients = ClientCreds(config.TOKEN_CLIENTS).get_clients_by_prefix()
-
         handler_args.update({
             'rest_api': rest_address,
             'cred_rest_client': cred_client,
@@ -303,23 +301,11 @@ class Server:
         server.add_route('/help', Help, handler_args)
         server.add_route(r"/docs/(.*)", Documentation, handler_args)
         server.add_route(r"/dataset/(\w+)/log/(\w+)", Log, handler_args)
+        server.add_route('/submit', Submit, handler_args)
+        server.add_route(r'/submit/status/(\w+)', SubmitStatus, handler_args)
         server.add_route('/profile', Profile, handler_args)
         server.add_route('/login', Login, login_handler_args)
         server.add_route('/logout', Logout, handler_args)
-
-        submit_handler_args = handler_args.copy()
-        submit_handler_args['token_clients'] = self.token_clients
-        server.add_route('/submit', Submit, submit_handler_args)
-        server.add_route('/submit/complete', SubmitDataset, submit_handler_args)
-        for client in self.token_clients.values():
-            client_handler_args = submit_handler_args.copy()
-            client_handler_args['oauth_client_id'] = client.client_id
-            client_handler_args['oauth_client_secret'] = client.client_secret
-            client_handler_args['oauth_client_scope'] = ''
-            client_handler_args['login_url'] = f'{full_url}/submit/tokens/{client.id}'
-            client_handler_args['oauth_url'] = client.url
-            client_handler_args['token_client'] = client
-            server.add_route(f'/submit/tokens/{client.id}', TokenLogin, client_handler_args)
 
         server.add_route('/healthz', HealthHandler, handler_args)
         server.add_route(r"/.*", Other, handler_args)

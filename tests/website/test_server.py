@@ -5,12 +5,10 @@ from urllib.parse import urlparse, parse_qs
 
 from bs4 import BeautifulSoup
 import pytest
+import requests
 import requests_mock
 
 from iceprod.core.config import Config
-
-import iceprod.credentials.util
-from iceprod.website.handlers.submit import CredClient, Submit, TokenLogin
 
 
 async def test_website_root(server):
@@ -60,6 +58,8 @@ async def test_website_submit(server):
 
         config_str = json.dumps(config.config)
 
+        submit_mock = client.req_mock.add_mock('/actions/submit', {'result': '123'})
+
         ret = await client.request_raw(http_client, 'POST', '/submit', form_data={
             '_xsrf': xsrf,
             'submit_box': config_str,
@@ -67,24 +67,26 @@ async def test_website_submit(server):
             'number_jobs': 10,
             'group': 'users',
         })
-        assert ret.status_code == 302
-        assert ret.headers['location'].endswith('/submit/complete')
+        assert ret.status_code == 202
+        assert ret.headers['location'].endswith('/submit/status/123')
 
-        dataset_mock = client.req_mock.add_mock('/datasets', {'result': '/datasets/123'})
-        config_mock = client.req_mock.add_mock('/config/123', {})
+        assert submit_mock.called
+        assert submit_mock.call_args[0][2]['config'] == config_str
+        assert submit_mock.call_args[0][2]['description'] == description
 
-        ret = await client.request_raw(http_client, 'GET', '/submit/complete')
-        assert ret.status_code == 302
-        assert ret.headers['location'].endswith('/dataset/123')
 
-        assert dataset_mock.call_args == (('POST', '/datasets', {    
-            'description': description,
-            'jobs_submitted': 10,
-            'tasks_submitted': 10,
-            'tasks_per_job': 1,
-            'group': 'users',
-        }),)
-        assert config_mock.call_args == (('PUT', '/config/123', config.config),)
+def MockError(status_code=400, body=''):
+    def _inner(*args, **kwargs):
+        response = MagicMock()
+        response.status_code = status_code
+        if body and isinstance(body, dict):
+            response.text = json.dumps(body)
+            response.json = MagicMock(return_value=body)
+        elif body:
+            response.text = body
+            response.json = MagicMock(return_value=None)
+        raise requests.exceptions.HTTPError(response=response)
+    return _inner
 
 
 async def test_website_submit_invalid(server):
@@ -110,6 +112,8 @@ async def test_website_submit_invalid(server):
 
         config_str = json.dumps(config)
 
+        submit_mock = client.req_mock.add_mock('/actions/submit', MockError(400, '{"error": "Validation error"}'))
+
         ret = await client.request_raw(http_client, 'POST', '/submit', form_data={
             '_xsrf': xsrf,
             'submit_box': config_str,
@@ -123,181 +127,93 @@ async def test_website_submit_invalid(server):
         assert 'Validation error' in error
 
 
-@pytest.mark.parametrize('path,movement,scope', [
-    ('/data/user/foo', 'input', 'storage.read:/data/user'),
-    ('/data/user/foo', 'output', 'storage.modify:/data/user'),
-    ('/data/user/foo', 'both', 'storage.modify:/data/user'),
-    ('', 'input', 'storage.read:/'),
-    ('/data/user/$(iter)/foo', 'input', 'storage.read:/data/user'),
-    ('/data/user$/$(iter)/foo', 'input', 'storage.read:/data'),
-    ('/data/user/foo/000000-000999/bar', 'input', 'storage.read:/data/user/foo'),
-    ('/data/exp/IceCube/2025/filtered/PFFilt/0612/PFFilt_PhysicsFiltering_Run00141027_Subrun00000000_00000074.tar.bz', 'input', 'storage.read:/data/exp/IceCube/2025/filtered/PFFilt'),
-    ('/data/exp/IceCube/2025/filtered/dev/off.7/0612/Run00141027_89/Offline_IC86.2025_data_Run00141027_Subrun00000000_00000073.i3.zst.sha512', 'input', 'storage.read:/data/exp/IceCube/2025/filtered/dev/off.7'),
-])
-def test_website_submit_scope(path, movement, scope):
-    assert Submit.get_scope(path, movement) == scope
-
-
-async def test_website_submit_tokens(server, monkeypatch):
+async def test_website_submit_status_queued(server):
     client = server(username='username', roles=['user'], groups=['users', 'simprod'])
 
     description = 'Test dataset'
 
-    config = {
+    config = Config({
         'tasks':[{
             'name': 'testing',
             'trays': [{
                 'modules': [{
                     'src': '/usr/bin/python3',
                     'args': ''
-                }]
-            }],
-            'data': [
-                {
-                    'remote': 'token:///data/sim/IceCube/2025/file.i3.zst',
-                    'movement': 'input'
-                }
-            ]
-        }],
-        'version': 3.2,
-    }
-    d = Config(config)
-    d.fill_defaults()
-    d.validate()
-    config_valid = d.config
-    config_valid['tasks'][0]['token_scopes']['token://'] = 'storage.read:/data/sim/IceCube/2025'
-
-    tokens = {}
-    get_auth_user = AsyncMock(return_value=tokens)
-    monkeypatch.setattr(TokenLogin, 'get_authenticated_user', get_auth_user)
-
-    async with client.get_http_client() as http_client:
-        ret = await client.request_raw(http_client, 'GET', '/submit')
-        ret.raise_for_status()
-        #logging.info('ret: %r', ret.text)
-        doc = BeautifulSoup(ret.text, 'html.parser')
-        xsrf = doc.find('input', {'name': '_xsrf'}).get('value')  # type: ignore
-        logging.info('xsrf: %r', xsrf)
-        logging.info('cookies: %r', http_client.cookies)
-
-        config_str = json.dumps(config)
-
-        ret = await client.request_raw(http_client, 'POST', '/submit', form_data={
-            '_xsrf': xsrf,
-            'submit_box': config_str,
-            'description': description,
-            'number_jobs': 10,
-            'group': 'users',
-        })
-        assert ret.status_code == 302
-        logging.info('new location: %s', ret.headers['location'])
-        assert '/submit/tokens/' in ret.headers['location']
-        token_path = '/'+ret.headers['location'].split('://',1)[-1].split('/',1)[-1]
-        logging.info('token path: %s', token_path)
-
-        ret = await client.request_raw(http_client, 'GET', token_path)
-        assert ret.status_code == 302
-        logging.info('new location: %s', ret.headers['location'])
-        assert ret.headers['location'].startswith('http://idp.test/oauth/authorize')
-
-        query_params = parse_qs(urlparse(ret.headers['location']).query)
-        assert query_params['scope'][0] == 'storage.read:/data/sim/IceCube/2025'
-
-        args = {
-            'state': query_params['state'][0],
-            'code': 'thecode',
-        }
-        tokens['access_token'] = client.auth.create_token('username', payload={'scope': 'storage.read:/data/sim/IceCube/2025'})
-        tokens['refresh_token'] = client.auth.create_token('username', payload={'azp': 'client'})
-
-        ret = await client.request_raw(http_client, 'GET', token_path, args)
-        assert ret.status_code == 302
-        logging.info('new location: %s', ret.headers['location'])
-        assert ret.headers['location'].endswith('/submit/complete')
-
-        assert get_auth_user.call_count == 1
-
-        dataset_mock = client.req_mock.add_mock('/datasets', {'result': '/datasets/123'})
-        config_mock = client.req_mock.add_mock('/config/123', {})
-        cred_mock = client.req_mock.add_mock('/datasets/123/tasks/testing/credentials', {})
-
-        ret = await client.request_raw(http_client, 'GET', '/submit/complete')
-        assert ret.status_code == 302
-        logging.info('new location: %s', ret.headers['location'])
-        assert ret.headers['location'].endswith('/dataset/123')
-
-        assert dataset_mock.call_args == (('POST', '/datasets', {    
-            'description': description,
-            'jobs_submitted': 10,
-            'tasks_submitted': 10,
-            'tasks_per_job': 1,
-            'group': 'users',
-        }),)
-        assert config_mock.call_args == (('PUT', '/config/123', config_valid),)
-
-        assert cred_mock.call_count == 1
-
-
-async def test_website_submit_bad_data(server, monkeypatch):
-    client = server(username='username', roles=['user'], groups=['users', 'simprod'])
-
-    description = 'Test dataset'
-
-    config = {
-        'tasks':[{
-            'name': 'testing',
-            'trays': [{
-                'modules': [{
-                    'src': '/usr/bin/python3',
-                    'args': '',
-                    'data': [
-                        {
-                            'remote': 'token:///data/sim/IceCube/2025/file.i3.zst',
-                            'movement': 'input'
-                        }
-                    ]
                 }]
             }]
-        }]
-    }
-    d = Config(config)
-    d.fill_defaults()
-    d.validate()
-
-    tokens = {}
-    get_auth_user = AsyncMock(return_value=tokens)
-    monkeypatch.setattr(TokenLogin, 'get_authenticated_user', get_auth_user)
+        }],
+        'version': 3.2,
+    })
+    config.fill_defaults()
+    config.validate()
+    config_str = json.dumps(config.config)
 
     async with client.get_http_client() as http_client:
-        ret = await client.request_raw(http_client, 'GET', '/submit')
-        ret.raise_for_status()
-        #logging.info('ret: %r', ret.text)
-        doc = BeautifulSoup(ret.text, 'html.parser')
-        xsrf = doc.find('input', {'name': '_xsrf'}).get('value')  # type: ignore
-        logging.info('xsrf: %r', xsrf)
-        logging.info('cookies: %r', http_client.cookies)
-
-        config_str = json.dumps(config)
-
-        ret = await client.request_raw(http_client, 'POST', '/submit', form_data={
-            '_xsrf': xsrf,
-            'submit_box': config_str,
-            'description': description,
-            'number_jobs': 10,
-            'group': 'users',
+        submit_mock = client.req_mock.add_mock('/actions/submit/123', {
+            'status': 'queued',
+            'payload': {
+                'config': config_str,
+                'description': description,
+                'jobs_submitted': 10,
+                'group': 'users',
+            },
         })
-        assert ret.status_code == 400
+
+        ret = await client.request_raw(http_client, 'GET', '/submit/status/123')
+        ret.raise_for_status()
+
+        assert ret.status_code == 200
+
+
+async def test_website_submit_status_error(server):
+    client = server(username='username', roles=['user'], groups=['users', 'simprod'])
+
+    description = 'Test dataset'
+
+    config = Config({
+        'tasks':[{
+            'name': 'testing',
+            'trays': [{
+                'modules': [{
+                    'src': '/usr/bin/python3',
+                    'args': ''
+                }]
+            }]
+        }],
+        'version': 3.2,
+    })
+    config.fill_defaults()
+    config.validate()
+    config_str = json.dumps(config.config)
+
+    async with client.get_http_client() as http_client:
+        submit_mock = client.req_mock.add_mock('/actions/submit/123', {
+            'status': 'error',
+            'payload': {
+                'config': config_str,
+                'description': description,
+                'jobs_submitted': 10,
+                'group': 'users',
+            },
+            'error_message': 'Validation error'
+        })
+
+        ret = await client.request_raw(http_client, 'GET', '/submit/status/123')
+        ret.raise_for_status()
+
+        assert ret.status_code == 200
         doc = BeautifulSoup(ret.text, 'html.parser')
+        logging.info('doc: %s', ret.text)
         error = doc.find('div', {'id': 'error'}).text  # type: ignore
-        assert 'Validation error' in error
+        assert error == 'Validation error'
+        
 
-
-async def test_website_submit_tokens_bad_scope(server, monkeypatch):
+async def test_website_submit_status_complete(server):
     client = server(username='username', roles=['user'], groups=['users', 'simprod'])
 
     description = 'Test dataset'
 
-    config = {
+    config = Config({
         'tasks':[{
             'name': 'testing',
             'trays': [{
@@ -305,173 +221,32 @@ async def test_website_submit_tokens_bad_scope(server, monkeypatch):
                     'src': '/usr/bin/python3',
                     'args': ''
                 }]
-            }],
-            'data': [
-                {
-                    'remote': 'token:///data/sim/IceCube/2025/file.i3.zst',
-                    'movement': 'input'
-                }
-            ]
+            }]
         }],
         'version': 3.2,
-    }
-    d = Config(config)
-    d.fill_defaults()
-    d.validate()
-    config_valid = d.config
-    config_valid['tasks'][0]['token_scopes']['token://'] = 'storage.read:/data/sim/IceCube/2025'
-
-    tokens = {}
-    get_auth_user = AsyncMock(return_value=tokens)
-    monkeypatch.setattr(TokenLogin, 'get_authenticated_user', get_auth_user)
+    })
+    config.fill_defaults()
+    config.validate()
+    config_str = json.dumps(config.config)
 
     async with client.get_http_client() as http_client:
-        ret = await client.request_raw(http_client, 'GET', '/submit')
-        ret.raise_for_status()
-        #logging.info('ret: %r', ret.text)
-        doc = BeautifulSoup(ret.text, 'html.parser')
-        xsrf = doc.find('input', {'name': '_xsrf'}).get('value')  # type: ignore
-        logging.info('xsrf: %r', xsrf)
-        logging.info('cookies: %r', http_client.cookies)
-
-        config_str = json.dumps(config)
-
-        ret = await client.request_raw(http_client, 'POST', '/submit', form_data={
-            '_xsrf': xsrf,
-            'submit_box': config_str,
-            'description': description,
-            'number_jobs': 10,
-            'group': 'users',
+        submit_mock = client.req_mock.add_mock('/actions/submit/123', {
+            'status': 'complete',
+            'payload': {
+                'config': config_str,
+                'description': description,
+                'jobs_submitted': 10,
+                'group': 'users',
+                'dataset_id': '456',
+            },
         })
-        assert ret.status_code == 302
-        logging.info('new location: %s', ret.headers['location'])
-        assert '/submit/tokens/' in ret.headers['location']
-        token_path = '/'+ret.headers['location'].split('://',1)[-1].split('/',1)[-1]
-        logging.info('token path: %s', token_path)
 
-        ret = await client.request_raw(http_client, 'GET', token_path)
-        assert ret.status_code == 302
-        logging.info('new location: %s', ret.headers['location'])
-        assert ret.headers['location'].startswith('http://idp.test/oauth/authorize')
-
-        query_params = parse_qs(urlparse(ret.headers['location']).query)
-        assert query_params['scope'][0] == 'storage.read:/data/sim/IceCube/2025'
-
-        args = {
-            'state': query_params['state'][0],
-            'code': 'thecode',
-        }
-        tokens['access_token'] = client.auth.create_token('username', payload={'scope': ''})
-        tokens['refresh_token'] = client.auth.create_token('username', payload={'azp': 'client'})
-
-        ret = await client.request_raw(http_client, 'GET', token_path, args)
-        assert ret.status_code == 400
-        assert 'scopes do not match' in ret.text
-
-        assert get_auth_user.call_count == 1
-
-
-async def test_website_submit_tokens_manual_scope(server, monkeypatch):
-    client = server(username='username', roles=['user'], groups=['users', 'simprod'])
-
-    description = 'Test dataset'
-
-    config = {
-        'tasks':[{
-            'name': 'testing',
-            'trays': [{
-                'modules': [{
-                    'src': '/usr/bin/python3',
-                    'args': ''
-                }]
-            }],
-            'data': [
-                {
-                    'remote': 'token:///data/sim/IceCube/2025/file.i3.zst',
-                    'movement': 'input'
-                }
-            ],
-            'token_scopes': {
-                'token://': 'storage.write:/foo/bar'
-            }
-        }],
-        'version': 3.2,
-    }
-    d = Config(config)
-    d.fill_defaults()
-    d.validate()
-    config_valid = d.config
-    config_valid['tasks'][0]['token_scopes']['token://'] = 'storage.read:/data/sim/IceCube/2025 storage.write:/foo/bar'
-
-    tokens = {}
-    get_auth_user = AsyncMock(return_value=tokens)
-    monkeypatch.setattr(TokenLogin, 'get_authenticated_user', get_auth_user)
-
-    async with client.get_http_client() as http_client:
-        ret = await client.request_raw(http_client, 'GET', '/submit')
+        ret = await client.request_raw(http_client, 'GET', '/submit/status/123')
         ret.raise_for_status()
-        #logging.info('ret: %r', ret.text)
-        doc = BeautifulSoup(ret.text, 'html.parser')
-        xsrf = doc.find('input', {'name': '_xsrf'}).get('value')  # type: ignore
-        logging.info('xsrf: %r', xsrf)
-        logging.info('cookies: %r', http_client.cookies)
+        logging.info('headers %r', ret.headers)
 
-        config_str = json.dumps(config)
-
-        ret = await client.request_raw(http_client, 'POST', '/submit', form_data={
-            '_xsrf': xsrf,
-            'submit_box': config_str,
-            'description': description,
-            'number_jobs': 10,
-            'group': 'users',
-        })
-        assert ret.status_code == 302
-        logging.info('new location: %s', ret.headers['location'])
-        assert '/submit/tokens/' in ret.headers['location']
-        token_path = '/'+ret.headers['location'].split('://',1)[-1].split('/',1)[-1]
-        logging.info('token path: %s', token_path)
-
-        ret = await client.request_raw(http_client, 'GET', token_path)
-        assert ret.status_code == 302
-        logging.info('new location: %s', ret.headers['location'])
-        assert ret.headers['location'].startswith('http://idp.test/oauth/authorize')
-
-        query_params = parse_qs(urlparse(ret.headers['location']).query)
-        assert query_params['scope'][0] == 'storage.read:/data/sim/IceCube/2025 storage.write:/foo/bar'
-
-        args = {
-            'state': query_params['state'][0],
-            'code': 'thecode',
-        }
-        tokens['access_token'] = client.auth.create_token('username', payload={'scope': 'storage.read:/data/sim/IceCube/2025 storage.write:/foo/bar'})
-        tokens['refresh_token'] = client.auth.create_token('username', payload={'azp': 'client'})
-
-        ret = await client.request_raw(http_client, 'GET', token_path, args)
-        assert ret.status_code == 302
-        logging.info('new location: %s', ret.headers['location'])
-        assert ret.headers['location'].endswith('/submit/complete')
-
-        assert get_auth_user.call_count == 1
-
-        dataset_mock = client.req_mock.add_mock('/datasets', {'result': '/datasets/123'})
-        config_mock = client.req_mock.add_mock('/config/123', {})
-        cred_mock = client.req_mock.add_mock('/datasets/123/tasks/testing/credentials', {})
-
-        ret = await client.request_raw(http_client, 'GET', '/submit/complete')
-        assert ret.status_code == 302
-        logging.info('new location: %s', ret.headers['location'])
-        assert ret.headers['location'].endswith('/dataset/123')
-
-        assert dataset_mock.call_args == (('POST', '/datasets', {    
-            'description': description,
-            'jobs_submitted': 10,
-            'tasks_submitted': 10,
-            'tasks_per_job': 1,
-            'group': 'users',
-        }),)
-        assert config_mock.call_args == (('PUT', '/config/123', config_valid),)
-
-        assert cred_mock.call_count == 1
+        assert ret.status_code == 201
+        assert ret.headers['location'].endswith('/dataset/456')
 
 
 async def test_website_config(server):

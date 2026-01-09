@@ -119,6 +119,8 @@ RESET_STDERR_REASONS = [
     'python: command not found',
     'cannot read file data: Stale file handle',
     'setenv: command not found',
+    # Pelican errors
+    'Cannot contact Pelican director',
 ]
 
 

@@ -13,6 +13,11 @@ class DefaultConfig:
     ICEPROD_API_ADDRESS: str = 'https://iceprod2-api.icecube.wisc.edu'
     ICEPROD_API_CLIENT_ID: str = ''
     ICEPROD_API_CLIENT_SECRET: str = ''
+    ICEPROD_CRED_ADDRESS: str = 'https://credentials.iceprod.icecube.aq'
+    ICEPROD_CRED_CLIENT_ID: str = ''
+    ICEPROD_CRED_CLIENT_SECRET: str = ''
+    SERVICE_TIMEOUT: float = 300.
+    SERVICE_SLEEP_SECS: float = 5.
     DB_URL: str = 'mongodb://localhost/iceprod'
     DB_TIMEOUT: int = 60
     DB_WRITE_CONCERN: int = 1

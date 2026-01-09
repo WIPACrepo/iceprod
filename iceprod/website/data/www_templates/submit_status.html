@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}IceProd Config{% end %}
+
+{% block head_scripts %}
+<link rel="stylesheet" href="/static/submit.css" media="all" type="text/css" />
+{% end %}
+
+{% block page_title %}Submit Status{% end %}
+
+
+{% block body %}
+<h3>Please wait while the dataset submission is processed.</h3>
+<div>
+    <p>Status: {{ status }}</p>
+    {% if message %}
+    <p>Message:</p>
+    <div id="error">{{ message }}</div>
+    {% end %}
+    <br><br>
+    <p>If the page does not reload every second, please manually reload. Dataset submission should normally take less than 10 seconds.</p>
+</div>
+{% end %}
+
+{% block body_scripts %}
+setTimeout(function() {
+    location.reload();
+}, 1000);
+{% end %}
