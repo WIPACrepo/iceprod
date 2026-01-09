@@ -166,7 +166,7 @@ class Server:
 
         self.message_queue = AsyncMongoQueue(
             url=config.DB_URL,
-            collection_name='materialization_queue',
+            collection_name='services_queue',
             extra_indexes={'type_index': {'keys': 'type', 'unique': False}},
             timeout=config.DB_TIMEOUT,
             write_concern=config.DB_WRITE_CONCERN
