@@ -67,7 +67,7 @@ async def test_website_submit(server):
             'number_jobs': 10,
             'group': 'users',
         })
-        assert ret.status_code == 202
+        assert ret.status_code == 303
         assert ret.headers['location'].endswith('/submit/status/123')
 
         assert submit_mock.called

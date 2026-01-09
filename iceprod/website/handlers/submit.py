@@ -150,7 +150,7 @@ class Submit(PublicHandler):
                 'message': ''
             }
 
-            self.set_status(202)
+            self.set_status(303)
             self.set_header('Location', f'/submit/status/{id_}')
             self.render('submit_status.html', **render_args)
 
