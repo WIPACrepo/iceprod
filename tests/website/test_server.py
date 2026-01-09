@@ -242,7 +242,6 @@ async def test_website_submit_status_complete(server):
         })
 
         ret = await client.request_raw(http_client, 'GET', '/submit/status/123')
-        ret.raise_for_status()
         logging.info('headers %r', ret.headers)
 
         assert ret.status_code == 303

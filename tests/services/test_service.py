@@ -10,7 +10,7 @@ import iceprod.services.actions.submit
 async def test_submit(monkeypatch, mongo_url, mongo_clear):
     monkeypatch.setenv('CI_TESTING', '1')
     action_mock = MagicMock()
-    action_mock.return_value.run = AsyncMock()
+    action_mock.return_value.run = AsyncMock(return_value=None)
     monkeypatch.setattr(iceprod.services.actions.submit, 'Action', action_mock)
 
     config = get_config()
@@ -33,3 +33,5 @@ async def test_submit(monkeypatch, mongo_url, mongo_clear):
 
     assert action_mock.return_value.run.called
     assert action_mock.return_value.run.call_args.args == ({'foo': 'bar'},)
+
+    await message_queue.close()

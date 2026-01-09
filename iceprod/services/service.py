@@ -96,6 +96,7 @@ async def main() -> None:
         if sleep_time > 0:
             await asyncio.sleep(sleep_time)
 
+    await message_queue.close()
 
 if __name__ == '__main__':
     stderr_logger()
