@@ -40,7 +40,7 @@ async def test_rest_datasets_post(server):
         assert data[k] == ret[k]
 
 
-async def test_rest_datasets_post_bad_role(server):
+async def test_rest_datasets_post_system(server):
     client = server(roles=['system'])
 
     data = {
@@ -49,10 +49,15 @@ async def test_rest_datasets_post_bad_role(server):
         'jobs_submitted': 1,
         'tasks_submitted': 4,
         'group': 'users',
+        'username': 'fbar'
     }
-    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
-        await client.request('POST', '/datasets', data)
-    assert exc_info.value.response.status_code == 403
+    ret = await client.request('POST', '/datasets', data)
+    dataset_id = ret['result'].split('/')[-1]
+
+    ret = await client.request('GET', f'/datasets/{dataset_id}')
+    for k in data:
+        assert k in ret
+        assert data[k] == ret[k]
 
 
 async def test_rest_datasets_post_always_active(server):
