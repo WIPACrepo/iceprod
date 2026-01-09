@@ -6,7 +6,7 @@ DEFAULT_OPTIONS = {
     'resource_url': 'http://prod-exe.icecube.wisc.edu/',
     'data_url': 'gsiftp://gridftp.icecube.wisc.edu/',
     'svn_repository': 'http://code.icecube.wisc.edu/svn/',
-    'site_temp': 'gsiftp://gridftp-scratch.icecube.wisc.edu/local/simprod/',
+    'site_temp': 'osdf:///icecube/wipac/scratch/simprod',
     'dataset_temp': '$(site_temp)/$(dataset)',
     'job_temp': '$(site_temp)/$(dataset)/$(job)',
 }

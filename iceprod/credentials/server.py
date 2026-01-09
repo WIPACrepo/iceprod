@@ -738,7 +738,7 @@ class DefaultConfig:
     DEBUG: bool = False
     OPENID_URL: str = ''
     OPENID_AUDIENCE: str = ''
-    ICEPROD_API_ADDRESS: str = 'https://iceprod2-api.icecube.wisc.edu'
+    ICEPROD_API_ADDRESS: str = 'https://api.iceprod.icecube.aq'
     ICEPROD_API_CLIENT_ID: str = ''
     ICEPROD_API_CLIENT_SECRET: str = ''
     TOKEN_CLIENTS: str = '{}'

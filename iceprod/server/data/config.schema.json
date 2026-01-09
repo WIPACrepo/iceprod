@@ -162,7 +162,7 @@
         "url": {
           "description": "REST API url",
           "type": "string",
-          "default": "https://iceprod2-api.icecube.wisc.edu"
+          "default": "https://api.iceprod.icecube.aq"
         },
         "cred_url": {
           "description": "Credentials API url",
