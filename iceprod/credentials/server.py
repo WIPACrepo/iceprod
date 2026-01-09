@@ -78,7 +78,7 @@ class BaseCredentialsHandler(APIBase):
         argo.add_argument('access_token', type=str, default='', required=False)
         argo.add_argument('refresh_token', type=str, default='', required=False)
         argo.add_argument('scope', type=str, default=None, required=False)
-        argo.add_argument('expire_date', type=float, default=now, required=False)
+        argo.add_argument('expiration', type=float, default=now, required=False)
         argo.add_argument('last_use', type=float, default=now, required=False)
         args = vars(argo.parse_args())
         url = args['url']
@@ -111,7 +111,7 @@ class BaseCredentialsHandler(APIBase):
             if args['scope']:
                 base_data['scope'] = args['scope']
             data['scope'] = args['scope']
-            data['expiration'] = args['expire_date']
+            data['expiration'] = args['expiration']
             if data['access_token'] and data.get('expiration') == now:
                 data['expiration'] = get_expiration(data['access_token'])
             data['last_use'] = args['last_use']
@@ -310,7 +310,7 @@ class GroupCredentialsHandler(BaseCredentialsHandler):
             access_token (str): access token
             refresh_token (str): refresh token
             scope (str): scope of access token
-            expire_date (str): access token expiration, ISO date time in UTC (optional)
+            expiration (float): access token expiration, in unix time (optional)
 
         Args:
             groupname (str): group name
@@ -430,7 +430,7 @@ class UserCredentialsHandler(BaseCredentialsHandler):
             access_token (str): access token
             refresh_token (str): refresh token
             scope (str): scope of access token
-            expire_date (str): access token expiration, ISO date time in UTC (optional)
+            expiration (float): access token expiration, in unix time (optional)
 
         Args:
             username (str): username
@@ -549,7 +549,7 @@ class DatasetCredentialsHandler(BaseCredentialsHandler):
             access_token (str): access token
             refresh_token (str): refresh token
             scope (str): scope of access token
-            expire_date (str): access token expiration, ISO date time in UTC (optional)
+            expiration (float): access token expiration, in unix time (optional)
 
         Args:
             dataset_id (str): dataset_id
@@ -657,7 +657,7 @@ class DatasetTaskCredentialsHandler(BaseCredentialsHandler):
             access_token (str): access token
             refresh_token (str): refresh token
             scope (str): scope of access token
-            expire_date (str): access token expiration, ISO date time in UTC (optional)
+            expiration (float): access token expiration, in unix time (optional)
 
         Args:
             dataset_id (str): dataset_id
@@ -787,7 +787,7 @@ class DefaultConfig:
     ICEPROD_API_CLIENT_ID: str = ''
     ICEPROD_API_CLIENT_SECRET: str = ''
     TOKEN_CLIENTS: str = '{}'
-    TOKEN_REFRESH_WINDOW: float = 72.0  # hours
+    TOKEN_REFRESH_WINDOW: float = 168.0  # hours
     TOKEN_EXPIRE_BUFFER: int = 15  # minutes
     TOKEN_SERVICE_CHECK_INTERVAL: int = 180
     DB_URL: str = 'mongodb://localhost/datasets'
