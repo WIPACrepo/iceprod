@@ -148,6 +148,8 @@ class AsyncMongoQueue:
             return_document=ReturnDocument.AFTER,
             upsert=True
         )
+        if not ret:
+            raise Exception('failed to push')
         return ret['uuid']
 
     async def get_status(self, message_id: str) -> None | str:
