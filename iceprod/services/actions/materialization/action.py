@@ -80,12 +80,14 @@ class Action(BaseAction):
         """
         # validate request
         try:
-            data = asdict(Fields(**args))
+            data = Fields(**args)
+            if isinstance(data.num, str):
+                data.num = int(data.num)
         except Exception as e:
             raise HTTPError(400, reason=str(e))
 
         # deduplicate on dataset_id
-        return await self._push(payload=data, filter_payload={'dataset_id': data['dataset_id']}, priority=self.PRIORITY)
+        return await self._push(payload=asdict(data), filter_payload={'dataset_id': data.dataset_id}, priority=self.PRIORITY)
 
     async def run(self, data: Payload) -> None | Payload:
         """Run materialization"""

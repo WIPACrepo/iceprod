@@ -95,7 +95,7 @@ class Submit(PublicHandler):
             config_str = self.get_body_argument('submit_box')
             config = json_decode(config_str)
             description = self.get_body_argument('description')
-            njobs = self.get_body_argument('number_jobs')
+            njobs = int(self.get_body_argument('number_jobs'))
             group = self.get_body_argument('group')
 
             args = {
@@ -173,7 +173,7 @@ class SubmitStatus(PublicHandler):
             error = ret.get('error_message', '')
             config = json_decode(ret['payload']['config'])
             description = ret['payload']['description']
-            jobs_submitted = ret['payload']['jobs_submitted']
+            jobs_submitted = int(ret['payload']['jobs_submitted'])
             group = ret['payload']['group']
             dataset_id = ret['payload'].get('dataset_id', '')
         except Exception as e:

@@ -1,5 +1,5 @@
 from collections import defaultdict
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, fields
 import logging
 import os
 import re
@@ -73,6 +73,8 @@ class Action(BaseAction):
 
         try:
             data = Fields(**args)
+            if isinstance(data.jobs_submitted, str):
+                data.jobs_submitted = int(data.jobs_submitted)
         except Exception as e:
             raise HTTPError(400, reason=str(e))
         if data.group not in auth_data.groups:
