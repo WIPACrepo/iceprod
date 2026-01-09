@@ -14,7 +14,6 @@ from tornado.web import create_signed_value
 
 from iceprod.credentials.util import Client as CredClient
 from iceprod.rest.auth import ROLES, GROUPS
-from iceprod.website.handlers.submit import TokenLogin
 from iceprod.website.server import Server
 
 
@@ -23,7 +22,10 @@ class ReqMock:
         self.mocks = {}
 
     def add_mock(self, path: str, ret: Any) -> MagicMock:
-        m = MagicMock(return_value=ret)
+        if callable(ret):
+            m = MagicMock(side_effect=ret)
+        else:
+            m = MagicMock(return_value=ret)
         self.mocks[path] = m
         return m
 
@@ -71,7 +73,6 @@ async def server(monkeypatch, port):
         self._OAUTH_ACCESS_TOKEN_URL = 'http://idp.test/oauth/token'
         self._OAUTH_LOGOUT_URL = 'http://idp.test/oauth/logout'
         self._OAUTH_USERINFO_URL = 'http://idp.test/oauth/userinfo'
-    monkeypatch.setattr(TokenLogin, 'oauth_setup', oauth_setup)
 
     auth = Auth('secret')
     monkeypatch.setattr(CredClient, 'auth', auth)

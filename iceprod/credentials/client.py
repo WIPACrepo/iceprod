@@ -26,7 +26,7 @@ async def main():
     generic_args(parser_oauth)
     parser_oauth.add_argument('--access-token', dest='access_token', help='access token')
     parser_oauth.add_argument('--refresh-token', dest='refresh_token', help='refresh token')
-    parser_oauth.add_argument('--expire-date', dest='expire_date', type=float, default=None, help='(optional) manual expiration date in unix time')
+    parser_oauth.add_argument('--expiration', dest='expiration', type=float, default=None, help='(optional) manual expiration date in unix time')
     parser_oauth.add_argument('--last-use', dest='last_use', type=float, default=None, help='(optional) manual last use date in unix time')
 
     add_auth_to_argparse(parser)
@@ -59,8 +59,8 @@ async def main():
             data['access_token'] = args.access_token
         if args.refresh_token:
             data['refresh_token'] = args.refresh_token
-        if args.expire_date:
-            data['expire_date'] = args.expire_date
+        if args.expiration:
+            data['expiration'] = args.expiration
         if args.last_use:
             data['last_use'] = args.last_use
     else:

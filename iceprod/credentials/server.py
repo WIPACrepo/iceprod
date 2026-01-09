@@ -20,8 +20,8 @@ from tornado.web import RequestHandler as TornadoRequestHandler
 from wipac_dev_tools import from_environment_as_dataclass
 
 from iceprod.util import VERSION_STRING
-from ..common.mongo import Mongo
-from ..common.prom_utils import AsyncMonitor
+from iceprod.common.mongo import Mongo
+from iceprod.common.prom_utils import AsyncMonitor
 from iceprod.rest.auth import authorization
 from iceprod.rest.base_handler import IceProdRestConfig, APIBase
 from iceprod.server.util import nowstr, datetime2str
@@ -32,7 +32,7 @@ logger = logging.getLogger('server')
 
 
 class BaseCredentialsHandler(APIBase):
-    def initialize(self, *args, refresh_service=None, rest_client=None, **kwargs):
+    def initialize(self, *args, refresh_service: RefreshService, rest_client: RestClient, **kwargs):  # type: ignore[override]
         super().initialize(*args, **kwargs)
         self.refresh_service = refresh_service
         self.rest_client = rest_client
@@ -78,7 +78,7 @@ class BaseCredentialsHandler(APIBase):
         argo.add_argument('access_token', type=str, default='', required=False)
         argo.add_argument('refresh_token', type=str, default='', required=False)
         argo.add_argument('scope', type=str, default=None, required=False)
-        argo.add_argument('expire_date', type=float, default=now, required=False)
+        argo.add_argument('expiration', type=float, default=now, required=False)
         argo.add_argument('last_use', type=float, default=now, required=False)
         args = vars(argo.parse_args())
         url = args['url']
@@ -111,7 +111,7 @@ class BaseCredentialsHandler(APIBase):
             if args['scope']:
                 base_data['scope'] = args['scope']
             data['scope'] = args['scope']
-            data['expiration'] = args['expire_date']
+            data['expiration'] = args['expiration']
             if data['access_token'] and data.get('expiration') == now:
                 data['expiration'] = get_expiration(data['access_token'])
             data['last_use'] = args['last_use']
@@ -236,6 +236,37 @@ class BaseCredentialsHandler(APIBase):
         return ret
 
 
+class CreateHandler(BaseCredentialsHandler):
+    """
+    Handle requests for a new credential.  Just return it, don't store it.
+    """
+    @authorization(roles=['admin', 'system', 'user'])
+    async def post(self):
+        """
+        Generate an oauth credential
+
+        Args:
+            username (str): the username for the credential
+            url (str): url of controlled resource
+            transfer_prefix (str): transfer prefix for file transfer
+            scope (str): scope of access token
+        """
+        username = self.get_argument('username')
+        scope = self.get_argument('scope')
+        url = self.get_argument('url')
+        transfer_prefix = self.get_argument('transfer_prefix')
+        if self.auth_roles == ['user'] and username != self.current_user:
+            raise HTTPError(403, 'unauthorized')
+
+        new_cred = await self.refresh_service.create_cred(
+            url=url,
+            transfer_prefix=transfer_prefix,
+            username=username,
+            scope=scope
+        )
+        self.write(new_cred)
+
+
 class GroupCredentialsHandler(BaseCredentialsHandler):
     """
     Handle group credentials requests.
@@ -249,6 +280,7 @@ class GroupCredentialsHandler(BaseCredentialsHandler):
             groupname (str): group name
         Param args:
             url (str): (optional) url of controlled resource
+            transfer_prefix (str): transfer prefix for file transfer
             scope (str): (optional) scope of access token
         Returns:
             dict: url: credential dict
@@ -266,6 +298,7 @@ class GroupCredentialsHandler(BaseCredentialsHandler):
 
         Common body args:
             url (str): url of controlled resource
+            transfer_prefix (str): transfer prefix for file transfer
             type (str): credential type (`s3` or `oauth`)
 
         S3 body args:
@@ -277,7 +310,7 @@ class GroupCredentialsHandler(BaseCredentialsHandler):
             access_token (str): access token
             refresh_token (str): refresh token
             scope (str): scope of access token
-            expire_date (str): access token expiration, ISO date time in UTC (optional)
+            expiration (float): access token expiration, in unix time (optional)
 
         Args:
             groupname (str): group name
@@ -295,6 +328,7 @@ class GroupCredentialsHandler(BaseCredentialsHandler):
 
         Body args:
             url (str): url of controlled resource
+            transfer_prefix (str): transfer prefix for file transfer
             scope (str): (optional) scope of access token
 
         Other body args will update a credential.
@@ -317,6 +351,7 @@ class GroupCredentialsHandler(BaseCredentialsHandler):
             groupname (str): groupname
         Param args:
             url (str): (optional) url of controlled resource
+            transfer_prefix (str): transfer prefix for file transfer
             scope (str): (optional) scope of access token
         """
         if self.auth_roles == ['user'] and groupname not in self.auth_groups:
@@ -339,6 +374,7 @@ class GroupExchangeHandler(BaseCredentialsHandler):
             groupname (str): group name
         Param args:
             url (str): (optional) url of controlled resource
+            transfer_prefix (str): transfer prefix for file transfer
             scope (str): (optional) scope of access token
             client_id (str): client_id to exchange to
         Returns:
@@ -364,6 +400,7 @@ class UserCredentialsHandler(BaseCredentialsHandler):
             username (str): username
         Param args:
             url (str): (optional) url of controlled resource
+            transfer_prefix (str): transfer prefix for file transfer
             scope (str): (optional) scope of access token
         Returns:
             dict: url: credential dict
@@ -381,6 +418,7 @@ class UserCredentialsHandler(BaseCredentialsHandler):
 
         Common body args:
             url (str): url of controlled resource
+            transfer_prefix (str): transfer prefix for file transfer
             type (str): credential type (`s3` or `oauth`)
 
         S3 body args:
@@ -392,7 +430,7 @@ class UserCredentialsHandler(BaseCredentialsHandler):
             access_token (str): access token
             refresh_token (str): refresh token
             scope (str): scope of access token
-            expire_date (str): access token expiration, ISO date time in UTC (optional)
+            expiration (float): access token expiration, in unix time (optional)
 
         Args:
             username (str): username
@@ -410,6 +448,7 @@ class UserCredentialsHandler(BaseCredentialsHandler):
 
         Body args:
             url (str): url of controlled resource
+            transfer_prefix (str): transfer prefix for file transfer
             scope (str): (optional) scope of access token
 
         Other body args will update a credential.
@@ -432,6 +471,7 @@ class UserCredentialsHandler(BaseCredentialsHandler):
             username (str): username
         Param args:
             url (str): (optional) url of controlled resource
+            transfer_prefix (str): transfer prefix for file transfer
             scope (str): (optional) scope of access token
         Returns:
             dict: url: credential dict
@@ -456,6 +496,7 @@ class UserExchangeHandler(BaseCredentialsHandler):
             username (str): user name
         Param args:
             url (str): (optional) url of controlled resource
+            transfer_prefix (str): transfer prefix for file transfer
             scope (str): (optional) scope of access token
             client_id (str): client_id to exchange to
         Returns:
@@ -481,12 +522,58 @@ class DatasetCredentialsHandler(BaseCredentialsHandler):
             dataset_id (str): dataset_id
         Param args:
             url (str): (optional) url of controlled resource
+            transfer_prefix (str): transfer prefix for file transfer
             scope (str): (optional) scope of access token
         Returns:
             dict: url: credential dict
         """
         ret = await self.search_creds(self.db.dataset_creds, {'dataset_id': dataset_id})
         self.write(ret)
+
+    @authorization(roles=['admin', 'system'])
+    async def post(self, dataset_id):
+        """
+        Set a dataset credential.  Overwrites an existing credential for the specified url.
+
+        Common body args:
+            url (str): url of controlled resource
+            transfer_prefix (str): transfer prefix for file transfer
+            type (str): credential type (`s3` or `oauth`)
+
+        S3 body args:
+            buckets (list): list of buckets for this url, or [] if using virtual-hosted buckets in the url
+            access_key (str): access key
+            secret_key (str): secret key
+
+        OAuth body args:
+            access_token (str): access token
+            refresh_token (str): refresh token
+            scope (str): scope of access token
+            expiration (float): access token expiration, in unix time (optional)
+
+        Args:
+            dataset_id (str): dataset_id
+        """
+        await self.create(self.db.dataset_creds, {'dataset_id': dataset_id})
+        self.write({})
+
+    @authorization(roles=['admin', 'system'])
+    async def patch(self, dataset_id):
+        """
+        Update a dataset credential.  Usually used to update a specifc field.
+
+        Body args:
+            url (str): url of controlled resource
+            transfer_prefix (str): transfer prefix for file transfer
+            scope (str): (optional) scope of access token
+
+        Other body args will update a credential.
+
+        Args:
+            dataset_id (str): dataset_id
+        """
+        await self.patch_cred(self.db.dataset_creds, {'dataset_id': dataset_id})
+        self.write({})
 
     @authorization(roles=['admin', 'system'])
     async def delete(self, dataset_id):
@@ -497,6 +584,7 @@ class DatasetCredentialsHandler(BaseCredentialsHandler):
             dataset_id (str): dataset_id
         Param args:
             url (str): (optional) url of controlled resource
+            transfer_prefix (str): transfer prefix for file transfer
             scope (str): (optional) scope of access token
         Returns:
             dict: url: credential dict
@@ -518,6 +606,7 @@ class DatasetExchangeHandler(BaseCredentialsHandler):
             dataset_id (str): dataset_id
         Param args:
             url (str): (optional) url of controlled resource
+            transfer_prefix (str): transfer prefix for file transfer
             scope (str): (optional) scope of access token
             client_id (str): client_id to exchange to
         Returns:
@@ -541,6 +630,7 @@ class DatasetTaskCredentialsHandler(BaseCredentialsHandler):
             task_name (str): task name
         Param args:
             url (str): (optional) url of controlled resource
+            transfer_prefix (str): transfer prefix for file transfer
             scope (str): (optional) scope of access token
         Returns:
             dict: url: credential dict
@@ -555,6 +645,7 @@ class DatasetTaskCredentialsHandler(BaseCredentialsHandler):
 
         Common body args:
             url (str): url of controlled resource
+            transfer_prefix (str): transfer prefix for file transfer
             type (str): credential type (`s3` or `oauth`)
 
         S3 body args:
@@ -566,7 +657,7 @@ class DatasetTaskCredentialsHandler(BaseCredentialsHandler):
             access_token (str): access token
             refresh_token (str): refresh token
             scope (str): scope of access token
-            expire_date (str): access token expiration, ISO date time in UTC (optional)
+            expiration (float): access token expiration, in unix time (optional)
 
         Args:
             dataset_id (str): dataset_id
@@ -582,6 +673,7 @@ class DatasetTaskCredentialsHandler(BaseCredentialsHandler):
 
         Body args:
             url (str): url of controlled resource
+            transfer_prefix (str): transfer prefix for file transfer
             scope (str): (optional) scope of access token
 
         Other body args will update a credential.
@@ -603,6 +695,7 @@ class DatasetTaskCredentialsHandler(BaseCredentialsHandler):
             task_name (str): task name
         Param args:
             url (str): (optional) url of controlled resource
+            transfer_prefix (str): transfer prefix for file transfer
             scope (str): (optional) scope of access token
         Returns:
             dict: url: credential dict
@@ -625,6 +718,7 @@ class DatasetTaskExchangeHandler(BaseCredentialsHandler):
             task_name (str): task name
         Param args:
             url (str): (optional) url of controlled resource
+            transfer_prefix (str): transfer prefix for file transfer
             scope (str): (optional) scope of access token
             client_id (str): client_id to exchange to
         Returns:
@@ -689,12 +783,12 @@ class DefaultConfig:
     DEBUG: bool = False
     OPENID_URL: str = ''
     OPENID_AUDIENCE: str = ''
-    ICEPROD_API_ADDRESS: str = 'https://iceprod2-api.icecube.wisc.edu'
+    ICEPROD_API_ADDRESS: str = 'https://api.iceprod.icecube.aq'
     ICEPROD_API_CLIENT_ID: str = ''
     ICEPROD_API_CLIENT_SECRET: str = ''
     TOKEN_CLIENTS: str = '{}'
-    TOKEN_REFRESH_WINDOW: float = 72.0
-    TOKEN_EXPIRE_BUFFER: float = 24.0
+    TOKEN_REFRESH_WINDOW: float = 168.0  # hours
+    TOKEN_EXPIRE_BUFFER: int = 15  # minutes
     TOKEN_SERVICE_CHECK_INTERVAL: int = 180
     DB_URL: str = 'mongodb://localhost/datasets'
     DB_TIMEOUT: int = 60
@@ -784,6 +878,7 @@ class Server:
 
         server = RestServer(debug=config.DEBUG)
 
+        server.add_route('/create', CreateHandler, kwargs)
         server.add_route(r'/groups/(?P<groupname>\w+)/credentials', GroupCredentialsHandler, kwargs)
         server.add_route(r'/groups/(?P<groupname>\w+)/exchange', GroupExchangeHandler, kwargs)
         server.add_route(r'/users/(?P<username>\w+)/credentials', UserCredentialsHandler, kwargs)

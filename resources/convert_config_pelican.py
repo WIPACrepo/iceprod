@@ -139,9 +139,9 @@ async def get_tokens(config, dataset, task_files: list[dict], token_clients: dic
         task_token_scopes = defaultdict(set)
         task_data = task['data'].copy()
         for tray in task.get('trays', []):
-            task_data.extend(tray['data'].copy())
+            task_data.extend(tray.get('data',[]).copy())
             for module in tray.get('modules', []):
-                task_data.extend(module['data'].copy())
+                task_data.extend(module.get('data',[]).copy())
         if task['task_files']:
             logging.info('adding task_files')
             task_data.extend(task_files)
@@ -225,7 +225,7 @@ def conversion(config, output=None):
     return c.config
 
 
-def do_mongo(server, *, dataset_id=None, min_dataset_num, output=None, token_clients: dict[str, CredClient], cred_client=None, dryrun=False):
+def do_mongo(server, *, dataset_id=None, min_dataset_num, max_dataset_num, output=None, token_clients: dict[str, CredClient], cred_client=None, ignore_task_files=False, dryrun=False):
 
     client = MongoClient(server)
     db = client.config
@@ -238,7 +238,7 @@ def do_mongo(server, *, dataset_id=None, min_dataset_num, output=None, token_cli
         search = {'dataset_id': dataset_id}
 
     for d in client.datasets.datasets.find(search, projection=projection):
-        if d['dataset'] >= min_dataset_num or dataset_id:
+        if (d['dataset'] >= min_dataset_num and d['dataset'] <= max_dataset_num) or dataset_id:
             datasets[d['dataset_id']] = d
 
     for dataset in sorted(datasets.values(), key=lambda v: v['dataset']):
@@ -308,7 +308,10 @@ def do_mongo(server, *, dataset_id=None, min_dataset_num, output=None, token_cli
         # ]:
         #     task_files = []
         # else:
-        task_files = client.tasks.dataset_files.find(search).to_list(1000)
+        if ignore_task_files:
+            task_files = []
+        else:
+            task_files = client.tasks.dataset_files.find(search).to_list(1000)
         asyncio.run(get_tokens(new_config, dataset, task_files, token_clients=token_clients, cred_client=cred_client))
 
         if output == '-':
@@ -343,7 +346,9 @@ def main():
     parser.add_argument('-o', '--output', default=None, help='output config json to file (or "-" for stdout)')
     parser.add_argument('--dataset-id', default=None, help='dataset id (for mongo)')
     parser.add_argument('--min-dataset-num', default=22001, type=int, help='min dataset num')
+    parser.add_argument('--max-dataset-num', default=25000, type=int, help='max dataset num')
     parser.add_argument('--token-clients', required=True, help='json of token client info')
+    parser.add_argument('--ignore-task-files', default=False, action='store_true', help='ignore task_files')
     parser.add_argument('--log-level', default='WARNING')
     add_auth_to_argparse(parser)
     parser.add_argument('--dry-run', action='store_true', default=False, help='do a dry run (for mongo)')
@@ -364,7 +369,17 @@ def main():
             config = json.load(f)
         conversion(config, output=args.output)
     elif args.mongo_server:
-        do_mongo(args.mongo_server, dataset_id=args.dataset_id, min_dataset_num=args.min_dataset_num, output=args.output, token_clients=token_clients, cred_client=cred_client, dryrun=args.dry_run)
+        do_mongo(
+            args.mongo_server,
+            dataset_id=args.dataset_id,
+            min_dataset_num=args.min_dataset_num,
+            max_dataset_num=args.max_dataset_num,
+            output=args.output,
+            token_clients=token_clients,
+            cred_client=cred_client,
+            ignore_task_files=args.ignore_task_files,
+            dryrun=args.dry_run
+        )
 
 if __name__ == '__main__':
     main()

@@ -5,6 +5,30 @@ from pymongo import AsyncMongoClient
 from pymongo.asynchronous.database import AsyncDatabase
 
 
+type CollectionIndexes = dict[str, dict[str, Any]]
+"""
+Indexes for a collection.
+
+Dict of index name : dict of keywords to create index.
+
+Example:
+    {
+        "my_index": {
+            "keys": [
+                ("status": pymongo.ASCENDING),
+                ("name": pymongo.DESCENDING)
+            ]
+        },
+        "id_index": {
+            "keys": [
+                ("uuid": pymongo.ASCENDING)
+            ],
+            "unique": True
+        }
+    }
+"""
+
+
 class Mongo:
     def __init__(self, *, url: str, timeout: int = 60, write_concern: int = 1):
         logging_url = url.split('@')[-1] if '@' in url else url
@@ -23,12 +47,16 @@ class Mongo:
         self._db_name = db_name
 
     @property
-    def db(self, name: str | None = None) -> AsyncDatabase:
-        db_name = name if name else self._db_name
+    def db(self) -> AsyncDatabase:
+        db_name = self._db_name
         logging.info(f'DB name: {db_name}')
         if not db_name:
-            raise RuntimeError('must specify database name either in __init__ url or as an argument')
+            raise RuntimeError('must specify database name in __init__ url')
         return self.client[db_name]
+
+    def __getitem__(self, name: str) -> AsyncDatabase:
+        logging.info(f'DB name: {name}')
+        return self.client[name]
 
     async def ping(self):
         await self.client.admin.command('ping')
@@ -36,7 +64,7 @@ class Mongo:
     async def close(self):
         await self.client.close()
 
-    async def create_indexes(self, *, db_name: str | None = None, indexes: dict[str, dict[str, dict[str, Any]]]):
+    async def create_indexes(self, *, db_name: str | None = None, indexes: dict[str, CollectionIndexes]):
         database: AsyncDatabase = self.client[db_name] if db_name else self.db
         for collection in indexes:
             existing = await database[collection].index_information()

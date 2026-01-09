@@ -63,7 +63,7 @@ def fail(message):
     print(message)
     sys.exit(1)
 
-async def run(rpc, rpc_materialization, args):
+async def run(rpc, args):
     def modify_path(src):
         if src.startswith('/cvmfs'):
             return src
@@ -165,7 +165,7 @@ async def run(rpc, rpc_materialization, args):
 
         # materialize tasks
         try:
-            ret = await rpc_materialization.request('POST', f'/request/{dataset_id}', {'num': len(jobfiles)})
+            ret = await rpc.request('POST', '/actions/materialization', {'dataste_id': dataset_id, 'num': len(jobfiles)})
         except Exception:
             logger.warning(f'materialization request for dataset {dataset_id} failed', exc_info=True)
             fail('Creation of jobs failed')
@@ -174,7 +174,7 @@ async def run(rpc, rpc_materialization, args):
         logger.info(f'waiting for materialization request')
         while True:
             await asyncio.sleep(10)
-            ret = await rpc_materialization.request('GET', f'/request/{dataset_id}/status')
+            ret = await rpc.request('GET', f'/actions/materialization/{materialization_id}')
             if ret['status'] == 'complete':
                 logger.info(f'materialization request complete')
                 break

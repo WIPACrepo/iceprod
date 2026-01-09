@@ -6,7 +6,6 @@ This is the external website users will see when interacting with IceProd.
 It has been broken down into several sub-handlers for easier maintenance.
 """
 
-import dataclasses as dc
 import importlib.resources
 import logging
 import os
@@ -18,18 +17,17 @@ import tornado.web
 from rest_tools.client import RestClient, ClientCredentialsAuth
 from rest_tools.server import catch_error, RestServer, RestHandlerSetup, OpenIDLoginHandler
 from rest_tools.server.session import Session
-from wipac_dev_tools import from_environment_as_dataclass
 
 from iceprod.util import VERSION_STRING
-from iceprod.credentials.util import ClientCreds
 from iceprod.common.prom_utils import AsyncMonitor, PromRequestMixin
 from iceprod.core.config import ConfigSchema as DATASET_SCHEMA
 from iceprod.server.config import CONFIG_SCHEMA as SERVER_SCHEMA
 from iceprod.server import documentation
 from iceprod.server.util import nowstr
 
+from .config import get_config
 from .handlers.base import authenticated, LoginMixin, PublicHandler
-from .handlers.submit import Config, Submit, SubmitDataset, TokenLogin
+from .handlers.submit import Config, Submit, SubmitStatus
 from .handlers.dataset import Dataset, DatasetBrowse
 from .handlers.job import Job, JobBrowse
 from .handlers.task import Task, TaskBrowse
@@ -170,33 +168,9 @@ class HealthHandler(PublicHandler):
         self.write(status)
 
 
-@dc.dataclass(frozen=True)
-class DefaultConfig:
-    HOST : str = 'localhost'
-    PORT : int = 8080
-    DEBUG : bool = False
-    OPENID_URL : str = ''
-    OPENID_AUDIENCE : str = ''
-    ICEPROD_WEB_URL : str = 'https://iceprod2.icecube.wisc.edu'
-    ICEPROD_API_ADDRESS : str = 'https://iceprod2-api.icecube.wisc.edu'
-    ICEPROD_API_CLIENT_ID : str = ''
-    ICEPROD_API_CLIENT_SECRET : str = ''
-    ICEPROD_CRED_ADDRESS : str = 'https://credentials.iceprod.icecube.aq'
-    ICEPROD_CRED_CLIENT_ID : str = ''
-    ICEPROD_CRED_CLIENT_SECRET : str = ''
-    TOKEN_CLIENTS : str = '{}'
-    REDIS_HOST : str = 'localhost'
-    REDIS_USER : str = ''
-    REDIS_PASSWORD : str = ''
-    REDIS_TLS : bool = False
-    COOKIE_SECRET : str = ''
-    PROMETHEUS_PORT : int = 0
-    CI_TESTING : str = ''
-
-
 class Server:
     def __init__(self):
-        config = from_environment_as_dataclass(DefaultConfig)
+        config = get_config()
 
         # get package data
         static_path = str(importlib.resources.files('iceprod.website')/'data'/'www')
@@ -288,8 +262,6 @@ class Server:
         else:
             raise RuntimeError('ICEPROD_API_CLIENT_ID or ICEPROD_API_CLIENT_SECRET not specified, and CI_TESTING not enabled!')
 
-        self.token_clients = ClientCreds(config.TOKEN_CLIENTS).get_clients_by_prefix()
-
         handler_args.update({
             'rest_api': rest_address,
             'cred_rest_client': cred_client,
@@ -325,23 +297,11 @@ class Server:
         server.add_route('/help', Help, handler_args)
         server.add_route(r"/docs/(.*)", Documentation, handler_args)
         server.add_route(r"/dataset/(\w+)/log/(\w+)", Log, handler_args)
+        server.add_route('/submit', Submit, handler_args)
+        server.add_route(r'/submit/status/(\w+)', SubmitStatus, handler_args)
         server.add_route('/profile', Profile, handler_args)
         server.add_route('/login', Login, login_handler_args)
         server.add_route('/logout', Logout, handler_args)
-
-        submit_handler_args = handler_args.copy()
-        submit_handler_args['token_clients'] = self.token_clients
-        server.add_route('/submit', Submit, submit_handler_args)
-        server.add_route('/submit/complete', SubmitDataset, submit_handler_args)
-        for client in self.token_clients.values():
-            client_handler_args = submit_handler_args.copy()
-            client_handler_args['oauth_client_id'] = client.client_id
-            client_handler_args['oauth_client_secret'] = client.client_secret
-            client_handler_args['oauth_client_scope'] = ''
-            client_handler_args['login_url'] = f'{full_url}/submit/tokens/{client.id}'
-            client_handler_args['oauth_url'] = client.url
-            client_handler_args['token_client'] = client
-            server.add_route(f'/submit/tokens/{client.id}', TokenLogin, client_handler_args)
 
         server.add_route('/healthz', HealthHandler, handler_args)
         server.add_route(r"/.*", Other, handler_args)

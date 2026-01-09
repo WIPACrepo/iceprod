@@ -3,7 +3,7 @@ import json
 import uuid
 from collections import defaultdict
 
-import pymongo
+import pymongo.errors
 import tornado.web
 
 from ..base_handler import APIBase
@@ -91,7 +91,7 @@ class MultiDatasetHandler(APIBase):
         self.write(ret)
         self.finish()
 
-    @authorization(roles=['admin', 'user'])
+    @authorization(roles=['admin', 'user', 'system'])
     async def post(self):
         """
         Add a dataset.
@@ -122,6 +122,7 @@ class MultiDatasetHandler(APIBase):
             'always_active': bool,
             'status': str,
             'auth_groups_read': list,
+            'username': str,
         }
         for k in opt_fields:
             if k in data and not isinstance(data[k], opt_fields[k]):
@@ -161,7 +162,8 @@ class MultiDatasetHandler(APIBase):
         if 'status' not in data:
             data['status'] = DATASET_STATUS_START
         data['start_date'] = nowstr()
-        data['username'] = self.current_user
+        if self.auth_roles == ['user'] or 'username' not in data:
+            data['username'] = self.current_user
         if 'priority' not in data:
             data['priority'] = 0.5
         if 'debug' not in data:

@@ -2,7 +2,6 @@
 Server for queue management
 """
 from collections import defaultdict
-import dataclasses
 from functools import partial
 import importlib
 import logging
@@ -12,12 +11,12 @@ import pkgutil
 from prometheus_client import Info, start_http_server
 from rest_tools.server import RestServer
 from tornado.web import RequestHandler, HTTPError
-from wipac_dev_tools import from_environment_as_dataclass
 
 from iceprod.common.mongo import Mongo
+from iceprod.common.prom_utils import AsyncMonitor
+from iceprod.s3 import boto3, S3
 from iceprod.util import VERSION_STRING
-from ..common.prom_utils import AsyncMonitor
-from ..s3 import boto3, S3
+from .config import get_config
 from .base_handler import IceProdRestConfig
 
 logger = logging.getLogger('rest-server')
@@ -33,30 +32,9 @@ class Health(RequestHandler):
         self.write({})
 
 
-@dataclasses.dataclass
-class DefaultConfig:
-    HOST: str = 'localhost'
-    PORT: int = 8080
-    DEBUG: bool = False
-    OPENID_URL: str = ''
-    OPENID_AUDIENCE: str = ''
-    DB_URL: str = 'mongodb://localhost/iceprod'
-    DB_TIMEOUT: int = 60
-    DB_WRITE_CONCERN: int = 1
-    PROMETHEUS_PORT: int = 0
-    S3_ADDRESS: str = ''
-    S3_ACCESS_KEY: str = ''
-    S3_SECRET_KEY: str = ''
-    MAX_BODY_SIZE: int = 10**9
-    ROUTE_STATS_WINDOW_SIZE: int = 1000
-    ROUTE_STATS_WINDOW_TIME: int = 3600
-    ROUTE_STATS_TIMEOUT: int = 60
-    CI_TESTING: bool = True
-
-
 class Server:
     def __init__(self, s3_override=None):
-        config = from_environment_as_dataclass(DefaultConfig)
+        config = get_config()
 
         rest_config = {
             'debug': config.DEBUG,

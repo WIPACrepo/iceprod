@@ -14,7 +14,7 @@ logger = logging.getLogger('rest')
 type DB = AsyncMongoClient | AsyncDatabase
 
 
-def IceProdRestConfig(config: dict[str, Any], database: DB, auth_database: AsyncDatabase | None = None, s3conn=None):
+def IceProdRestConfig(config: dict[str, Any], database: DB | None = None, auth_database: AsyncDatabase | None = None, s3conn=None):
     if config:
         config['server_header'] = 'IceProd/' + VERSION_STRING
     ret = RestHandlerSetup(config)

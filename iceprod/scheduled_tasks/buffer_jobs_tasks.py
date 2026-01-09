@@ -30,23 +30,26 @@ async def run(rest_client, only_dataset=None, num=1000, run_once=False, delay=10
     try:
         logger.info('starting materialization request')
         if only_dataset:
-            ret = await rest_client.request('POST', f'/request/{only_dataset}', {'num': num})
+            datasets = [only_dataset]
         else:
-            ret = await rest_client.request('POST', '/', {'num': num})
-        materialization_id = ret['result']
-        logger.info(f'waiting for materialization request {materialization_id}')
+            ret = await rest_client.request('GET', '/datasets', {'status': 'processing', 'keys': 'dataset_id'})
+            datasets = list(ret.keys())
+        for dataset_id in datasets:
+            ret = await rest_client.request('POST', '/actions/materialization', {'dataset_id': dataset_id, 'num': num})
+            materialization_id = ret['result']
+            logger.info(f'waiting for materialization request {materialization_id}')
 
-        while True:
-            await asyncio.sleep(delay)
-            ret = await rest_client.request('GET', f'/status/{materialization_id}')
-            if ret['status'] == 'complete':
-                logger.info(f'materialization request {materialization_id} complete')
-                break
-            elif ret['status'] == 'error':
-                logger.warning(f'materialization request {materialization_id} failed')
-                if run_once:
-                    raise Exception('materialization failed: %r', ret)
-                break
+            while True:
+                await asyncio.sleep(delay)
+                ret = await rest_client.request('GET', f'/actions/materialization/{materialization_id}')
+                if ret['status'] == 'complete':
+                    logger.info(f'materialization request {materialization_id} complete')
+                    break
+                elif ret['status'] == 'error':
+                    logger.warning(f'materialization request {materialization_id} failed')
+                    if run_once:
+                        raise Exception('materialization failed: %r', ret)
+                    break
     except Exception:
         logger.warning('materialization error', exc_info=True)
         if debug or run_once:
