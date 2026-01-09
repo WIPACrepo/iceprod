@@ -54,7 +54,7 @@ class Fields:
 
 
 class Action(BaseAction):
-    PRIORITY=1
+    PRIORITY = 1
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -90,7 +90,7 @@ class Action(BaseAction):
     async def run(self, data: Payload) -> None | Payload:
         """Run materialization"""
         if not self._materialize:
-            return
+            return None
         self._logger.info(f'running materialization request: {data}')
         kwargs = {}
         if 'dataset_id' in data and data['dataset_id']:
@@ -103,5 +103,6 @@ class Action(BaseAction):
         self._logger.info('ret: %r', ret)
 
         if not ret:
-            self._logger.warning(f'materialization request took too long, bumping to end of queue for another run')
+            self._logger.warning('materialization request took too long, bumping to end of queue for another run')
             raise TimeoutException()
+        return None

@@ -4,13 +4,11 @@ import logging
 import os
 import re
 from typing import Any
-from uuid import uuid4
 
 from tornado.web import HTTPError
 
 from iceprod.core.jsonUtil import json_decode, json_encode
 from iceprod.core.parser import ExpParser
-from iceprod.roles_groups import GROUPS
 from iceprod.common.mongo_queue import Payload
 from iceprod.core.config import Config as DatasetConfig, ValidationError
 from iceprod.services.base import AuthData, BaseAction
@@ -26,6 +24,7 @@ TOKEN_PREFIXES = {
 
 
 SCOPE_RE = re.compile(r'(.*?\$|.*?\d{4,}\-\d{4,}|.*?\/IceCube\/20\d\d\/filtered\/.*?\/[01]\d{3})')
+
 
 def get_scope(path: str, movement: str) -> str:
     """
@@ -146,11 +145,11 @@ class Action(BaseAction):
             }
             ret = await self._cred_client.request('POST', '/create', args)
             tokens.append(ret)
-        
+
         # now submit the dataset
         tasks_per_job = len(config['tasks'])
         ntasks = submit_data.jobs_submitted * tasks_per_job
-        args = {
+        args2 = {
             'description': submit_data.description,
             'jobs_submitted': submit_data.jobs_submitted,
             'tasks_submitted': ntasks,
@@ -158,10 +157,10 @@ class Action(BaseAction):
             'group': submit_data.group,
         }
 
-        ret = await self._api_client.request('POST', '/datasets', args)
+        ret = await self._api_client.request('POST', '/datasets', args2)
         dataset_id = ret['result'].split('/')[2]
         await self._api_client.request('PUT', f'/config/{dataset_id}', config)
-        
+
         # now submit creds
         for token in tokens:
             await self._cred_client.request('POST', f'/datasets/{dataset_id}/credentials', token)

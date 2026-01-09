@@ -48,15 +48,15 @@ class AsyncMongoQueue:
         **mongo_args: any extra args to Mongo, such as write concern or timeout
     """
     def __init__(
-            self,
-            *,
-            url: str,
-            collection_name: str,
-            worker_id: str | None = None,
-            deadline: float = 1.0,
-            extra_indexes: CollectionIndexes | None = None,
-            **mongo_args
-        ):
+        self,
+        *,
+        url: str,
+        collection_name: str,
+        worker_id: str | None = None,
+        deadline: float = 1.0,
+        extra_indexes: CollectionIndexes | None = None,
+        **mongo_args
+    ):
         self.client = Mongo(url=url, **mongo_args)
         self.collection_name = collection_name
         self.collection = self.client.db[collection_name]

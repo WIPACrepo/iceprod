@@ -15,7 +15,7 @@ from ..core.logger import stderr_logger
 logger = logging.getLogger('service')
 
 
-async def main():
+async def main() -> None:
     config = get_config()
 
     message_queue = AsyncMongoQueue(
@@ -39,6 +39,7 @@ async def main():
     else:
         raise RuntimeError('ICEPROD_API_CLIENT_ID or ICEPROD_API_CLIENT_SECRET not specified, and CI_TESTING not enabled!')
 
+    cred_client: RestClient
     if config.ICEPROD_CRED_CLIENT_ID and config.ICEPROD_CRED_CLIENT_SECRET:
         logging.info(f'enabling auth via {config.OPENID_URL} for aud "{config.OPENID_AUDIENCE}"')
         cred_client = ClientCredentialsAuth(
@@ -62,7 +63,7 @@ async def main():
 
     # process messages
     while True:
-        sleep_time = 0
+        sleep_time = 0.
         try:
             start_time = time.time()
 

@@ -2,7 +2,6 @@
 Server for queue management
 """
 from collections import defaultdict
-import dataclasses
 from functools import partial
 import importlib
 import logging
@@ -12,7 +11,6 @@ import pkgutil
 from prometheus_client import Info, start_http_server
 from rest_tools.server import RestServer
 from tornado.web import RequestHandler, HTTPError
-from wipac_dev_tools import from_environment_as_dataclass
 
 from iceprod.common.mongo import Mongo
 from iceprod.common.prom_utils import AsyncMonitor

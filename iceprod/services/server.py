@@ -185,7 +185,8 @@ class Server:
             rest_client = RestClient(config.ICEPROD_API_ADDRESS, timeout=1, retries=0)
         else:
             raise RuntimeError('ICEPROD_API_CLIENT_ID or ICEPROD_API_CLIENT_SECRET not specified, and CI_TESTING not enabled!')
-        
+
+        cred_client: RestClient
         if config.ICEPROD_CRED_CLIENT_ID and config.ICEPROD_CRED_CLIENT_SECRET:
             logging.info(f'enabling auth via {config.OPENID_URL} for aud "{config.OPENID_AUDIENCE}"')
             cred_client = ClientCredentialsAuth(

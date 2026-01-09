@@ -32,7 +32,7 @@ logger = logging.getLogger('server')
 
 
 class BaseCredentialsHandler(APIBase):
-    def initialize(self, *args, refresh_service: RefreshService, rest_client: RestClient, **kwargs):
+    def initialize(self, *args, refresh_service: RefreshService, rest_client: RestClient, **kwargs):  # type: ignore[override]
         super().initialize(*args, **kwargs)
         self.refresh_service = refresh_service
         self.rest_client = rest_client

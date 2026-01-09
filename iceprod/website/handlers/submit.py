@@ -1,18 +1,9 @@
-from collections import defaultdict
 import logging
-import os
-import re
-from typing import Any, Self
-from urllib.parse import urlencode
 
 import requests
 import tornado.web
-from rest_tools.server import RestHandler, OpenIDLoginHandler, catch_error
 
-from iceprod.core.config import Config as DatasetConfig
-from iceprod.core.jsonUtil import json_encode, json_decode
-from iceprod.core.parser import ExpParser
-from iceprod.credentials.util import Client as CredClient
+from iceprod.core.jsonUtil import json_decode
 from .base import authenticated, PublicHandler
 
 logger = logging.getLogger('website-submit')
@@ -215,4 +206,3 @@ class SubmitStatus(PublicHandler):
         }
 
         self.render('submit_status.html', **render_args)
-

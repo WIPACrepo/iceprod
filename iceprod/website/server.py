@@ -6,7 +6,6 @@ This is the external website users will see when interacting with IceProd.
 It has been broken down into several sub-handlers for easier maintenance.
 """
 
-import dataclasses as dc
 import importlib.resources
 import logging
 import os
@@ -18,11 +17,8 @@ import tornado.web
 from rest_tools.client import RestClient, ClientCredentialsAuth
 from rest_tools.server import catch_error, RestServer, RestHandlerSetup, OpenIDLoginHandler
 from rest_tools.server.session import Session
-from wipac_dev_tools import from_environment_as_dataclass
 
-from iceprod.common.mongo_queue import AsyncMongoQueue
 from iceprod.util import VERSION_STRING
-from iceprod.credentials.util import ClientCreds
 from iceprod.common.prom_utils import AsyncMonitor, PromRequestMixin
 from iceprod.core.config import ConfigSchema as DATASET_SCHEMA
 from iceprod.server.config import CONFIG_SCHEMA as SERVER_SCHEMA
