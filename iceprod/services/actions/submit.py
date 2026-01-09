@@ -1,5 +1,5 @@
 from collections import defaultdict
-from dataclasses import asdict, dataclass, fields
+from dataclasses import asdict, dataclass
 import logging
 import os
 import re
