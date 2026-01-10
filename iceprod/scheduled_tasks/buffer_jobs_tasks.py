@@ -10,12 +10,50 @@ import argparse
 import asyncio
 import logging
 
+from rest_tools.client import RestClient
+
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
+
 
 logger = logging.getLogger('buffer_jobs_tasks')
 
+MAX_PARALLEL_REQUESTS = 100
 
-async def run(rest_client, only_dataset=None, num=1000, run_once=False, delay=10, debug=False):
+
+async def check_requests(requests: list[str], *, debug: bool, rest_client: RestClient) -> list[str]:
+    logging.info('check_requests starting with %d requests', len(requests))
+    futures = set()
+    for mat_id in requests:
+        futures.add(asyncio.create_task(rest_client.request('GET', f'/actions/materialization/{mat_id}')))
+
+    requests2 = []
+    while futures:
+        logging.info('check_requests waiting on %d requests', len(futures))
+        done, futures = await asyncio.wait(futures, timeout=1)
+        for fut in done:
+            try:
+                ret = await fut
+            except Exception as e:
+                logger.warning('materialization request could not be queried')
+                if debug:
+                    raise e
+            else:
+                if ret['status'] in ('queued', 'processing'):
+                    requests2.append(ret['id'])
+                elif ret['status'] == 'complete':
+                    logger.info(f'materialization request {ret["id"]} complete')
+                elif ret['status'] == 'error':
+                    logger.warning(f'materialization request {ret["id"]} failed')
+                    if debug:
+                        raise Exception(f'materialization failed: {ret}')
+                else:
+                    logger.warning(f'materialization request {ret["id"]} has unknown status')
+                    if debug:
+                        raise Exception(f'materialization failed: {ret}')
+    return requests2
+
+
+async def run(rest_client: RestClient, only_dataset: None | str = None, num: int = 1000, delay: int = 5, debug: bool = False):
     """
     Actual runtime / loop.
 
@@ -23,7 +61,6 @@ async def run(rest_client, only_dataset=None, num=1000, run_once=False, delay=10
         rest_client (:py:class:`iceprod.core.rest_client.Client`): rest client
         only_dataset (str): dataset_id if we should only buffer a single dataset
         num (int): max number of jobs per dataset to buffer
-        run_once (bool): flag to only run once and stop
         delay (float): wait N seconds between result checks
         debug (bool): debug flag to propagate exceptions
     """
@@ -34,25 +71,58 @@ async def run(rest_client, only_dataset=None, num=1000, run_once=False, delay=10
         else:
             ret = await rest_client.request('GET', '/datasets', {'status': 'processing', 'keys': 'dataset_id'})
             datasets = list(ret.keys())
-        for dataset_id in datasets:
-            ret = await rest_client.request('POST', '/actions/materialization', {'dataset_id': dataset_id, 'num': num})
-            materialization_id = ret['result']
-            logger.info(f'waiting for materialization request {materialization_id}')
 
-            while True:
+        futures = set()
+        requests = []
+        for i,dataset_id in enumerate(datasets):
+            logger.info('starting request for dataset %s', dataset_id)
+            futures.add(asyncio.create_task(rest_client.request('POST', '/actions/materialization', {'dataset_id': dataset_id, 'num': num})))
+            while len(futures) > 8:
+                logger.info('waiting for futures')
+                done, futures = await asyncio.wait(futures, timeout=1)
+                for fut in done:
+                    try:
+                        ret = await fut
+                        materialization_id = ret['result']
+                        logger.info(f'waiting for materialization request {materialization_id}')
+                        requests.append(materialization_id)
+                    except Exception as e:
+                        logger.error('error creating materialization request for dataset', exc_info=True)
+                        if debug:
+                            raise e
+
+            logger.warning('progress: %d of %d complete', i+1-len(futures)-len(requests), len(datasets))
+            logger.info('%d futures outstanding', len(futures))
+            logger.info('%d requests outstanding', len(requests))
+            while len(requests) > MAX_PARALLEL_REQUESTS:
+                requests = await check_requests(requests, debug=debug, rest_client=rest_client)
                 await asyncio.sleep(delay)
-                ret = await rest_client.request('GET', f'/actions/materialization/{materialization_id}')
-                if ret['status'] == 'complete':
-                    logger.info(f'materialization request {materialization_id} complete')
-                    break
-                elif ret['status'] == 'error':
-                    logger.warning(f'materialization request {materialization_id} failed')
-                    if run_once:
-                        raise Exception('materialization failed: %r', ret)
-                    break
+
+        while futures:
+            logger.info('waiting for futures')
+            done, futures = await asyncio.wait(futures, timeout=1)
+            for fut in done:
+                try:
+                    ret = await fut
+                    materialization_id = ret['result']
+                    logger.info(f'waiting for materialization request {materialization_id}')
+                    requests.append(materialization_id)
+                except Exception as e:
+                    logger.error('error creating materialization request for dataset', exc_info=True)
+                    if debug:
+                        raise e
+
+        while requests:
+            logger.info('progress: %d of %d complete', len(datasets)-len(futures)-len(requests), len(datasets))
+            logger.info('%d futures outstanding', len(futures))
+            logger.info('%d requests outstanding', len(requests))
+            requests = await check_requests(requests, debug=debug, rest_client=rest_client)
+
+        logger.info('complete')
+
     except Exception:
         logger.warning('materialization error', exc_info=True)
-        if debug or run_once:
+        if debug:
             raise
 
 
@@ -71,7 +141,7 @@ def main():
 
     rest_client = create_rest_client(args)
 
-    asyncio.run(run(rest_client, only_dataset=args.dataset, num=args.num, run_once=True, debug=args.debug))
+    asyncio.run(run(rest_client, only_dataset=args.dataset, num=args.num, debug=args.debug))
 
 
 if __name__ == '__main__':
