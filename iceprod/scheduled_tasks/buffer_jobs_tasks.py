@@ -10,14 +10,17 @@ import argparse
 import asyncio
 import logging
 
+from rest_tools.client import RestClient
+
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
+
 
 logger = logging.getLogger('buffer_jobs_tasks')
 
 MAX_PARALLEL_REQUESTS = 100
 
 
-async def check_requests(requests, *, debug, rest_client):
+async def check_requests(requests: list[str], *, debug: bool, rest_client: RestClient) -> list[str]:
     logging.info('check_requests starting with %d requests', len(requests))
     futures = set()
     for mat_id in requests:
@@ -50,7 +53,7 @@ async def check_requests(requests, *, debug, rest_client):
     return requests2
 
 
-async def run(rest_client, only_dataset=None, num=1000, delay=5, debug=False):
+async def run(rest_client: RestClient, only_dataset: None | str = None, num: int = 1000, delay: int = 5, debug: bool = False):
     """
     Actual runtime / loop.
 
