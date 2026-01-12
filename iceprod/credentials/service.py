@@ -11,6 +11,10 @@ from .util import ClientCreds, get_expiration
 logger = logging.getLogger('refresh_service')
 
 
+class ExchangeException(Exception):
+    pass
+
+
 class RefreshService:
     """
     OAuth refresh service
@@ -81,7 +85,7 @@ class RefreshService:
 
         return new_cred
 
-    async def exchange_cred(self, cred, *, client_id: str):
+    async def exchange_cred(self, cred, *, client_id: str, new_scope: str | None = None):
         """Exchange a refresh token for one on another client, and return that."""
         if not cred.get('refresh_token'):
             raise Exception('cred does not have a refresh token')
@@ -99,7 +103,7 @@ class RefreshService:
             'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
             'client_id': client.client_id,
             'audience': client_id,  # target client
-            'scope': cred['scope'],
+            'scope': new_scope if new_scope else cred['scope'],
             'subject_token': cred['access_token'],
             'subject_token_type': 'urn:ietf:params:oauth:token-type:access_token',
         }
@@ -122,13 +126,13 @@ class RefreshService:
                 req = {}
             error = req.get('error', '')
             desc = req.get('error_description', '')
-            raise Exception(f'Exchange request failed: {error} - {desc}') from exc
+            raise ExchangeException(f'Exchange request failed: {error} - {desc}') from exc
         else:
             logger.debug('OpenID token exchanged')
             new_cred['access_token'] = req['access_token']
             new_cred['refresh_token'] = req['refresh_token']
             new_cred['expiration'] = get_expiration(req['access_token'])
-            new_cred['scope'] = req.get('scope', cred.get('scope', ''))
+            new_cred['scope'] = req.get('scope', args.get('scope', ''))
             logger.debug('%r', new_cred)
 
         return new_cred

@@ -25,7 +25,7 @@ from iceprod.common.prom_utils import AsyncMonitor
 from iceprod.rest.auth import authorization
 from iceprod.rest.base_handler import IceProdRestConfig, APIBase
 from iceprod.server.util import nowstr, datetime2str
-from .service import RefreshService
+from .service import ExchangeException, RefreshService
 from .util import get_expiration, is_expired
 
 logger = logging.getLogger('server')
@@ -226,13 +226,19 @@ class BaseCredentialsHandler(APIBase):
         # must be oauth for exchange
         base_data['type'] = 'oauth'
 
+        new_scope = self.get_argument('new_scope', None)
+
         # get unexpired tokens
         creds = await self.search_creds(db, base_data)
 
         ret = []
         for row in creds:
-            c = await self.refresh_service.exchange_cred(row, client_id=client_id)
+            try:
+                c = await self.refresh_service.exchange_cred(row, client_id=client_id, new_scope=new_scope)
+            except ExchangeException:
+                continue
             ret.append(c)
+        logger.info('exchange_cred found %d creds and exchanged %d creds', len(creds), len(ret))
         return ret
 
 
