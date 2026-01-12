@@ -117,6 +117,7 @@ async def run(rest_client: RestClient, only_dataset: None | str = None, num: int
             logger.info('%d futures outstanding', len(futures))
             logger.info('%d requests outstanding', len(requests))
             requests = await check_requests(requests, debug=debug, rest_client=rest_client)
+            await asyncio.sleep(delay)
 
         logger.info('complete')
 

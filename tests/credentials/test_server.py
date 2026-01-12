@@ -8,6 +8,7 @@ from rest_tools.client import RestClient
 from rest_tools.utils import Auth
 import requests.exceptions
 
+from iceprod.credentials.service import ExchangeException
 from iceprod.server.util import nowstr
 from iceprod.rest.auth import ROLES, GROUPS
 from iceprod.credentials.server import Server
@@ -599,6 +600,49 @@ async def test_credentials_dataset_task_exchange(server):
     ret = await client.request('GET', f'/datasets/{DATASETS[0]}/tasks/{TASK_NAMES[0]}/exchange', data)
 
     assert ret == [refresh.exchange_cred.return_value]
+        
+
+async def test_credentials_dataset_exchange_downscope(server):
+    client = server[0](roles=['system'])
+    refresh = server[1]
+
+    auth = Auth('secret')
+    token1 = auth.create_token('tok1', payload={'scope': 'foo bar baz'})
+    token1a = auth.create_token('tok1', payload={'scope': 'foo'})
+    token2 = auth.create_token('tok1', payload={'scope': 'baz'})
+
+    def do_exchange(cred, *args, **kwargs):
+        if cred['access_token'] == token1:
+            return {'access_token': token1a}
+        else:
+            raise ExchangeException('cannot exchange')
+    refresh.exchange_cred.side_effect = do_exchange
+
+    data = {
+        'url': 'http://foo',
+        'type': 'oauth',
+        'access_token': token1,
+        'refresh_token': 'xxxxxxxxx',
+        'scope': 'foo bar baz',
+    }
+    await client.request('POST', f'/datasets/{DATASETS[0]}/credentials', data)
+
+    data = {
+        'url': 'http://foo',
+        'type': 'oauth',
+        'access_token': token2,
+        'refresh_token': 'xxxxxxxxx',
+        'scope': 'baz',
+    }
+    await client.request('POST', f'/datasets/{DATASETS[0]}/credentials', data)
+
+    args = {
+        'client_id': 'my_client',
+        'new_scope': 'foo'
+    }
+    ret = await client.request('GET', f'/datasets/{DATASETS[0]}/exchange', args)
+
+    assert ret == [{'access_token': token1a}]
 
 
 async def test_credentials_healthz(server):

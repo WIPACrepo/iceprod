@@ -231,12 +231,14 @@ class BaseGrid:
         if client_id := self.cfg['oauth_condor_client_id']:
             # do dataset creds, with downscoping
             for prefix, scope in task.get_task_config().get('token_scopes', {}).items():
-                args = {'client_id': client_id, 'transfer_prefix': prefix, 'scope': scope}
+                args = {'client_id': client_id, 'transfer_prefix': prefix, 'new_scope': scope}
                 ret2 = await self.cred_client.request('GET', f'/datasets/{task.dataset.dataset_id}/exchange', args)
                 ret.extend(ret2)
+            logging.info('dataset %s creds with downscoping: %d', task.dataset.dataset_id, len(ret))
             # do dataset-task creds
             args = {'client_id': client_id}
             ret2 = await self.cred_client.request('GET', f'/datasets/{task.dataset.dataset_id}/tasks/{task.name}/exchange', args)
+            logging.info('dataset %s task creds: %d', task.dataset.dataset_id, len(ret2))
             ret.extend(ret2)
         return ret
 
