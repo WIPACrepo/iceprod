@@ -56,7 +56,7 @@ async def test_rest_logs_dataset_post(server):
         'group': 'users',
     }
     ret = await client.request('POST', '/datasets', data)
-    dataset_id = ret['result'].split('/')[-1]
+    dataset_id = ret['result']
 
     data = {'data':'foo bar baz'}
     ret = await client.request('POST', f'/datasets/{dataset_id}/logs', data)
@@ -74,7 +74,7 @@ async def test_rest_logs_dataset_get(server):
         'group': 'users',
     }
     ret = await client.request('POST', '/datasets', data)
-    dataset_id = ret['result'].split('/')[-1]
+    dataset_id = ret['result']
 
     data = {'data':'foo bar baz', 'dataset_id': dataset_id}
     ret = await client.request('POST', f'/datasets/{dataset_id}/logs', data)
@@ -97,7 +97,7 @@ async def test_rest_logs_dataset_task_get(server):
         'group': 'users',
     }
     ret = await client.request('POST', '/datasets', data)
-    dataset_id = ret['result'].split('/')[-1]
+    dataset_id = ret['result']
 
     data = {'data':'foo', 'dataset_id': dataset_id, 'task_id': 'bar', 'name': 'stdout'}
     ret = await client.request('POST', f'/datasets/{dataset_id}/logs', data)
@@ -187,7 +187,7 @@ async def test_rest_logs_s3_dataset_post(s3conn, server):
         'group': 'users',
     }
     ret = await client.request('POST', '/datasets', data)
-    dataset_id = ret['result'].split('/')[-1]
+    dataset_id = ret['result']
 
     data = {'data': fake_data(2000000)}
     ret = await client.request('POST', f'/datasets/{dataset_id}/logs', data)
@@ -221,7 +221,7 @@ async def test_rest_logs_s3_dataset_task_get(server):
         'group': 'users',
     }
     ret = await client.request('POST', '/datasets', data)
-    dataset_id = ret['result'].split('/')[-1]
+    dataset_id = ret['result']
 
     data = {'data': fake_data(2000000), 'dataset_id': dataset_id, 'task_id': 'bar', 'name': 'stdout'}
     ret = await client.request('POST', f'/datasets/{dataset_id}/logs', data)

@@ -198,8 +198,7 @@ class MultiDatasetHandler(APIBase):
         # return success
         self.set_status(201)
         self.set_header('Location', f'/datasets/{dataset_id}')
-        self.write({'result': f'/datasets/{dataset_id}'})
-        self.finish()
+        self.write({'result': dataset_id})
 
 
 class DatasetHandler(APIBase):

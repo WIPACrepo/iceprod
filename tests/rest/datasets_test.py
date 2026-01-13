@@ -22,7 +22,7 @@ async def test_rest_datasets_post(server):
         'group': 'users',
     }
     ret = await client.request('POST', '/datasets', data)
-    dataset_id = ret['result'].split('/')[-1]
+    dataset_id = ret['result']
 
     ret = await client.request('GET', '/datasets')
     assert dataset_id in ret
@@ -52,7 +52,7 @@ async def test_rest_datasets_post_system(server):
         'username': 'fbar'
     }
     ret = await client.request('POST', '/datasets', data)
-    dataset_id = ret['result'].split('/')[-1]
+    dataset_id = ret['result']
 
     ret = await client.request('GET', f'/datasets/{dataset_id}')
     for k in data:
@@ -72,7 +72,7 @@ async def test_rest_datasets_post_always_active(server):
         'always_active': True,
     }
     ret = await client.request('POST', '/datasets', data)
-    dataset_id = ret['result'].split('/')[-1]
+    dataset_id = ret['result']
 
     ret = await client.request('GET', '/datasets')
     assert dataset_id in ret
@@ -101,7 +101,7 @@ async def test_rest_datasets_update_description_user(server):
         'group': 'users',
     }
     ret = await client.request('POST', '/datasets', data)
-    dataset_id = ret['result'].split('/')[-1]
+    dataset_id = ret['result']
 
     data = {'description': 'foo bar baz'}
     await client.request('PUT', f'/datasets/{dataset_id}/description', data)
@@ -121,7 +121,7 @@ async def test_rest_datasets_update_description_group(server):
         'group': 'simprod',
     }
     ret = await client.request('POST', '/datasets', data)
-    dataset_id = ret['result'].split('/')[-1]
+    dataset_id = ret['result']
 
     client = server(username='foo', roles=['user'], groups=['simprod','users'])
     data = {'description': 'foo bar baz'}
@@ -142,7 +142,7 @@ async def test_rest_datasets_update_description_bad_user(server):
         'group': 'users',
     }
     ret = await client.request('POST', '/datasets', data)
-    dataset_id = ret['result'].split('/')[-1]
+    dataset_id = ret['result']
 
     client = server(username='foo', roles=['user'], groups=['users'])
     data = {'description': 'foo bar baz'}
@@ -162,7 +162,7 @@ async def test_rest_datasets_update_description_bad_role(server):
         'group': 'users',
     }
     ret = await client.request('POST', '/datasets', data)
-    dataset_id = ret['result'].split('/')[-1]
+    dataset_id = ret['result']
 
     client = server(roles=['system'])
     data = {'description': 'foo bar baz'}
@@ -182,7 +182,7 @@ async def test_rest_datasets_update_status(server):
         'group': 'users',
     }
     ret = await client.request('POST', '/datasets', data)
-    dataset_id = ret['result'].split('/')[-1]
+    dataset_id = ret['result']
 
     data = {'status': 'suspended'}
     await client.request('PUT', f'/datasets/{dataset_id}/status', data)
@@ -203,7 +203,7 @@ async def test_rest_datasets_update_priority(server):
         'group': 'users',
     }
     ret = await client.request('POST', '/datasets', data)
-    dataset_id = ret['result'].split('/')[-1]
+    dataset_id = ret['result']
 
     data = {'priority': .8}
     await client.request('PUT', f'/datasets/{dataset_id}/priority', data)
@@ -224,7 +224,7 @@ async def test_rest_datasets_hard_reset(server):
         'status': 'complete',
     }
     ret = await client.request('POST', '/datasets', data)
-    dataset_id = ret['result'].split('/')[-1]
+    dataset_id = ret['result']
 
     await client.request('POST', f'/datasets/{dataset_id}/dataset_actions/hard_reset', {})
 
@@ -243,7 +243,7 @@ async def test_rest_datasets_truncate(server):
         'group': 'users',
     }
     ret = await client.request('POST', '/datasets', data)
-    dataset_id = ret['result'].split('/')[-1]
+    dataset_id = ret['result']
 
     await client.request('POST', f'/datasets/{dataset_id}/dataset_actions/truncate', {})
 
@@ -262,7 +262,7 @@ async def test_rest_datasets_update_jobs_submitted(server):
         'group': 'users',
     }
     ret = await client.request('POST', '/datasets', data)
-    dataset_id = ret['result'].split('/')[-1]
+    dataset_id = ret['result']
 
     data = {'jobs_submitted': 2}
     await client.request('PUT', f'/datasets/{dataset_id}/jobs_submitted', data)
@@ -299,7 +299,7 @@ async def test_rest_datasets_update_jobs_submitted(server):
         'jobs_immutable': True,
     }
     ret = await client.request('POST', '/datasets', data)
-    dataset_id = ret['result'].split('/')[-1]
+    dataset_id = ret['result']
 
     data = {'jobs_submitted': 2}
     with pytest.raises(requests.exceptions.HTTPError) as exc_info:
@@ -318,7 +318,7 @@ async def test_rest_datasets_summaries_status(server):
         'group': 'users',
     }
     ret = await client.request('POST', '/datasets', data)
-    dataset_id = ret['result'].split('/')[-1]
+    dataset_id = ret['result']
 
     ret = await client.request('GET', '/dataset_summaries/status')
     assert ret == {'processing': [dataset_id]}
@@ -340,7 +340,7 @@ async def test_rest_datasets_summaries_status_with_groups(server):
         'auth_groups_read': [],
     }
     ret = await client.request('POST', '/datasets', data)
-    dataset_id = ret['result'].split('/')[-1]
+    dataset_id = ret['result']
 
     ret = await client.request('GET', '/dataset_summaries/status')
     assert ret == {'processing': [dataset_id]}

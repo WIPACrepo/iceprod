@@ -3,6 +3,7 @@ import json
 import logging
 import math
 import re
+from typing import Any
 import uuid
 
 import pymongo
@@ -570,7 +571,7 @@ class DatasetTaskCountsStatusHandler(TaskCountsStatusHandler):
     """
     @authorization(roles=['admin', 'user', 'system'])
     @attr_auth(arg='dataset_id', role='read')
-    async def get(self, dataset_id):
+    async def get(self, dataset_id):  # type: ignore[override]
         """
         Get the task counts for all tasks in a dataset, group by status.
 
@@ -707,7 +708,7 @@ class TasksActionsQueueHandler(APIBase):
     Handle task action for waiting -> queued.
     """
     @authorization(roles=['admin', 'system'])
-    async def post(self):
+    async def post(self) -> None:
         """
         Take one waiting task, set its status to queued, and return it.
 
@@ -718,7 +719,7 @@ class TasksActionsQueueHandler(APIBase):
         Returns:
             dict: <task dict>
         """
-        filter_query = {'status': 'waiting'}
+        filter_query: dict[str, Any] = {'status': 'waiting'}
         sort_by = [('priority',-1)]
         site = 'unknown'
         queue_instance_id = uuid.uuid1().hex
@@ -726,7 +727,7 @@ class TasksActionsQueueHandler(APIBase):
             data = json.loads(self.request.body)
             # handle requirements
             reqs = data.get('requirements', {})
-            req_filters = []
+            req_filters: list[dict[str, Any]] = []
             for k in reqs:
                 if k == 'gpu' and reqs[k] > 0:
                     val = {'$lte': reqs[k], '$gte': 1}
@@ -830,7 +831,7 @@ class TasksActionsErrorHandler(APIBase):
     final_status = 'waiting'
 
     @authorization(roles=['admin', 'system'])
-    async def post(self, task_id):
+    async def post(self, task_id: str):
         """
         Take one task, set its status to waiting.
 
@@ -856,7 +857,7 @@ class TasksActionsErrorHandler(APIBase):
             'status': {'$in': task_prev_statuses(self.final_status)},
             'instance_id': data['instance_id'],
         }
-        update_query = defaultdict(dict,{
+        update_query: defaultdict[str, dict[str, str | int | float]] = defaultdict(dict,{
             '$set': {
                 'status': self.final_status,
                 'status_changed': nowstr(),
@@ -878,7 +879,7 @@ class TasksActionsErrorHandler(APIBase):
             if 'resources' in data and k in data['resources']:
                 try:
                     new_val = float(data['resources'][k])
-                    old_val = task['requirements'][k] if k in task['requirements'] else Resources.defaults[k]
+                    old_val: float = task['requirements'][k] if task and k in task['requirements'] else Resources.defaults[k]  # type: ignore
                     if k == 'cpu':  # special handling for cpu
                         if new_val <= 1.1 or new_val > 20:
                             continue
@@ -1227,7 +1228,7 @@ class DatasetTaskBulkRequirementsHandler(APIBase):
     """
     @authorization(roles=['admin', 'user', 'system'])
     @attr_auth(arg='dataset_id', role='write')
-    async def patch(self, dataset_id, name):
+    async def patch(self, dataset_id: str, name: str):
         """
         Set multiple tasks' requirements. Sets for all tasks in a dataset
         with the specified name.
@@ -1241,7 +1242,7 @@ class DatasetTaskBulkRequirementsHandler(APIBase):
         Returns:
             dict: empty dict
         """
-        valid_req_keys = set(Resources.defaults)
+        valid_req_keys: set[str] = set(Resources.defaults)
         valid_req_keys.add('os')
         valid_req_keys.add('site')
 

@@ -58,6 +58,7 @@ class Fields:
     jobs_submitted: int
     username: str
     group: str = 'users'
+    extra_submit_fields: str | None = None
     dataset_id: str = ''
 
 
@@ -159,6 +160,11 @@ class Action(BaseAction):
             'username': submit_data.username,
             'group': submit_data.group,
         }
+        if submit_data.extra_submit_fields:
+            extra_fields = json_decode(submit_data.extra_submit_fields)
+            for name,value in extra_fields.items():
+                if name not in args2:
+                    args2[name] = value
 
         ret = await self._api_client.request('POST', '/datasets', args2)
         dataset_id = ret['result'].split('/')[2]
