@@ -139,7 +139,7 @@ async def test_submit_run(config, scope, monkeypatch):
     d.validate()
     config_valid = d.config
 
-    api_client.request.return_value = {'result': '/datasets/dataset'}
+    api_client.request.return_value = {'result': 'dataset'}
     cred_client.request.return_value = 'thetoken'
 
     await submit.run({
