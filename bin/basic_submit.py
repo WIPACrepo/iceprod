@@ -48,11 +48,14 @@ Args:
     token (str): IceProd user token (https://iceprod2.icecube.wisc.edu/profile)
 """
 
+import json
 import os
 import sys
 import argparse
 import logging
 import asyncio
+import time
+from typing import Any
 
 from rest_tools.client import SavedDeviceGrantAuth
 
@@ -139,37 +142,40 @@ async def run(rpc, args):
     }
 
     # create the dataset
+    print('submitting the config')
     rpc_args = {
+        'config': json.dumps(config),
         'description': args['description'],
         'jobs_submitted': len(jobfiles),
-        'tasks_submitted': len(jobfiles),
-        'tasks_per_job': 1,
         'group': args['group'],
-        'status': 'suspended',
+        'extra_submit_fields': '{"status": "suspended"}',
     }
+    dataset_id = ''
     try:
-        ret = await rpc.request('POST', '/datasets', rpc_args)
+        ret = await rpc.request('POST', '/actions/submit', rpc_args)
+        submit_id = ret['result']
+        while True:
+            await asyncio.sleep(10)
+            print('.', end='')
+            ret = await rpc.request('GET', f'/actions/submit/{submit_id}')
+            if ret['status'] == 'complete':
+                dataset_id = ret['payload']['dataset_id']
+                break
+            elif ret['status'] == 'error':
+                fail('Submit failed:'+ret.get('error_message',''))
     except Exception:
         logger.warning('failed to create dataset', exc_info=True)
         fail('Failed to create dataset')
-    dataset_id = ret['result'].split('/')[-1]
+    print('Submit complete. Dataset id =', dataset_id)
 
     try:
-        # upload config
-        logger.info
-        try:
-            await rpc.request('PUT', f'/config/{dataset_id}', config)
-        except Exception:
-            logger.warning(f'uploading config failed for dataset_id {dataset_id}', exc_info=True)
-            fail('Upload of dataset config failed')
-
         # materialize tasks
         try:
             ret = await rpc.request('POST', '/actions/materialization', {'dataste_id': dataset_id, 'num': len(jobfiles)})
         except Exception:
             logger.warning(f'materialization request for dataset {dataset_id} failed', exc_info=True)
             fail('Creation of jobs failed')
-        materialization_id = ret['result']
+        materialization_id = ret['result']  # type: ignore
 
         logger.info(f'waiting for materialization request')
         while True:
@@ -235,7 +241,7 @@ async def run(rpc, args):
         logger.warning(f'failed to get dataset info for dataset {dataset_id}', exc_info=True)
         fail('Failed to get final dataset info')
 
-    print(f'Dataset {dataset_num} is running.')
+    print(f'Dataset {dataset_num} is running.')  # type: ignore
     print(f'Check status at https://iceprod2.icecube.wisc.edu/dataset/{dataset_num}')
 
 def main():
@@ -260,15 +266,14 @@ def main():
 
     logging.basicConfig(level=getattr(logging, args['log_level'].upper()))
 
-    rpc_kwargs = {
+    rpc_kwargs: dict[str, Any] = {
         'token_url': 'https://keycloak.icecube.wisc.edu/auth/realms/IceCube',
         'filename': os.path.abspath(os.path.expandvars('$HOME/.iceprod-auth')),
         'client_id': 'iceprod-public',
     }
     rpc = SavedDeviceGrantAuth('https://api.iceprod.icecube.aq', **rpc_kwargs)
-    rpc_materialization = SavedDeviceGrantAuth('https://materialization.iceprod.icecube.aq', **rpc_kwargs)
 
-    asyncio.run(run(rpc, rpc_materialization, args))
+    asyncio.run(run(rpc, args))
 
 if __name__ == '__main__':
     main()

@@ -3,6 +3,7 @@ import json
 import logging
 import math
 import re
+from typing import Any
 import uuid
 
 import pymongo
@@ -570,7 +571,7 @@ class DatasetTaskCountsStatusHandler(TaskCountsStatusHandler):
     """
     @authorization(roles=['admin', 'user', 'system'])
     @attr_auth(arg='dataset_id', role='read')
-    async def get(self, dataset_id):
+    async def get(self, dataset_id):  # type: ignore[override]
         """
         Get the task counts for all tasks in a dataset, group by status.
 
@@ -718,7 +719,7 @@ class TasksActionsQueueHandler(APIBase):
         Returns:
             dict: <task dict>
         """
-        filter_query = {'status': 'waiting'}
+        filter_query: dict[str, Any] = {'status': 'waiting'}
         sort_by = [('priority',-1)]
         site = 'unknown'
         queue_instance_id = uuid.uuid1().hex
@@ -856,7 +857,7 @@ class TasksActionsErrorHandler(APIBase):
             'status': {'$in': task_prev_statuses(self.final_status)},
             'instance_id': data['instance_id'],
         }
-        update_query = defaultdict(dict,{
+        update_query: defaultdict[str, dict[str, str | int | float]] = defaultdict(dict,{
             '$set': {
                 'status': self.final_status,
                 'status_changed': nowstr(),
@@ -878,7 +879,7 @@ class TasksActionsErrorHandler(APIBase):
             if 'resources' in data and k in data['resources']:
                 try:
                     new_val = float(data['resources'][k])
-                    old_val = task['requirements'][k] if k in task['requirements'] else Resources.defaults[k]
+                    old_val: float = task['requirements'][k] if task and k in task['requirements'] else Resources.defaults[k]  # type: ignore
                     if k == 'cpu':  # special handling for cpu
                         if new_val <= 1.1 or new_val > 20:
                             continue
@@ -1241,7 +1242,7 @@ class DatasetTaskBulkRequirementsHandler(APIBase):
         Returns:
             dict: empty dict
         """
-        valid_req_keys = set(Resources.defaults)
+        valid_req_keys: set[str] = set(Resources.defaults)
         valid_req_keys.add('os')
         valid_req_keys.add('site')
 

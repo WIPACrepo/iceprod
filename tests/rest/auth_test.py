@@ -139,7 +139,7 @@ async def test_rest_auth_auths(server):
         'group': 'users',
     }
     ret = await client.request('POST', '/datasets', data)
-    dataset_id = ret['result'].split('/')[-1]
+    dataset_id = ret['result']
 
     # user can't do this
     with pytest.raises(requests.exceptions.HTTPError) as exc_info:
