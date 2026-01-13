@@ -9,7 +9,7 @@ from tornado.web import HTTPError
 
 from iceprod.core.jsonUtil import json_decode, json_encode
 from iceprod.core.parser import ExpParser
-from iceprod.common.mongo_queue import Payload
+from iceprod.common.mongo_queue import Message, Payload
 from iceprod.core.config import Config as DatasetConfig, ValidationError
 from iceprod.services.base import AuthData, BaseAction
 
@@ -95,8 +95,9 @@ class Action(BaseAction):
 
         return await self._push(payload=asdict(data), priority=self.PRIORITY)
 
-    async def run(self, data: Payload) -> None | Payload:
+    async def run(self, message: Message) -> None:
         assert self._api_client and self._cred_client
+        data = message.payload
 
         submit_data = Fields(**data)
         config = json_decode(submit_data.config)
@@ -176,6 +177,6 @@ class Action(BaseAction):
 
         self._logger.info("submit complete!")
 
-        return {
+        await self._queue.update_payload(message.uuid, {
             'dataset_id': dataset_id
-        }
+        })
