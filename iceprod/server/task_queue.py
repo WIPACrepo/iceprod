@@ -46,21 +46,3 @@ def get_queue(resources):
         return 'memory'
     else:
         return 'default'
-
-
-def get_queue_for_pilot(resources):
-    """
-    Determine which queue this pilot resource belongs in.
-
-    Args:
-        resources (dict): resources dict
-
-    Returns:
-        str: queue name
-    """
-    if resources['gpu']:
-        return 'gpu'
-    elif resources['memory'] >= 8:
-        return 'memory'
-    else:
-        return 'default'

@@ -148,11 +148,21 @@ async def test_submit_run(config, scope, monkeypatch):
         'jobs_submitted': 10,
         'username': 'user',
         'group': 'users',
+        'extra_submit_fields': '{"always_active":true}',
     })
 
     api_calls = api_client.request.call_args_list
     assert len(api_calls) == 2
     assert api_calls[0][0][1] == '/datasets'
+    assert api_calls[0][0][2] == {
+        'description': description,
+        'jobs_submitted': 10,
+        'tasks_submitted': 10,
+        'tasks_per_job': 1,
+        'username': 'user',
+        'group': 'users',
+        'always_active': True,
+    }
     assert api_calls[1][0][1] == '/config/dataset'
 
     cred_calls = cred_client.request.call_args_list

@@ -14,7 +14,7 @@ import logging
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 from iceprod.server.util import datetime2str
 
-logger = logging.getLogger('pilot_monitor')
+logger = logging.getLogger('log_cleanup')
 
 
 async def run(rest_client, debug=False):
