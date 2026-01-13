@@ -167,7 +167,7 @@ class Action(BaseAction):
                     args2[name] = value
 
         ret = await self._api_client.request('POST', '/datasets', args2)
-        dataset_id = ret['result'].split('/')[2]
+        dataset_id = ret['result']
         await self._api_client.request('PUT', f'/config/{dataset_id}', config)
 
         # now submit creds
