@@ -708,7 +708,7 @@ class TasksActionsQueueHandler(APIBase):
     Handle task action for waiting -> queued.
     """
     @authorization(roles=['admin', 'system'])
-    async def post(self):
+    async def post(self) -> None:
         """
         Take one waiting task, set its status to queued, and return it.
 
@@ -727,7 +727,7 @@ class TasksActionsQueueHandler(APIBase):
             data = json.loads(self.request.body)
             # handle requirements
             reqs = data.get('requirements', {})
-            req_filters = []
+            req_filters: list[dict[str, Any]] = []
             for k in reqs:
                 if k == 'gpu' and reqs[k] > 0:
                     val = {'$lte': reqs[k], '$gte': 1}
@@ -831,7 +831,7 @@ class TasksActionsErrorHandler(APIBase):
     final_status = 'waiting'
 
     @authorization(roles=['admin', 'system'])
-    async def post(self, task_id):
+    async def post(self, task_id: str):
         """
         Take one task, set its status to waiting.
 
@@ -1228,7 +1228,7 @@ class DatasetTaskBulkRequirementsHandler(APIBase):
     """
     @authorization(roles=['admin', 'user', 'system'])
     @attr_auth(arg='dataset_id', role='write')
-    async def patch(self, dataset_id, name):
+    async def patch(self, dataset_id: str, name: str):
         """
         Set multiple tasks' requirements. Sets for all tasks in a dataset
         with the specified name.
