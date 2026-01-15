@@ -147,7 +147,12 @@ class Action(BaseAction):
                 'url': TOKEN_PREFIXES[prefix],
                 'transfer_prefix': prefix,
             }
-            ret = await self._cred_client.request('POST', '/create', args)
+            try:
+                ret = await self._cred_client.request('POST', '/create', args)
+            except Exception as e:
+                if 'invalid_scope' in str(e):
+                    raise Exception(f'Invalid scopes for {prefix}: {sorted_scope_str}')
+                raise e
             tokens.append(ret)
 
         # now submit the dataset
