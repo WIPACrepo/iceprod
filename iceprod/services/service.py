@@ -73,7 +73,8 @@ async def main() -> None:
                 try:
                     type_ = data.payload.pop('type')
                     logging.info('running service for type %s', type_)
-                    await actions[type_].run(data)
+                    fut = actions[type_].run(data)
+                    await asyncio.wait_for(fut, timeout=config.SERVICE_TIMEOUT)
                 except TimeoutException:
                     await message_queue.release(data.uuid)
                 except Exception as e:
