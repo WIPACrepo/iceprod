@@ -146,7 +146,7 @@ async function service_worker(action) {
 
         while (true) {
             const url = '/actions/dataset_status/'+id;
-            const ret = await fetch_json('GET', url, {}, passkey);
+            const ret = await fetch_json('GET', url, null, passkey);
             if (ret['status'] == 'error') {
                 if ('error_message' in ret) {
                     message_alert('error - '+ret['error_message']);
