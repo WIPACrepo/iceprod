@@ -74,23 +74,37 @@ const passkey = "{{ passkey }}";
 const dataset_id = "{{ job['dataset_id'] if job else '' }}";
 const job_id = "{{ job['job_id'] if job else '' }}";
 
-async function job_reset() {
-    try {
-        {
-            const url = '/datasets/' + dataset_id + '/task_actions/bulk_reset';
-            const ret = await fetch_json('POST', url, {'jobs': [job_id]}, passkey);
-            if ('error' in ret) {
-                message_alert('error - '+ret['error']);
-                return false;
-            }
-        }
 
-        {
-            const url = '/datasets/' + dataset_id + '/job_actions/bulk_reset';
-            const ret = await fetch_json('POST', url, {'jobs': [job_id]}, passkey);
-            if ('error' in ret) {
-                message_alert('error - '+ret['error']);
+async function service_worker(action) {
+    try {
+        const url = '/actions/job_status';
+        const args = {
+            dataset_id: dataset_id,
+            action: action,
+            job_ids: [job_id],
+        };
+        const ret = await fetch_json('POST', url, args, passkey);
+        if ('error' in ret) {
+            message_alert('error - '+ret['error']);
+            return false;
+        }
+        const id = ret['result'];
+
+        while (true) {
+            const url = '/actions/job_status/'+id;
+            const ret = await fetch_json('GET', url, {}, passkey);
+            if (ret['status'] == 'error') {
+                if ('error_message' in ret) {
+                    message_alert('error - '+ret['error_message']);
+                } else {
+                    message_alert('error - '+action+' failed');
+                }
                 return false;
+            } else if (ret['status'] == 'complete') {
+                message('complete');
+                break;
+            } else if ('payload' in ret && 'progress' in ret['payload']) {
+                message('progress - '+ret['payload']['progress']+'%')
             }
         }
     } catch(err) {
@@ -99,60 +113,18 @@ async function job_reset() {
     }
     reload();
     return true;
+}
+
+async function job_reset() {
+    return await service_worker('reset')
 }
 
 async function job_hard_reset() {
-    try {
-        {
-            const url = '/datasets/' + dataset_id + '/task_actions/bulk_hard_reset';
-            const ret = await fetch_json('POST', url, {'jobs': [job_id]}, passkey);
-            if ('error' in ret) {
-                message_alert('error - '+ret['error']);
-                return false;
-            }
-        }
-
-        {
-            const url = '/datasets/' + dataset_id + '/job_actions/bulk_hard_reset';
-            const ret = await fetch_json('POST', url, {'jobs': [job_id]}, passkey);
-            if ('error' in ret) {
-                message_alert('error - '+ret['error']);
-                return false;
-            }
-        }
-    } catch(err) {
-        message_alert('error - '+err);
-        return false;
-    }
-    reload();
-    return true;
+    return await service_worker('hard_reset')
 }
 
 async function job_suspend() {
-    try {
-        {
-            const url = '/datasets/' + dataset_id + '/task_actions/bulk_suspend';
-            const ret = await fetch_json('POST', url, {'jobs': [job_id]}, passkey);
-            if ('error' in ret) {
-                message_alert('error - '+ret['error']);
-                return false;
-            }
-        }
-
-        {
-            const url = '/datasets/' + dataset_id + '/job_actions/bulk_suspend';
-            const ret = await fetch_json('POST', url, {'jobs': [job_id]}, passkey);
-            if ('error' in ret) {
-                message_alert('error - '+ret['error']);
-                return false;
-            }
-        }
-    } catch(err) {
-        message_alert('error - '+err);
-        return false;
-    }
-    reload();
-    return true;
+    return await service_worker('suspend')
 }
 </script>
 {% end %}

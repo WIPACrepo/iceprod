@@ -130,32 +130,35 @@ async function dataset_priority() {
     return true;
 }
 
-async function dataset_reset() {
+async function service_worker(action) {
     try {
-        {
-            const url = '/datasets/' + dataset_id + '/task_actions/bulk_reset';
-            const ret = await fetch_json('POST', url, {}, passkey);
-            if ('error' in ret) {
-                message_alert('error - '+ret['error']);
-                return false;
-            }
+        const url = '/actions/dataset_status';
+        const args = {
+            dataset_id: dataset_id,
+            action: action,
+        };
+        const ret = await fetch_json('POST', url, args, passkey);
+        if ('error' in ret) {
+            message_alert('error - '+ret['error']);
+            return false;
         }
+        const id = ret['result'];
 
-        {
-            const url = '/datasets/' + dataset_id + '/job_actions/bulk_reset';
-            const ret = await fetch_json('POST', url, {}, passkey);
-            if ('error' in ret) {
-                message_alert('error - '+ret['error']);
+        while (true) {
+            const url = '/actions/dataset_status/'+id;
+            const ret = await fetch_json('GET', url, {}, passkey);
+            if (ret['status'] == 'error') {
+                if ('error_message' in ret) {
+                    message_alert('error - '+ret['error_message']);
+                } else {
+                    message_alert('error - '+action+' failed');
+                }
                 return false;
-            }
-        }
-
-        {
-            const url = '/datasets/' + dataset_id + '/status';
-            const ret = await fetch_json('PUT', url, {'status': '{{ states.DATASET_STATUS_START }}'}, passkey);
-            if ('error' in ret) {
-                message_alert('error - '+ret['error']);
-                return false;
+            } else if (ret['status'] == 'complete') {
+                message('complete');
+                break;
+            } else if ('payload' in ret && 'progress' in ret['payload']) {
+                message('progress - '+ret['payload']['progress']+'%')
             }
         }
     } catch(err) {
@@ -164,78 +167,18 @@ async function dataset_reset() {
     }
     reload();
     return true;
+}
+
+async function dataset_reset() {
+    return await service_worker('reset')
 }
 
 async function dataset_hard_reset() {
-    try {
-        {
-            const url = '/datasets/' + dataset_id + '/task_actions/bulk_hard_reset';
-            const ret = await fetch_json('POST', url, {}, passkey);
-            if ('error' in ret) {
-                message_alert('error - '+ret['error']);
-                return false;
-            }
-        }
-
-        {
-            const url = '/datasets/' + dataset_id + '/job_actions/bulk_hard_reset';
-            const ret = await fetch_json('POST', url, {}, passkey);
-            if ('error' in ret) {
-                message_alert('error - '+ret['error']);
-                return false;
-            }
-        }
-
-        {
-            const url = '/datasets/' + dataset_id + '/dataset_actions/hard_reset';
-            const ret = await fetch_json('POST', url, {}, passkey);
-            if ('error' in ret) {
-                message_alert('error - '+ret['error']);
-                return false;
-            }
-        }
-    } catch(err) {
-        message_alert('error - '+err);
-        return false;
-    }
-    reload();
-    return true;
+    return await service_worker('hard_reset')
 }
 
 async function dataset_suspend() {
-    try {
-        {
-            const url = '/datasets/' + dataset_id + '/task_actions/bulk_suspend';
-            const ret = await fetch_json('POST', url, {}, passkey);
-            if ('error' in ret) {
-                message_alert('error - '+ret['error']);
-                return false;
-            }
-        }
-
-        {
-            const url = '/datasets/' + dataset_id + '/job_actions/bulk_suspend';
-            const ret = await fetch_json('POST', url, {}, passkey);
-            if ('error' in ret) {
-                message_alert('error - '+ret['error']);
-                return false;
-            }
-        }
-
-        {
-            const url = '/datasets/' + dataset_id + '/status';
-            const ret = await fetch_json('PUT', url, {'status': 'suspended'}, passkey);
-            if ('error' in ret) {
-                message_alert('error - '+ret['error']);
-                return false;
-            }
-        }
-    } catch(err) {
-        message_alert('error - '+err);
-        return false;
-    }
-    reload();
-    return true;
+    return await service_worker('suspend')
 }
 
 async function dataset_truncate() {
@@ -254,18 +197,18 @@ async function dataset_truncate() {
     return true;
 }
 
-async function dataset_deconste_logs(dataset_id, passkey) {
-    message("Deconsting logs... 0% compconste");
+async function dataset_delete_logs(dataset_id, passkey) {
+    message("Deleting logs... 0% complete");
     try {
         const url = '/datasets/' + dataset_id + '/logs';
         for await (const ret of fetch_json('DELETE', url, {}, passkey)) {;
             if ('error' in ret) {
                 message_alert('error - '+ret['error']);
                 return false;
-            } else if ('percent_compconste' in ret) {
-                message('Deconsting logs... ' + ret['percent_compconste'].toFixed(2) + '% compconste');
+            } else if ('percent_complete' in ret) {
+                message('Deleting logs... ' + ret['percent_complete'].toFixed(2) + '% complete');
             }
-            if ('status' in ret && ret['status'] == 'compconste') {
+            if ('status' in ret && ret['status'] == 'complete') {
                 break;
             }
         }
