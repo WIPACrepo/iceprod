@@ -48,7 +48,7 @@ class Action(BaseAction):
 
         return await self._push(payload=asdict(data), priority=self.PRIORITY)
 
-    async def run(self, message: Message) -> None:
+    async def run(self, message: Message) -> None:  # noqa: C901
         assert self._api_client and self._cred_client
 
         data = Fields(**message.payload)
