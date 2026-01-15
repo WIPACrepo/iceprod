@@ -71,18 +71,15 @@ async def main() -> None:
 
             if data:
                 try:
-                    payload = data.payload
-                    type_ = payload.pop('type')
+                    type_ = data.payload.pop('type')
                     logging.info('running service for type %s', type_)
-                    ret = await actions[type_].run(payload)
+                    await actions[type_].run(data)
                 except TimeoutException:
                     await message_queue.release(data.uuid)
                 except Exception as e:
                     await message_queue.fail(data.uuid, error_message=str(e))
                     raise
                 else:
-                    if ret:
-                        await message_queue.update_payload(data.uuid, ret)
                     await message_queue.complete(data.uuid)
             else:
                 logging.info('service has nothing to do. sleeping')

@@ -1,8 +1,11 @@
+from datetime import datetime
 import logging
 from unittest.mock import AsyncMock, MagicMock
+from uuid import uuid4
 
 import pytest
 
+from iceprod.common.mongo_queue import Message
 from iceprod.core.config import Config
 from iceprod.core.jsonUtil import json_encode
 import iceprod.services.actions.submit
@@ -128,9 +131,10 @@ async def test_submit_run(config, scope, monkeypatch):
         'token://': 'https://iceprod.tokens',
     })
 
+    queue = AsyncMock()
     api_client = AsyncMock()
     cred_client = AsyncMock()
-    submit = Action(MagicMock(), logging.getLogger('action'), api_client, cred_client)
+    submit = Action(queue, logging.getLogger('action'), api_client, cred_client)
 
     description = 'Test dataset'
 
@@ -142,14 +146,20 @@ async def test_submit_run(config, scope, monkeypatch):
     api_client.request.return_value = {'result': 'dataset'}
     cred_client.request.return_value = 'thetoken'
 
-    await submit.run({
-        'config': json_encode(config_valid),
-        'description': description,
-        'jobs_submitted': 10,
-        'username': 'user',
-        'group': 'users',
-        'extra_submit_fields': '{"always_active":true}',
-    })
+    await submit.run(Message(
+        payload={
+            'config': json_encode(config_valid),
+            'description': description,
+            'jobs_submitted': 10,
+            'username': 'user',
+            'group': 'users',
+            'extra_submit_fields': '{"always_active":true}',
+        },
+        uuid=uuid4().hex,
+        status='queued',
+        priority=0,
+        created_at=datetime.now(),
+    ))
 
     api_calls = api_client.request.call_args_list
     assert len(api_calls) == 2

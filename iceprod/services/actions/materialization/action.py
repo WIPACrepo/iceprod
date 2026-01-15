@@ -4,7 +4,7 @@ from typing import Any
 
 from tornado.web import HTTPError
 
-from iceprod.common.mongo_queue import Payload
+from iceprod.common.mongo_queue import Message
 from iceprod.rest.auth import attr_auth, authorization
 from iceprod.services.base import AuthData, BaseAction, BaseHandler, HandlerTypes, TimeoutException
 from .materialize import Materialize
@@ -89,8 +89,9 @@ class Action(BaseAction):
         # deduplicate on dataset_id
         return await self._push(payload=asdict(data), filter_payload={'dataset_id': data.dataset_id}, priority=self.PRIORITY)
 
-    async def run(self, data: Payload) -> None | Payload:
+    async def run(self, message: Message) -> None:
         """Run materialization"""
+        data = message.payload
         if not self._materialize:
             return None
         self._logger.info(f'running materialization request: {data}')

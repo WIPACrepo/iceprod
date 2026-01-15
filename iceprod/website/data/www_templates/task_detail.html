@@ -115,92 +115,57 @@ const dataset_id = "{{ task['dataset_id'] if task else '' }}";
 const job_id = "{{ task['job_id'] if task else '' }}";
 const task_id = "{{ task['task_id'] if task else '' }}";
 
-async function task_reset() {
+
+async function service_worker(action) {
     try {
-        {
-            const url = '/datasets/' + dataset_id + '/task_actions/bulk_reset';
-            const ret = await fetch_json('POST', url, {'tasks': [task_id]}, passkey);
-            if ('error' in ret) {
-                message_alert('error - '+ret['error']);
-                return false;
-            }
-        }
-
-        {
-            const url = '/datasets/' + dataset_id + '/job_actions/bulk_reset';
-            let ret = await fetch_json('POST', url, {'jobs': [job_id]}, passkey);
-            if ('error' in ret) {
-                message_alert('error - '+ret['error']);
-                return false;
-            }
-        }
-
-        {
-            const url = '/datasets/' + dataset_id + '/status';
-            const ret = await fetch_json('PUT', url, {'status': '{{ states.DATASET_STATUS_START }}'}, passkey);
-            if ('error' in ret) {
-                message_alert('error - '+ret['error']);
-                return false;
-            }
-        }
-    } catch(err) {
-        message_alert('error - '+err);
-        return false;
-    }
-    reload();
-    return true;
-}
-
-async function task_hard_reset() {
-    try {
-        {
-            const url = '/datasets/' + dataset_id + '/task_actions/bulk_hard_reset';
-            const ret = await fetch_json('POST', url, {'tasks': [task_id]}, passkey);
-            if ('error' in ret) {
-                message_alert('error - '+ret['error']);
-                return false;
-            }
-        }
-
-        {
-            const url = '/datasets/' + dataset_id + '/job_actions/bulk_hard_reset';
-            const ret = await fetch_json('POST', url, {'jobs': [job_id]}, passkey);
-            if ('error' in ret) {
-                message_alert('error - '+ret['error']);
-                return false;
-            }
-        }
-
-        {
-            const url = '/datasets/' + dataset_id + '/dataset_actions/hard_reset';
-            const ret = await fetch_json('POST', url, {}, passkey);
-            if ('error' in ret) {
-                message_alert('error - '+ret['error']);
-                return false;
-            }
-        }
-    } catch(err) {
-        message_alert('error - '+err);
-        return false;
-    }
-    reload();
-    return true;
-}
-
-async function task_suspend() {
-    try {
-        const url = '/datasets/' + dataset_id + '/task_actions/bulk_suspend';
-        const ret = await fetch_json('POST', url, {'tasks': [task_id]}, passkey);
+        const url = '/actions/task_status';
+        const args = {
+            dataset_id: dataset_id,
+            action: action,
+            task_ids: [task_id],
+        };
+        const ret = await fetch_json('POST', url, args, passkey);
         if ('error' in ret) {
             message_alert('error - '+ret['error']);
             return false;
         }
+        const id = ret['result'];
+
+        while (true) {
+            const url = '/actions/task_status/'+id;
+            const ret = await fetch_json('GET', url, null, passkey);
+            if (ret['status'] == 'error') {
+                if ('error_message' in ret) {
+                    message_alert('error - '+ret['error_message']);
+                } else {
+                    message_alert('error - '+action+' failed');
+                }
+                return false;
+            } else if (ret['status'] == 'complete') {
+                message('complete');
+                break;
+            } else if ('payload' in ret && 'progress' in ret['payload']) {
+                message('progress - '+ret['payload']['progress']+'%')
+            }
+        }
     } catch(err) {
         message_alert('error - '+err);
         return false;
     }
     reload();
     return true;
+}
+
+async function task_reset() {
+    return await service_worker('reset')
+}
+
+async function task_hard_reset() {
+    return await service_worker('hard_reset')
+}
+
+async function task_suspend() {
+    return await service_worker('suspend')
 }
 
 async function delete_task_logs() {
