@@ -128,9 +128,7 @@ class Action(BaseAction):
                         'progress': len(task_ids)//total_tasks + 50
                     })
 
-        if data.action == 'suspend' and dataset['status'] in dataset_prev_statuses('suspended'):
-            await self._api_client.request('PUT', f'/datasets/{data.dataset_id}/status', {'status': 'suspended'})
-        elif data.action in ('reset', 'hard_reset') and dataset['status'] in dataset_prev_statuses('processing'):
+        if data.action in ('reset', 'hard_reset') and dataset['status'] in dataset_prev_statuses('processing'):
             await self._api_client.request('PUT', f'/datasets/{data.dataset_id}/status', {'status': 'processing'})
 
         self._logger.info("task status update complete!")
