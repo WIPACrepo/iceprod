@@ -73,7 +73,8 @@ class Action(BaseAction):
             while job_ids:
                 cur_jobs = job_ids[:5000]
                 job_ids = job_ids[5000:]
-                await self._api_client.request('POST', task_url, {'jobs': cur_jobs})
+                if data.action != 'suspend':
+                    await self._api_client.request('POST', task_url, {'jobs': cur_jobs})
                 await self._api_client.request('POST', job_url, {'jobs': cur_jobs})
                 if job_ids:
                     await self._queue.update_payload(message.uuid, {
@@ -84,14 +85,15 @@ class Action(BaseAction):
             job_set = set()
             task_set = set()
             if data.task_ids is not None and len(data.task_ids) < 100:
-                async with asyncio.TaskGroup() as tg:
-                    futures = set()
-                    for task_id in data.task_ids:
-                        futures.add(tg.create_task(self._api_client.request('GET', f'/datasets/{data.dataset_id}/tasks/{task_id}', {'keys': 'task_id|job_id'})))
-                for f in futures:
-                    ret = f.result()
-                    job_set.add(ret['job_id'])
                 task_set = set(data.task_ids)
+                if data.action != 'suspend':
+                    async with asyncio.TaskGroup() as tg:
+                        futures = set()
+                        for task_id in data.task_ids:
+                            futures.add(tg.create_task(self._api_client.request('GET', f'/datasets/{data.dataset_id}/tasks/{task_id}', {'keys': 'task_id|job_id'})))
+                    for f in futures:
+                        ret = f.result()
+                        job_set.add(ret['job_id'])
             else:
                 args = {'keys': 'task_id|job_id'}
                 if data.initial_status:
@@ -108,15 +110,16 @@ class Action(BaseAction):
             total_jobs = len(job_ids)
             total_tasks = len(task_ids)
 
-            # update jobs
-            while job_ids:
-                cur_jobs = job_ids[:5000]
-                job_ids = job_ids[5000:]
-                await self._api_client.request('POST', job_url, {'jobs': cur_jobs})
-                if job_ids:
-                    await self._queue.update_payload(message.uuid, {
-                        'progress': len(job_ids)//total_jobs//2
-                    })
+            if data.action != 'suspend':
+                # update jobs
+                while job_ids:
+                    cur_jobs = job_ids[:5000]
+                    job_ids = job_ids[5000:]
+                    await self._api_client.request('POST', job_url, {'jobs': cur_jobs})
+                    if job_ids:
+                        await self._queue.update_payload(message.uuid, {
+                            'progress': len(job_ids)//total_jobs//2
+                        })
 
             # update tasks
             while task_ids:
