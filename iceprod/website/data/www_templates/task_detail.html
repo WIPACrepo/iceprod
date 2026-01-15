@@ -115,6 +115,9 @@ const dataset_id = "{{ task['dataset_id'] if task else '' }}";
 const job_id = "{{ task['job_id'] if task else '' }}";
 const task_id = "{{ task['task_id'] if task else '' }}";
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 async function service_worker(action) {
     try {
@@ -132,6 +135,7 @@ async function service_worker(action) {
         const id = ret['result'];
 
         while (true) {
+            await sleep(1000);
             const url = '/actions/task_status/'+id;
             const ret = await fetch_json('GET', url, null, passkey);
             if (ret['status'] == 'error') {

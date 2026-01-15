@@ -74,6 +74,9 @@ const passkey = "{{ passkey }}";
 const dataset_id = "{{ job['dataset_id'] if job else '' }}";
 const job_id = "{{ job['job_id'] if job else '' }}";
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 async function service_worker(action) {
     try {
@@ -91,6 +94,7 @@ async function service_worker(action) {
         const id = ret['result'];
 
         while (true) {
+            await sleep(1000);
             const url = '/actions/job_status/'+id;
             const ret = await fetch_json('GET', url, null, passkey);
             if (ret['status'] == 'error') {
