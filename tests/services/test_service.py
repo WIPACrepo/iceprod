@@ -32,6 +32,6 @@ async def test_submit(monkeypatch, mongo_url, mongo_clear):
     await main()
 
     assert action_mock.return_value.run.called
-    assert action_mock.return_value.run.call_args.args == ({'foo': 'bar'},)
+    assert action_mock.return_value.run.call_args.args[0].payload == {'foo': 'bar'}
 
     await message_queue.close()

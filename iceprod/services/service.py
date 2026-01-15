@@ -71,10 +71,9 @@ async def main() -> None:
 
             if data:
                 try:
-                    payload = data.payload
-                    type_ = payload.pop('type')
+                    type_ = data.payload.pop('type')
                     logging.info('running service for type %s', type_)
-                    ret = await actions[type_].run(payload)
+                    ret = await actions[type_].run(data)
                 except TimeoutException:
                     await message_queue.release(data.uuid)
                 except Exception as e:

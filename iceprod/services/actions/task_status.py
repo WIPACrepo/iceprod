@@ -1,29 +1,22 @@
 import asyncio
-from collections import defaultdict
 from dataclasses import asdict, dataclass
 import logging
-import os
-import re
 from typing import Any
 
 from tornado.web import HTTPError
 
-from iceprod.core.jsonUtil import json_decode, json_encode
-from iceprod.core.parser import ExpParser
-from iceprod.common.mongo_queue import Message, Payload
-from iceprod.core.config import Config as DatasetConfig, ValidationError
+from iceprod.common.mongo_queue import Message
 from iceprod.server.states import TASK_STATUS, dataset_prev_statuses
 from iceprod.services.base import AuthData, BaseAction
 
 
-logger = logging.getLogger('submit')
+logger = logging.getLogger('task_status')
 
 
 @dataclass
 class Fields:
     dataset_id: str
-    set_status: str
-    hard: bool = False
+    action: str
     initial_status: str | None = None
     job_ids: list[str] | None = None
     task_ids: list[str] | None = None
@@ -36,15 +29,11 @@ class Action(BaseAction):
     async def create(self, args: dict[str, Any], *, auth_data: AuthData) -> str:
         try:
             data = Fields(**args)
-            if not isinstance(data.hard, bool):
-                raise Exception('hard must be a bool')
         except Exception as e:
             raise HTTPError(400, reason=str(e))
 
-        if data.set_status not in ('reset', 'suspended'):
-            raise HTTPError(400, reason='invalid set_status')
-        if data.set_status != 'reset' and data.hard:
-            raise HTTPError(400, reason='hard is only valid when set_status=reset')
+        if data.action not in ('hard_reset', 'reset', 'suspend'):
+            raise HTTPError(400, reason='invalid action')
         if data.initial_status and data.initial_status not in TASK_STATUS:
             raise HTTPError(400, reason='invalid initial_status')
         if data.initial_status and data.task_ids:
@@ -64,13 +53,13 @@ class Action(BaseAction):
 
         data = Fields(**message.payload)
 
-        if data.set_status == 'reset' and data.hard:
+        if data.action == 'hard_reset':
             task_url = f'/datasets/{data.dataset_id}/task_actions/bulk_hard_reset'
             job_url = f'/datasets/{data.dataset_id}/job_actions/bulk_hard_reset'
-        elif data.set_status == 'reset':
+        elif data.action == 'reset':
             task_url = f'/datasets/{data.dataset_id}/task_actions/bulk_reset'
             job_url = f'/datasets/{data.dataset_id}/job_actions/bulk_reset'
-        elif data.set_status == 'suspend':
+        elif data.action == 'suspend':
             task_url = f'/datasets/{data.dataset_id}/task_actions/bulk_suspend'
             job_url = f'/datasets/{data.dataset_id}/job_actions/bulk_suspend'
         else:
@@ -139,10 +128,10 @@ class Action(BaseAction):
                         'progress': len(task_ids)//total_tasks + 50
                     })
 
-        if data.set_status == 'suspend' and dataset['status'] in dataset_prev_statuses('suspended'):
+        if data.action == 'suspend' and dataset['status'] in dataset_prev_statuses('suspended'):
             await self._api_client.request('PUT', f'/datasets/{data.dataset_id}/status', {'status': 'suspended'})
-        elif data.set_status == 'suspend' and dataset['status'] in dataset_prev_statuses('processing'):
-            await self._api_client.request('PUT', f'/datasets/{data.dataset_id}/status', {'status': 'suspended'})
+        elif data.action == 'suspend' and dataset['status'] in dataset_prev_statuses('processing'):
+            await self._api_client.request('PUT', f'/datasets/{data.dataset_id}/status', {'status': 'processing'})
 
         self._logger.info("task status update complete!")
         await self._queue.update_payload(message.uuid, {

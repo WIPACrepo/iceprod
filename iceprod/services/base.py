@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from functools import cached_property
 import inspect
 from logging import Logger
+import logging
 from typing import Any
 
 import requests
@@ -28,6 +29,39 @@ class AuthData:
     groups: list[str]
     roles: list[str]
     token: dict[str, Any]
+
+
+async def check_attr_auth(arg: str, val: str, role: str, *, auth_data: AuthData, rest_client: RestClient, token_role_bypass: list[str] = ['admin', 'system']):
+    """
+    Manually run check_attr_auth and raise an error if we fail the auth check.
+
+    Args:
+        arg: attribute name to check
+        val: attribute value
+        role: the role to check for (read|write)
+        auth_data: request auth data
+        token_role_bypass: token roles that bypass this auth (default: admin,system)
+
+    Raises:
+        HTTPError: when not authorized
+    """
+    if any(r in auth_data.roles for r in token_role_bypass):
+        logging.debug('token role bypass')
+        return True
+    args = {
+        'name': arg,
+        'value': val,
+        'role': role,
+        'username': auth_data.username,
+        'groups': auth_data.groups,
+    }
+    try:
+        await rest_client.request('POST', '/auths', args)
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 403:
+            raise HTTPError(403, reason='auth failed')
+        else:
+            raise HTTPError(500, reason='auth could not be completed')
 
 
 class BaseAction:
@@ -63,7 +97,7 @@ class BaseAction:
     async def run(self, message: Message) -> None:
         raise NotImplementedError()
 
-    async def _manual_attr_auth(self, arg: str, val: str, role: str, *, auth_data: AuthData, token_role_bypass: list[str] = ['admin', 'system']):
+    async def _manual_attr_auth(self, arg: str, val: str, role: str, *, auth_data: AuthData):
         """
         Manually run check_attr_auth and return a boolean.
 
@@ -78,23 +112,7 @@ class BaseAction:
             HTTPError: when not authorized
         """
         assert self._api_client
-        if any(r in auth_data.roles for r in token_role_bypass):
-            self._logger.debug('token role bypass')
-            return True
-        args = {
-            'name': arg,
-            'value': val,
-            'role': role,
-            'username': auth_data.username,
-            'groups': auth_data.groups,
-        }
-        try:
-            await self._api_client.request('POST', '/auths', args)
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 403:
-                raise HTTPError(403, reason='auth failed')
-            else:
-                raise HTTPError(500, reason='auth could not be completed')
+        await check_attr_auth(arg, val, role, auth_data=auth_data, rest_client=self._api_client)
 
 
 class BaseHandler(APIBase):
@@ -103,3 +121,12 @@ class BaseHandler(APIBase):
         self.message_queue = message_queue
         self.rest_client = rest_client
         self.action = action
+
+    async def check_attr_auth(self, arg: str, val: str, role: str):
+        auth = AuthData(
+            username=self.current_user,
+            groups=self.auth_groups,
+            roles=self.auth_roles,
+            token=self.auth_data,
+        )
+        await check_attr_auth(arg, val, role, auth_data=auth, rest_client=self.rest_client)
