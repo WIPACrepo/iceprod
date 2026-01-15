@@ -81,8 +81,8 @@ class Action(BaseAction):
                     })
         else:
             # look up job and task ids
-            job_ids = set()
-            task_ids = set()
+            job_set = set()
+            task_set = set()
             if data.task_ids is not None and len(data.task_ids) < 100:
                 async with asyncio.TaskGroup() as tg:
                     futures = set()
@@ -90,8 +90,8 @@ class Action(BaseAction):
                         futures.add(tg.create_task(self._api_client.request('GET', f'/datasets/{data.dataset_id}/tasks/{task_id}', {'keys': 'task_id|job_id'})))
                 for f in futures:
                     ret = f.result()
-                    job_ids.add(ret['job_id'])
-                task_ids = set(data.task_ids)
+                    job_set.add(ret['job_id'])
+                task_set = set(data.task_ids)
             else:
                 args = {'keys': 'task_id|job_id'}
                 if data.initial_status:
@@ -100,11 +100,11 @@ class Action(BaseAction):
                 for row in ret.values():
                     if data.task_ids and row['task_id'] not in data.task_ids:
                         continue
-                    job_ids.add(row['job_id'])
-                    task_ids.add(row['task_id'])
+                    job_set.add(row['job_id'])
+                    task_set.add(row['task_id'])
 
-            job_ids = list(job_ids)
-            task_ids = list(task_ids)
+            job_ids = list(job_set)
+            task_ids = list(task_set)
             total_jobs = len(job_ids)
             total_tasks = len(task_ids)
 

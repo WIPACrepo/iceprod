@@ -9,7 +9,7 @@ from tornado.web import HTTPError
 
 from iceprod.core.jsonUtil import json_decode, json_encode
 from iceprod.core.parser import ExpParser
-from iceprod.common.mongo_queue import Message, Payload
+from iceprod.common.mongo_queue import Message
 from iceprod.core.config import Config as DatasetConfig, ValidationError
 from iceprod.services.base import AuthData, BaseAction
 

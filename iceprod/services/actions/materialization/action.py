@@ -4,7 +4,7 @@ from typing import Any
 
 from tornado.web import HTTPError
 
-from iceprod.common.mongo_queue import Message, Payload
+from iceprod.common.mongo_queue import Message
 from iceprod.rest.auth import attr_auth, authorization
 from iceprod.services.base import AuthData, BaseAction, BaseHandler, HandlerTypes, TimeoutException
 from .materialize import Materialize
