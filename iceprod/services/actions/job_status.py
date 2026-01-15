@@ -81,7 +81,7 @@ class Action(BaseAction):
             await self._api_client.request('POST', job_url, {'jobs': cur_jobs})
             if job_ids:
                 await self._queue.update_payload(message.uuid, {
-                    'progress': len(job_ids)//len(data.job_ids)
+                    'progress': len(job_ids)*100//len(data.job_ids)
                 })
 
         if data.action in ('reset', 'hard_reset') and dataset['status'] in dataset_prev_statuses('processing'):

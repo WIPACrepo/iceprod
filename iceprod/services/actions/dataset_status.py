@@ -71,7 +71,7 @@ class Action(BaseAction):
             await self._api_client.request('POST', job_url, {'jobs': cur_jobs})
             if job_ids:
                 await self._queue.update_payload(message.uuid, {
-                    'progress': len(job_ids)//len(job_set)
+                    'progress': len(job_ids)*100//len(job_set)
                 })
 
         if data.action == 'suspend' and dataset['status'] in dataset_prev_statuses('suspended'):
