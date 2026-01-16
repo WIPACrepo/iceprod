@@ -61,6 +61,9 @@ class Action(BaseAction):
 
         dataset = await self._api_client.request('GET', f'/datasets/{data.dataset_id}')
 
+        if data.action in ('reset', 'hard_reset') and dataset['status'] in dataset_prev_statuses('processing'):
+            await self._api_client.request('PUT', f'/datasets/{data.dataset_id}/status', {'status': 'processing'})
+
         if data.job_ids is None:
             # look up job ids
             job_set = set()
@@ -81,11 +84,8 @@ class Action(BaseAction):
             await self._api_client.request('POST', job_url, {'jobs': cur_jobs})
             if job_ids:
                 await self._queue.update_payload(message.uuid, {
-                    'progress': len(job_ids)*100//len(data.job_ids)
+                    'progress': 100 - len(job_ids)*100//len(data.job_ids)
                 })
-
-        if data.action in ('reset', 'hard_reset') and dataset['status'] in dataset_prev_statuses('processing'):
-            await self._api_client.request('PUT', f'/datasets/{data.dataset_id}/status', {'status': 'processing'})
 
         self._logger.info("job status update complete!")
         await self._queue.update_payload(message.uuid, {
