@@ -95,7 +95,7 @@ class Action(BaseAction):
 
         return await self._push(payload=asdict(data), priority=self.PRIORITY)
 
-    async def run(self, message: Message) -> None:
+    async def run(self, message: Message) -> None:  # noqa: C901
         assert self._api_client and self._cred_client
         data = message.payload
 
@@ -147,7 +147,12 @@ class Action(BaseAction):
                 'url': TOKEN_PREFIXES[prefix],
                 'transfer_prefix': prefix,
             }
-            ret = await self._cred_client.request('POST', '/create', args)
+            try:
+                ret = await self._cred_client.request('POST', '/create', args)
+            except Exception as e:
+                if 'invalid_scope' in str(e):
+                    raise Exception(f'Invalid scopes for {prefix}: {sorted_scope_str}')
+                raise e
             tokens.append(ret)
 
         # now submit the dataset

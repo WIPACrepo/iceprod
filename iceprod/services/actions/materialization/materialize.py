@@ -48,7 +48,7 @@ class Materialize:
 
         for dataset_id in datasets:
             try:
-                start_time = time.time()
+                start_time = time.monotonic()
                 dataset = await self.rest_client.request('GET', '/datasets/{}'.format(dataset_id))
                 if dataset.get('truncated', False) and not only_dataset:
                     logger.info('ignoring truncated dataset %s', dataset_id)
@@ -91,7 +91,7 @@ class Materialize:
                             await self.buffer_job(dataset, job_index, set_status=set_status, dryrun=dryrun)
                             job_index += 1
 
-                            if only_dataset is None and time.time() - start_time > DATASET_CYCLE_TIMEOUT:
+                            if only_dataset is None and time.monotonic() - start_time > DATASET_CYCLE_TIMEOUT:
                                 logger.warning('dataset cycle timeout for dataset %s', dataset_id)
                                 ret = False
                                 break

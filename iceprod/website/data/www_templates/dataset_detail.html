@@ -130,6 +130,10 @@ async function dataset_priority() {
     return true;
 }
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function service_worker(action) {
     try {
         const url = '/actions/dataset_status';
@@ -145,6 +149,7 @@ async function service_worker(action) {
         const id = ret['result'];
 
         while (true) {
+            await sleep(1000);
             const url = '/actions/dataset_status/'+id;
             const ret = await fetch_json('GET', url, null, passkey);
             if (ret['status'] == 'error') {

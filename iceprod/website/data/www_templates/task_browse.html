@@ -52,6 +52,10 @@ const task_ids_on_page = [
     {% end %}
 ];
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function service_worker(action, task_ids) {
     try {
         const url = '/actions/task_status';
@@ -68,6 +72,7 @@ async function service_worker(action, task_ids) {
         const id = ret['result'];
 
         while (true) {
+            await sleep(1000);
             const url = '/actions/task_status/'+id;
             const ret = await fetch_json('GET', url, null, passkey);
             if (ret['status'] == 'error') {

@@ -264,12 +264,15 @@ class CreateHandler(BaseCredentialsHandler):
         if self.auth_roles == ['user'] and username != self.current_user:
             raise HTTPError(403, 'unauthorized')
 
-        new_cred = await self.refresh_service.create_cred(
-            url=url,
-            transfer_prefix=transfer_prefix,
-            username=username,
-            scope=scope
-        )
+        try:
+            new_cred = await self.refresh_service.create_cred(
+                url=url,
+                transfer_prefix=transfer_prefix,
+                username=username,
+                scope=scope
+            )
+        except Exception as e:
+            raise HTTPError(400, reason=str(e))
         self.write(new_cred)
 
 

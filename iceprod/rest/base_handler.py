@@ -51,6 +51,14 @@ class APIBase(AttrAuthMixin, PromRequestMixin, RestHandler):
 
         return username
 
+    def prepare(self):
+        super().prepare()
+        # Set the Cache-Control header to "no-store"
+        self.set_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        # Also set Pragma and Expires headers for compatibility with older HTTP versions
+        self.set_header('Pragma', 'no-cache')
+        self.set_header('Expires', '0')
+
     def write(self, chunk: str | bytes | dict | list) -> None:  # type: ignore[override]
         """Write dict or list to json"""
         if isinstance(chunk, (dict, list)):

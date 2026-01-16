@@ -78,7 +78,7 @@ class Action(BaseAction):
                 await self._api_client.request('POST', job_url, {'jobs': cur_jobs})
                 if job_ids:
                     await self._queue.update_payload(message.uuid, {
-                        'progress': len(job_ids)//len(data.job_ids)
+                        'progress': len(job_ids)*100//len(data.job_ids)
                     })
         else:
             # look up job and task ids
@@ -118,7 +118,7 @@ class Action(BaseAction):
                     await self._api_client.request('POST', job_url, {'jobs': cur_jobs})
                     if job_ids:
                         await self._queue.update_payload(message.uuid, {
-                            'progress': len(job_ids)//total_jobs//2
+                            'progress': len(job_ids)*50//total_jobs
                         })
 
             # update tasks
@@ -128,7 +128,7 @@ class Action(BaseAction):
                 await self._api_client.request('POST', task_url, {'tasks': cur_tasks})
                 if task_ids:
                     await self._queue.update_payload(message.uuid, {
-                        'progress': len(task_ids)//total_tasks + 50
+                        'progress': len(task_ids)*50//total_tasks + 50
                     })
 
         if data.action in ('reset', 'hard_reset') and dataset['status'] in dataset_prev_statuses('processing'):

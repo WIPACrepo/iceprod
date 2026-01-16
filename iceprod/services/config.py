@@ -16,7 +16,7 @@ class DefaultConfig:
     ICEPROD_CRED_ADDRESS: str = 'https://credentials.iceprod.icecube.aq'
     ICEPROD_CRED_CLIENT_ID: str = ''
     ICEPROD_CRED_CLIENT_SECRET: str = ''
-    SERVICE_TIMEOUT: float = 300.
+    SERVICE_TIMEOUT: float = 900.
     SERVICE_SLEEP_SECS: float = 5.
     DB_URL: str = 'mongodb://localhost/iceprod'
     DB_TIMEOUT: int = 60
