@@ -67,6 +67,9 @@ class Action(BaseAction):
 
         dataset = await self._api_client.request('GET', f'/datasets/{data.dataset_id}')
 
+        if data.action in ('reset', 'hard_reset') and dataset['status'] in dataset_prev_statuses('processing'):
+            await self._api_client.request('PUT', f'/datasets/{data.dataset_id}/status', {'status': 'processing'})
+
         if data.job_ids is not None:
             # specific jobs
             job_ids = data.job_ids.copy()
@@ -78,7 +81,7 @@ class Action(BaseAction):
                 await self._api_client.request('POST', job_url, {'jobs': cur_jobs})
                 if job_ids:
                     await self._queue.update_payload(message.uuid, {
-                        'progress': len(job_ids)*100//len(data.job_ids)
+                        'progress': 100 - len(job_ids)*100//len(data.job_ids)
                     })
         else:
             # look up job and task ids
@@ -118,7 +121,7 @@ class Action(BaseAction):
                     await self._api_client.request('POST', job_url, {'jobs': cur_jobs})
                     if job_ids:
                         await self._queue.update_payload(message.uuid, {
-                            'progress': len(job_ids)*50//total_jobs
+                            'progress': 50 - len(job_ids)*50//total_jobs
                         })
 
             # update tasks
@@ -128,11 +131,8 @@ class Action(BaseAction):
                 await self._api_client.request('POST', task_url, {'tasks': cur_tasks})
                 if task_ids:
                     await self._queue.update_payload(message.uuid, {
-                        'progress': len(task_ids)*50//total_tasks + 50
+                        'progress': 100 - len(task_ids)*50//total_tasks
                     })
-
-        if data.action in ('reset', 'hard_reset') and dataset['status'] in dataset_prev_statuses('processing'):
-            await self._api_client.request('PUT', f'/datasets/{data.dataset_id}/status', {'status': 'processing'})
 
         self._logger.info("task status update complete!")
         await self._queue.update_payload(message.uuid, {
