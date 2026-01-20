@@ -7,9 +7,9 @@ from tornado.web import HTTPError
 
 from iceprod.common.mongo_queue import Message
 from iceprod.server.states import TASK_STATUS, dataset_prev_statuses
+from iceprod.services.actions.submit import TokenSubmitter
 from iceprod.services.base import AuthData, BaseAction
 
-from .submit import TokenSubmitter
 
 logger = logging.getLogger('task_status')
 

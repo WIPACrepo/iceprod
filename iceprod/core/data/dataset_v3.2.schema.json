@@ -48,7 +48,8 @@
           "depends": {
             "type": "array",
             "description": "Task dependency names",
-            "items": { "type": "string" }
+            "items": { "type": "string" },
+            "default": []
           },
           "task_files": {
             "type": "boolean",
@@ -203,6 +204,7 @@
     "requirements": {
       "type": "object",
       "description": "Task requirements",
+      "default": {},
       "properties": {
         "cpu": {
           "type": "integer",

@@ -73,7 +73,9 @@ class TokenSubmitter:
 
         # get token scopes
         token_scopes = defaultdict(set)
-        config['options']['jobs_submitted'] = self._jobs_submitted
+        options = {'jobs_submitted': self._jobs_submitted}
+        options.update(config['options'])
+        config['options'] = options
         for task in config['tasks']:
             config['options']['task'] = task['name']
             task_token_scopes = defaultdict(set)
