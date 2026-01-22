@@ -79,7 +79,8 @@ class Action(BaseAction):
             if task['depends'] != prev_task['depends']:
                 raise Exception('cannot edit task depends - create a new dataset')
             reqs = parser.parse(task['requirements'], env=config2)
-            if any('$' in val for val in reqs if isinstance(val, str)):
+            self._logger.info('new reqs: %r', reqs)
+            if any('$' in val for val in reqs.values() if isinstance(val, str)):
                 raise Exception('cannot update requirements - cannot parse expression')
             if reqs != prev_task['requirements']:
                 await self._api_client.request('POST', f'/datasets/{data.dataset_id}/task_actions/bulk_requirements/{task["name"]}', reqs)

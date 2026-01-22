@@ -27,7 +27,7 @@ from iceprod.server.util import nowstr
 
 from .config import get_config
 from .handlers.base import authenticated, LoginMixin, PublicHandler
-from .handlers.submit import Config, Submit, SubmitStatus
+from .handlers.submit import Config, ConfigStatus, Submit, SubmitStatus
 from .handlers.dataset import Dataset, DatasetBrowse
 from .handlers.job import Job, JobBrowse
 from .handlers.task import Task, TaskBrowse
@@ -287,6 +287,7 @@ class Server:
 
         server.add_route("/", Default, handler_args)
         server.add_route('/config', Config, handler_args)
+        server.add_route(r'/config/status/(\w+)', ConfigStatus, handler_args)
         server.add_route(r"/schemas/v3/([\w\.]+)", Schemas, handler_args)
         server.add_route('/dataset', DatasetBrowse, handler_args)
         server.add_route(r"/dataset/(\w+)", Dataset, handler_args)

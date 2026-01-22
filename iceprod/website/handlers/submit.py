@@ -14,27 +14,142 @@ class Config(PublicHandler):
     @authenticated
     async def get(self):
         assert self.rest_client
-        dataset_id = self.get_argument('dataset_id',default=None)
+        dataset_id = self.get_argument('dataset_id', default=None)
         if not dataset_id:
             self.write_error(400,message='must provide dataset_id')
             return
+        edit = int(self.get_query_argument('edit', default='0'))
         dataset = await self.rest_client.request('GET','/datasets/{}'.format(dataset_id))
-        edit = self.get_argument('edit',default=False)
-        if edit:
-            passkey = self.auth_access_token
-        else:
-            passkey = None
         config = await self.rest_client.request('GET','/config/{}'.format(dataset_id))
         render_args = {
-            'edit':edit,
-            'passkey':passkey,
+            'edit': edit,
             'dataset': dataset.get('dataset',''),
-            'dataset_id':dataset_id,
-            'config':config,
-            'description':dataset.get('description',''),
+            'dataset_id': dataset_id,
+            'config': config,
+            'description': dataset.get('description',''),
             'error': '',
         }
         self.render('submit.html',**render_args)
+
+    @authenticated
+    async def post(self):
+        assert self.rest_client
+        dataset_id = self.get_body_argument('dataset_id', default=None)
+        if not dataset_id:
+            self.write_error(400,message='must provide dataset_id')
+            return
+        edit = int(self.get_body_argument('edit', default='0'))
+        if not edit:
+            self.write_error(400, message='cannot edit')
+            return
+        dataset = await self.rest_client.request('GET','/datasets/{}'.format(dataset_id))
+        if not dataset:
+            self.write_error(400, message='invalid dataset_id')
+            return
+
+        config = ''
+        description = dataset.get('description', '')
+        try:
+            config_str = self.get_body_argument('submit_box')
+            description = self.get_body_argument('description')
+            config = json_decode(config_str)
+            args = {
+                'dataset_id': dataset_id,
+                'config': config_str,
+                'description': description,
+            }
+            ret = await self.rest_client.request('POST', '/actions/edit_config', args)
+            id_ = ret['result']
+        except requests.exceptions.HTTPError as e:
+            logger.warning('failed edit', exc_info=True)
+            try:
+                error = e.response.json()['error']
+            except Exception:
+                error = e.response.text
+            render_args = {
+                'edit': edit,
+                'dataset': dataset.get('dataset',''),
+                'dataset_id': dataset_id,
+                'config': config,
+                'description': description,
+                'error': error,
+            }
+            self.set_status(400)
+            self.render('submit.html', **render_args)
+        except Exception as e:
+            logger.warning('failed submit', exc_info=True)
+            render_args = {
+                'edit': edit,
+                'dataset': dataset.get('dataset',''),
+                'dataset_id': dataset_id,
+                'config': config,
+                'description': description,
+                'error': str(e),
+            }
+            self.set_status(400)
+            self.render('submit.html', **render_args)
+        else:
+            render_args = {
+                'message_id': id_,
+                'status': 'queued',
+                'message': '',
+                'submit': False,
+            }
+
+            self.set_status(303)
+            self.set_header('Location', f'/config/status/{id_}')
+            self.render('submit_status.html', **render_args)
+
+
+class ConfigStatus(PublicHandler):
+    @authenticated
+    async def get(self, id_):
+        assert self.rest_client
+
+        status = 'unknown'
+        error = ''
+        config = ''
+        description = ''
+        dataset = {}
+        dataset_id = ''
+        try:
+            ret = await self.rest_client.request('GET', f'/actions/submit/{id_}')
+            status = ret['status']
+            error = ret.get('error_message', '')
+            config = json_decode(ret['payload']['config'])
+            description = ret['payload']['description']
+            dataset_id = ret['payload']['dataset_id']
+            
+            dataset = await self.rest_client.request('GET','/datasets/{}'.format(dataset_id))
+            if not dataset:
+                raise Exception('invalid dataset_id')
+        except Exception as e:
+            error = str(e)
+
+        if status == 'error':
+            render_args = {
+                'edit': '1',
+                'dataset': dataset.get('dataset',''),
+                'dataset_id': dataset_id,
+                'config': config,
+                'description': description,
+                'error': error,
+            }
+            self.render('submit.html', **render_args)
+            return
+        elif status == 'complete' and dataset_id:
+            self.set_status(303)
+            self.set_header('Location', f'/dataset/{dataset_id}')
+            error = f'Dataset updated at /dataset/{dataset_id}'
+
+        render_args = {
+            'message_id': id_,
+            'status': status,
+            'message': error,
+            'submit': False,
+        }
+
+        self.render('submit_status.html', **render_args)
 
 
 DEFAULT_CONFIG = {
@@ -52,11 +167,6 @@ DEFAULT_CONFIG = {
 
 class Submit(PublicHandler):
     """Handle /submit urls"""
-
-    def check_xsrf_cookie(self):
-        logger.info('cookies: %r', self.request.cookies)
-        super().check_xsrf_cookie()
-
     @authenticated
     async def get(self):
         config = DEFAULT_CONFIG.copy()
@@ -66,7 +176,6 @@ class Submit(PublicHandler):
             error = e
 
         render_args = {
-            'passkey': '',
             'edit': False,
             'dataset': '',
             'dataset_id': '',
@@ -83,9 +192,6 @@ class Submit(PublicHandler):
     async def post(self):
         assert self.rest_client
         logger.info('new dataset submission!')
-
-        if not self.session:
-            raise tornado.web.HTTPError(500, 'session is missing')
 
         config = DEFAULT_CONFIG.copy()
         description = ''
@@ -147,7 +253,8 @@ class Submit(PublicHandler):
             render_args = {
                 'message_id': id_,
                 'status': 'queued',
-                'message': ''
+                'message': '',
+                'submit': True,
             }
 
             self.set_status(303)
@@ -203,6 +310,7 @@ class SubmitStatus(PublicHandler):
             'message_id': id_,
             'status': status,
             'message': error,
+            'submit': True,
         }
 
         self.render('submit_status.html', **render_args)

@@ -117,6 +117,11 @@ async def test_edit_config_server_request_bad_auth(server, requests_mock):
         'memory': 10.5,
         'time': 0.25,
     }}, None),
+    ({'requirements': {
+        'os': ['RHEL_9_x86_64'],
+        'memory': '$(job)//100+2',
+        'time': 0.25,
+    }}, 'update requirements'),
     ({'name': 'bar'}, 'task names'),
     ({'depends': ['foo']}, 'task depends'),
 ])
