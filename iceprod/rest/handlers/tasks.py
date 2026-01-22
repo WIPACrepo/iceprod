@@ -1315,7 +1315,7 @@ class DatasetTaskBulkRequirementsHandler(APIBase):
         }
 
         sets = {}
-        maxes = {}
+        maxes: dict[str, Any] = {}
         for key in valid_req_keys.intersection(data):
             val = data[key]
             if key == 'os':

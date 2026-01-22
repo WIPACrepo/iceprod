@@ -1,7 +1,6 @@
 import logging
 
 import requests
-import tornado.web
 
 from iceprod.core.jsonUtil import json_decode
 from .base import authenticated, PublicHandler
@@ -119,7 +118,7 @@ class ConfigStatus(PublicHandler):
             config = json_decode(ret['payload']['config'])
             description = ret['payload']['description']
             dataset_id = ret['payload']['dataset_id']
-            
+
             dataset = await self.rest_client.request('GET','/datasets/{}'.format(dataset_id))
             if not dataset:
                 raise Exception('invalid dataset_id')

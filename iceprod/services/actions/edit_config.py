@@ -6,10 +6,8 @@ from tornado.web import HTTPError
 
 from iceprod.common.mongo_queue import Message
 from iceprod.core.config import Config as DatasetConfig, ValidationError
-from iceprod.core.defaults import add_default_options
 from iceprod.core.jsonUtil import json_decode, json_encode
 from iceprod.core.parser import ExpParser
-from iceprod.server.states import dataset_prev_statuses
 from iceprod.services.actions.submit import TokenSubmitter
 from iceprod.services.base import AuthData, BaseAction
 
@@ -69,7 +67,7 @@ class Action(BaseAction):
         options.update(config2['options'])
         config2['options'] = options
 
-        # update tasks        
+        # update tasks
         if len(config['tasks']) != len(prev_config['tasks']):
             raise Exception('cannot add/subtract tasks - create a new dataset')
         for task, prev_task in zip(config2['tasks'], prev_config['tasks']):
