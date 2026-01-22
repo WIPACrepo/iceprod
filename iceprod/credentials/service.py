@@ -197,7 +197,7 @@ class RefreshService:
 
         if cred.get('last_use', 0) < last_use_date:
             return False
-        return cred['expiration'] < refresh_exp
+        return True
 
     async def run(self):
         """
