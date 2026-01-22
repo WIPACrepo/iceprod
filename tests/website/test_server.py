@@ -257,6 +257,44 @@ async def test_website_config(server):
     ret = await client.request('GET', '/config', {'dataset_id': '123'})
 
 
+async def test_website_config_status_queued(server):
+    client = server(username='username', roles=['user'], groups=['users', 'simprod'])
+
+    dataset_id = 'd1'
+    description = 'Test dataset'
+
+    config = Config({
+        'tasks':[{
+            'name': 'testing',
+            'trays': [{
+                'modules': [{
+                    'src': '/usr/bin/python3',
+                    'args': ''
+                }]
+            }]
+        }],
+        'version': 3.2,
+    })
+    config.fill_defaults()
+    config.validate()
+    config_str = json.dumps(config.config)
+
+    async with client.get_http_client() as http_client:
+        client.req_mock.add_mock('/actions/edit_config/123', {
+            'status': 'queued',
+            'payload': {
+                'dataset_id': dataset_id,
+                'config': config_str,
+                'description': description,
+            },
+        })
+
+        ret = await client.request_raw(http_client, 'GET', '/config/status/123')
+        ret.raise_for_status()
+
+        assert ret.status_code == 200
+
+
 async def test_website_profile(server):
     client = server(username='username', roles=['user'], groups=['users', 'simprod'])
 

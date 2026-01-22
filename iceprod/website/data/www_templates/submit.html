@@ -43,9 +43,8 @@
 </div>
 {% end %}
 
-{% set view_only = dataset_id and not edit %}
-
 {% block body %}
+{% set view_only = bool(dataset_id and not edit) %}
 <div id="submit_area">
     {% if not view_only %}
     <form method="post" action="/{% if edit %}config{% else %}submit{% end %}" autocomplete="off">
@@ -119,7 +118,7 @@ function parse_json(config){
     }
 }
 
-{% if not view_only %}
+{% if not (dataset_id and not edit) %}
 async function get_dataset_schema(version) {
     try {
         const ret = await fetch('/schemas/v3/dataset_v'+version+'.schema.json');
