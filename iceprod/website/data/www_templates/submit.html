@@ -141,7 +141,7 @@ const submit_box = $('#submit_box');
 const submit_box_html5 = submit_box.get(0);
 const description = $('#description').get(0);
 submit_box.on('input', (event) => {
-    submit_box_html5.setCustomValiditiy("");
+    submit_box_html5.setCustomValidity("");
     const submit_data = parse_json(submit_box.val());
     if (!submit_box_html5.validity.valid) {
         return;
