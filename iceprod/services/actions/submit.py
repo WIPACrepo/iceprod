@@ -159,6 +159,7 @@ class TokenSubmitter:
         if self.token_scopes != existing_token_scopes:
             self._logger.warning('existing tokens do not match requested tokens\nexisting: %r\n requested: %r', dict(existing_token_scopes), dict(self.token_scopes))
             return False
+        self._logger.info('tokens already exist')
         return True
 
     async def resubmit_tokens(self, dataset_id: str):
