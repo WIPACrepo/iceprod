@@ -149,6 +149,7 @@ class TokenSubmitter:
         try:
             ret = await self._cred_client.request('GET', f'/datasets/{dataset_id}/credentials')
         except Exception:
+            self._logger.info('cannot get existing tokens')
             ret = []
         existing_token_scopes = defaultdict(set)
         for tok in ret:
@@ -156,7 +157,7 @@ class TokenSubmitter:
                 existing_token_scopes[tok['transfer_prefix']] = tok['scope']
 
         if self.token_scopes != existing_token_scopes:
-            self._logger.warning('existing tokens do not match requested tokens')
+            self._logger.warning('existing tokens do not match requested tokens\n%r\n%r', existing_token_scopes, self.token_scopes)
             return False
         return True
 
