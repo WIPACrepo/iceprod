@@ -229,7 +229,7 @@ class DatasetDescriptionHandler(APIBase):
     """
     Handle dataset description updates.
     """
-    @authorization(roles=['admin', 'user'])
+    @authorization(roles=['admin', 'user', 'system'])
     @attr_auth(arg='dataset_id', role='write')
     async def put(self, dataset_id):
         """

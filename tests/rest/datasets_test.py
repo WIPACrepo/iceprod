@@ -151,26 +151,6 @@ async def test_rest_datasets_update_description_bad_user(server):
     assert exc_info.value.response.status_code == 403
 
 
-async def test_rest_datasets_update_description_bad_role(server):
-    client = server(roles=['user'], groups=['users'])
-
-    data = {
-        'description': 'blah',
-        'tasks_per_job': 4,
-        'jobs_submitted': 1,
-        'tasks_submitted': 4,
-        'group': 'users',
-    }
-    ret = await client.request('POST', '/datasets', data)
-    dataset_id = ret['result']
-
-    client = server(roles=['system'])
-    data = {'description': 'foo bar baz'}
-    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
-        await client.request('PUT', f'/datasets/{dataset_id}/description', data)
-    assert exc_info.value.response.status_code == 403
-
-
 async def test_rest_datasets_update_status(server):
     client = server(roles=['user'], groups=['users'])
 

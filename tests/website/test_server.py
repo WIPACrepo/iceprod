@@ -21,6 +21,18 @@ async def test_website_schemas(server):
     ret = await client.request('GET', '/schemas/v3/dataset.schema.json')
     ret = json.loads(ret)
     assert ret['title'] == 'IceProd Dataset Config'
+    
+    ret = await client.request('GET', '/schemas/v3/dataset_v3.1.schema.json')
+    ret = json.loads(ret)
+    assert ret['title'] == 'IceProd Dataset Config'
+    logging.info("schema:%r", ret)
+    assert ret['properties']['version']['default'] == 3.1
+    
+    ret = await client.request('GET', '/schemas/v3/dataset_v3.2.schema.json')
+    ret = json.loads(ret)
+    assert ret['title'] == 'IceProd Dataset Config'
+    logging.info("schema:%r", ret)
+    assert ret['properties']['version']['default'] == 3.2
 
     ret = await client.request('GET', '/schemas/v3/config.schema.json')
     ret = json.loads(ret)
@@ -56,7 +68,7 @@ async def test_website_submit(server):
         logging.info('xsrf: %r', xsrf)
         logging.info('cookies: %r', http_client.cookies)
 
-        config_str = json.dumps(config.config)
+        config_str = json.dumps(config.config, indent=2)
 
         submit_mock = client.req_mock.add_mock('/actions/submit', {'result': '123'})
 
@@ -71,7 +83,7 @@ async def test_website_submit(server):
         assert ret.headers['location'].endswith('/submit/status/123')
 
         assert submit_mock.called
-        assert submit_mock.call_args[0][2]['config'] == config_str
+        assert json.loads(submit_mock.call_args[0][2]['config']) == config.config
         assert submit_mock.call_args[0][2]['description'] == description
 
 
@@ -255,6 +267,44 @@ async def test_website_config(server):
     client.req_mock.add_mock('/config/123', {})
 
     ret = await client.request('GET', '/config', {'dataset_id': '123'})
+
+
+async def test_website_config_status_queued(server):
+    client = server(username='username', roles=['user'], groups=['users', 'simprod'])
+
+    dataset_id = 'd1'
+    description = 'Test dataset'
+
+    config = Config({
+        'tasks':[{
+            'name': 'testing',
+            'trays': [{
+                'modules': [{
+                    'src': '/usr/bin/python3',
+                    'args': ''
+                }]
+            }]
+        }],
+        'version': 3.2,
+    })
+    config.fill_defaults()
+    config.validate()
+    config_str = json.dumps(config.config)
+
+    async with client.get_http_client() as http_client:
+        client.req_mock.add_mock('/actions/edit_config/123', {
+            'status': 'queued',
+            'payload': {
+                'dataset_id': dataset_id,
+                'config': config_str,
+                'description': description,
+            },
+        })
+
+        ret = await client.request_raw(http_client, 'GET', '/config/status/123')
+        ret.raise_for_status()
+
+        assert ret.status_code == 200
 
 
 async def test_website_profile(server):

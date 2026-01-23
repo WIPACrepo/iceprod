@@ -6,6 +6,7 @@ from tornado.web import HTTPError
 
 from iceprod.common.mongo_queue import Message
 from iceprod.server.states import JOB_STATUS, dataset_prev_statuses
+from iceprod.services.actions.submit import TokenSubmitter
 from iceprod.services.base import AuthData, BaseAction
 
 
@@ -63,6 +64,17 @@ class Action(BaseAction):
 
         if data.action in ('reset', 'hard_reset') and dataset['status'] in dataset_prev_statuses('processing'):
             await self._api_client.request('PUT', f'/datasets/{data.dataset_id}/status', {'status': 'processing'})
+            config = await self._api_client.request('GET', f'/config/{data.dataset_id}')
+            ts = TokenSubmitter(
+                logger=self._logger,
+                cred_client=self._cred_client,
+                jobs_submitted=dataset['jobs_submitted'],
+                config=config,
+                username=dataset['username'],
+                group=dataset['group'],
+            )
+            if not await ts.tokens_exist(dataset_id=data.dataset_id):
+                await ts.resubmit_tokens(dataset_id=data.dataset_id)
 
         if data.job_ids is None:
             # look up job ids
