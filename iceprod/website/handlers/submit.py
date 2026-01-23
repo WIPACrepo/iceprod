@@ -24,7 +24,7 @@ class Config(PublicHandler):
             'edit': edit,
             'dataset': dataset.get('dataset',''),
             'dataset_id': dataset_id,
-            'config': config,
+            'config': json_encode(config, indent=2),
             'description': dataset.get('description',''),
             'error': '',
         }
@@ -51,7 +51,9 @@ class Config(PublicHandler):
         try:
             config_str = self.get_body_argument('submit_box')
             description = self.get_body_argument('description')
-            json_decode(config_str)
+            config = json_decode(config_str)
+            # if we decoded successfully, resort and reindent config
+            config_str = json_encode(config, indent=2)
 
             args = {
                 'dataset_id': dataset_id,
@@ -202,7 +204,9 @@ class Submit(PublicHandler):
             description = self.get_body_argument('description')
             group = self.get_body_argument('group')
             njobs = int(self.get_body_argument('number_jobs'))
-            json_decode(config_str)
+            config = json_decode(config_str)
+            # if we decoded successfully, resort and reindent config
+            config_str = json_encode(config, indent=2)
 
             args = {
                 'config': config_str,
