@@ -68,7 +68,7 @@ async def test_website_submit(server):
         logging.info('xsrf: %r', xsrf)
         logging.info('cookies: %r', http_client.cookies)
 
-        config_str = json.dumps(config.config)
+        config_str = json.dumps(config.config, indent=2)
 
         submit_mock = client.req_mock.add_mock('/actions/submit', {'result': '123'})
 
@@ -83,7 +83,7 @@ async def test_website_submit(server):
         assert ret.headers['location'].endswith('/submit/status/123')
 
         assert submit_mock.called
-        assert submit_mock.call_args[0][2]['config'] == config_str
+        assert json.loads(submit_mock.call_args[0][2]['config']) == config.config
         assert submit_mock.call_args[0][2]['description'] == description
 
 

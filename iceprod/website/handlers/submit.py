@@ -54,10 +54,11 @@ class Config(PublicHandler):
             config = json_decode(config_str)
             # if we decoded successfully, resort and reindent config
             config_str = json_encode(config, indent=2)
+            config_str_compact = json_encode(config)
 
             args = {
                 'dataset_id': dataset_id,
-                'config': config_str,
+                'config': config_str_compact,
                 'description': description,
             }
             ret = await self.rest_client.request('POST', '/actions/edit_config', args)
@@ -207,9 +208,10 @@ class Submit(PublicHandler):
             config = json_decode(config_str)
             # if we decoded successfully, resort and reindent config
             config_str = json_encode(config, indent=2)
+            config_str_compact = json_encode(config)
 
             args = {
-                'config': config_str,
+                'config': config_str_compact,
                 'description': description,
                 'jobs_submitted': njobs,
                 'username': self.current_user,
