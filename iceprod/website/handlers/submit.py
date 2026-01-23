@@ -2,7 +2,7 @@ import logging
 
 import requests
 
-from iceprod.core.jsonUtil import json_decode
+from iceprod.core.jsonUtil import json_decode, json_encode
 from .base import authenticated, PublicHandler
 
 logger = logging.getLogger('website-submit')
@@ -46,12 +46,13 @@ class Config(PublicHandler):
             self.write_error(400, message='invalid dataset_id')
             return
 
-        config = ''
+        config_str = ''
         description = dataset.get('description', '')
         try:
             config_str = self.get_body_argument('submit_box')
             description = self.get_body_argument('description')
-            config = json_decode(config_str)
+            json_decode(config_str)
+
             args = {
                 'dataset_id': dataset_id,
                 'config': config_str,
@@ -69,7 +70,7 @@ class Config(PublicHandler):
                 'edit': edit,
                 'dataset': dataset.get('dataset',''),
                 'dataset_id': dataset_id,
-                'config': config,
+                'config': config_str,
                 'description': description,
                 'error': error,
             }
@@ -81,7 +82,7 @@ class Config(PublicHandler):
                 'edit': edit,
                 'dataset': dataset.get('dataset',''),
                 'dataset_id': dataset_id,
-                'config': config,
+                'config': config_str,
                 'description': description,
                 'error': str(e),
             }
@@ -107,7 +108,7 @@ class ConfigStatus(PublicHandler):
 
         status = 'unknown'
         error = ''
-        config = ''
+        config_str = ''
         description = ''
         dataset = {}
         dataset_id = ''
@@ -115,7 +116,7 @@ class ConfigStatus(PublicHandler):
             ret = await self.rest_client.request('GET', f'/actions/submit/{id_}')
             status = ret['status']
             error = ret.get('error_message', '')
-            config = json_decode(ret['payload']['config'])
+            config_str = ret['payload']['config']
             description = ret['payload']['description']
             dataset_id = ret['payload']['dataset_id']
 
@@ -130,7 +131,7 @@ class ConfigStatus(PublicHandler):
                 'edit': '1',
                 'dataset': dataset.get('dataset',''),
                 'dataset_id': dataset_id,
-                'config': config,
+                'config': config_str,
                 'description': description,
                 'error': error,
             }
@@ -168,7 +169,7 @@ class Submit(PublicHandler):
     """Handle /submit urls"""
     @authenticated
     async def get(self):
-        config = DEFAULT_CONFIG.copy()
+        config = json_encode(DEFAULT_CONFIG.copy(), indent=2)
 
         error = ''
         if e := self.get_argument('error', None):
@@ -192,16 +193,16 @@ class Submit(PublicHandler):
         assert self.rest_client
         logger.info('new dataset submission!')
 
-        config = DEFAULT_CONFIG.copy()
+        config_str = ''
         description = ''
         njobs = 1
         group = ''
         try:
             config_str = self.get_body_argument('submit_box')
-            config = json_decode(config_str)
             description = self.get_body_argument('description')
-            njobs = int(self.get_body_argument('number_jobs'))
             group = self.get_body_argument('group')
+            njobs = int(self.get_body_argument('number_jobs'))
+            json_decode(config_str)
 
             args = {
                 'config': config_str,
@@ -223,7 +224,7 @@ class Submit(PublicHandler):
                 'edit': False,
                 'dataset': '',
                 'dataset_id': '',
-                'config': config,
+                'config': config_str,
                 'groups': self.auth_groups,
                 'group': group,
                 'description': description,
@@ -239,7 +240,7 @@ class Submit(PublicHandler):
                 'edit': False,
                 'dataset': '',
                 'dataset_id': '',
-                'config': config,
+                'config': config_str,
                 'groups': self.auth_groups,
                 'group': group,
                 'description': description,
@@ -268,7 +269,7 @@ class SubmitStatus(PublicHandler):
 
         status = 'unknown'
         error = ''
-        config = DEFAULT_CONFIG.copy()
+        config = ''
         description = ''
         jobs_submitted = 1
         group = ''
@@ -277,7 +278,7 @@ class SubmitStatus(PublicHandler):
             ret = await self.rest_client.request('GET', f'/actions/submit/{id_}')
             status = ret['status']
             error = ret.get('error_message', '')
-            config = json_decode(ret['payload']['config'])
+            config = ret['payload']['config']
             description = ret['payload']['description']
             jobs_submitted = int(ret['payload']['jobs_submitted'])
             group = ret['payload']['group']

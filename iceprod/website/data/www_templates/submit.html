@@ -50,7 +50,7 @@
     <form method="post" action="/{% if edit %}config{% else %}submit{% end %}" autocomplete="off">
         {% module xsrf_form_html() %}
     {% end %}
-        <textarea name="submit_box" id="submit_box" style="min-height: 500px" autofocus{% if view_only %} readonly{% end %}>{{ json_encode(config, indent=2) }}</textarea>
+        <textarea name="submit_box" id="submit_box" style="min-height: 500px" autofocus{% if view_only %} readonly{% end %}>{{ config }}</textarea>
         <textarea name="description" id="description" placeholder="Description"{% if view_only %} readonly{% end %}>{{ description }}</textarea>
         <div class="submit_contents">
             {% if dataset_id %}
