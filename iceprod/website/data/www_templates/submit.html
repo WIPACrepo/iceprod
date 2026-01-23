@@ -140,20 +140,20 @@ get_dataset_schema('{{ ver }}');
 const submit_box = $('#submit_box');
 const description = $('#description');
 submit_box.on('input', (event) => {
-    submit_box.setCustomValiditiy("");
+    submit_box[0].setCustomValiditiy("");
     const submit_data = parse_json(submit_box.val());
-    if (!submit_box.validity.valid) {
+    if (!submit_box[0].validity.valid) {
         return;
     }
     if (submit_data == null) {
-        submit_box.setCustomValidity("Cannot parse JSON");
+        submit_box[0].setCustomValidity("Cannot parse JSON");
     }
     if (!validator(submit_data)) {
-        submit_box.setCustomValidity("Cannot validate config");
+        submit_box[0].setCustomValidity("Cannot validate config");
     }
 })
 $('form').on("submit", (event) => {
-    if (!submit_box.validity.valid || !description.validity.valid) {
+    if (!submit_box[0].validity.valid || !description[0].validity.valid) {
         // prevent form submission
         event.preventDefault();
     }
