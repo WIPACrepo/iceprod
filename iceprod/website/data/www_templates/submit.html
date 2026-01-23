@@ -132,8 +132,10 @@ async function get_dataset_schema(version) {
         return false;
     }
 }
-get_dataset_schema('3.1');
-get_dataset_schema('3.2');
+{% from iceprod.core.config import ConfigSchema %}
+{% for ver in ConfigSchema.list_versions() %}
+get_dataset_schema('{{ ver }}');
+{% end %}
 
 const submit_box = $('#submit_box');
 const description = $('#description');

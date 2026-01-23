@@ -53,7 +53,7 @@ class Schemas(PublicHandler):
         elif schema == 'config.schema.json':
             self.write(SERVER_SCHEMA)
         elif ver := re.match(r'dataset_v(\d\.\d).schema.json', schema):
-            ver = float(ver.group(0))
+            ver = float(ver.group(1))
             self.write(DATASET_SCHEMA.schema(ver))
         else:
             raise tornado.web.HTTPError(404, reason='unknown schema')

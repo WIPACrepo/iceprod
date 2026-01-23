@@ -2,9 +2,17 @@ import logging
 import pytest
 from rest_tools.client import RestClient
 
-from iceprod.core.config import Config, Dataset, Job, Task
+from iceprod.core.config import ConfigSchema, Config, Dataset, Job, Task
 from iceprod.server.util import nowstr
 
+
+def test_config_schema():
+    assert ConfigSchema.list_versions() == [3.1, 3.2]
+
+    assert ConfigSchema.schema()['title'] == 'IceProd Dataset Config'
+    assert ConfigSchema.schema(3.2)['properties']['version']['default'] == 3.2
+
+    assert ConfigSchema.data_defaults(3.2)['remote'] == ''
 
 def test_config():
     config = {'tasks':[

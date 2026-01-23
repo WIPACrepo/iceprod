@@ -28,7 +28,7 @@ class Config(PublicHandler):
             'description': dataset.get('description',''),
             'error': '',
         }
-        self.render('submit.html',**render_args)
+        self.render('submit.html', **render_args)
 
     @authenticated
     async def post(self):

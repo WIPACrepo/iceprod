@@ -5,6 +5,8 @@ from dataclasses import dataclass
 import importlib.resources
 import json
 import logging
+from pathlib import Path
+import re
 from typing import Any
 try:
     from typing import Self
@@ -21,6 +23,16 @@ class ValidationError(Exception):
 
 
 class ConfigSchema:
+    @ttl_cache
+    @staticmethod
+    def list_versions() -> list[float]:
+        path = Path(str(importlib.resources.files('iceprod.core') / 'data'))
+        ret = []
+        for p in path.glob('dataset_v*.schema.json'):
+            if ver := re.match(r'dataset_v(\d\.\d).schema.json', p.name):
+                ret.append(float(ver.group(1)))
+        return ret
+
     @ttl_cache
     @staticmethod
     def schema(version: float = 3.1) -> dict[str, Any]:

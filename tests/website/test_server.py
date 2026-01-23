@@ -21,6 +21,18 @@ async def test_website_schemas(server):
     ret = await client.request('GET', '/schemas/v3/dataset.schema.json')
     ret = json.loads(ret)
     assert ret['title'] == 'IceProd Dataset Config'
+    
+    ret = await client.request('GET', '/schemas/v3/dataset_v3.1.schema.json')
+    ret = json.loads(ret)
+    assert ret['title'] == 'IceProd Dataset Config'
+    logging.info("schema:%r", ret)
+    assert ret['properties']['version']['default'] == 3.1
+    
+    ret = await client.request('GET', '/schemas/v3/dataset_v3.2.schema.json')
+    ret = json.loads(ret)
+    assert ret['title'] == 'IceProd Dataset Config'
+    logging.info("schema:%r", ret)
+    assert ret['properties']['version']['default'] == 3.2
 
     ret = await client.request('GET', '/schemas/v3/config.schema.json')
     ret = json.loads(ret)
