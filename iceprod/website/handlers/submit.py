@@ -130,6 +130,12 @@ class ConfigStatus(PublicHandler):
             error = str(e)
 
         if status == 'error':
+            # fix json indenting
+            try:
+                config = json_decode(config_str)
+                config_str = json_encode(config, indent=2)
+            except Exception:
+                pass
             render_args = {
                 'edit': '1',
                 'dataset': dataset.get('dataset',''),
@@ -138,6 +144,7 @@ class ConfigStatus(PublicHandler):
                 'description': description,
                 'error': error,
             }
+            self.set_status(400)
             self.render('submit.html', **render_args)
             return
         elif status == 'complete' and dataset_id:
