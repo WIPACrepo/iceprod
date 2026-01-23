@@ -31,7 +31,7 @@ class ConfigSchema:
         for p in path.glob('dataset_v*.schema.json'):
             if ver := re.match(r'dataset_v(\d\.\d).schema.json', p.name):
                 ret.append(float(ver.group(1)))
-        return ret
+        return sorted(ret)
 
     @ttl_cache
     @staticmethod
