@@ -192,7 +192,7 @@ class RefreshService:
     def should_refresh(self, cred):
         logger.info('should_refresh for cred %r', cred)
         now = time.time()
-        refresh_exp = now + self.expire_buffer
+        # refresh_exp = now + self.expire_buffer
         last_use_date = now - self.refresh_window
 
         if cred.get('last_use', 0) < last_use_date:
