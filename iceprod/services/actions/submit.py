@@ -154,10 +154,10 @@ class TokenSubmitter:
         existing_token_scopes = defaultdict(set)
         for tok in ret:
             if tok['transfer_prefix'] in TOKEN_PREFIXES:
-                existing_token_scopes[tok['transfer_prefix']] = tok['scope']
+                existing_token_scopes[tok['transfer_prefix']].update(tok['scope'].split())
 
         if self.token_scopes != existing_token_scopes:
-            self._logger.warning('existing tokens do not match requested tokens\n%r\n%r', existing_token_scopes, self.token_scopes)
+            self._logger.warning('existing tokens do not match requested tokens\nexisting: %r\n requested: %r', dict(existing_token_scopes), dict(self.token_scopes))
             return False
         return True
 
