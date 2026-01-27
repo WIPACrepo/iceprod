@@ -1,3 +1,4 @@
+from collections import Counter
 import datetime
 import json
 import logging
@@ -553,6 +554,41 @@ async def test_Grid_run_error(schedd, i3prod_path):
     assert g.submit.call_count == 1
     assert g.wait.call_count == 2
     assert g.check.call_count == 2
+
+
+def test_Grid_queue_dataset_status(schedd, i3prod_path):
+    override = ['queue.type=htcondor', 'queue.submit_interval=0', 'queue.check_time=0']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+
+    rc = MagicMock()
+    g = iceprod.server.plugins.condor.Grid(cfg=cfg, rest_client=rc, cred_client=None)
+
+    g.submit = AsyncMock(side_effect=RuntimeError())
+    g.wait = AsyncMock(side_effect=RuntimeError())
+    g.check = AsyncMock(side_effect=RuntimeError())
+
+    ret = g.queue_dataset_status()
+    assert not ret
+
+    g.jobs[CondorJobId(cluster_id=1, proc_id=0)] = CondorJob(status=JobStatus.IDLE, dataset_id='d1')
+    ret = g.queue_dataset_status()
+    assert ret == {iceprod.server.grid.GridStatus.QUEUED: {'d1': 1}}
+
+    g.jobs[CondorJobId(cluster_id=2, proc_id=0)] = CondorJob(status=JobStatus.RUNNING, dataset_id='d1')
+    g.jobs[CondorJobId(cluster_id=2, proc_id=1)] = CondorJob(status=JobStatus.RUNNING, dataset_id='d1')
+    ret = g.queue_dataset_status()
+    assert ret == {iceprod.server.grid.GridStatus.QUEUED: {'d1': 1},
+                   iceprod.server.grid.GridStatus.PROCESSING: {'d1': 2}}
+
+    g.jobs[CondorJobId(cluster_id=3, proc_id=0)] = CondorJob(status=JobStatus.COMPLETED, dataset_id='d1')
+    ret = g.queue_dataset_status()
+    assert ret == {iceprod.server.grid.GridStatus.QUEUED: {'d1': 1},
+                   iceprod.server.grid.GridStatus.PROCESSING: {'d1': 2}}
+
+    g.jobs[CondorJobId(cluster_id=4, proc_id=0)] = CondorJob(status=JobStatus.RUNNING, dataset_id='d2')
+    ret = g.queue_dataset_status()
+    assert ret == {iceprod.server.grid.GridStatus.QUEUED: {'d1': 1},
+                   iceprod.server.grid.GridStatus.PROCESSING: {'d1': 2, 'd2': 1}}
 
 
 async def test_Grid_submit(schedd, i3prod_path):

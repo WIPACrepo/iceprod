@@ -5,6 +5,8 @@ that inherit from this class.
 """
 
 import asyncio
+from collections import Counter
+from enum import StrEnum
 import json
 import os
 import logging
@@ -44,6 +46,11 @@ class GridTask(Protocol):
     dataset_id: str | None
     task_id: str | None
     instance_id: str | None
+
+
+class GridStatus(StrEnum):
+    QUEUED = 'queued'
+    PROCESSING = 'processing'
 
 
 class BaseGrid:
@@ -110,6 +117,10 @@ class BaseGrid:
         """Override the `ActiveJobs` and `JobActions` batch submission / monitoring classes"""
         raise NotImplementedError()
 
+    def queue_dataset_status(self) -> dict[GridStatus, Counter[str]]:
+        """Get the current queue job counts by dataset and job status."""
+        raise NotImplementedError()
+
     # Common functions #
 
     @cachedmethod(lambda self: self.dataset_cache)
@@ -143,22 +154,41 @@ class BaseGrid:
         Returns:
             list of iceprod.core.config.Task objects
         """
+        # get current count of queued jobs (ignore processing)
+        cur_jobs: dict[str, int] = self.queue_dataset_status().get(GridStatus.QUEUED, {})
+        ignore_datasets_list = sorted(cur_jobs, key=lambda x: cur_jobs[x], reverse=True)
+        logger.info('ignore_dataset_list=%r', ignore_datasets_list)
+
+        # first, ignore all idle datasets
+        query_params = self.site_query_params.copy()
+        query_params['dataset_id'] = {'$nin': ignore_datasets_list}
+
         # get tasks to run from REST API, and convert to batch jobs
-        args = {
-            'requirements': self.site_requirements,
-            'query_params': self.site_query_params,
-        }
         futures = set()
         tasks_queued = 0
-        for tasks_queued in range(num):
+        while True:
             try:
-                ret = await self.rest_client.request('POST', '/task_actions/queue', args)
+                ret = await self.rest_client.request('POST', '/task_actions/queue', {
+                    'requirements': self.site_requirements,
+                    'query_params': query_params,
+                })
             except requests.exceptions.HTTPError as e:
                 if e.response.status_code == 404:
-                    break
+                    # check if we can try again with fewer excluded datasets
+                    if not ignore_datasets_list:
+                        break
+                    ignore_datasets_list.pop()
+                    if ignore_datasets_list:
+                        query_params['dataset_id'] = {'$nin': ignore_datasets_list}
+                    else:
+                        del query_params['dataset_id']
+                    continue
                 raise
             else:
                 futures.add(asyncio.create_task(self._convert_to_task(ret)))
+                tasks_queued += 1
+                if tasks_queued >= num:
+                    break
 
         prom_counter.labels({'step': 'raw'}).inc(tasks_queued)
         logging.info('got %d tasks to queue', tasks_queued)

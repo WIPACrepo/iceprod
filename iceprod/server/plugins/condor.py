@@ -5,7 +5,7 @@ The Condor plugin.  Allows submission to
 Note: Condor was renamed to HTCondor in 2012.
 """
 import asyncio
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime, timedelta, UTC
@@ -739,6 +739,18 @@ class Grid(grid.BaseGrid):
 
             if not forever:
                 break
+
+    def queue_dataset_status(self) -> dict[grid.GridStatus, Counter[str]]:
+        """Get the current queue job counts by dataset and job status."""
+        ret: dict[grid.GridStatus, Counter[str]] = defaultdict(Counter)
+        for job in self.jobs.values():
+            if not job.dataset_id:
+                continue
+            if job.status == JobStatus.IDLE:
+                ret[grid.GridStatus.QUEUED][job.dataset_id] += 1
+            elif job.status == JobStatus.RUNNING:
+                ret[grid.GridStatus.PROCESSING][job.dataset_id] += 1
+        return ret
 
     # Submit to Condor #
 
