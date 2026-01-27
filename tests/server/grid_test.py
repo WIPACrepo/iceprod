@@ -1,4 +1,6 @@
+from collections import Counter
 from dataclasses import dataclass
+import logging
 from pprint import pprint
 from unittest.mock import MagicMock, AsyncMock
 
@@ -99,24 +101,53 @@ async def test_grid_dataset_lookup(monkeypatch):
     assert dataset_mock.load_from_api.call_count == 2
 
 
-async def test_grid_get_tasks_to_queue():
+@pytest.mark.parametrize('num_tasks,queue,avail,priorities,out_tasks', [
+    (10, {}, {'d1': 50}, {'d1': 0.5}, {'d1': 10}),
+    (10, {'d1': 100}, {'d1': 5}, {'d1': 0.5}, {'d1': 5}),
+    (10, {}, {'d1': 2, 'd2': 3}, {'d1': 0.5, 'd2': 0.5}, {'d1': 2, 'd2': 3}),
+    (10, {'d1': 100, 'd2': 80}, {'d1': 10, 'd2': 10, 'd3': 2}, {'d1': 0.5, 'd2': 0.5, 'd3': 0.5}, {'d2': 8, 'd3': 2}),
+    (10, {'d1': 100, 'd2': 80}, {'d1': 10, 'd2': 10, 'd3': 20}, {'d1': 0.5, 'd2': 0.5, 'd3': 0.5}, {'d3': 10}),
+    (10, {'d1': 10, 'd2': 21}, {'d1': 20, 'd2': 20}, {'d1': 0.25, 'd2': 0.5}, {'d1': 10}),
+    (10, {'d1': 10, 'd2': 19}, {'d1': 20, 'd2': 20}, {'d1': 0.25, 'd2': 0.5}, {'d2': 10}),
+])
+async def test_grid_get_tasks_to_queue(num_tasks, out_tasks, queue, priorities, avail):
     override = ['queue.type=test', 'queue.check_time=0']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
     rc = MagicMock()
     g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
 
-    NUM_TASKS = 2
-    rc.request = AsyncMock()
-    g._convert_to_task = AsyncMock()
+    async def rest_queue(method, path, args):
+        dataset_exclude = args['query_params'].get('dataset_id', {}).get('$nin', {})
+        for d in avail:
+            if avail[d] > 0 and d not in dataset_exclude:
+                avail[d] -= 1
+                return {'dataset_id': d}
+        r = MagicMock()
+        r.status_code = 404
+        logging.info('404!')
+        raise requests.exceptions.HTTPError(response=r)
+    
+    def convert(val):
+        ret = MagicMock()
+        ret.dataset.dataset_id = val['dataset_id']
+        return ret
+
+    rc.request = AsyncMock(side_effect=rest_queue)
+    g._convert_to_task = AsyncMock(side_effect=convert)
     g._get_resources = MagicMock()
+    g._get_priority_object = AsyncMock()
+    g._get_priority_object.return_value.get_dataset_prio = AsyncMock(side_effect=lambda d: priorities[d])
+    g.queue_dataset_status = MagicMock(return_value={iceprod.server.grid.GridStatus.QUEUED: queue})
 
-    tasks = await g.get_tasks_to_queue(NUM_TASKS)
+    tasks = await g.get_tasks_to_queue(num_tasks)
 
-    assert len(tasks) == NUM_TASKS
-    assert rc.request.call_count == NUM_TASKS
-    assert g._convert_to_task.call_count == NUM_TASKS
-    assert g._get_resources.call_count == NUM_TASKS
+    out_count = sum(out_tasks.values())
+
+    assert len(tasks) == out_count
+    assert Counter(t.dataset.dataset_id for t in tasks) == out_tasks
+    assert g._convert_to_task.call_count == out_count
+    assert g._get_resources.call_count == out_count
 
 
 async def test_grid_submit_none():
@@ -132,6 +163,9 @@ async def test_grid_submit_none():
     rc.request = AsyncMock(side_effect=requests.exceptions.HTTPError(response=response))
     g._convert_to_task = AsyncMock()
     g._get_resources = MagicMock()
+    g._get_priority_object = AsyncMock()
+    g._get_priority_object.return_value.get_dataset_prio = AsyncMock(return_value=0.5)
+    g.queue_dataset_status = MagicMock(return_value={})
 
     tasks = await g.get_tasks_to_queue(NUM_TASKS)
 

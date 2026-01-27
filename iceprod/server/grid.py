@@ -5,6 +5,8 @@ that inherit from this class.
 """
 
 import asyncio
+from collections import Counter
+from enum import StrEnum
 import json
 import os
 import logging
@@ -20,6 +22,7 @@ from prometheus_client import Info
 import requests.exceptions
 from wipac_dev_tools.prometheus_tools import GlobalLabels, AsyncPromWrapper, AsyncPromTimer
 
+from iceprod.server.priority import Priority
 from iceprod.util import VERSION_STRING
 from iceprod.core import functions
 from iceprod.core.config import Task, Job, Dataset
@@ -44,6 +47,11 @@ class GridTask(Protocol):
     dataset_id: str | None
     task_id: str | None
     instance_id: str | None
+
+
+class GridStatus(StrEnum):
+    QUEUED = 'queued'
+    PROCESSING = 'processing'
 
 
 class BaseGrid:
@@ -110,6 +118,10 @@ class BaseGrid:
         """Override the `ActiveJobs` and `JobActions` batch submission / monitoring classes"""
         raise NotImplementedError()
 
+    def queue_dataset_status(self) -> dict[GridStatus, Counter[str]]:
+        """Get the current queue job counts by dataset and job status."""
+        raise NotImplementedError()
+
     # Common functions #
 
     @cachedmethod(lambda self: self.dataset_cache)
@@ -131,6 +143,12 @@ class BaseGrid:
         ret.validate()
         return ret
 
+    @cached(TTLCache(10, 900), key=lambda _: 'self')
+    async def _get_priority_object(self) -> Priority:
+        p = Priority(rest_client=self.rest_client)
+        await p._populate_dataset_cache()
+        return p
+
     @AsyncPromWrapper(lambda self: self.prometheus.counter('iceprod_grid_queue_tasks', 'IceProd grid tasks queued', labels=['step'], finalize=False))
     @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_tasks_to_queue', 'IceProd grid.tasks_to_queue calls'))
     async def get_tasks_to_queue(self, prom_counter, num: int) -> list[Task]:
@@ -143,22 +161,46 @@ class BaseGrid:
         Returns:
             list of iceprod.core.config.Task objects
         """
+        # get current count of queued jobs (ignore processing)
+        cur_jobs: Counter[str] = Counter(self.queue_dataset_status().get(GridStatus.QUEUED, {}))
+        priorities = await self._get_priority_object()
+        dataset_prios = {}
+        for dataset_id in cur_jobs:
+            dataset_prios[dataset_id] = await priorities.get_dataset_prio(dataset_id)
+
+        # order the ignore list by number of queued jobs / dataset priority
+        # this should slightly favor higher priority datasets, but allow lower priority datasets to come in
+        ignore_datasets_list = sorted(cur_jobs, key=lambda x: cur_jobs[x]/dataset_prios[x], reverse=True)
+        logger.info('ignore_dataset_list=%r', ignore_datasets_list)
+        query_params = self.site_query_params.copy()
+        query_params['dataset_id'] = {'$nin': ignore_datasets_list}
+
         # get tasks to run from REST API, and convert to batch jobs
-        args = {
-            'requirements': self.site_requirements,
-            'query_params': self.site_query_params,
-        }
         futures = set()
         tasks_queued = 0
-        for tasks_queued in range(num):
+        while True:
             try:
-                ret = await self.rest_client.request('POST', '/task_actions/queue', args)
+                ret = await self.rest_client.request('POST', '/task_actions/queue', {
+                    'requirements': self.site_requirements,
+                    'query_params': query_params,
+                })
             except requests.exceptions.HTTPError as e:
                 if e.response.status_code == 404:
-                    break
+                    # check if we can try again with fewer excluded datasets
+                    if not ignore_datasets_list:
+                        break
+                    ignore_datasets_list.pop()
+                    if ignore_datasets_list:
+                        query_params['dataset_id'] = {'$nin': ignore_datasets_list}
+                    else:
+                        del query_params['dataset_id']
+                    continue
                 raise
             else:
                 futures.add(asyncio.create_task(self._convert_to_task(ret)))
+                tasks_queued += 1
+                if tasks_queued >= num:
+                    break
 
         prom_counter.labels({'step': 'raw'}).inc(tasks_queued)
         logging.info('got %d tasks to queue', tasks_queued)
