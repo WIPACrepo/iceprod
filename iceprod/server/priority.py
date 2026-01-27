@@ -20,7 +20,6 @@ class Priority:
         self.rest_client = rest_client
         self.dataset_cache = {}
         self.user_cache = {}
-        self.group_cache = {}
 
     async def _populate_dataset_cache(self):
         args = {
@@ -29,6 +28,7 @@ class Priority:
         }
         self.dataset_cache = await self.rest_client.request('GET', '/datasets', args)
         dataset_ids = list(self.dataset_cache)
+        logger.info('populating %d datasets', len(dataset_ids))
         args = {
             'keys': 'task_id|dataset_id|job_index|task_index',
             'status': 'idle|waiting|queued|processing',
@@ -266,9 +266,9 @@ def main():
     args = parser.parse_args()
 
     logformat = '%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
-    logging.basicConfig(format=logformat, level=logging.DEBUG if args.debug else logging.INFO)
     wipac_dev_tools.logging_tools.set_level(
-        level='DEBUG',
+        level='DEBUG' if args.debug else 'INFO',
+        formatter=logging.Formatter(logformat),
         first_party_loggers='priority',
         future_third_parties=['SavedDeviceGrantAuth'],
     )
