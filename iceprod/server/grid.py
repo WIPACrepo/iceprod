@@ -170,7 +170,7 @@ class BaseGrid:
 
         # order the ignore list by number of queued jobs / dataset priority
         # this should slightly favor higher priority datasets, but allow lower priority datasets to come in
-        ignore_datasets_list = sorted(cur_jobs, key=lambda x: cur_jobs[x]/dataset_prios[x], reverse=True)
+        ignore_datasets_list = sorted(cur_jobs, key=lambda x: cur_jobs[x]/dataset_prios[x] if dataset_prios.get(x,None) else 1000000, reverse=True)
         logger.info('ignore_dataset_list=%r', ignore_datasets_list)
         query_params = self.site_query_params.copy()
         query_params['dataset_id'] = {'$nin': ignore_datasets_list}
