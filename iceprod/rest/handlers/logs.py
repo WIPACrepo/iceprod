@@ -2,6 +2,7 @@ import json
 import logging
 import uuid
 
+import pymongo
 import tornado.web
 
 from ..base_handler import APIBase
@@ -35,6 +36,7 @@ def setup(handler_cfg):
                 'log_id_index': {'keys': 'log_id', 'unique': True},
                 'task_id_index': {'keys': 'task_id', 'unique': False},
                 'dataset_id_index': {'keys': 'dataset_id', 'unique': False},
+                'name_timestamp': {'keys': [('name', pymongo.DESCENDING), ('timestamp', pymongo.DESCENDING)], 'background': True},
             }
         }
     }
