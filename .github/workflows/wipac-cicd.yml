@@ -104,15 +104,17 @@ jobs:
       matrix:
         py3: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
     services:
-      mongo:
-        image: mongo:7.0
-        ports:
-        - 27017:27017
       redis:
         image: redis:8
         ports:
         - 6379:6379
     steps:
+      - name: Run mongo replicaset
+        run: |
+          docker run --rm -d --name mongo --network=host mongo:8 --replSet rs0 --bind_ip_all --port 27017
+          sleep 1
+          docker run --rm -it --network=host --entrypoint mongosh mongo:8 --eval "rs.initiate().ok"
+          sleep 1
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0  # setuptools-scm needs to access git tags
