@@ -19,17 +19,20 @@ def IceProdRestConfig(config: dict[str, Any], database: DB | None = None, auth_d
         config['server_header'] = 'IceProd/' + VERSION_STRING
     ret = RestHandlerSetup(config)
     ret['database'] = database
-    ret['auth_database'] = auth_database
+    #ret['auth_database'] = auth_database
     ret['s3'] = s3conn
     return ret
 
 
 class APIBase(AttrAuthMixin, PromRequestMixin, RestHandler):
     """Default REST handler"""
-    def initialize(self, *args, database: DB, auth_database, s3=None, **kwargs):  # type: ignore[override]
+    def initialize(self, *args, database: DB, db_client: AsyncMongoClient | None = None, s3=None, **kwargs):  # type: ignore[override]
+        logger.info('initialze APIBase: args=%r, kwargs=%r', args, kwargs)
         super().initialize(*args, **kwargs)
+        logger.info('do rest of initialize APIBase')
         self.db = database
-        self.auth_db = auth_database
+        self.db_client = db_client
+        self.auth_db: AsyncDatabase | None = db_client['auth'] if db_client else None  # type: ignore[override]
         self.s3 = s3
 
     def get_template_namespace(self):

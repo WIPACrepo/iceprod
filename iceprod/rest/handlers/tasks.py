@@ -7,6 +7,9 @@ from typing import Any
 import uuid
 
 import pymongo
+import pymongo.asynchronous.client_session
+import pymongo.errors
+import pymongo.read_concern
 import tornado.web
 from wipac_dev_tools import strtobool
 
@@ -38,6 +41,7 @@ def setup(handler_cfg):
             (r'/task_actions/bulk_status/(?P<status>\w+)', TaskBulkStatusHandler, handler_cfg),
             (r'/task_actions/waiting', TasksActionsWaitingHandler, handler_cfg),
             (r'/task_actions/queue', TasksActionsQueueHandler, handler_cfg),
+            (r'/task_actions/queue_many', TasksActionsBulkQueueHandler, handler_cfg),
             (r'/task_counts/status', TaskCountsStatusHandler, handler_cfg),
             (r'/tasks/(?P<task_id>\w+)/task_actions/processing', TasksActionsProcessingHandler, handler_cfg),
             (r'/tasks/(?P<task_id>\w+)/task_actions/reset', TasksActionsErrorHandler, handler_cfg),
@@ -761,6 +765,131 @@ class TasksActionsQueueHandler(APIBase):
         )
         if not ret:
             logger.info('filter_query: %r', filter_query)
+            self.send_error(404, reason="Task not found")
+        else:
+            self.write(ret)
+            self.finish()
+
+
+class TasksActionsBulkQueueHandler(APIBase):
+    """
+    Handle bulk task action for waiting -> queued.
+
+    Queues multiple tasks at once.
+    """
+    @authorization(roles=['admin', 'system'])
+    async def post(self) -> None:
+        """
+        Take many waiting tasks, set their status to queued, and return them.
+
+        Use the `dataset_deprio` list to deprioritize datasets if possible.
+
+        Body args (json):
+            num: number of tasks to queue
+            requirements: dict
+            dataset_deprio: list of datasets to deprioritize
+            query_params: (optional) dict of mongodb params
+
+        Returns:
+            dict: <task dict>
+        """
+        filter_query: dict[str, Any] = {'status': 'waiting'}
+        sort_by = [('priority',-1)]
+        site = 'unknown'
+        queue_instance_id = uuid.uuid1().hex
+        num = 1
+        dataset_deprio = []
+        if self.request.body:
+            data = json.loads(self.request.body)
+            num = data.get('num', 1)
+            # handle requirements
+            reqs = data.get('requirements', {})
+            req_filters: list[dict[str, Any]] = []
+            for k in reqs:
+                if k == 'gpu' and reqs[k] > 0:
+                    val = {'$lte': reqs[k], '$gte': 1}
+                    req_filters.append({'requirements.'+k: val})
+                    continue
+                elif isinstance(reqs[k], (int,float)):
+                    val = {'$lte': reqs[k]}
+                else:
+                    val = reqs[k]
+                req_filters.append({'$or': [
+                    {'requirements.'+k: {'$exists': False}},
+                    {'requirements.'+k: val},
+                ]})
+            if req_filters:
+                filter_query['$and'] = req_filters
+            if 'site' in reqs:
+                site = reqs['site']
+            # handle dataset_deprio
+            dataset_deprio = data.get('dataset_deprio', [])
+            # handle query_params
+            params = data.get('query_params', {})
+            for k in params:
+                if k in filter_query:
+                    raise tornado.web.HTTPError(400, reason=f'param {k} would override an already set filter')
+                filter_query[k] = params[k]
+        logger.info('filter_query: %r', filter_query) 
+
+        async def run_query(session: pymongo.asynchronous.client_session.AsyncClientSession) -> list[dict[str, Any]]:
+            collection = self.db.tasks.with_options(
+                write_concern=pymongo.WriteConcern("majority"),
+                read_concern=pymongo.read_concern.ReadConcern("local")
+            )
+            ret = []
+            task_ids = set()
+            dataset_deprio_local = dataset_deprio.copy()  # make a copy because the transaction could be rerun
+            while len(task_ids) < num and dataset_deprio_local:
+                query = filter_query.copy()
+                query['dataset_id'] = {'$nin': dataset_deprio_local}
+                async for row in collection.find(query, projection={'_id': False}, sort=sort_by, limit=num, session=session):
+                    if row['task_id'] in task_ids:
+                        continue
+                    row['status'] = 'queued'
+                    row['instance_id'] = queue_instance_id
+                    ret.append(row)
+                    task_ids.add(row['task_id'])
+                    if len(ret) >= num:
+                        break
+                dataset_deprio_local.pop()
+            if len(ret) < num:
+                async for row in collection.find(filter_query, projection={'_id': False}, sort=sort_by, limit=num, session=session):
+                    if row['task_id'] in task_ids:
+                        continue
+                    row['status'] = 'queued'
+                    row['instance_id'] = queue_instance_id
+                    ret.append(row)
+                    task_ids.add(row['task_id'])
+                    if len(ret) >= num:
+                        break
+            if len(ret) != len(task_ids):
+                logger.info('found %d tasks, %d task_ids', len(ret), len(task_ids))
+                raise Exception('mismatch between tasks and ids')
+            update_ret = await collection.update_many(
+                {"task_id": {"$in": list(task_ids)}},
+                {'$set': {'status': 'queued', 'site': site, 'instance_id': queue_instance_id}},
+                session=session
+            )
+            if update_ret.modified_count != len(ret):
+                logger.error('ret: %r', ret)
+                logger.error('num: %d, ret: %d, matched: %d, modified: %d', num, len(ret), update_ret.matched_count, update_ret.modified_count)
+                raise Exception('did not update the right number of tasks')
+            return ret
+
+        assert self.db_client
+        async with self.db_client.start_session() as session:
+            try:
+                ret = await session.with_transaction(run_query)
+            except (pymongo.errors.ConnectionFailure, pymongo.errors.OperationFailure) as e:
+                logger.warning('error in transaction:', exc_info=True)
+                self.send_error(500, reason="Transaction error")
+                return
+            except Exception:
+                logger.warning('error queueing tasks:', exc_info=True)
+                self.send_error(500, reason="Queueing error")
+                return
+        if not ret:
             self.send_error(404, reason="Task not found")
         else:
             self.write(ret)

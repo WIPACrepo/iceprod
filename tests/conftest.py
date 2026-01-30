@@ -33,12 +33,13 @@ async def mongo_clear():
 
     async def _clean(db_name):
         db = client[db_name]
-        cols = await db.list_collection_names()
-        for c in cols:
+        if db_name == 'config':
             # exclude replica set config
-            if db_name == 'config' and any(c.startswith(name) for name in ('transactions', 'system')):
-                continue
-            await db[c].drop()
+            await db['config'].drop()
+        else:
+            cols = await db.list_collection_names()
+            for c in cols:
+                await db[c].drop()
 
     if not config['DATABASES']:
         await _clean(db_name)

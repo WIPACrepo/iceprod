@@ -110,7 +110,7 @@ async def test_grid_dataset_lookup(monkeypatch):
     (10, {'d1': 10, 'd2': 21}, {'d1': 20, 'd2': 20}, {'d1': 0.25, 'd2': 0.5}, {'d1': 10}),
     (10, {'d1': 10, 'd2': 19}, {'d1': 20, 'd2': 20}, {'d1': 0.25, 'd2': 0.5}, {'d2': 10}),
 ])
-async def test_grid_get_tasks_to_queue(num_tasks, out_tasks, queue, priorities, avail):
+async def test_grid_get_tasks_to_queue(num_tasks, queue, avail, priorities, out_tasks):
     override = ['queue.type=test', 'queue.check_time=0']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
 
@@ -118,11 +118,22 @@ async def test_grid_get_tasks_to_queue(num_tasks, out_tasks, queue, priorities, 
     g = iceprod.server.grid.BaseGrid(cfg=cfg, rest_client=rc, cred_client=None)
 
     async def rest_queue(method, path, args):
-        dataset_exclude = args['query_params'].get('dataset_id', {}).get('$nin', {})
-        for d in avail:
-            if avail[d] > 0 and d not in dataset_exclude:
-                avail[d] -= 1
-                return {'dataset_id': d}
+        num = args.get('num', 1)
+        dataset_exclude = args.get('dataset_deprio', [])
+        ret = []
+        while len(ret) < num:
+            for d in avail:
+                if avail[d] > 0 and d not in dataset_exclude:
+                    avail[d] -= 1
+                    ret.append({'dataset_id': d})
+                    break
+            else:
+                if dataset_exclude:
+                    dataset_exclude.pop()
+                else:
+                    break
+        if ret:
+            return ret
         r = MagicMock()
         r.status_code = 404
         logging.info('404!')
