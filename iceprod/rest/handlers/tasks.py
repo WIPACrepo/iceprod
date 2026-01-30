@@ -830,7 +830,7 @@ class TasksActionsBulkQueueHandler(APIBase):
                 if k in filter_query:
                     raise tornado.web.HTTPError(400, reason=f'param {k} would override an already set filter')
                 filter_query[k] = params[k]
-        logger.info('filter_query: %r', filter_query) 
+        logger.info('filter_query: %r', filter_query)
 
         async def run_query(session: pymongo.asynchronous.client_session.AsyncClientSession) -> list[dict[str, Any]]:
             collection = self.db.tasks.with_options(
@@ -881,7 +881,7 @@ class TasksActionsBulkQueueHandler(APIBase):
         async with self.db_client.start_session() as session:
             try:
                 ret = await session.with_transaction(run_query)
-            except (pymongo.errors.ConnectionFailure, pymongo.errors.OperationFailure) as e:
+            except (pymongo.errors.ConnectionFailure, pymongo.errors.OperationFailure):
                 logger.warning('error in transaction:', exc_info=True)
                 self.send_error(500, reason="Transaction error")
                 return

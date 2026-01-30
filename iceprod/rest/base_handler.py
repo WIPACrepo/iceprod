@@ -19,7 +19,6 @@ def IceProdRestConfig(config: dict[str, Any], database: DB | None = None, auth_d
         config['server_header'] = 'IceProd/' + VERSION_STRING
     ret = RestHandlerSetup(config)
     ret['database'] = database
-    #ret['auth_database'] = auth_database
     ret['s3'] = s3conn
     return ret
 
