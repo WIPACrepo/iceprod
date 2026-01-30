@@ -31,7 +31,7 @@ class APIBase(AttrAuthMixin, PromRequestMixin, RestHandler):
         logger.info('do rest of initialize APIBase')
         self.db = database
         self.db_client = db_client
-        self.auth_db: AsyncDatabase | None = db_client['auth'] if db_client else None  # type: ignore[override]
+        self.auth_db: AsyncDatabase | None = db_client['auth'] if db_client else None  # type: ignore
         self.s3 = s3
 
     def get_template_namespace(self):

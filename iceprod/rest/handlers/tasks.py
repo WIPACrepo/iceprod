@@ -838,7 +838,7 @@ class TasksActionsBulkQueueHandler(APIBase):
                 read_concern=pymongo.read_concern.ReadConcern("local")
             )
             ret = []
-            task_ids = set()
+            task_ids: set[str] = set()
             dataset_deprio_local = dataset_deprio.copy()  # make a copy because the transaction could be rerun
             while len(task_ids) < num and dataset_deprio_local:
                 query = filter_query.copy()
