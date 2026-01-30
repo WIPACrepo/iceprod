@@ -92,7 +92,7 @@ class Server:
             for route,cls,kw in ret['routes']:
                 kw2 = kw.copy()
                 kw2['database'] = kw['database'][ret['database']]
-                kw2['auth_database'] = kw['database']['auth']
+                kw2['db_client'] = self.db_client.client
                 server.add_route(route, cls, kw2)
             ii = self.indexes[ret['database']]
             for col in ret['indexes']:

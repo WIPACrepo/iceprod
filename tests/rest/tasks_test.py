@@ -1,3 +1,4 @@
+from collections import Counter
 import pytest
 import requests.exceptions
 from iceprod.server import states
@@ -467,6 +468,51 @@ async def test_rest_tasks_actions_queue_reqs(server):
 
     ret = await client.request('GET', f'/tasks/{task_id}')
     assert ret['status'] == 'queued'
+
+
+@pytest.mark.parametrize('num_tasks,deprio,avail,out_tasks', [
+    (10, [], {}, {}),
+    (10, [], {'d1': 50}, {'d1': 10}),
+    (10, ['d1'], {'d1': 5}, {'d1': 5}),
+    (10, [], {'d1': 2, 'd2': 3}, {'d1': 2, 'd2': 3}),
+    (10, ['d1', 'd2'], {'d1': 10, 'd2': 10, 'd3': 2}, {'d2': 8, 'd3': 2}),
+    (10, ['d1', 'd2'], {'d1': 10, 'd2': 10, 'd3': 20}, {'d3': 10}),
+    (10, ['d2', 'd1'], {'d1': 20, 'd2': 20}, {'d1': 10}),
+    (10, ['d1', 'd2'], {'d1': 20, 'd2': 20}, {'d2': 10}),
+])
+async def test_rest_tasks_actions_queue_many(num_tasks, deprio, avail, out_tasks, server):
+    client = server(roles=['system'])
+
+    for d in avail:
+        for n in range(avail[d]):
+            data = {
+                'dataset_id': d,
+                'job_id': 'foo1',
+                'task_index': 0,
+                'job_index': n,
+                'status': 'waiting',
+                'priority': .5,
+                'name': 'bar',
+                'depends': [],
+                'requirements': {},
+            }
+            task_id = await client.request('POST', '/tasks', data)
+            ret = await client.request('GET', f'/tasks/{task_id["result"]}')
+            assert ret['status'] == 'waiting'
+
+    args = {
+        'num': num_tasks,
+        'dataset_deprio': deprio,
+    }
+
+    if not out_tasks:
+        with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+            await client.request('POST', '/task_actions/queue_many', args)
+        assert exc_info.value.response.status_code == 404
+    else:
+        ret = await client.request('POST', '/task_actions/queue_many', args)
+        c = Counter(r['dataset_id'] for r in ret)
+        assert c == out_tasks
 
 
 async def test_rest_tasks_actions_process(server):

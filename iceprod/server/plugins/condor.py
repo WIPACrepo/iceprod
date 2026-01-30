@@ -759,6 +759,8 @@ class Grid(grid.BaseGrid):
     async def submit(self, prom_counter):
         num_to_submit = self.get_queue_num()
         logger.info("Attempting to submit %d tasks", num_to_submit)
+        if num_to_submit < 1:
+            return
         tasks = await self.get_tasks_to_queue(num_to_submit)
         cur_jel = self.get_current_JEL()
 
