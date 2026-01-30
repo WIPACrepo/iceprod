@@ -1,4 +1,5 @@
 from collections import defaultdict
+from functools import partial
 import json
 import logging
 import math
@@ -777,6 +778,61 @@ class TasksActionsBulkQueueHandler(APIBase):
 
     Queues multiple tasks at once.
     """
+    async def _run_query(self,
+        session: pymongo.asynchronous.client_session.AsyncClientSession,
+        *,
+        num: int,
+        dataset_deprio: list[str],
+        filter_query: Any,
+        sort_by: Any,
+        queue_instance_id: str,
+        site: str,
+    ) -> list[dict[str, Any]]:
+            collection = self.db.tasks.with_options(
+                write_concern=pymongo.WriteConcern("majority"),
+                read_concern=pymongo.read_concern.ReadConcern("local")
+            )
+            ret = []
+            task_ids: set[str] = set()
+            dataset_deprio_local = dataset_deprio.copy()  # make a copy because the transaction could be rerun
+            while len(task_ids) < num and dataset_deprio_local:
+                query = filter_query.copy()
+                query['dataset_id'] = {'$nin': dataset_deprio_local}
+                async for row in collection.find(query, projection={'_id': False}, sort=sort_by, limit=num, session=session):
+                    if row['task_id'] in task_ids:
+                        continue
+                    row['status'] = 'queued'
+                    row['instance_id'] = queue_instance_id
+                    ret.append(row)
+                    task_ids.add(row['task_id'])
+                    if len(ret) >= num:
+                        break
+                dataset_deprio_local.pop()
+            if len(ret) < num:
+                async for row in collection.find(filter_query, projection={'_id': False}, sort=sort_by, limit=num, session=session):
+                    if row['task_id'] in task_ids:
+                        continue
+                    row['status'] = 'queued'
+                    row['instance_id'] = queue_instance_id
+                    ret.append(row)
+                    task_ids.add(row['task_id'])
+                    if len(ret) >= num:
+                        break
+            if len(ret) != len(task_ids):
+                logger.info('found %d tasks, %d task_ids', len(ret), len(task_ids))
+                raise Exception('mismatch between tasks and ids')
+            update_ret = await collection.update_many(
+                {"task_id": {"$in": list(task_ids)}},
+                {'$set': {'status': 'queued', 'site': site, 'instance_id': queue_instance_id}},
+                session=session
+            )
+            if update_ret.modified_count != len(ret):
+                logger.error('ret: %r', ret)
+                logger.error('num: %d, ret: %d, matched: %d, modified: %d', num, len(ret), update_ret.matched_count, update_ret.modified_count)
+                raise Exception('did not update the right number of tasks')
+            return ret
+
+
     @authorization(roles=['admin', 'system'])
     async def post(self) -> None:
         """
@@ -832,55 +888,18 @@ class TasksActionsBulkQueueHandler(APIBase):
                 filter_query[k] = params[k]
         logger.info('filter_query: %r', filter_query)
 
-        async def run_query(session: pymongo.asynchronous.client_session.AsyncClientSession) -> list[dict[str, Any]]:
-            collection = self.db.tasks.with_options(
-                write_concern=pymongo.WriteConcern("majority"),
-                read_concern=pymongo.read_concern.ReadConcern("local")
-            )
-            ret = []
-            task_ids: set[str] = set()
-            dataset_deprio_local = dataset_deprio.copy()  # make a copy because the transaction could be rerun
-            while len(task_ids) < num and dataset_deprio_local:
-                query = filter_query.copy()
-                query['dataset_id'] = {'$nin': dataset_deprio_local}
-                async for row in collection.find(query, projection={'_id': False}, sort=sort_by, limit=num, session=session):
-                    if row['task_id'] in task_ids:
-                        continue
-                    row['status'] = 'queued'
-                    row['instance_id'] = queue_instance_id
-                    ret.append(row)
-                    task_ids.add(row['task_id'])
-                    if len(ret) >= num:
-                        break
-                dataset_deprio_local.pop()
-            if len(ret) < num:
-                async for row in collection.find(filter_query, projection={'_id': False}, sort=sort_by, limit=num, session=session):
-                    if row['task_id'] in task_ids:
-                        continue
-                    row['status'] = 'queued'
-                    row['instance_id'] = queue_instance_id
-                    ret.append(row)
-                    task_ids.add(row['task_id'])
-                    if len(ret) >= num:
-                        break
-            if len(ret) != len(task_ids):
-                logger.info('found %d tasks, %d task_ids', len(ret), len(task_ids))
-                raise Exception('mismatch between tasks and ids')
-            update_ret = await collection.update_many(
-                {"task_id": {"$in": list(task_ids)}},
-                {'$set': {'status': 'queued', 'site': site, 'instance_id': queue_instance_id}},
-                session=session
-            )
-            if update_ret.modified_count != len(ret):
-                logger.error('ret: %r', ret)
-                logger.error('num: %d, ret: %d, matched: %d, modified: %d', num, len(ret), update_ret.matched_count, update_ret.modified_count)
-                raise Exception('did not update the right number of tasks')
-            return ret
-
         assert self.db_client
         async with self.db_client.start_session() as session:
             try:
-                ret = await session.with_transaction(run_query)
+                ret = await session.with_transaction(partial(
+                    self._run_query,
+                    num=num,
+                    dataset_deprio=dataset_deprio,
+                    filter_query=filter_query,
+                    sort_by=sort_by,
+                    queue_instance_id=queue_instance_id,
+                    site=site,
+                ))
             except (pymongo.errors.ConnectionFailure, pymongo.errors.OperationFailure):
                 logger.warning('error in transaction:', exc_info=True)
                 self.send_error(500, reason="Transaction error")
