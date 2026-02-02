@@ -28,4 +28,4 @@ class DefaultConfig:
 
 
 def get_config() -> DefaultConfig:
-    return from_environment_as_dataclass(DefaultConfig)
+    return from_environment_as_dataclass(DefaultConfig, obfuscate_log_vars=['DB_URL'])

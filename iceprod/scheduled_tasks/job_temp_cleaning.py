@@ -12,6 +12,8 @@ from datetime import datetime, timedelta, UTC
 from functools import partial
 import logging
 import os
+from pathlib import Path
+import shutil
 from urllib.parse import urlparse
 from wipac_dev_tools import from_environment
 
@@ -72,6 +74,15 @@ async def list_dataset_job_dirs_s3(path, prefix=None, s3_client=None):
 
 async def rmtree_s3(path, s3_client=None):
     await s3_client.rmtree(path)  # type: ignore
+
+
+async def list_dataset_job_dirs_fs(path, prefix=None):
+    if prefix:
+        path = os.path.join(path, prefix)
+        ret = os.listdir(path)
+        return {prefix: ret}
+    else:
+        return os.listdir(path)
 
 
 def filter_job_dirs(job_dirs, job_indexes, debug=False):
@@ -217,6 +228,10 @@ def main():
         s3client = S3(host, bucket=bucket, access_key=args.s3_access_key, secret_key=args.s3_secret_key)
         listdir = partial(list_dataset_job_dirs_s3, s3_client=s3client)
         rmtree = partial(rmtree_s3, s3_client=s3client)
+    elif Path(args.site_temp).exists():
+        logging.info('using local filesystem')
+        listdir = list_dataset_job_dirs_fs
+        rmtree = shutil.rmtree
     else:
         raise RuntimeError('unknown type of scratch')
 
