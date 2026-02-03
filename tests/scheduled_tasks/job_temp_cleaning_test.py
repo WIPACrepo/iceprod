@@ -4,54 +4,12 @@ Test script for scheduled_tasks/job_temp_cleaning
 
 import logging
 from datetime import datetime, timedelta, UTC
-from unittest.mock import patch, MagicMock, AsyncMock
-from concurrent.futures import ThreadPoolExecutor
+from unittest.mock import MagicMock, AsyncMock
 
 import pytest
 from iceprod.scheduled_tasks import job_temp_cleaning
 
 logger = logging.getLogger('scheduled_tasks_job_temp_cleaning_test')
-
-
-class FakeFile:
-    def __init__(self, d, s=0):
-        self.directory = True
-        self.name = d
-        self.size = s
-
-
-@patch('iceprod.scheduled_tasks.job_temp_cleaning.GridFTP')
-async def test_scheduled_tasks_job_temp_cleaning_gridftp_list(gridftp):
-    executor = ThreadPoolExecutor(max_workers=2)
-
-    # test empty dirs
-    gridftp.list.return_value = []
-    ret = await job_temp_cleaning.list_dataset_job_dirs_gridftp('', executor=executor)
-    assert ret == {}
-
-    # test dataset dir, but no jobs
-    gridftp.list.side_effect = [[FakeFile('0')], []]
-    ret = await job_temp_cleaning.list_dataset_job_dirs_gridftp('', executor=executor)
-    assert ret == {}
-
-    # test dataset dir and job
-    gridftp.list.side_effect = [[FakeFile('0')], [FakeFile('1', 1024)]]
-    ret = await job_temp_cleaning.list_dataset_job_dirs_gridftp('', executor=executor)
-    assert ret == {'0': {'1': 1024}}
-
-    # test dataset dir prefix
-    gridftp.list.side_effect = [[FakeFile('1', 1024)]]
-    ret = await job_temp_cleaning.list_dataset_job_dirs_gridftp('', prefix='0', executor=executor)
-    assert ret == {'0': {'1': 1024}}
-
-
-@patch('iceprod.scheduled_tasks.job_temp_cleaning.GridFTP')
-async def test_scheduled_tasks_job_temp_cleaning_gridftp_rmtree(gridftp):
-    executor = ThreadPoolExecutor(max_workers=2)
-
-    await job_temp_cleaning.rmtree_gridftp('foo/0/1', executor=executor)
-    assert gridftp.rmtree.called
-    assert gridftp.rmtree.call_args[0][0] == 'foo/0/1'
 
 
 async def test_scheduled_tasks_job_temp_cleaning_run():
