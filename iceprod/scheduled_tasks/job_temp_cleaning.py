@@ -7,87 +7,38 @@ Check job temp directories, and if the job is complete then delete it.
 import argparse
 import asyncio
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, UTC
-from functools import partial
 import logging
 import os
 import shutil
-from urllib.parse import urlparse
+from typing import Any
 from wipac_dev_tools import from_environment
 
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
-from iceprod.core.gridftp import GridFTP
-from iceprod.s3 import S3
 from iceprod.server.util import str2datetime
 
 logger = logging.getLogger('job_temp_cleaning')
 
 
-async def list_dataset_job_dirs_gridftp(path, prefix=None, executor=None):
-    dataset_dirs = defaultdict(dict)
+listing = dict[str, list[str]]
 
-    async def list_job_dirs(d):
-        jobs = await asyncio.wrap_future(executor.submit(partial(GridFTP.list, os.path.join(path, d), details=True)))  # type: ignore
-        for entry2 in jobs:
-            if not entry2.directory:
-                continue
-            j = entry2.name
-            dataset_dirs[d][j] = entry2.size
 
+def list_dataset_job_dirs_fs(path: str, *, prefix: str | None = None) -> listing:
+    dataset_dirs = defaultdict(list)
     if prefix:
-        await list_job_dirs(prefix)
+        path = os.path.join(path, prefix)
+        dataset_dirs[prefix] = os.listdir(path)
     else:
-        dirs = await asyncio.wrap_future(executor.submit(partial(GridFTP.list, path, details=True)))  # type: ignore
-        for entry in dirs:
-            if not entry.directory:
-                continue
-            try:
-                await list_job_dirs(entry.name)
-            except Exception:
-                logger.warning('error listing %s', entry.name, exc_info=True)
+        dirs = os.listdir(path)
+        for d in dirs:
+            p = os.path.join(path, d)
+            if os.path.isdir(p):
+                dataset_dirs[d] = os.listdir(p)
     return dataset_dirs
 
 
-async def rmtree_gridftp(path, executor=None):
-    await asyncio.wrap_future(executor.submit(partial(GridFTP.rmtree, path)))  # type: ignore
-
-
-async def list_dataset_job_dirs_webdav(path, prefix=None, rest_client=None):
-    dataset_dirs = defaultdict(dict)
-    return dataset_dirs
-
-
-async def rmtree_webdav(path, rest_client=None):
-    pass
-
-
-async def list_dataset_job_dirs_s3(path, prefix=None, s3_client=None):
-    if prefix:
-        path = os.path.join(path, prefix)
-        ret = await s3_client.list(path)  # type: ignore
-        return {prefix: ret}
-    else:
-        return await s3_client.list(path)  # type: ignore
-
-
-async def rmtree_s3(path, s3_client=None):
-    await s3_client.rmtree(path)  # type: ignore
-
-
-async def list_dataset_job_dirs_fs(path, prefix=None):
-    if prefix:
-        path = os.path.join(path, prefix)
-        ret = os.listdir(path)
-        return {prefix: ret}
-    else:
-        return os.listdir(path)
-
-
-def filter_job_dirs(job_dirs, job_indexes, debug=False):
+def filter_job_dirs(job_dirs: list[str], job_indexes: set[str], debug: bool = False):
     for j in job_dirs:
-        if isinstance(job_dirs[j], dict):
-            continue
         if not j.isnumeric():
             if debug:
                 logger.info('j is not numeric: %r', j)
@@ -97,7 +48,7 @@ def filter_job_dirs(job_dirs, job_indexes, debug=False):
             yield j
 
 
-async def clean_dataset_dir(dataset_num, dataset_id, job_dirs, temp_dir, rmtree, debug, rest_client):
+async def clean_dataset_dir(dataset_num: str, dataset_id: str, job_dirs: list[str], temp_dir: str, rmtree: Any, debug: bool, rest_client: Any):
     logger.info('temp cleaning for dataset %r', dataset_num)
     logger.debug('job_dirs: %r', job_dirs)
 
@@ -119,7 +70,7 @@ async def clean_dataset_dir(dataset_num, dataset_id, job_dirs, temp_dir, rmtree,
             job_indexes.add(job['job_index'])
     logger.debug('job_indexes: %r', job_indexes)
 
-    futures = set()
+    futures = set()  # type: ignore
     for j in filter_job_dirs(job_dirs, job_indexes, debug=debug):
         while len(futures) >= 16:
             done, futures = await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED)
@@ -133,16 +84,13 @@ async def clean_dataset_dir(dataset_num, dataset_id, job_dirs, temp_dir, rmtree,
 
         dagtemp = os.path.join(temp_dir, dataset_num, j)
         logger.info('cleaning site_temp %r', dagtemp)
-        futures.add(asyncio.create_task(rmtree(dagtemp)))
+        ret = rmtree(dagtemp)
+        if ret and asyncio.iscoroutine(ret):
+            futures.add(asyncio.create_task(ret))
 
     if futures:
         for f in asyncio.as_completed(futures):
-            try:
-                await f
-            except Exception:
-                logger.warning('failed to clean site_temp', exc_info=True)
-                if debug:
-                    raise
+            await f
 
 
 async def run(rest_client, temp_dir, list_dirs, rmtree, dataset=None, debug=False):
@@ -160,9 +108,13 @@ async def run(rest_client, temp_dir, list_dirs, rmtree, dataset=None, debug=Fals
     try:
         # get all the job_indexes currently in tmp
         if dataset:
-            dataset_dirs = await list_dirs(temp_dir, prefix=str(dataset))
+            dataset_dirs = list_dirs(temp_dir, prefix=str(dataset))
+            if dataset_dirs and asyncio.iscoroutine(dataset_dirs):
+                dataset_dirs = await dataset_dirs
         else:
-            dataset_dirs = await list_dirs(temp_dir)
+            dataset_dirs = list_dirs(temp_dir)
+            if dataset_dirs and asyncio.iscoroutine(dataset_dirs):
+                dataset_dirs = await dataset_dirs
         logger.debug('dataset_dirs: %r', dataset_dirs)
 
         ret = await rest_client.request('GET', '/datasets?keys=dataset_id|dataset')
@@ -186,8 +138,6 @@ async def run(rest_client, temp_dir, list_dirs, rmtree, dataset=None, debug=Fals
 def main():
     default_config = {
         'SITE_TEMP': '/scratch',
-        'S3_ACCESS_KEY': '',
-        'S3_SECRET_KEY': '',
     }
     config = from_environment(default_config)
 
@@ -195,8 +145,6 @@ def main():
     add_auth_to_argparse(parser)
     parser.add_argument('-d', '--dataset', type=str, help='dataset num (optional)')
     parser.add_argument('--site-temp', default=config['SITE_TEMP'], help='site temp location')
-    parser.add_argument('--s3-access-key', default=config['S3_ACCESS_KEY'], help='s3 access key')
-    parser.add_argument('--s3-secret-key', default=config['S3_SECRET_KEY'], help='s3 secret key')
     parser.add_argument('--log-level', default='info', help='log level')
     parser.add_argument('--debug', default=False, action='store_true', help='debug enabled')
 
@@ -207,27 +155,7 @@ def main():
 
     rest_client = create_rest_client(args)
 
-    if args.site_temp.startswith('gsiftp://'):
-        logging.info('using GridFTP')
-        pool = ThreadPoolExecutor()
-        listdir = partial(list_dataset_job_dirs_gridftp, executor=pool)
-        rmtree = partial(rmtree_gridftp, executor=pool)
-    elif args.s3_access_key:
-        logging.info('using S3')
-        o = urlparse(args.site_temp)
-        url = o.path.lstrip('/')
-        if '/' in url:
-            bucket, url = url.split('/', 1)
-        else:
-            bucket = url
-            url = ''
-        host = f'{o.scheme}://{o.netloc}'
-        logging.info('host: %r, bucket: %r', host, bucket)
-        args.site_temp = url
-        s3client = S3(host, bucket=bucket, access_key=args.s3_access_key, secret_key=args.s3_secret_key)
-        listdir = partial(list_dataset_job_dirs_s3, s3_client=s3client)
-        rmtree = partial(rmtree_s3, s3_client=s3client)
-    elif os.path.exists(args.site_temp):
+    if os.path.exists(args.site_temp):
         logging.info('using local filesystem')
         listdir = list_dataset_job_dirs_fs
         rmtree = shutil.rmtree
