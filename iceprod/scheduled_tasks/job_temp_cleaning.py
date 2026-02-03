@@ -12,7 +12,6 @@ from datetime import datetime, timedelta, UTC
 from functools import partial
 import logging
 import os
-from pathlib import Path
 import shutil
 from urllib.parse import urlparse
 from wipac_dev_tools import from_environment
@@ -186,13 +185,13 @@ async def run(rest_client, temp_dir, list_dirs, rmtree, dataset=None, debug=Fals
 
 def main():
     default_config = {
-        'SITE_TEMP': 'gsiftp://gridftp-scratch.icecube.wisc.edu/mnt/tank/simprod',
+        'SITE_TEMP': '/scratch',
         'S3_ACCESS_KEY': '',
         'S3_SECRET_KEY': '',
     }
     config = from_environment(default_config)
 
-    parser = argparse.ArgumentParser(description='run a scheduled task once')
+    parser = argparse.ArgumentParser(description='job temp cleaning')
     add_auth_to_argparse(parser)
     parser.add_argument('-d', '--dataset', type=str, help='dataset num (optional)')
     parser.add_argument('--site-temp', default=config['SITE_TEMP'], help='site temp location')
@@ -228,7 +227,7 @@ def main():
         s3client = S3(host, bucket=bucket, access_key=args.s3_access_key, secret_key=args.s3_secret_key)
         listdir = partial(list_dataset_job_dirs_s3, s3_client=s3client)
         rmtree = partial(rmtree_s3, s3_client=s3client)
-    elif Path(args.site_temp).exists():
+    elif os.path.exists(args.site_temp):
         logging.info('using local filesystem')
         listdir = list_dataset_job_dirs_fs
         rmtree = shutil.rmtree
