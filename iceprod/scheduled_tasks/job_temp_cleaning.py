@@ -125,8 +125,6 @@ async def run(rest_client, temp_dir, list_dirs, rmtree, dataset=None, debug=Fals
         logger.debug('datasets: %r', datasets)
 
         for d in dataset_dirs:
-            if not isinstance(dataset_dirs[d], dict):
-                continue
             await clean_dataset_dir(d, datasets[d], dataset_dirs[d], temp_dir, rmtree, debug=debug, rest_client=rest_client)
 
     except Exception:
