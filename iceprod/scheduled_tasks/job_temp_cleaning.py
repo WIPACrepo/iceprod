@@ -7,9 +7,7 @@ Check job temp directories, and if the job is complete then delete it.
 import argparse
 import asyncio
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, UTC
-from functools import partial
 import logging
 import os
 import shutil
@@ -17,7 +15,6 @@ from typing import Any
 from wipac_dev_tools import from_environment
 
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
-from iceprod.core.gridftp import GridFTP
 from iceprod.server.util import str2datetime
 
 logger = logging.getLogger('job_temp_cleaning')
