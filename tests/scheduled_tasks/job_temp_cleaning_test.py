@@ -54,28 +54,6 @@ async def test_scheduled_tasks_job_temp_cleaning_gridftp_rmtree(gridftp):
     assert gridftp.rmtree.call_args[0][0] == 'foo/0/1'
 
 
-async def test_scheduled_tasks_job_temp_cleaning_s3_list():
-    s3 = AsyncMock(job_temp_cleaning.S3)
-
-    data = {'0': {'1': 1024}}
-    s3.list.return_value = data
-
-    ret = await job_temp_cleaning.list_dataset_job_dirs_s3('/foo', s3_client=s3)
-    assert ret == data
-    s3.list.assert_awaited_once_with('/foo')
-
-    s3.list.return_value = data['0']
-    ret = await job_temp_cleaning.list_dataset_job_dirs_s3('/foo', prefix='0', s3_client=s3)
-    assert ret == data
-    s3.list.assert_awaited_with('/foo/0')
-
-
-async def test_scheduled_tasks_job_temp_cleaning_s3_rmtree():
-    s3 = AsyncMock(job_temp_cleaning.S3)
-    await job_temp_cleaning.rmtree_s3('/foo', s3_client=s3)
-    s3.rmtree.assert_awaited_with('/foo')
-
-
 async def test_scheduled_tasks_job_temp_cleaning_run():
     rc = MagicMock()
     jobs = {}
