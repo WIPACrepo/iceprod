@@ -272,7 +272,7 @@ class CondorSubmit:
         """Convert from OS_ARCH to container image"""
         if isinstance(os_arch, list):
             os_arch = os_arch[0]
-        os_arch = os_arch.rsplit('_',2)[0].rsplit('.',1)[0]
+        os_arch = '_'.join(os_arch.split('_',2)[0:2]).rsplit('.',1)[0]
         if 'RHEL' not in os_arch:
             raise Exception('unknown OS_ARCH specified')
         version = os_arch.split('_')[-1]

@@ -71,9 +71,16 @@ def test_CondorSubmit_init(schedd):
     assert set(sub.transfer_plugins.keys()) == {'gsiftp', 'iceprod-plugin'}
 
 
-def test_CondorSubmit_condor_os_container():
-    ret = iceprod.server.plugins.condor.CondorSubmit.condor_os_container('RHEL_6_x86_64')
-    assert 'el6' in ret
+@pytest.mark.parametrize("os_arch,container", [
+    ('RHEL_6_x86_64', 'el6'),
+    ('RHEL_7_x86_64', 'el7'),
+    ('RHEL_8_x86_64', 'el8'),
+    ('RHEL_9_x86_64', 'el9'),
+    ('RHEL_9_x86_64_v2', 'el9'),
+])
+def test_CondorSubmit_condor_os_container(os_arch, container):
+    ret = iceprod.server.plugins.condor.CondorSubmit.condor_os_container(os_arch)
+    assert container in ret
 
 
 def test_CondorSubmit_condor_resource_reqs():
