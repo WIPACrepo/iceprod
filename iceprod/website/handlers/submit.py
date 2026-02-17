@@ -116,7 +116,7 @@ class ConfigStatus(PublicHandler):
         dataset = {}
         dataset_id = ''
         try:
-            ret = await self.rest_client.request('GET', f'/actions/submit/{id_}')
+            ret = await self.rest_client.request('GET', f'/actions/config/{id_}')
             status = ret['status']
             error = ret.get('error_message', '')
             config_str = ret['payload']['config']
