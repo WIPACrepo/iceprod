@@ -193,6 +193,9 @@ def scope_env(cfg: ConfigParser, obj: dict, upperenv: Optional[Env] = None, logg
         upper_output_files=[],
         environment={
             'OS_ARCH': '$OS_ARCH',
+            'SROOT': '$SROOT',
+            'I3_BUILD': '$I3_BUILD',
+            'I3_SRC': '$I3_SRC',
         }
     )
 
@@ -480,6 +483,48 @@ class WriteToScript:
         else:
             self.outfiles.update(files)
 
+    def _module_files(self, env, module):
+        if module['src']:
+            # module source
+            module_src = self.cfgparser.parseValue(module['src'], env)
+            if functions.isurl(module_src):
+                logging.info('module src url: %s', module_src)
+                path = os.path.basename(module_src).split('?', 0)[0].split('#', 0)[0]
+                data = Data(
+                    url=module_src,
+                    local=path,
+                    transfer=Transfer.TRUE,
+                )
+                env.input_files.append(data)
+                module['src'] = path
+
+        if module['env_shell']:
+            # module env shell
+            env_shell = self.cfgparser.parseValue(module['env_shell'], env).split()
+            if functions.isurl(env_shell[0]):
+                logging.info('module env_shell url: %s', env_shell)
+                path = os.path.basename(env_shell[0]).split('?', 0)[0].split('#', 0)[0]
+                env.input_files.append(Data(
+                    url=env_shell[0],
+                    local=path,
+                    transfer=Transfer.TRUE,
+                ))
+                env_shell[0] = f'./{path}'
+            module['env_shell'] = ' '.join(env_shell)
+
+        if module['configs']:
+            for filename in module['configs']:
+                self.logger.info('creating config %r', filename)
+                with open(self.workdir / filename, 'w') as f:
+                    f.write(json_encode(module['configs'][filename]))
+                data = Data(
+                    url=str(self.workdir / filename),
+                    local=filename,
+                    transfer=Transfer.TRUE,
+                )
+                env.input_files.append(data)
+                self.infiles.add(data)
+
     async def convert(self, transfer=False):
         """
         Convert to bash script.
@@ -496,6 +541,16 @@ class WriteToScript:
             for field in self.options:
                 print(f'# {field}={self.options[field]}', file=f)
             print('', file=f)
+            print('''# Detect the correct Python binary using POSIX-standard 'command -v'
+if command -v python3 >/dev/null 2>&1; then
+    PYTHON_BIN="python3"
+elif command -v python >/dev/null 2>&1; then
+    PYTHON_BIN="python"
+else
+    printf "Error: Python not found in PATH.\n" >&2
+    exit 1
+fi
+''', file=f)
             print('# set some env vars for expansion', file=f)
             print('OS_ARCH=$(/cvmfs/icecube.opensciencegrid.org/py3-v4.3.0/os_arch.sh)', file=f)
             print('', file=f)
@@ -518,8 +573,8 @@ class WriteToScript:
                                 for j, module in enumerate(tray['modules']):
                                     modulename = module['name'] if module.get('name', '') else j
                                     self.logger.debug('converting module %r', modulename)
-                                    print(f'# running module {modulename}', file=f)
                                     with scope_env(self.cfgparser, module, trayenv, logger=self.logger) as moduleenv:
+                                        self._module_files(moduleenv, module)
                                         self._add_input_files(moduleenv.input_files, f=(f if transfer else None))
                                         await self._write_module(module, moduleenv, file=f)
                                         self._add_output_files(moduleenv.output_files, f=(f if transfer else None))
@@ -536,16 +591,6 @@ class WriteToScript:
         module_class = ''
         if module['src']:
             module_src = self.cfgparser.parseValue(module['src'], env)
-            if functions.isurl(module_src):
-                path = os.path.basename(module_src).split('?', 0)[0].split('#', 0)[0]
-                data = Data(
-                    url=module_src,
-                    local=path,
-                    transfer=Transfer.TRUE,
-                )
-                env.input_files.append(data)
-                self.infiles.add(data)
-                module_src = path
             self.logger.info('running module %r with src %s', module['name'], module_src)
         elif module['running_class']:
             module_src = None
@@ -568,14 +613,6 @@ class WriteToScript:
         env_shell = []
         if module['env_shell']:
             env_shell = module['env_shell'].split()
-            if functions.isurl(env_shell[0]):
-                path = os.path.basename(env_shell[0]).split('?', 0)[0].split('#', 0)[0]
-                env.input_files.append(Data(
-                    url=env_shell[0],
-                    local=path,
-                    transfer=Transfer.TRUE,
-                ))
-                env_shell[0] = f'./{path}'
 
         # set up the args
         args = module['args']
@@ -627,22 +664,27 @@ obj.Execute({{}})"""
 
         # set up the environment
         cmd = []
+        if module['env_clear']:
+            # must be on cvmfs-like environ for this to apply
+            envstr = 'env -i PYTHONNOUSERSITE=1 SHELL=/bin/sh '
+            for k in ('OPENCL_VENDOR_PATH', 'http_proxy', 'TMP', 'TMPDIR', '_CONDOR_SCRATCH_DIR', 'CUDA_VISIBLE_DEVICES', 'COMPUTE', 'GPU_DEVICE_ORDINAL'):
+                envstr += f'{k}=${k} '
+            cmd.extend(envstr.split())
         if env_shell:
             cmd.extend(env_shell)
 
-        # set up configs
-        if module['configs']:
-            for filename in module['configs']:
-                self.logger.info('creating config %r', filename)
-                with open(self.workdir / filename, 'w') as f:
-                    f.write(json_encode(module['configs'][filename]))
-                data = Data(
-                    url=str(self.workdir / filename),
-                    local=filename,
-                    transfer=Transfer.TRUE,
-                )
-                env.input_files.append(data)
-                self.infiles.add(data)
+            # set some env variables for later parsing
+            print('# Get module ENV', file=file)
+            print(' '.join(cmd), file=file, end=' ')
+            print('''"$PYTHON_BIN" - >.module_env <<____HERE
+    import os
+    ENV_VARS = ['OS_ARCH', 'SROOT', 'I3_BUILD', 'I3_SRC']
+    env = {k:v for k,v in os.environ.items() if k in ENV_VARS}
+    for k,v in env.items():
+        print(f'export {k}="{v}"')
+    ____HERE
+    . .module_env
+    ''', file=file)
 
         # run the module
         if (not module_src):
@@ -659,12 +701,7 @@ obj.Execute({{}})"""
                 module_src = f'./{module_src}'
             cmd.extend([module_src] + args)
 
-        if module['env_clear']:
-            # must be on cvmfs-like environ for this to apply
-            envstr = 'env -i PYTHONNOUSERSITE=1 SHELL=/bin/sh '
-            for k in ('OPENCL_VENDOR_PATH', 'http_proxy', 'TMP', 'TMPDIR', '_CONDOR_SCRATCH_DIR', 'CUDA_VISIBLE_DEVICES', 'COMPUTE', 'GPU_DEVICE_ORDINAL'):
-                envstr += f'{k}=${k} '
-            cmd = envstr.split()+cmd
-
         self.logger.info('cmd=%r',cmd)
+        modulename = module.get('name', '')
+        print(f'# running module {modulename}', file=file)
         print(' '.join(cmd), file=file)

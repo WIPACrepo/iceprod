@@ -57,3 +57,16 @@ IceProd has several built-in macros relating to what task is actually running.
 
 `$(task)`
     The task name.
+
+Env Expansion
+-------------
+
+IceProd can expand the following env vars when using an `env_shell` in the module:
+
+* OS_ARCH
+* SROOT
+* I3_BUILD
+* I3_SRC
+
+Use `$environ(XXXX)` in the json config to insert the env variable in the module
+src or arguments.

@@ -493,6 +493,30 @@ async def test_write_to_script_module_env_shell(tmp_path):
     assert lines[-1] == '/foo/bar/baz.sh python foo.py'
 
 
+async def test_write_to_script_module_env_shell_i3src(tmp_path):
+    t = get_task({
+        'tasks': [{
+            'name': 'foo',
+            'trays': [{
+                'modules': [{
+                    'env_clear': False,
+                    'env_shell': '/foo/bar/baz.sh',
+                    'src': '$environ(I3_SRC)/foo.py'
+                }]
+            }],
+        }]
+    })
+
+    ws = iceprod.core.exe.WriteToScript(t, workdir=tmp_path, logger=logger)
+    scriptpath = await ws.convert()
+
+    assert not ws.infiles
+    assert not ws.outfiles
+    script = open(scriptpath).read()
+    lines = [line for line in script.split('\n') if not (not line.strip() or line.startswith('#') or line.startswith('set '))]
+    assert lines[-1] == '/foo/bar/baz.sh python $I3_SRC/foo.py'
+
+
 async def test_write_to_script_data(tmp_path):
     t = get_task({
         'options': {
