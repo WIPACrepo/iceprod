@@ -1462,14 +1462,18 @@ class DatasetTaskBulkRequirementsHandler(APIBase):
             'name': name,
         }
 
-        sets = {}
+        sets: dict[str, Any] = {}
         maxes: dict[str, Any] = {}
+        unsets = {}
         for key in valid_req_keys.intersection(data):
             val = data[key]
             if key == 'os':
                 if not isinstance(val, list):
                     raise tornado.web.HTTPError(400, reason='Bad type for {}, should be list'.format(key))
-                sets['requirements.'+key] = str(val)
+                if val:
+                    sets['requirements.'+key] = val
+                else:
+                    unsets['requirements.'+key] = ''
             elif key in Resources.defaults and isinstance(Resources.defaults[key], (int, list)):
                 if not isinstance(val, int):
                     raise tornado.web.HTTPError(400, reason='Bad type for {}, should be int'.format(key))
@@ -1481,9 +1485,8 @@ class DatasetTaskBulkRequirementsHandler(APIBase):
             else:
                 sets['requirements.'+key] = str(val)
 
-        unsets = {}
         for key in valid_req_keys.difference(data):
-            unsets[key] = ''
+            unsets['requirements.'+key] = ''
 
         updates = {}
         if sets:
