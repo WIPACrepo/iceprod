@@ -1268,6 +1268,12 @@ async def test_rest_tasks_actions_bulk_requirements(server):
     ret = await client.request('GET', f'/tasks/{task_id2}')
     assert ret['requirements']['os'] == args['os']
 
+    # test POST
+    args = {'cpu': 1, 'memory': 2.5, 'os': []}
+    await client.request('POST', f'/datasets/{data["dataset_id"]}/task_actions/bulk_requirements/{data2["name"]}', args)
+    ret = await client.request('GET', f'/tasks/{task_id2}')
+    assert ret['requirements'] == {'cpu': 1, 'memory': 2.5}
+
     # bad task name
     with pytest.raises(requests.exceptions.HTTPError) as exc_info:
         await client.request('PATCH', f'/datasets/{data["dataset_id"]}/task_actions/bulk_requirements/blah', args)
