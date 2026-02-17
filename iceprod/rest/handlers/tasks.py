@@ -1462,7 +1462,7 @@ class DatasetTaskBulkRequirementsHandler(APIBase):
             'name': name,
         }
 
-        sets: dict[str, Any]  = {}
+        sets: dict[str, Any] = {}
         maxes: dict[str, Any] = {}
         unsets = {}
         for key in valid_req_keys.intersection(data):
