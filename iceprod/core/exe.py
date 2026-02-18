@@ -547,7 +547,7 @@ if command -v python3 >/dev/null 2>&1; then
 elif command -v python >/dev/null 2>&1; then
     PYTHON_BIN="python"
 else
-    printf "Error: Python not found in PATH.\n" >&2
+    printf "Error: Python not found in PATH." >&2
     exit 1
 fi
 ''', file=f)
@@ -677,14 +677,14 @@ obj.Execute({{}})"""
             print('# Get module ENV', file=file)
             print(' '.join(cmd), file=file, end=' ')
             print('''"$PYTHON_BIN" - >.module_env <<____HERE
-    import os
-    ENV_VARS = ['OS_ARCH', 'SROOT', 'I3_BUILD', 'I3_SRC']
-    env = {k:v for k,v in os.environ.items() if k in ENV_VARS}
-    for k,v in env.items():
-        print(f'export {k}="{v}"')
-    ____HERE
-    . .module_env
-    ''', file=file)
+import os
+ENV_VARS = ['OS_ARCH', 'SROOT', 'I3_BUILD', 'I3_SRC']
+env = {k:v for k,v in os.environ.items() if k in ENV_VARS}
+for k,v in env.items():
+    print(f'export {k}="{v}"')
+____HERE
+. .module_env
+''', file=file)
 
         # run the module
         if (not module_src):
