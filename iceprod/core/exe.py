@@ -683,7 +683,7 @@ env = {k:v for k,v in os.environ.items() if k in ENV_VARS}
 for k,v in env.items():
     print(f'export {k}="{v}"')
 ____HERE
-. .module_env
+. ./.module_env
 ''', file=file)
 
         # run the module
