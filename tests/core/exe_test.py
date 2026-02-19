@@ -9,6 +9,7 @@ import iceprod.core.config
 import iceprod.core.exe
 from iceprod.core.exe import Data, Transfer
 from iceprod.core.defaults import add_default_options
+from iceprod.core.jsonUtil import json_decode
 
 
 logger = logging.getLogger('exe_test')
@@ -813,5 +814,54 @@ async def test_write_to_script_configs(tmp_path):
 
     config_path = tmp_path / 'snowstorm.json'
     assert config_path.exists()
+    assert json_decode(config_path.read_text()) == {
+        'foo': 1,
+        'bar': 2,
+        'baz': {'remote': 'https://foo.bar'},
+    }
+    assert ws.infiles == {Data(str(config_path), 'snowstorm.json', Transfer.TRUE)}
+    assert ws.outfiles == set()
+
+async def test_write_to_script_configs2(tmp_path):
+    t = get_task({
+        'options': {
+            'job_temp': 'https://foo.bar',
+        },
+        'steering': {
+            'parameters': {
+                'foo0': 'baz',
+                'test': 'foo_bar_$steering(foo$(iter))',
+                'remote': 'https://foo.bar',
+                'config.json': {
+                    'foo': 1,
+                    'bar': 2,
+                    'baz': {'remote': '$steering(remote)'},
+                }
+            }
+        },
+        'tasks': [{
+            'name': 'foo',
+            'trays': [{
+                'modules': [{
+                    'env_clear': False,
+                    'src': 'foo.py',
+                    'configs': {
+                        'snowstorm.json': '$steering(config.json)',
+                    },
+                }]
+            }]
+        }]
+    })
+
+    ws = iceprod.core.exe.WriteToScript(t, workdir=tmp_path, logger=logger)
+    scriptpath = await ws.convert(transfer=True)
+
+    config_path = tmp_path / 'snowstorm.json'
+    assert config_path.exists()
+    assert json_decode(config_path.read_text()) == {
+        'foo': 1,
+        'bar': 2,
+        'baz': {'remote': 'https://foo.bar'},
+    }
     assert ws.infiles == {Data(str(config_path), 'snowstorm.json', Transfer.TRUE)}
     assert ws.outfiles == set()
