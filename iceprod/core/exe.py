@@ -513,10 +513,13 @@ class WriteToScript:
             module['env_shell'] = ' '.join(env_shell)
 
         if module['configs']:
-            for filename in module['configs']:
+            # parse twice in case it's a double reference
+            configs = self.cfgparser.parseObject(module['configs'], env)
+            configs = self.cfgparser.parseObject(configs, env)
+            for filename in configs:
                 self.logger.info('creating config %r', filename)
                 with open(self.workdir / filename, 'w') as f:
-                    f.write(json_encode(module['configs'][filename]))
+                    f.write(json_encode(configs[filename]))
                 data = Data(
                     url=str(self.workdir / filename),
                     local=filename,
@@ -604,10 +607,6 @@ fi
             module['args'] = self.cfgparser.parseObject(module['args'], env)
         if module['env_shell']:
             module['env_shell'] = self.cfgparser.parseValue(module['env_shell'], env)
-        if module['configs']:
-            # parse twice to make sure it's parsed, even if it starts as a string
-            module['configs'] = self.cfgparser.parseObject(module['configs'], env)
-            module['configs'] = self.cfgparser.parseObject(module['configs'], env)
 
         # set up env_shell
         env_shell = []
