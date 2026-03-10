@@ -8,7 +8,7 @@
 dependencies = [
     'PyYAML',
     'asyncache',
-    'boto3<1.36',
+    'boto3<1.43',
     'cachetools',
     'certifi',
     'cryptography',
