@@ -38,7 +38,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.py3 }}
-      - uses: WIPACrepo/wipac-dev-flake8-action@v1.3
+      - uses: WIPACrepo/wipac-dev-flake8-action@v2.0
         with:
           max-complexity: 20  # ideal is ~10-15
 
@@ -57,7 +57,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.py3 }}
-      - uses: WIPACrepo/wipac-dev-mypy-action@v2.0
+      - uses: WIPACrepo/wipac-dev-mypy-action@v3.0
 
   ############################################################################
   # PACKAGING
@@ -146,7 +146,7 @@ jobs:
         with:
           fetch-depth: 0  # setuptools-scm needs to access git tags
           ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: .
           file: Dockerfile
@@ -177,7 +177,7 @@ jobs:
           ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
       # copied from tag-and-release
       - name: Determine next version
-        uses: WIPACrepo/wipac-dev-next-version-action@v1.7
+        uses: WIPACrepo/wipac-dev-next-version-action@v1.8
         id: next-version
         with:
           force-patch-if-no-commit-token: true
@@ -217,7 +217,7 @@ jobs:
       tag-and-release,
       release-version,
     ]
-    uses: WIPACrepo/wipac-dev-workflows/.github/workflows/image-publish.yml@v1.20
+    uses: WIPACrepo/wipac-dev-workflows/.github/workflows/image-publish.yml@v1.23
     permissions: # for GITHUB_TOKEN
       packages: write
     with:
