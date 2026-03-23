@@ -136,7 +136,7 @@ exclude_gitignore = true
 
 [tool.ty]
 
-[[tool.ty.src]]
+[tool.ty.src]
 exclude = [
     "docs/**",
     "integration_tests/**",
