@@ -2,11 +2,11 @@
 Test script for file_catalog
 """
 
-from __future__ import absolute_import, division, print_function
+
+import logging
 
 from tests.util import glob_tests
 
-import logging
 logger = logging.getLogger('file_catalog')
 
 
@@ -16,23 +16,24 @@ except:
     pass
 
 import unittest
+
 try:
     from unittest.mock import patch
 except ImportError:
     pass
-import requests_mock
 import requests
+import requests_mock
 
 import iceprod.core.file_catalog
-from iceprod.core.jsonUtil import json_encode,json_decode
+from iceprod.core.jsonUtil import json_decode, json_encode
 
 
 class file_catalog_test(unittest.TestCase):
     def setUp(self):
-        super(file_catalog_test,self).setUp()
+        super().setUp()
 
     def tearDown(self):
-        super(file_catalog_test,self).tearDown()
+        super().tearDown()
 
     def test_001_FileCatalogLowLevel_init(self):
         url = 'http://foo.bar'

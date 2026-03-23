@@ -2,11 +2,11 @@
 Test script for dataclasses
 """
 
-from __future__ import absolute_import, division, print_function
+
+import logging
 
 from tests.util import glob_tests
 
-import logging
 logger = logging.getLogger('dataclasses')
 
 
@@ -16,15 +16,16 @@ except:
     pass
 
 import unittest
+
 import iceprod.core.dataclasses
 
 
 class dataclasses_test(unittest.TestCase):
     def setUp(self):
-        super(dataclasses_test,self).setUp()
+        super().setUp()
 
     def tearDown(self):
-        super(dataclasses_test,self).tearDown()
+        super().tearDown()
 
     def test_01_Job(self):
         """Test the Job class"""

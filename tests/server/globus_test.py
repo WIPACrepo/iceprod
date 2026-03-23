@@ -2,21 +2,20 @@
 Test script for globus utilities
 """
 
-from __future__ import absolute_import, division, print_function
+
+import logging
 
 import pytest
 
 from tests.util import glob_tests
 
-import logging
 logger = logging.getLogger('globus_test')
 
 import os
-import sys
 import shutil
 import subprocess
+import sys
 import tempfile
-
 import unittest
 
 from iceprod.server.globus import SiteGlobusProxy
@@ -34,11 +33,11 @@ class siteglobusproxy_test(unittest.TestCase):
         if not skip_tests:
             # clear any proxies
             subprocess.call(['grid-proxy-destroy'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
-        super(siteglobusproxy_test,self).setUp()
+        super().setUp()
 
     def tearDown(self):
         shutil.rmtree(self.test_dir)
-        super(siteglobusproxy_test,self).tearDown()
+        super().tearDown()
 
     @pytest.mark.skipif(skip_tests)
     def test_01_init(self):

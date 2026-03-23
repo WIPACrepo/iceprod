@@ -2,18 +2,18 @@
 Test script for common functions
 """
 
-from __future__ import absolute_import, division, print_function
+
+import logging
 
 import pytest
 
 from tests.util import glob_tests
 
-import logging
 logger = logging.getLogger('functions')
 
 import os
-import shutil
 import random
+import shutil
 import string
 import subprocess
 import tempfile
@@ -29,23 +29,23 @@ except ImportError:
     psutil = None
 
 import unittest
+
 try:
     from unittest.mock import patch
 except ImportError:
-    from mock import patch
+    from unittest.mock import patch
 import requests_mock
-
 from tornado.testing import AsyncTestCase
 
 import iceprod.core.dataclasses
-import iceprod.core.util
-import iceprod.core.gridftp
 import iceprod.core.functions
+import iceprod.core.gridftp
+import iceprod.core.util
 
 
 class functions_test(AsyncTestCase):
     def setUp(self):
-        super(functions_test,self).setUp()
+        super().setUp()
 
         self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
         curdir = os.getcwd()
@@ -94,7 +94,7 @@ class functions_test(AsyncTestCase):
                 # check file
                 if not os.path.samefile(filename,files):
                     logger.warning('file names are different')
-                with open(files, 'r') as f:
+                with open(files) as f:
                     results = f.read(len(file_contents)*10)
                     if file_contents != results:
                         raise Exception('contents not the same')
@@ -140,7 +140,7 @@ class functions_test(AsyncTestCase):
                 for fname in infiles:
                     if not os.path.exists(fname):
                         logger.warning('file names are different')
-                    with open(fname, 'r') as f:
+                    with open(fname) as f:
                         results = f.read(len(file_contents)*10)
                         if infiles[fname] != results:
                             raise Exception('contents not the same')
@@ -196,7 +196,7 @@ class functions_test(AsyncTestCase):
                 fname2 = os.path.join(local_dir, fname[len(common):])
                 if not os.path.exists(fname2):
                     raise Exception('file %r does not exist'%fname2)
-                with open(fname2, 'r') as f:
+                with open(fname2) as f:
                     results = f.read(len(file_contents)*10)
                     if infiles[fname] != results:
                         raise Exception('contents not the same')
@@ -589,7 +589,7 @@ class functions_test(AsyncTestCase):
             # check file
             if not os.path.isfile(filename2):
                 raise Exception('copy failed to copy %s to %s')%(filename,filename2)
-            with open(filename2,'r') as f:
+            with open(filename2) as f:
                 results = f.read(len(file_contents)*10)
                 if file_contents != results:
                     raise Exception('contents not the same')
@@ -623,7 +623,7 @@ class functions_test(AsyncTestCase):
             # check file
             if not os.path.isfile(filename2):
                 raise Exception('copy failed to copy %s to %s')%(filename,filename2)
-            with open(filename2,'r') as f:
+            with open(filename2) as f:
                 results = f.read(len(file_contents)*10)
                 if file_contents != results:
                     raise Exception('contents not the same')

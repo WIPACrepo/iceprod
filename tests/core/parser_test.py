@@ -2,29 +2,31 @@
 Test script for parser
 """
 
-from __future__ import absolute_import, division, print_function
+
+import logging
 
 from tests.util import glob_tests
 
-import logging
 logger = logging.getLogger('parser_test')
 
-import unittest
 import json
+import unittest
+
 try:
     import builtins
 except ImportError:
     import __builtin__ as builtins
 
 
-from iceprod.core import parser, dataclasses
+from iceprod.core import dataclasses, parser
+
 
 class parser_test(unittest.TestCase):
     def setUp(self):
-        super(parser_test,self).setUp()
+        super().setUp()
 
     def tearDown(self):
-        super(parser_test,self).tearDown()
+        super().tearDown()
 
     def test_000_getType(self):
         ret = parser.getType('0')
@@ -382,7 +384,7 @@ class parser_test(unittest.TestCase):
         self.assertEqual(ret,expected)
 
         for reduction in 'sum', 'len', 'min', 'max':
-            ret = p.parse('${}($steering(list))'.format(reduction),job=job)
+            ret = p.parse(f'${reduction}($steering(list))',job=job)
             expected = getattr(builtins, reduction)(job['steering']['parameters']['list'])
             self.assertEqual(ret,expected)
 
@@ -683,7 +685,7 @@ class parser_test(unittest.TestCase):
 
         # run tests
         for i in range(3):
-            ret = p.parse("$steering(array)[{}]".format(i),job=job)
+            ret = p.parse(f"$steering(array)[{i}]",job=job)
             expected = job['steering']['parameters']['array'][i]
             self.assertEqual(ret,expected)
 
@@ -696,7 +698,7 @@ class parser_test(unittest.TestCase):
 
         # run tests
         for i,n in enumerate(('foo','bar','baz')):
-            ret = p.parse("$steering(dict)[{}]".format(n),job=job)
+            ret = p.parse(f"$steering(dict)[{n}]",job=job)
             self.assertEqual(ret,i+1)
 
     def test_033_parse_dict_array_notation(self):
@@ -709,7 +711,7 @@ class parser_test(unittest.TestCase):
 
         # run tests
         for i in range(3):
-            ret = p.parse("$steering(dict)[$steering(array)[{}]]".format(i),job=job)
+            ret = p.parse(f"$steering(dict)[$steering(array)[{i}]]",job=job)
             self.assertEqual(ret,i+1)
 
     def test_034_parse_dict_array_notation(self):

@@ -2,20 +2,20 @@
 Test script for gridftp
 """
 
+import logging
+
 from tests.util import glob_tests
 
-import logging
 logger = logging.getLogger('gridftp')
 
 import os
-import shutil
 import random
+import shutil
 import subprocess
 import tempfile
-
-import pytest
 import unittest
 
+import pytest
 
 import iceprod.core.gridftp
 
@@ -32,7 +32,7 @@ if (subprocess.call(['which','uberftp']) or
 
 class gridftp_test(unittest.TestCase):
     def setUp(self):
-        super(gridftp_test,self).setUp()
+        super().setUp()
 
         self._timeout = 1
         self.test_dir = tempfile.mkdtemp(dir=os.getcwd())

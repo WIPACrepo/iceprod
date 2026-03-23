@@ -2,11 +2,11 @@
 Test script for util
 """
 
-from __future__ import absolute_import, division, print_function
+
+import logging
 
 from tests.util import glob_tests
 
-import logging
 logger = logging.getLogger('util')
 
 
@@ -16,15 +16,16 @@ except:
     pass
 
 import unittest
+
 import iceprod.core.util
 
 
 class util_test(unittest.TestCase):
     def setUp(self):
-        super(util_test,self).setUp()
+        super().setUp()
 
     def tearDown(self):
-        super(util_test,self).tearDown()
+        super().tearDown()
 
     def test_01_NoncriticalError(self):
         """Test the NoncriticalError class"""

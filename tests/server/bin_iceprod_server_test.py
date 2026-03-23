@@ -2,22 +2,24 @@
 Test script for main iceprod server
 """
 
-from __future__ import absolute_import, division, print_function
+
+import logging
+
+import pytest
 
 from tests.util import glob_tests
 
-import logging
 logger = logging.getLogger('iceprod_server_test')
 
 import os
-import time
-import tempfile
 import shutil
 import subprocess
-
+import tempfile
+import time
 import unittest
 
 import psutil
+
 
 def get_children():
     ret = {}
@@ -36,7 +38,7 @@ def get_children():
 
 class iceprod_server_test(unittest.TestCase):
     def setUp(self):
-        super(iceprod_server_test,self).setUp()
+        super().setUp()
 
         self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
         curdir = os.getcwd()

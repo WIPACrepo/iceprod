@@ -2,16 +2,16 @@
 Test script for jsonUtil
 """
 
-from __future__ import absolute_import, division, print_function
+
+import logging
 
 from tests.util import glob_tests
 
-import logging
 logger = logging.getLogger('jsonUtil')
 
 import os
-import time
 import shutil
+import time
 
 try:
     pass
@@ -19,48 +19,48 @@ except:
     pass
 
 import unittest
+from datetime import date, datetime, time
 
-from datetime import date,datetime,time
 import iceprod.core.jsonUtil
 
 
 class jsonUtil_test(unittest.TestCase):
     def setUp(self):
-        super(jsonUtil_test,self).setUp()
+        super().setUp()
         self.test_dir = os.path.join(os.getcwd(),'test')
         if not os.path.exists(self.test_dir):
             os.mkdir(self.test_dir)
 
     def tearDown(self):
         shutil.rmtree(self.test_dir)
-        super(jsonUtil_test,self).tearDown()
+        super().tearDown()
 
     def test_01_recursive_unicode(self):
         """Test recursive_unicode"""
         # test byte string
         input = 'a test'
-        expected = u'a test'
+        expected = 'a test'
         output = iceprod.core.jsonUtil.recursive_unicode(input)
         if expected != output:
             raise Exception('expected != output:  %r != %r'%(expected,output))
 
         # test tuple of strings
         input = ('a test','another test')
-        expected = (u'a test',u'another test')
+        expected = ('a test','another test')
         output = iceprod.core.jsonUtil.recursive_unicode(input)
         if expected != output:
             raise Exception('expected != output:  %r != %r'%(expected,output))
 
         # test list of strings
         input = ['a test','another test']
-        expected = [u'a test',u'another test']
+        expected = ['a test','another test']
         output = iceprod.core.jsonUtil.recursive_unicode(input)
         if expected != output:
             raise Exception('expected != output:  %r != %r'%(expected,output))
 
         # test dict of strings
         input = {'a':'a test','b':'another test'}
-        expected = {u'a':u'a test',u'b':u'another test'}
+        expected = {'a':'a test','b':'another test'}
         output = iceprod.core.jsonUtil.recursive_unicode(input)
         if expected != output:
             raise Exception('expected != output:  %r != %r'%(expected,output))
