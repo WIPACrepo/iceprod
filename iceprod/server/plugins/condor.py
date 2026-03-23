@@ -60,10 +60,14 @@ class JobStatus(enum.StrEnum):
     @staticmethod
     def from_condor_status(num):
         match num:
-            case 0 | 1: return JobStatus.IDLE
-            case 2 | 6: return JobStatus.RUNNING
-            case 3 | 4: return JobStatus.COMPLETED
-            case _: return JobStatus.FAILED
+            case 0 | 1:
+                return JobStatus.IDLE
+            case 2 | 6:
+                return JobStatus.RUNNING
+            case 3 | 4:
+                return JobStatus.COMPLETED
+            case _:
+                return JobStatus.FAILED
 
 
 JOB_EVENT_STATUS_TRANSITIONS = {
