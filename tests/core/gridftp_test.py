@@ -58,7 +58,7 @@ class gridftp_test(unittest.TestCase):
                 shutil.rmtree(self.test_dir)
             self.addCleanup(cleanup)
 
-    @pytest.mark.skipif(skip_tests)
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_01_supported_address(self):
         """Test supported_address"""
         bad_addresses = ['test','file:/test','gsiftp:test','gsiftp:/test',
@@ -71,13 +71,13 @@ class gridftp_test(unittest.TestCase):
             for a in bad_addresses:
                 ret = iceprod.core.gridftp.GridFTP.supported_address(a)
                 if ret is True:
-                    raise Exception('Bad address %s was called good'%a)
+                    raise Exception(f'Bad address {a} was called good')
             for a in good_addresses:
                 ret = iceprod.core.gridftp.GridFTP.supported_address(a)
                 if ret is not True:
-                    raise Exception('Good address %s was called bad'%a)
+                    raise Exception(f'Good address {a} was called bad')
 
-    @pytest.mark.skipif(skip_tests)
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_02_address_split(self):
         """Test address_split"""
         good_addresses = {'gsiftp://data.icecube.wisc.edu':('gsiftp://data.icecube.wisc.edu','/'),
@@ -88,9 +88,9 @@ class gridftp_test(unittest.TestCase):
             for a in good_addresses:
                 pieces = iceprod.core.gridftp.GridFTP.address_split(a)
                 if pieces != good_addresses[a]:
-                    raise Exception('Address %s was not split properly'%a)
+                    raise Exception(f'Address {a} was not split properly')
 
-    @pytest.mark.skipif(skip_tests)
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_100_put_str(self):
         """Test put with a str - synchronous"""
         address = os.path.join(self.server_test_dir,'test')
@@ -99,7 +99,7 @@ class gridftp_test(unittest.TestCase):
         iceprod.core.gridftp.GridFTP.put(address,data=filecontents,
                                          request_timeout=self._timeout)
 
-    @pytest.mark.skipif(skip_tests)
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_101_put_file(self):
         """Test put with a file - synchronous"""
         address = os.path.join(self.server_test_dir,'test')
@@ -112,7 +112,7 @@ class gridftp_test(unittest.TestCase):
         iceprod.core.gridftp.GridFTP.put(address,filename=filename,
                                          request_timeout=self._timeout)
 
-    @pytest.mark.skipif(skip_tests)
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_110_get_str(self):
         """Test get with a str - synchronous"""
         address = os.path.join(self.server_test_dir,'test')
@@ -127,7 +127,7 @@ class gridftp_test(unittest.TestCase):
                                                request_timeout=self._timeout)
         self.assertEqual(ret, filecontents)
 
-    @pytest.mark.skipif(skip_tests)
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_111_get_file(self):
         """Test get with a file - synchronous"""
         address = os.path.join(self.server_test_dir,'test')
@@ -150,7 +150,7 @@ class gridftp_test(unittest.TestCase):
         newcontents = open(filename2).read()
         self.assertEqual(filecontents, newcontents)
 
-    @pytest.mark.skipif(skip_tests)
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_120_list(self):
         """Test list of directory - synchronous"""
         address = os.path.join(self.server_test_dir,'test')
@@ -162,7 +162,7 @@ class gridftp_test(unittest.TestCase):
         ret = iceprod.core.gridftp.GridFTP.list(address)
         self.assertEqual(ret, [])
 
-    @pytest.mark.skipif(skip_tests)
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_121_list(self):
         """Test list of file - synchronous"""
         address = os.path.join(self.server_test_dir,'test_file')
@@ -176,7 +176,7 @@ class gridftp_test(unittest.TestCase):
                                                 request_timeout=self._timeout)
         self.assertEqual(ret, ['test_file'])
 
-    @pytest.mark.skipif(skip_tests)
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_122_list(self):
         """Test list of dir with dotfiles - synchronous"""
         address = os.path.join(self.server_test_dir,'test')
@@ -190,7 +190,7 @@ class gridftp_test(unittest.TestCase):
                                                 request_timeout=self._timeout)
         self.assertEqual(ret, ['.','..'])
 
-    @pytest.mark.skipif(skip_tests)
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_123_list(self):
         """Test list of file with dotfiles - synchronous"""
         address = os.path.join(self.server_test_dir,'test_file')
@@ -204,7 +204,7 @@ class gridftp_test(unittest.TestCase):
                                                 request_timeout=self._timeout)
         self.assertEqual(ret, ['test_file'])
 
-    @pytest.mark.skipif(skip_tests)
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_124_list(self):
         """Test list of dir with details - synchronous"""
         address = os.path.join(self.server_test_dir,'test')
@@ -217,7 +217,7 @@ class gridftp_test(unittest.TestCase):
                                                 request_timeout=self._timeout)
         self.assertEqual(ret, [])
 
-    @pytest.mark.skipif(skip_tests)
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_125_list(self):
         """Test list of file with details - synchronous"""
         address = os.path.join(self.server_test_dir,'test_file')
@@ -233,7 +233,7 @@ class gridftp_test(unittest.TestCase):
             logger.info('actual: %r',ret)
             raise Exception('list did not return expected results')
 
-    @pytest.mark.skipif(skip_tests)
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_126_list(self):
         """Test list of dir with details and dotfiles - synchronous"""
         address = os.path.join(self.server_test_dir,'test')
@@ -252,7 +252,7 @@ class gridftp_test(unittest.TestCase):
             logger.info('actual: %r',ret)
             raise Exception('list did not return expected results')
 
-    @pytest.mark.skipif(skip_tests)
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_127_list(self):
         """Test list of file with details and dotfiles - synchronous"""
         address = os.path.join(self.server_test_dir,'test_file')
@@ -271,7 +271,7 @@ class gridftp_test(unittest.TestCase):
             logger.info('actual: %r',ret)
             raise Exception('list did not return expected results')
 
-    @pytest.mark.skipif(skip_tests)
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_130_delete(self):
         """Test delete - synchronous"""
         address = os.path.join(self.server_test_dir,'test')
@@ -284,7 +284,7 @@ class gridftp_test(unittest.TestCase):
         iceprod.core.gridftp.GridFTP.delete(address,
                                             request_timeout=self._timeout)
 
-    @pytest.mark.skipif(skip_uberftp_tests)
+    @pytest.mark.skipif(skip_uberftp_tests, reason='not installed')
     def test_140_rmtree(self):
         """Test rmtree of a file - synchronous"""
         address = os.path.join(self.server_test_dir,'file_test')
@@ -297,7 +297,7 @@ class gridftp_test(unittest.TestCase):
         iceprod.core.gridftp.GridFTP.rmtree(address,
                                             request_timeout=self._timeout)
 
-    @pytest.mark.skipif(skip_uberftp_tests)
+    @pytest.mark.skipif(skip_uberftp_tests, reason='not installed')
     def test_141_rmtree(self):
         """Test rmtree of an empty dir - synchronous"""
         address = os.path.join(self.server_test_dir,'test')
@@ -309,7 +309,7 @@ class gridftp_test(unittest.TestCase):
         iceprod.core.gridftp.GridFTP.rmtree(address,
                                             request_timeout=self._timeout)
 
-    @pytest.mark.skipif(skip_uberftp_tests)
+    @pytest.mark.skipif(skip_uberftp_tests, reason='not installed')
     def test_142_rmtree(self):
         """Test rmtree of a directory with a file - synchronous"""
         address = os.path.join(self.server_test_dir,'test')
@@ -328,7 +328,7 @@ class gridftp_test(unittest.TestCase):
         iceprod.core.gridftp.GridFTP.rmtree(address,
                                             request_timeout=self._timeout)
 
-    @pytest.mark.skipif(skip_uberftp_tests)
+    @pytest.mark.skipif(skip_uberftp_tests, reason='not installed')
     def test_143_rmtree(self):
         """Test rmtree of dir with subdir and subfile - synchronous"""
         address = os.path.join(self.server_test_dir,'test')
@@ -352,7 +352,7 @@ class gridftp_test(unittest.TestCase):
         iceprod.core.gridftp.GridFTP.rmtree(address,
                                             request_timeout=self._timeout)
 
-    @pytest.mark.skipif(skip_tests)
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_160_exists(self):
         """Test exists - synchronous"""
         address = os.path.join(self.server_test_dir,'test')
@@ -370,9 +370,9 @@ class gridftp_test(unittest.TestCase):
         ret = iceprod.core.gridftp.GridFTP.exists(address,
                                                   request_timeout=self._timeout)
         if ret is not True:
-            raise Exception('exists failed: ret=%r'%ret)
+            raise Exception(f'exists failed: ret={ret}')
 
-    @pytest.mark.skipif(skip_tests)
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_170_move(self):
         """Test move - synchronous"""
         address = os.path.join(self.server_test_dir,'test')
@@ -400,7 +400,7 @@ class gridftp_test(unittest.TestCase):
         if ret is not True:
             raise Exception('exists failed on new address')
 
-    @pytest.mark.skipif(skip_uberftp_tests)
+    @pytest.mark.skipif(skip_uberftp_tests, reason='not installed')
     def test_180_checksum(self):
         """Test checksums - synchronous"""
         address = os.path.join(self.server_test_dir,'test')
@@ -416,27 +416,27 @@ class gridftp_test(unittest.TestCase):
                                                   request_timeout=self._timeout)
         correct = hashlib.md5(filecontents).hexdigest()
         if ret != correct:
-            raise Exception('md5sum failed: ret=%r and correct=%r'%(ret,correct))
+            raise Exception(f'md5sum failed: ret={ret} and correct={correct}')
 
         ret = iceprod.core.gridftp.GridFTP.sha1sum(address,
                                                    request_timeout=self._timeout)
         correct = hashlib.sha1(filecontents).hexdigest()
         if ret != correct:
-            raise Exception('sha1sum failed: ret=%r and correct=%r'%(ret,correct))
+            raise Exception(f'sha1sum failed: ret={ret} and correct={correct}')
 
         ret = iceprod.core.gridftp.GridFTP.sha256sum(address,
                                                      request_timeout=self._timeout)
         correct = hashlib.sha256(filecontents).hexdigest()
         if ret != correct:
-            raise Exception('sha256sum failed: ret=%r and correct=%r'%(ret,correct))
+            raise Exception(f'sha256sum failed: ret={ret} and correct={correct}')
 
         ret = iceprod.core.gridftp.GridFTP.sha512sum(address,
                                                      request_timeout=self._timeout)
         correct = hashlib.sha512(filecontents).hexdigest()
         if ret != correct:
-            raise Exception('sha512sum failed: ret=%r and correct=%r'%(ret,correct))
+            raise Exception(f'sha512sum failed: ret={ret} and correct={correct}')
 
-    @pytest.mark.skipif(skip_uberftp_tests)
+    @pytest.mark.skipif(skip_uberftp_tests, reason='not installed')
     def test_190_size(self):
         """Test size - synchronous"""
         address = os.path.join(self.server_test_dir,'test')
