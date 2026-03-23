@@ -137,11 +137,9 @@ exclude_gitignore = true
 [tool.ty]
 
 [[tool.ty.overrides]]
-exclude = [
-    "docs",
-    "integration_tests",
-    "tests",
-    "resources",
+include = [
+    "bin",
+    "iceprod"
 ]
 
 [tool.pytest.ini_options]
