@@ -134,6 +134,14 @@ exclude = [
 ]
 exclude_gitignore = true
 
+[[tool.ty.overrides]]
+exclude = [
+    '^docs',
+    '^integration_tests',
+    '^tests',
+    '^resources',
+]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 
