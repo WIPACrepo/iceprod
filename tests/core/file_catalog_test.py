@@ -4,7 +4,7 @@ Test script for file_catalog
 
 from __future__ import absolute_import, division, print_function
 
-from tests.util import unittest_reporter, glob_tests
+from tests.util import glob_tests
 
 import logging
 logger = logging.getLogger('file_catalog')
@@ -34,7 +34,6 @@ class file_catalog_test(unittest.TestCase):
     def tearDown(self):
         super(file_catalog_test,self).tearDown()
 
-    @unittest_reporter
     def test_001_FileCatalogLowLevel_init(self):
         url = 'http://foo.bar'
         fc = iceprod.core.file_catalog.FileCatalogLowLevel(url)
@@ -45,7 +44,6 @@ class file_catalog_test(unittest.TestCase):
         self.assertEqual(fc.timeout, t)
 
     @requests_mock.mock()
-    @unittest_reporter
     def test_010_FileCatalogLowLevel_setitem(self, http_mock):
         url = 'http://foo.bar'
         data = url+'/api/file/12345'
@@ -64,7 +62,6 @@ class file_catalog_test(unittest.TestCase):
         self.assertEqual(meta_ret, meta)
 
     @requests_mock.mock()
-    @unittest_reporter(name='FileCatalogLowLevel_setitem() - update')
     def test_011_FileCatalogLowLevel_setitem(self, http_mock):
         url = 'http://foo.bar'
         data = json_encode({'files':['/api/file/12345']})
@@ -85,7 +82,6 @@ class file_catalog_test(unittest.TestCase):
         self.assertEqual(meta_ret, meta)
 
     @requests_mock.mock()
-    @unittest_reporter(name='FileCatalogLowLevel_setitem() - error')
     def test_012_FileCatalogLowLevel_setitem_error(self, http_mock):
         url = 'http://foo.bar'
         http_mock.get(requests_mock.ANY, exc=KeyError)
@@ -108,7 +104,6 @@ class file_catalog_test(unittest.TestCase):
             raise Exception('should have raised Exception')
 
     @requests_mock.mock()
-    @unittest_reporter
     def test_020_FileCatalogLowLevel_getitem(self, http_mock):
         data = json_encode({'files':['/api/file/12345']})
         http_mock.get('/api/files', content=data.encode('utf-8'))
@@ -121,7 +116,6 @@ class file_catalog_test(unittest.TestCase):
         self.assertEqual(meta_ret, meta)
 
     @requests_mock.mock()
-    @unittest_reporter(name='FileCatalogLowLevel_getitem() - error')
     def test_021_FileCatalogLowLevel_getitem_error(self, http_mock):
         data = json_encode({'files':[]})
         http_mock.get('/api/files', content=data.encode('utf-8'))
@@ -161,7 +155,6 @@ class file_catalog_test(unittest.TestCase):
             raise Exception('should have raised Exception')
 
     @requests_mock.mock()
-    @unittest_reporter
     def test_030_FileCatalogLowLevel_delitem(self, http_mock):
         data = json_encode({'files':['/api/file/12345']})
         http_mock.get('/api/files', content=data.encode('utf-8'))
@@ -176,7 +169,6 @@ class file_catalog_test(unittest.TestCase):
         self.assertEqual(req.method, 'DELETE')
 
     @requests_mock.mock()
-    @unittest_reporter(name='FileCatalogLowLevel_delitem() - error')
     def test_031_FileCatalogLowLevel_delitem_error(self, http_mock):
         data = json_encode({'files':['/api/file/12345']})
         http_mock.get(requests_mock.ANY, content=data.encode('utf-8'))
@@ -207,13 +199,11 @@ class file_catalog_test(unittest.TestCase):
         else:
             raise Exception('should have raised KeyError')
 
-    @unittest_reporter
     def test_100_FileCatalog_init(self):
         url = 'http://foo.bar'
         fc = iceprod.core.file_catalog.FileCatalog(url)
 
     @requests_mock.mock()
-    @unittest_reporter
     def test_110_FileCatalog_add(self, http_mock):
         url = 'http://foo.bar'
         http_mock.get(requests_mock.ANY, exc=KeyError)
@@ -248,7 +238,6 @@ class file_catalog_test(unittest.TestCase):
         self.assertEqual(meta_ret, expected)
 
     @requests_mock.mock()
-    @unittest_reporter
     def test_120_FileCatalog_get(self, http_mock):
         data = json_encode({'files':['/api/file/12345']})
         http_mock.get('/api/files', content=data.encode('utf-8'))
@@ -270,7 +259,6 @@ class file_catalog_test(unittest.TestCase):
         self.assertEqual(checksum, meta['checksum'])
 
     @requests_mock.mock()
-    @unittest_reporter
     def test_121_FileCatalog_get_metadata(self, http_mock):
         data = json_encode({'files':['/api/file/12345']})
         http_mock.get('/api/files', content=data.encode('utf-8'))
@@ -291,7 +279,6 @@ class file_catalog_test(unittest.TestCase):
         self.assertEqual(meta, meta_ret)
 
     @requests_mock.mock()
-    @unittest_reporter
     def test_130_FileCatalog_delete(self, http_mock):
         url = 'http://foo.bar'
         data = json_encode({'files':['/api/file/12345']})

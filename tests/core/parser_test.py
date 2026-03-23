@@ -4,7 +4,7 @@ Test script for parser
 
 from __future__ import absolute_import, division, print_function
 
-from tests.util import unittest_reporter, glob_tests
+from tests.util import glob_tests
 
 import logging
 logger = logging.getLogger('parser_test')
@@ -26,7 +26,6 @@ class parser_test(unittest.TestCase):
     def tearDown(self):
         super(parser_test,self).tearDown()
 
-    @unittest_reporter
     def test_000_getType(self):
         ret = parser.getType('0')
         self.assertEqual(ret, 0)
@@ -62,7 +61,6 @@ class parser_test(unittest.TestCase):
         ret = parser.getType(json.dumps(input))
         self.assertEqual(ret, input)
 
-    @unittest_reporter
     def test_001_steering(self):
         """Test parser steering"""
         job = dataclasses.Job()
@@ -92,7 +90,6 @@ class parser_test(unittest.TestCase):
         with self.assertRaises(parser.GrammarException):
             p.steering_func('test4')
 
-    @unittest_reporter
     def test_002_system(self):
         """Test parser system"""
         job = dataclasses.Job()
@@ -117,7 +114,6 @@ class parser_test(unittest.TestCase):
         with self.assertRaises(parser.GrammarException):
             p.system_func('test3')
 
-    @unittest_reporter
     def test_003_options(self):
         """Test parser options"""
         job = dataclasses.Job()
@@ -141,7 +137,6 @@ class parser_test(unittest.TestCase):
         with self.assertRaises(parser.GrammarException):
             p.options_func('test3')
 
-    @unittest_reporter
     def test_004_difplus(self):
         """Test parser difplus"""
         job = dataclasses.Job()
@@ -165,7 +160,6 @@ class parser_test(unittest.TestCase):
         with self.assertRaises(parser.GrammarException):
             p.difplus_func('test')
 
-    @unittest_reporter
     def test_005_eval(self):
         """Test parser eval"""
         p = parser.ExpParser()
@@ -192,7 +186,6 @@ class parser_test(unittest.TestCase):
         with self.assertRaises(parser.GrammarException):
             p.eval_func('os.remove("/")')
 
-    @unittest_reporter
     def test_006_sprintf(self):
         """Test parser sprintf"""
         p = parser.ExpParser()
@@ -233,7 +226,6 @@ class parser_test(unittest.TestCase):
         with self.assertRaises(parser.GrammarException):
             p.sprintf_func('"%f","test"')
 
-    @unittest_reporter
     def test_007_choice(self):
         """Test parser choice"""
         p = parser.ExpParser()
@@ -258,7 +250,6 @@ class parser_test(unittest.TestCase):
         with self.assertRaises(parser.GrammarException):
             p.choice_func(123)
 
-    @unittest_reporter
     def test_008_system(self):
         """Test parser environ"""
         job = dataclasses.Job()
@@ -287,7 +278,6 @@ class parser_test(unittest.TestCase):
         with self.assertRaises(parser.GrammarException):
             p.environ_func('test4')
 
-    @unittest_reporter(name='parse() steering')
     def test_010_steering(self):
         """Test parser parse steering"""
         job = dataclasses.Job()
@@ -400,7 +390,6 @@ class parser_test(unittest.TestCase):
         expected = '$steering(nothere)'
         self.assertEqual(ret,expected)
 
-    @unittest_reporter(name='parse() system')
     def test_011_system(self):
         """Test parser parse system"""
         job = dataclasses.Job()
@@ -425,7 +414,6 @@ class parser_test(unittest.TestCase):
         expected = '$system(test3)'
         self.assertEqual(ret,expected)
 
-    @unittest_reporter(name='parse() options')
     def test_012_options(self):
         """Test parser parse options"""
         job = dataclasses.Job()
@@ -457,7 +445,6 @@ class parser_test(unittest.TestCase):
         expected = job['options']['test']
         self.assertEqual(ret,expected)
 
-    @unittest_reporter(name='parse() difplus')
     def test_013_difplus(self):
         """Test parser difplus"""
         job = dataclasses.Job()
@@ -481,7 +468,6 @@ class parser_test(unittest.TestCase):
         expected = '$metadata(test)'
         self.assertEqual(ret,expected)
 
-    @unittest_reporter(name='parse() eval')
     def test_014_eval(self):
         """Test parser parse eval"""
         p = parser.ExpParser()
@@ -515,7 +501,6 @@ class parser_test(unittest.TestCase):
         expected = '$eval(os.remove("/"))'
         self.assertEqual(ret,expected)
 
-    @unittest_reporter(name='parse() sprintf')
     def test_015_sprintf(self):
         """Test parser parse sprintf"""
         p = parser.ExpParser()
@@ -545,7 +530,6 @@ class parser_test(unittest.TestCase):
         ret = p.parse('$sprintf("%f","test")')
         self.assertEqual(ret, '$sprintf("%f","test")')
 
-    @unittest_reporter(name='parse() choice')
     def test_016_choice(self):
         """Test parser parse choice"""
         p = parser.ExpParser()
@@ -563,7 +547,6 @@ class parser_test(unittest.TestCase):
         expected = '$choice()'
         self.assertEqual(ret,expected)
 
-    @unittest_reporter(name='parse() environ')
     def test_017_environ(self):
         """Test parser parse environ"""
         p = parser.ExpParser()
@@ -585,7 +568,6 @@ class parser_test(unittest.TestCase):
         ret = p.parse('$environ(test3)', env=env)
         self.assertEqual(ret, env['environment']['test3'])
 
-    @unittest_reporter(name='parse() env')
     def test_020_env(self):
         """Test parser parse env"""
         p = parser.ExpParser()
@@ -608,7 +590,6 @@ class parser_test(unittest.TestCase):
         expected = '$eval(os.remove("/"))'
         self.assertEqual(ret,expected)
 
-    @unittest_reporter(name='parse() job')
     def test_021_job(self):
         """Test parser parse job"""
         job = dataclasses.Job()
@@ -634,7 +615,6 @@ class parser_test(unittest.TestCase):
         expected = '$(test3)'
         self.assertEqual(ret,expected)
 
-    @unittest_reporter
     def test_022_parse(self):
         """Test parser parse"""
         job = dataclasses.Job()
@@ -679,7 +659,6 @@ class parser_test(unittest.TestCase):
         expected = '$foo(ba]]r)'
         self.assertEqual(ret,expected)
 
-    @unittest_reporter
     def test_030_parse_job_bin(self):
         """Test parsing the job binning. A bug found during prod-test."""
         for j in (0,15,248,1389,10000,10001,20482,83727,493837,1393728):
@@ -695,7 +674,6 @@ class parser_test(unittest.TestCase):
             expected = '%06d-%06d'%(j//10000*10000,(j//10000+1)*10000)
             self.assertEqual(ret,expected)
 
-    @unittest_reporter
     def test_031_parse_array_notation(self):
         """Test parsing array notation. A bug found during prod."""
         job = dataclasses.Job()
@@ -709,7 +687,6 @@ class parser_test(unittest.TestCase):
             expected = job['steering']['parameters']['array'][i]
             self.assertEqual(ret,expected)
 
-    @unittest_reporter
     def test_032_parse_dict_notation(self):
         """Test parsing dict notation. A bug found during prod."""
         job = dataclasses.Job()
@@ -722,7 +699,6 @@ class parser_test(unittest.TestCase):
             ret = p.parse("$steering(dict)[{}]".format(n),job=job)
             self.assertEqual(ret,i+1)
 
-    @unittest_reporter
     def test_033_parse_dict_array_notation(self):
         """Test parsing dict+array nested notation. A bug found during prod."""
         job = dataclasses.Job()
@@ -736,7 +712,6 @@ class parser_test(unittest.TestCase):
             ret = p.parse("$steering(dict)[$steering(array)[{}]]".format(i),job=job)
             self.assertEqual(ret,i+1)
 
-    @unittest_reporter
     def test_034_parse_dict_array_notation(self):
         """Test parsing dict+array hidden nested notation. A bug found during prod."""
         job = dataclasses.Job()
@@ -749,7 +724,6 @@ class parser_test(unittest.TestCase):
         ret = p.parse("$steering(dict)[$steering(choose)]",job=job)
         self.assertEqual(ret,1)
 
-    @unittest_reporter
     def test_035_parse_array_with_prefix(self):
         """Test parsing array with a prefix."""
         job = dataclasses.Job()
@@ -762,7 +736,6 @@ class parser_test(unittest.TestCase):
         ret = p.parse("http://test/$steering(choose)",job=job)
         self.assertEqual(ret,'http://test/foo')
 
-    @unittest_reporter
     def test_036_parse_dict_array_with_prefix(self):
         """Test parsing dict+array hidden nested notation, with a prefix. A bug found during prod."""
         job = dataclasses.Job()
@@ -775,7 +748,6 @@ class parser_test(unittest.TestCase):
         ret = p.parse("http://test/$steering(dict)[$steering(choose)]",job=job)
         self.assertEqual(ret,'http://test/1')
 
-    @unittest_reporter
     def test_037_parse_sprintf_array(self):
         """Test parsing sprintf+array. A bug found during prod."""
         job = dataclasses.Job()
@@ -790,7 +762,6 @@ class parser_test(unittest.TestCase):
         ret = p.parse('$sprintf("%.1fx", $(choose))', job=job)
         self.assertEqual(ret, '1.0x')
 
-    @unittest_reporter
     def test_100_scanner(self):
         ret = list(parser.scanner('$foo(bar)'))
         expected = [('starter','$'),('word','foo'),('scopeL','('),('word','bar'),('scopeR',')')]
@@ -801,7 +772,6 @@ class parser_test(unittest.TestCase):
                     ('scopeR',')'),('bracketL','['),('word','baz'),('bracketR',']')]
         self.assertEqual(ret, expected)
 
-    @unittest_reporter
     def test_110_parser(self):
         ret = list(parser.parser('$foo(bar)'))
         expected = [('starter','$'),('name','foo'),('scopeL','('),('word','bar'),('scopeR',')')]

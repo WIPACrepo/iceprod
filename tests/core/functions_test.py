@@ -4,7 +4,9 @@ Test script for common functions
 
 from __future__ import absolute_import, division, print_function
 
-from tests.util import unittest_reporter, glob_tests
+import pytest
+
+from tests.util import glob_tests
 
 import logging
 logger = logging.getLogger('functions')
@@ -55,7 +57,6 @@ class functions_test(AsyncTestCase):
             shutil.rmtree(self.test_dir)
         self.addCleanup(cleanup)
 
-    @unittest_reporter
     def test_001_uncompress(self):
         """Test uncompressing a file"""
         for ext in ('gz','bz2','xz','lzma'):
@@ -98,7 +99,6 @@ class functions_test(AsyncTestCase):
                     if file_contents != results:
                         raise Exception('contents not the same')
 
-    @unittest_reporter(name='uncompress() with tar files')
     def test_002_uncompress_tar(self):
         """Test uncompressing a file with tar"""
         for ext in ('tar.gz','tgz','tar.bz2','tbz','tar.xz','tar.lzma'):
@@ -145,7 +145,6 @@ class functions_test(AsyncTestCase):
                         if infiles[fname] != results:
                             raise Exception('contents not the same')
 
-    @unittest_reporter(name='uncompress() tar - other dir')
     def test_003_uncompress_tar(self):
         """Test uncompressing a file with tar"""
         for ext in ('tar.gz','tgz','tar.bz2','tbz','tar.xz','tar.lzma'):
@@ -203,7 +202,6 @@ class functions_test(AsyncTestCase):
                         raise Exception('contents not the same')
 
 
-    @unittest_reporter
     def test_020_iscompressed(self):
         """Test the iscompressed function with various extensions"""
         for i in range(0,10):
@@ -230,7 +228,6 @@ class functions_test(AsyncTestCase):
             if iceprod.core.functions.iscompressed('test.gzhelp'):
                 raise Exception('failed on .gzhelp')
 
-    @unittest_reporter
     def test_021_istarred(self):
         """Test the istarred function with various extensions"""
         for i in range(0,10):
@@ -251,7 +248,6 @@ class functions_test(AsyncTestCase):
             if iceprod.core.functions.istarred('test.gzhelp'):
                 raise Exception('failed on .gzhelp')
 
-    @unittest_reporter
     def test_100_md5sum(self):
         """Test the creation of md5sums of files"""
         for i in range(0,10):
@@ -278,7 +274,6 @@ class functions_test(AsyncTestCase):
 
             os.remove(filename)
 
-    @unittest_reporter
     def test_101_check_md5sum(self):
         """Test the checking of md5sums of files"""
         for i in range(0,10):
@@ -323,7 +318,6 @@ class functions_test(AsyncTestCase):
             os.remove(filename)
             os.remove(filename+'.md5sum')
 
-    @unittest_reporter
     def test_102_sha1sum(self):
         """Test the creation of sha1sums of files"""
         for i in range(0,10):
@@ -350,7 +344,6 @@ class functions_test(AsyncTestCase):
 
             os.remove(filename)
 
-    @unittest_reporter
     def test_103_check_sha1sum(self):
         """Test the checking of sha1sums of files"""
         for i in range(0,10):
@@ -393,7 +386,6 @@ class functions_test(AsyncTestCase):
             os.remove(filename)
             os.remove(filename+'.sha1sum')
 
-    @unittest_reporter
     def test_104_sha256sum(self):
         """Test the creation of sha256sums of files"""
         for i in range(0,10):
@@ -420,7 +412,6 @@ class functions_test(AsyncTestCase):
 
             os.remove(filename)
 
-    @unittest_reporter
     def test_105_check_sha256sum(self):
         """Test the checking of sha256sums of files"""
         for i in range(0,10):
@@ -465,7 +456,6 @@ class functions_test(AsyncTestCase):
             os.remove(filename)
             os.remove(filename+'.sha256sum')
 
-    @unittest_reporter
     def test_106_sha512sum(self):
         """Test the creation of sha512sums of files"""
         for i in range(0,10):
@@ -491,7 +481,6 @@ class functions_test(AsyncTestCase):
 
             os.remove(filename)
 
-    @unittest_reporter
     def test_107_check_sha512sum(self):
         """Test the checking of sha512sums of files"""
         for i in range(0,10):
@@ -536,7 +525,6 @@ class functions_test(AsyncTestCase):
             os.remove(filename)
             os.remove(filename+'.sha512sum')
 
-    @unittest_reporter
     def test_200_removedirs(self):
         """Test removing files and directories"""
         for i in range(0,10):
@@ -579,7 +567,6 @@ class functions_test(AsyncTestCase):
             if os.path.exists(dir):
                 raise Exception('removedirs failed to remove %s')%dir
 
-    @unittest_reporter
     def test_201_copy(self):
         """Test copying files and directories"""
         for i in range(0,10):
@@ -641,7 +628,7 @@ class functions_test(AsyncTestCase):
                 if file_contents != results:
                     raise Exception('contents not the same')
 
-    @unittest_reporter(skip=not psutil)
+    @pytest.mark.skipif(not psutil)
     def test_300_getInterfaces(self):
         """Test the getInterfaces function"""
         # get interfaces
@@ -669,7 +656,6 @@ class functions_test(AsyncTestCase):
 
     @patch('socket.getfqdn')
     @patch('socket.gethostname')
-    @unittest_reporter
     def test_301_gethostname(self, fqdn, hostname):
         fqdn.return_value = 'myhost'
         hostname.return_value = 'myhost'
@@ -688,7 +674,6 @@ class functions_test(AsyncTestCase):
         host = iceprod.core.functions.gethostname()
         self.assertEqual(host, 'myhost.foo.bar.baz')
 
-    @unittest_reporter
     def test_302_isurl(self):
         """Test the isurl function"""
         good_urls = ['http://www.google.com',
@@ -708,7 +693,6 @@ class functions_test(AsyncTestCase):
                     raise Exception('isurl thought %s was a valid url'%url)
 
     @requests_mock.mock()
-    @unittest_reporter(name='download() http')
     async def test_303_download(self, http_mock):
         """Test the download function"""
         download_options = {'username': 'user',
@@ -728,7 +712,6 @@ class functions_test(AsyncTestCase):
         data2 = open(os.path.join(self.test_dir,'globus.tar.gz'),'rb').read()
         self.assertEqual(data2, data, msg='data not equal')
 
-    @unittest_reporter(name='download() file')
     async def test_304_download(self):
         """Test the download function"""
         data = 'the data'
@@ -746,7 +729,6 @@ class functions_test(AsyncTestCase):
         self.assertEqual(data2, data, msg='data not equal')
 
     @patch('iceprod.core.functions.GridFTP')
-    @unittest_reporter(name='download() gridftp')
     async def test_305_download(self, gridftp):
         """Test the download function"""
         # download file from gsiftp
@@ -771,7 +753,6 @@ class functions_test(AsyncTestCase):
         self.assertEqual(data2, data, msg='data not equal')
 
     @requests_mock.mock()
-    @unittest_reporter(name='download() http - query params')
     async def test_306_download(self, http_mock):
         """Test the download function"""
         data = b'the data'
@@ -789,7 +770,6 @@ class functions_test(AsyncTestCase):
         data2 = open(out_file,'rb').read()
         self.assertEqual(data2, data, msg='data not equal')
 
-    @unittest_reporter(name='download() errors')
     async def test_320_download(self):
         """Test the download function"""
         data = b'the data'
@@ -810,7 +790,6 @@ class functions_test(AsyncTestCase):
             await iceprod.core.functions.download(filename+'blah', out_dir)
 
     @requests_mock.mock()
-    @unittest_reporter(name='upload() http')
     async def test_402_upload(self, http_mock):
         """Test the upload function"""
         download_options = {'username': 'user',
@@ -839,7 +818,6 @@ class functions_test(AsyncTestCase):
                     options=download_options)
 
     @requests_mock.mock()
-    @unittest_reporter(name='upload() http POST')
     async def test_403_upload(self, http_mock):
         """Test the upload function"""
         download_options = {'username': 'user',
@@ -872,7 +850,6 @@ class functions_test(AsyncTestCase):
                     options=download_options)
 
     @requests_mock.mock()
-    @unittest_reporter(name='upload() http s3 ETAG')
     async def test_403_upload(self, http_mock):
         """Test the upload function with ETAG"""
         download_options = {}
@@ -900,7 +877,6 @@ class functions_test(AsyncTestCase):
                     'http://prod-exe.icecube.wisc.edu/globus.tar.gz',
                     options=download_options)
 
-    @unittest_reporter(name='upload() file')
     async def test_404_upload(self):
         """Test the upload function"""
         data = 'the data'
@@ -928,7 +904,6 @@ class functions_test(AsyncTestCase):
         self.assertEqual(data2, data, msg='data not equal')
 
     @patch('iceprod.core.functions.GridFTP')
-    @unittest_reporter(name='upload() gridftp')
     async def test_405_upload(self, gridftp):
         """Test the upload function"""
         data = 'the data'
@@ -967,7 +942,6 @@ class functions_test(AsyncTestCase):
             await iceprod.core.functions.upload(filename,
                     'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus.tar.gz')
 
-    @unittest_reporter(name='upload() dir')
     async def test_410_upload(self):
         """Test the upload function"""
         data = 'the data'
@@ -992,7 +966,6 @@ class functions_test(AsyncTestCase):
         data2 = open(final_out).read()
         self.assertEqual(data2, data, msg='data not equal')
 
-    @unittest_reporter(name='upload() errors')
     async def test_420_upload(self):
         # bad request type
         filename = os.path.join(self.test_dir, 'globus.tar.gz')
@@ -1007,7 +980,6 @@ class functions_test(AsyncTestCase):
                     'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus2.tar.gz')
 
     @requests_mock.mock()
-    @unittest_reporter(name='delete() http')
     def test_503_delete(self, http_mock):
         """Test the delete function"""
         download_options = {'username': 'user',
@@ -1031,7 +1003,6 @@ class functions_test(AsyncTestCase):
         else:
             raise Exception('did not raise Exception')
 
-    @unittest_reporter(name='delete() file')
     def test_504_delete(self):
         """Test the delete function"""
         data = 'the data'
@@ -1057,7 +1028,6 @@ class functions_test(AsyncTestCase):
             raise Exception('delete file exists')
 
     @patch('iceprod.core.functions.GridFTP')
-    @unittest_reporter(name='delete() gridftp')
     def test_505_delete(self, gridftp):
         """Test the delete function"""
         data = 'the data'
@@ -1094,7 +1064,6 @@ class functions_test(AsyncTestCase):
         else:
             raise Exception('did not raise Exception')
 
-    @unittest_reporter(name='delete() errors')
     def test_510_delete(self):
         try:
             url = 'blah://test.test'

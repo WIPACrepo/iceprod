@@ -4,7 +4,7 @@ Test script for jsonUtil
 
 from __future__ import absolute_import, division, print_function
 
-from tests.util import unittest_reporter, glob_tests
+from tests.util import glob_tests
 
 import logging
 logger = logging.getLogger('jsonUtil')
@@ -35,7 +35,6 @@ class jsonUtil_test(unittest.TestCase):
         shutil.rmtree(self.test_dir)
         super(jsonUtil_test,self).tearDown()
 
-    @unittest_reporter
     def test_01_recursive_unicode(self):
         """Test recursive_unicode"""
         # test byte string
@@ -73,7 +72,6 @@ class jsonUtil_test(unittest.TestCase):
         if expected != output:
             raise Exception('expected != output:  %r != %r'%(expected,output))
 
-    @unittest_reporter
     def test_02_objToJSON(self):
         """Test objToJSON"""
         # test byte string
@@ -132,7 +130,6 @@ class jsonUtil_test(unittest.TestCase):
         if expected != output:
             raise Exception('expected != output:  %r != %r'%(expected,output))
 
-    @unittest_reporter
     def test_03_JSONToObj(self):
         """Test JSONToObj"""
         # test byte string
@@ -204,7 +201,6 @@ class jsonUtil_test(unittest.TestCase):
         output = iceprod.core.jsonUtil.JSONToObj(input)
         self.assertEqual(expected, output)
 
-    @unittest_reporter
     def test_05_json_encode(self):
         """Test json_encode"""
         # test byte string
@@ -284,7 +280,6 @@ class jsonUtil_test(unittest.TestCase):
         if expected != output:
             raise Exception('expected != output:  %r != %r'%(expected,output))
 
-    @unittest_reporter
     def test_06_json_decode(self):
         """Test json_decode"""
         # test byte string

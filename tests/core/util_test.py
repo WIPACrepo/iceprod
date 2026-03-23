@@ -4,7 +4,7 @@ Test script for util
 
 from __future__ import absolute_import, division, print_function
 
-from tests.util import unittest_reporter, glob_tests
+from tests.util import glob_tests
 
 import logging
 logger = logging.getLogger('util')
@@ -26,7 +26,6 @@ class util_test(unittest.TestCase):
     def tearDown(self):
         super(util_test,self).tearDown()
 
-    @unittest_reporter
     def test_01_NoncriticalError(self):
         """Test the NoncriticalError class"""
         e = iceprod.core.util.NoncriticalError()

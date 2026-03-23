@@ -4,7 +4,7 @@ Test script for main iceprod server
 
 from __future__ import absolute_import, division, print_function
 
-from tests.util import unittest_reporter, glob_tests
+from tests.util import glob_tests
 
 import logging
 logger = logging.getLogger('iceprod_server_test')
@@ -46,7 +46,7 @@ class iceprod_server_test(unittest.TestCase):
             shutil.rmtree(self.test_dir)
         self.addCleanup(cleanup)
 
-    @unittest_reporter(skip=True)
+    @pytest.mark.skip
     def test_01_run(self):
         # make sure we don't try running the grid
         with open('iceprod_config.json','w') as f:
