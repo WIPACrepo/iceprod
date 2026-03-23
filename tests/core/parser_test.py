@@ -479,7 +479,7 @@ class parser_test(unittest.TestCase):
         expected = 8
         self.assertEqual(ret,expected)
 
-        ret = p.parse('$eval(\(4+3*2\)%3)')
+        ret = p.parse('$eval(\\(4+3*2\\)%3)')
         expected = 1
         self.assertEqual(ret,expected)
 
@@ -495,7 +495,7 @@ class parser_test(unittest.TestCase):
         expected = '$eval(import os)'
         self.assertEqual(ret,expected)
 
-        ret = p.parse('$eval(os.remove\("/"\))')
+        ret = p.parse('$eval(os.remove\\("/"\\))')
         expected = '$eval(os.remove("/"))'
         self.assertEqual(ret,expected)
 

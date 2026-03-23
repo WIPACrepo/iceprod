@@ -39,21 +39,21 @@ class siteglobusproxy_test(unittest.TestCase):
         shutil.rmtree(self.test_dir)
         super().tearDown()
 
-    @pytest.mark.skipif(skip_tests)
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_01_init(self):
         cfgfile = os.path.join(self.test_dir,'cfg')
         p = SiteGlobusProxy(cfgfile=cfgfile)
         if not os.path.exists(cfgfile):
             raise Exception('cfgfile does not exist')
 
-    @pytest.mark.skipif(skip_tests)
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_02_init_duration(self):
         cfgfile = os.path.join(self.test_dir,'cfg')
         p = SiteGlobusProxy(cfgfile=cfgfile, duration=10)
         if not os.path.exists(cfgfile):
             raise Exception('cfgfile does not exist')
 
-    @pytest.mark.skipif(skip_tests)
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_10_update_proxy(self):
         cfgfile = os.path.join(self.test_dir,'cfg')
         p = SiteGlobusProxy(cfgfile=cfgfile)
@@ -64,7 +64,7 @@ class siteglobusproxy_test(unittest.TestCase):
         with self.assertRaises(Exception):
             p.update_proxy()
 
-    @pytest.mark.skipif(skip_tests)
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_10_5_update_proxy(self):
         cfgfile = os.path.join(self.test_dir,'cfg')
         p = SiteGlobusProxy(cfgfile=cfgfile)
@@ -76,7 +76,7 @@ class siteglobusproxy_test(unittest.TestCase):
         with self.assertRaises(Exception):
             p.update_proxy()
 
-    @pytest.mark.skipif(skip_tests)
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_11_get_proxy(self):
         cfgfile = os.path.join(self.test_dir,'cfg')
         p = SiteGlobusProxy(cfgfile=cfgfile)
