@@ -11,9 +11,10 @@ class TaskBrowse(PublicHandler):
     @authenticated
     async def get(self, dataset_id):
         assert self.rest_client
-        status = self.get_argument('status',default=None)
-        if status:
-            tasks = await self.rest_client.request('GET','/datasets/{}/tasks?status={}'.format(dataset_id,status))
+        status = self.get_argument('status', default=None)
+        name = self.get_argument('name', default=None)
+        if status or name:
+            tasks = await self.rest_client.request('GET', f'/datasets/{dataset_id}/tasks', {'status': status, 'name': name})
             for t in tasks:
                 if 'job_index' not in tasks[t]:
                     job = await self.rest_client.request('GET', '/datasets/{}/jobs/{}'.format(dataset_id, tasks[t]['job_id']))
