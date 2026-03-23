@@ -185,10 +185,11 @@ class LoginMixin(SessionMixin, RestHandler):  # type: ignore[misc]
         if not username:
             raise tornado.web.HTTPError(400, reason='no username in token')
 
-        data = {
+        data: dict[str, str] = {
             'access_token': access_token,
-            'refresh_token': refresh_token,
         }
+        if refresh_token:
+            data['refresh_token'] = refresh_token
         self._session_mgr.set(username, data)
 
         self.set_secure_cookie('iceprod_username', username, expires_days=30)
@@ -208,7 +209,7 @@ class TokenStorageMixin(RestHandler):
     """
     TokenResult = list[dict[str, Any]]
 
-    def initialize(self, *args, cred_rest_client, **kwargs):
+    def initialize(self, *args, cred_rest_client, **kwargs):  # type: ignore
         super().initialize(**kwargs)
         self.cred_rest_client = cred_rest_client
 
@@ -414,7 +415,7 @@ class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler
             if self.current_user and self.auth_refresh_token:
                 self.rest_client = OpenIDRestClient(
                     address=self.rest_api,
-                    token_url=self.auth_url,
+                    token_url=self.auth_url,  # type: ignore[invalid-argument-type]
                     refresh_token=self.auth_refresh_token,
                     client_id=self.auth_client_id,
                     client_secret=self.auth_client_secret,

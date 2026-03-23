@@ -142,6 +142,7 @@ exclude = [
     "integration_tests/**",
     "tests/**",
     "resources/**",
+    "make_dataclasses.py"
 ]
 
 [tool.pytest.ini_options]

@@ -719,11 +719,11 @@ class DifPlus(dict):
         return ret
 
     def convert(self):
-        if self['dif'] and not isinstance(self['dif'],Dif):
+        if self['dif'] and not isinstance(self['dif'], Dif):
             tmp = Dif(self['dif'])
             tmp.convert()
             self['dif'] = tmp
-        if self['plus'] and not isinstance(Plus):
+        if self['plus'] and not isinstance(self['plus'], Plus):
             tmp = Plus(self['plus'])
             tmp.convert()
             self['plus'] = tmp

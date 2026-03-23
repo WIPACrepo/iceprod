@@ -763,7 +763,7 @@ class HealthHandler(BaseCredentialsHandler):
                 if self.refresh_service.last_run_time + 3600 < now:
                     self.send_error(500, reason='refresh has stopped running')
                     return
-                status['last_run_time'] = datetime2str(datetime.utcfromtimestamp(self.refresh_service.last_run_time))
+                status['last_run_time'] = datetime2str(datetime.fromtimestamp(self.refresh_service.last_run_time, tz=UTC))
             if self.refresh_service.last_success_time is None and self.refresh_service.start_time + 86400 < now:
                 self.send_error(500, reason='refresh was never successful')
                 return
@@ -771,7 +771,7 @@ class HealthHandler(BaseCredentialsHandler):
                 if self.refresh_service.last_success_time + 86400 < now:
                     self.send_error(500, reason='refresh has stopped being successful')
                     return
-                status['last_success_time'] = datetime2str(datetime.utcfromtimestamp(self.refresh_service.last_success_time))
+                status['last_success_time'] = datetime2str(datetime.fromtimestamp(self.refresh_service.last_success_time, tz=UTC))
         except Exception:
             logger.info('error from refresh service', exc_info=True)
             self.send_error(500, reason='error from refresh service')

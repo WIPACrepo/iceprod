@@ -153,6 +153,8 @@ class MultiDatasetHandler(APIBase):
             projection={'num': True, '_id': False},
             upsert=True,
             return_document=pymongo.ReturnDocument.AFTER)
+        if not ret:
+            raise tornado.web.HTTPError(500, reason='cannot create dataset number')
         dataset_num = ret['num']
 
         # set some fields

@@ -15,6 +15,7 @@ import builtins
 import logging
 import ast
 import operator as op
+from typing import Any
 
 from iceprod.core import dataclasses
 
@@ -268,11 +269,11 @@ class ExpParser:
         $sprintf("%04d",4)
     """
     def __init__(self):
-        self.job = None
+        self.job: dict[str, Any] | None = None
         self.env = None
         self.depth = 0
         # dict of keyword : function mappings
-        self.keywords = {
+        self.keywords: dict[str, Any] = {
             'steering' : self.steering_func,
             'system' : self.system_func,
             'environ' : self.environ_func,
@@ -383,7 +384,7 @@ class ExpParser:
                         except Exception:
                             logger.debug('cannot eval: %s[%s]', word, ret,
                                          exc_info=True)
-                            stack.append(('word',word+'['+ret+']'))
+                            stack.append(('word', word+'['+ret+']'))
                     else:
                         raise SyntaxError()
             except Exception:
@@ -408,6 +409,8 @@ class ExpParser:
 
     def process_phrase(self,keyword,param=None):
         # search for keyword in special list
+        assert self.job
+        assert self.env
         ret = None
         if keyword in self.keywords and param is not None:
             try:
@@ -440,6 +443,7 @@ class ExpParser:
 
     def steering_func(self,param):
         """Find param in steering"""
+        assert self.job
         if self.job['steering'] and param in self.job['steering']['parameters']:
             return parse_ret_type(self.job['steering']['parameters'][param])
         else:
@@ -447,6 +451,7 @@ class ExpParser:
 
     def system_func(self,param):
         """Find param in steering.system"""
+        assert self.job
         if self.job['steering'] and param in self.job['steering']['system']:
             return parse_ret_type(self.job['steering']['system'][param])
         else:
@@ -454,6 +459,7 @@ class ExpParser:
 
     def environ_func(self,param):
         """Find param in env["environment"]"""
+        assert self.env
         if 'environment' in self.env and param in self.env['environment']:
             return parse_ret_type(self.env['environment'][param])
         else:
@@ -461,6 +467,7 @@ class ExpParser:
 
     def options_func(self,param):
         """Find param in options"""
+        assert self.job
         if param in self.job['options']:
             return parse_ret_type(self.job['options'][param])
         else:
@@ -468,6 +475,7 @@ class ExpParser:
 
     def difplus_func(self,param):
         """Find param in dif plus"""
+        assert self.job
         try:
             # try dif, then plus
             return parse_ret_type(self.job['difplus']['dif'][param])

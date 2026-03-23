@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import Any
 import uuid
 
 import tornado.web
@@ -178,7 +179,7 @@ class LogsHandler(APIBase):
                     if e:
                         await self.s3.delete(log_id)
                 else:
-                    logging.warn('no data field and s3 disabled')
+                    logging.warning('no data field and s3 disabled')
         self.write({})
         self.finish()
 
@@ -247,7 +248,7 @@ class DatasetMultiLogsHandler(APIBase):
                     if e:
                         await self.s3.delete(log_id)
                 else:
-                    logging.warn('no data field and s3 disabled')
+                    logging.warning('no data field and s3 disabled')
             await self.db.logs.delete_one({'log_id':log_id})
             i += 1
             ret['percent_complete'] = 100.*i/total_docs
@@ -333,14 +334,14 @@ class DatasetTaskLogsHandler(APIBase):
         if keys:
             projection.update({x:True for x in keys.split('|') if x})
 
-        steps = [
+        steps: list[dict[str, Any]] = [
             {'$match': filters},
             {'$sort': {'timestamp': -1 if order == 'desc' else 1}},
         ]
         if group:
             if not keys:
                 keys = 'log_id|name|task_id|dataset_id|data|timestamp'
-            grouping = {x:{'$first':'$'+x} for x in keys.split('|') if x}
+            grouping: dict[str, Any] = {x:{'$first':'$'+x} for x in keys.split('|') if x}
             grouping['_id'] = '$name'
             if 'timestamp' not in grouping:
                 grouping['timestamp'] = {'$first': '$timestamp'}
@@ -394,7 +395,7 @@ class DatasetTaskLogsHandler(APIBase):
                     if e:
                         await self.s3.delete(log_id)
                 else:
-                    logging.warn('no data field and s3 disabled')
+                    logging.warning('no data field and s3 disabled')
             await self.db.logs.delete_one({'log_id':log_id})
         self.write({})
         self.finish()
