@@ -14,7 +14,6 @@ import ast
 import inspect
 
 from iceprod.core import dataclasses
-from iceprod.core import util
 
 logger = logging.getLogger('jsonUtil')
 
