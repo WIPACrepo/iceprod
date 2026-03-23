@@ -24,40 +24,13 @@ jobs:
   # LINTERS
   #############################################################################
 
-  flake8:
+  lint-python:
     needs: [ py-versions ]
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        py3: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
-      - uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.py3 }}
-      - uses: WIPACrepo/wipac-dev-flake8-action@v2.0
-        with:
-          max-complexity: 20  # ideal is ~10-15
-
-  mypy:
-    needs: [ py-versions ]
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        py3: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0  # setuptools-scm needs to access git tags
-          ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
-      - uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.py3 }}
-      - uses: WIPACrepo/wipac-dev-mypy-action@v3.0
+    uses: WIPACrepo/wipac-dev-workflows/.github/workflows/lint-python.yml@v1.23
+    with:
+      py-matrix-json: ${{ needs.py-versions.outputs.matrix }}
+      max-complexity: 20
+      max-statements: 100
 
   ############################################################################
   # PACKAGING
