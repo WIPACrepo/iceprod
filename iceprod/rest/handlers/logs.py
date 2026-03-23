@@ -1,13 +1,14 @@
 import json
 import logging
-from typing import Any
 import uuid
+from typing import Any
 
 import tornado.web
 
-from ..base_handler import APIBase
-from ..auth import authorization, attr_auth
 from iceprod.server.util import nowstr
+
+from ..auth import attr_auth, authorization
+from ..base_handler import APIBase
 
 logger = logging.getLogger('rest.logs')
 

@@ -17,7 +17,6 @@ import tempfile
 
 import unittest
 
-from iceprod.core import to_log
 from iceprod.server.globus import SiteGlobusProxy
 
 skip_tests = False
@@ -62,8 +61,7 @@ class siteglobusproxy_test(unittest.TestCase):
 
         p.set_passphrase('gibberish')
         with self.assertRaises(Exception):
-            with to_log(sys.stderr), to_log(sys.stdout):
-                p.update_proxy()
+            p.update_proxy()
 
     @unittest_reporter(name='update_proxy() voms', skip=skip_tests, module='globus.SiteGlobusProxy')
     def test_10_5_update_proxy(self):
@@ -75,8 +73,7 @@ class siteglobusproxy_test(unittest.TestCase):
             p.update_proxy()
         p.set_passphrase('gibberish')
         with self.assertRaises(Exception):
-            with to_log(sys.stderr), to_log(sys.stdout):
-                p.update_proxy()
+            p.update_proxy()
 
     @unittest_reporter(skip=skip_tests, module='globus.SiteGlobusProxy')
     def test_11_get_proxy(self):
