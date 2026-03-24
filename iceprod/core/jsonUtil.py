@@ -14,7 +14,6 @@ import ast
 import inspect
 
 from iceprod.core import dataclasses
-from iceprod.core import util
 
 logger = logging.getLogger('jsonUtil')
 
@@ -88,7 +87,7 @@ class binary_converter:
 class bytearray_converter:
     @staticmethod
     def dumps(obj,name=None):
-        return base64.b64encode(str(obj))
+        return base64.b64encode(obj)
 
     @staticmethod
     def loads(obj,name=None):
@@ -115,23 +114,9 @@ class var_converter:
 
     @staticmethod
     def loads(obj,name=None):
+        if not name:
+            raise Exception('var must have a name')
         ret = getattr(dataclasses,name)()
-        for k in obj:
-            setattr(ret,k,obj[k])
-        return ret
-
-
-# convert the IFace
-
-
-class iface_converter:
-    @staticmethod
-    def dumps(obj):
-        return obj.__dict__
-
-    @staticmethod
-    def loads(obj,name=None):
-        ret = util.IFace()
         for k in obj:
             setattr(ret,k,obj[k])
         return ret
@@ -161,7 +146,7 @@ class repr_converter:
         return ret
 
 
-JSONConverters = {
+JSONConverters: dict[str, Any] = {
     'datetime':datetime_converter,
     'date':date_converter,
     'time':time_converter,
@@ -169,7 +154,6 @@ JSONConverters = {
     'bytearray':bytearray_converter,
     'OrderedDict':repr_converter,
     'set':set_converter,
-    'IFace':iface_converter,
 }
 for k in dict(inspect.getmembers(dataclasses,inspect.isclass)):
     JSONConverters[k] = var_converter

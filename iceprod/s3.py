@@ -9,7 +9,8 @@ try:
     import botocore.client  # type: ignore
     import botocore.exceptions  # type: ignore
 except ImportError:
-    boto3 = None
+    boto3 = None  # type: ignore
+    botocore = None  # type: ignore
 
 logger = logging.getLogger('s3')
 
@@ -21,6 +22,8 @@ class S3:
         if mock_s3:
             self.s3 = mock_s3
         else:
+            assert boto3
+            assert botocore
             try:
                 self.s3 = boto3.client(
                     's3',
@@ -46,6 +49,7 @@ class S3:
 
     async def get(self, key):
         """Download object from S3"""
+        assert botocore
         ret = ''
         with io.BytesIO() as f:
             loop = asyncio.get_running_loop()

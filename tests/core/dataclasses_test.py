@@ -2,11 +2,11 @@
 Test script for dataclasses
 """
 
-from __future__ import absolute_import, division, print_function
-
-from tests.util import unittest_reporter, glob_tests
 
 import logging
+
+from tests.util import glob_tests
+
 logger = logging.getLogger('dataclasses')
 
 
@@ -16,17 +16,17 @@ except:
     pass
 
 import unittest
+
 import iceprod.core.dataclasses
 
 
 class dataclasses_test(unittest.TestCase):
     def setUp(self):
-        super(dataclasses_test,self).setUp()
+        super().setUp()
 
     def tearDown(self):
-        super(dataclasses_test,self).tearDown()
+        super().tearDown()
 
-    @unittest_reporter
     def test_01_Job(self):
         """Test the Job class"""
         j = iceprod.core.dataclasses.Job()
@@ -39,7 +39,6 @@ class dataclasses_test(unittest.TestCase):
         if not j.valid():
             raise Exception('converted empty job not valid')
 
-    @unittest_reporter
     def test_02_Steering(self):
         """Test the Steering class"""
         s = iceprod.core.dataclasses.Steering()
@@ -52,7 +51,6 @@ class dataclasses_test(unittest.TestCase):
         if not s.valid():
             raise Exception('converted empty steering not valid')
 
-    @unittest_reporter
     def test_03_Task(self):
         """Test the Task class"""
         t = iceprod.core.dataclasses.Task()
@@ -65,7 +63,6 @@ class dataclasses_test(unittest.TestCase):
         if not t.valid():
             raise Exception('converted empty task not valid')
 
-    @unittest_reporter
     def test_04_Tray(self):
         """Test the Tray class"""
         t = iceprod.core.dataclasses.Tray()
@@ -78,7 +75,6 @@ class dataclasses_test(unittest.TestCase):
         if not t.valid():
             raise Exception('converted empty tray not valid')
 
-    @unittest_reporter
     def test_05_Module(self):
         """Test the Module class"""
         m = iceprod.core.dataclasses.Module()
@@ -91,7 +87,6 @@ class dataclasses_test(unittest.TestCase):
         if not m.valid():
             raise Exception('converted empty module not valid')
 
-    @unittest_reporter
     def test_06_Class(self):
         """Test the Class class"""
         c = iceprod.core.dataclasses.Class()
@@ -104,7 +99,6 @@ class dataclasses_test(unittest.TestCase):
         if not c.valid():
             raise Exception('converted empty class not valid')
 
-    @unittest_reporter
     def test_08_Resource(self):
         """Test the Resource class"""
         r = iceprod.core.dataclasses.Resource()
@@ -148,7 +142,6 @@ class dataclasses_test(unittest.TestCase):
         r['transfer'] = [1,2,3]
         self.assertIs(r.do_transfer(), True)
 
-    @unittest_reporter
     def test_09_Data(self):
         """Test the Data class"""
         d = iceprod.core.dataclasses.Data()
@@ -161,7 +154,6 @@ class dataclasses_test(unittest.TestCase):
         if not d.valid():
             raise Exception('converted empty data not valid')
 
-    @unittest_reporter
     def test_10_Batchsys(self):
         """Test the Batchsys class"""
         b = iceprod.core.dataclasses.Batchsys()
@@ -174,7 +166,6 @@ class dataclasses_test(unittest.TestCase):
         if not b.valid():
             raise Exception('converted empty batchsys not valid')
 
-    @unittest_reporter
     def test_20_DifPlus(self):
         """Test the DifPlus class"""
         d = iceprod.core.dataclasses.DifPlus()
@@ -187,7 +178,6 @@ class dataclasses_test(unittest.TestCase):
         if not d.valid():
             raise Exception('converted empty difplus not valid')
 
-    @unittest_reporter
     def test_21_Dif(self):
         """Test the Dif class"""
         d = iceprod.core.dataclasses.Dif()
@@ -200,7 +190,6 @@ class dataclasses_test(unittest.TestCase):
         if not d.valid():
             raise Exception('converted empty dif not valid')
 
-    @unittest_reporter
     def test_22_Plus(self):
         """Test the Plus class"""
         p = iceprod.core.dataclasses.Plus()
@@ -213,7 +202,6 @@ class dataclasses_test(unittest.TestCase):
         if not p.valid():
             raise Exception('converted empty plus not valid')
 
-    @unittest_reporter
     def test_23_Personnel(self):
         """Test the Personnel class"""
         p = iceprod.core.dataclasses.Personnel()
@@ -226,7 +214,6 @@ class dataclasses_test(unittest.TestCase):
         if not p.valid():
             raise Exception('converted empty personnel not valid')
 
-    @unittest_reporter
     def test_24_Datacenter(self):
         """Test the DataCenter class"""
         d = iceprod.core.dataclasses.DataCenter()

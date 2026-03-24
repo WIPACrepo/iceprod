@@ -134,5 +134,22 @@ exclude = [
 ]
 exclude_gitignore = true
 
+[tool.ty]
+
+[tool.ty.src]
+exclude = [
+    "docs/**",
+    "integration_tests/**",
+    "tests/**",
+    "resources/**",
+    "make_dataclasses.py"
+]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+
+[tool.ruff]
+exclude = ["env", "*tests", "bin", "build", "docs", "resources", "make_dataclasses.py"]
+
+[tool.ruff.lint]
+ignore = ["E116", "E203", "E226", "E228", "E231", "E501"]

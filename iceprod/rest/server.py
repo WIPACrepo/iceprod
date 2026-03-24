@@ -7,6 +7,7 @@ import importlib
 import logging
 from pathlib import Path
 import pkgutil
+from typing import Any
 
 from prometheus_client import Info, start_http_server
 from rest_tools.server import RestServer
@@ -36,7 +37,7 @@ class Server:
     def __init__(self, s3_override=None):
         config = get_config()
 
-        rest_config = {
+        rest_config: dict[str, Any] = {
             'debug': config.DEBUG,
             'route_stats': {
                 'window_size': config.ROUTE_STATS_WINDOW_SIZE,

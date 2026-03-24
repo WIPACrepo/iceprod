@@ -24,40 +24,13 @@ jobs:
   # LINTERS
   #############################################################################
 
-  flake8:
+  lint-python:
     needs: [ py-versions ]
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        py3: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
-      - uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.py3 }}
-      - uses: WIPACrepo/wipac-dev-flake8-action@v1.3
-        with:
-          max-complexity: 20  # ideal is ~10-15
-
-  mypy:
-    needs: [ py-versions ]
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        py3: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0  # setuptools-scm needs to access git tags
-          ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
-      - uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.py3 }}
-      - uses: WIPACrepo/wipac-dev-mypy-action@v2.0
+    uses: WIPACrepo/wipac-dev-workflows/.github/workflows/lint-python.yml@v1.23
+    with:
+      py-matrix-json: ${{ needs.py-versions.outputs.matrix }}
+      max-complexity: 20
+      max-statements: 100
 
   ############################################################################
   # PACKAGING
@@ -146,7 +119,7 @@ jobs:
         with:
           fetch-depth: 0  # setuptools-scm needs to access git tags
           ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: .
           file: Dockerfile
@@ -161,8 +134,7 @@ jobs:
     if: format('refs/heads/{0}', github.event.repository.default_branch) == github.ref
     needs: [
       py-versions,
-      flake8,
-      mypy,
+      lint-python,
       py-setup,
       py-dependencies,
       tests,
@@ -177,7 +149,7 @@ jobs:
           ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
       # copied from tag-and-release
       - name: Determine next version
-        uses: WIPACrepo/wipac-dev-next-version-action@v1.7
+        uses: WIPACrepo/wipac-dev-next-version-action@v1.8
         id: next-version
         with:
           force-patch-if-no-commit-token: true
@@ -192,8 +164,7 @@ jobs:
     if: format('refs/heads/{0}', github.event.repository.default_branch) == github.ref && needs.release-version.outputs.next-version != ''
     needs: [
       py-versions,
-      flake8,
-      mypy,
+      lint-python,
       py-setup,
       py-dependencies,
       tests,
@@ -217,7 +188,7 @@ jobs:
       tag-and-release,
       release-version,
     ]
-    uses: WIPACrepo/wipac-dev-workflows/.github/workflows/image-publish.yml@v1.20
+    uses: WIPACrepo/wipac-dev-workflows/.github/workflows/image-publish.yml@v1.23
     permissions: # for GITHUB_TOKEN
       packages: write
     with:

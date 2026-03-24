@@ -638,7 +638,7 @@ fi
                         return ret
                     else:
                         return ret+'='+str(b)
-                args = args['args'] + [splitter(a, args['kwargs'][a]) for a in args['kwargs']]
+                args = args['args'] + [splitter(a, args['kwargs'][a]) for a in args['kwargs']]  # type: ignore[invalid-argument-type]
 
                 # force args to string
                 def toStr(a):

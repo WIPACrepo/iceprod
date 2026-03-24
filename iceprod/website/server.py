@@ -11,6 +11,7 @@ import logging
 import os
 import random
 import re
+from typing import Any
 
 from prometheus_client import Info, start_http_server
 import tornado.web
@@ -188,7 +189,7 @@ class Server:
         else:
             raise RuntimeError('ICEPROD_API_ADDRESS not specified')
 
-        rest_config = {
+        rest_config: dict[str, Any] = {
             'debug': config.DEBUG,
             'server_header': 'IceProd/' + VERSION_STRING,
         }

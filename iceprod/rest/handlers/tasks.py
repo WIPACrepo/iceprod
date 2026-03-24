@@ -327,6 +327,7 @@ class DatasetMultiTasksHandler(APIBase):
 
         Params (optional):
             status: | separated list of task status to filter by
+            name: | separated list of task names to filter by
             job_id: job_id to filter by
             job_index: job_index to filter by
             keys: | separated list of keys to return for each task
@@ -345,6 +346,11 @@ class DatasetMultiTasksHandler(APIBase):
             if any(s not in TASK_STATUS for s in status_list):
                 raise tornado.web.HTTPError(400, reaosn='Unknown task status')
             filters['status'] = {'$in': status_list}
+
+        name = self.get_argument('name', None)
+        if name:
+            name_list = name.split('|')
+            filters['name'] = {'$in': name_list}
 
         job_id = self.get_argument('job_id', None)
         if job_id:

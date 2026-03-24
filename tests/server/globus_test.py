@@ -2,22 +2,22 @@
 Test script for globus utilities
 """
 
-from __future__ import absolute_import, division, print_function
-
-from tests.util import unittest_reporter, glob_tests
 
 import logging
+
+import pytest
+
+from tests.util import glob_tests
+
 logger = logging.getLogger('globus_test')
 
 import os
-import sys
 import shutil
 import subprocess
+import sys
 import tempfile
-
 import unittest
 
-from iceprod.core import to_log
 from iceprod.server.globus import SiteGlobusProxy
 
 skip_tests = False
@@ -33,27 +33,27 @@ class siteglobusproxy_test(unittest.TestCase):
         if not skip_tests:
             # clear any proxies
             subprocess.call(['grid-proxy-destroy'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
-        super(siteglobusproxy_test,self).setUp()
+        super().setUp()
 
     def tearDown(self):
         shutil.rmtree(self.test_dir)
-        super(siteglobusproxy_test,self).tearDown()
+        super().tearDown()
 
-    @unittest_reporter(skip=skip_tests, module='globus.SiteGlobusProxy')
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_01_init(self):
         cfgfile = os.path.join(self.test_dir,'cfg')
         p = SiteGlobusProxy(cfgfile=cfgfile)
         if not os.path.exists(cfgfile):
             raise Exception('cfgfile does not exist')
 
-    @unittest_reporter(skip=skip_tests, module='globus.SiteGlobusProxy')
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_02_init_duration(self):
         cfgfile = os.path.join(self.test_dir,'cfg')
         p = SiteGlobusProxy(cfgfile=cfgfile, duration=10)
         if not os.path.exists(cfgfile):
             raise Exception('cfgfile does not exist')
 
-    @unittest_reporter(skip=skip_tests, module='globus.SiteGlobusProxy')
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_10_update_proxy(self):
         cfgfile = os.path.join(self.test_dir,'cfg')
         p = SiteGlobusProxy(cfgfile=cfgfile)
@@ -62,10 +62,9 @@ class siteglobusproxy_test(unittest.TestCase):
 
         p.set_passphrase('gibberish')
         with self.assertRaises(Exception):
-            with to_log(sys.stderr), to_log(sys.stdout):
-                p.update_proxy()
+            p.update_proxy()
 
-    @unittest_reporter(name='update_proxy() voms', skip=skip_tests, module='globus.SiteGlobusProxy')
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_10_5_update_proxy(self):
         cfgfile = os.path.join(self.test_dir,'cfg')
         p = SiteGlobusProxy(cfgfile=cfgfile)
@@ -75,10 +74,9 @@ class siteglobusproxy_test(unittest.TestCase):
             p.update_proxy()
         p.set_passphrase('gibberish')
         with self.assertRaises(Exception):
-            with to_log(sys.stderr), to_log(sys.stdout):
-                p.update_proxy()
+            p.update_proxy()
 
-    @unittest_reporter(skip=skip_tests, module='globus.SiteGlobusProxy')
+    @pytest.mark.skipif(skip_tests, reason='not installed')
     def test_11_get_proxy(self):
         cfgfile = os.path.join(self.test_dir,'cfg')
         p = SiteGlobusProxy(cfgfile=cfgfile)

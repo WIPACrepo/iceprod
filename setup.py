@@ -3,7 +3,7 @@
 
 import glob
 
-from setuptools import setup
+from setuptools import setup  # type: ignore
 
 setup(
     scripts=glob.glob("bin/*"),

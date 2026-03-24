@@ -6,94 +6,10 @@ import unittest
 import inspect
 from collections import defaultdict
 from collections.abc import Iterable
-from functools import wraps, partial
+from functools import partial
 
 from tornado.concurrent import Future
-from tornado.ioloop import IOLoop
-from tornado.testing import gen_test
 
-def printer(in_str,passed=True,skipped=False):
-    numcols = 60
-    firstpos = 0
-    padding = 3 if skipped else 4
-    while len(in_str) > numcols:
-        # wrap longer strings
-        pos = in_str.rfind(' ',firstpos,numcols)
-        if pos <= firstpos or pos >= numcols:
-            pos = in_str.rfind('/',firstpos,numcols)
-            if pos <= firstpos or pos >= numcols:
-                break
-        tmp_str = in_str[0:pos+1]
-        in_str = '     '+in_str[pos+1:]
-        firstpos = 4
-        print(tmp_str)
-    # print string aligned left, and passed or failed
-    final_str = in_str
-    for i in range(len(in_str),numcols+padding):
-        final_str += ' '
-
-    if skipped:
-        logging.error(final_str+'skipped')
-        final_str += '\033[36m'+'skipped'+'\033[0m'
-    elif passed:
-        logging.error(final_str+'passed')
-        final_str += '\033[32m'+'passed'+'\033[0m'
-    else:
-        logging.error(final_str+'failed')
-        final_str += '\033[31m'+'failed'+'\033[0m'
-    print(final_str)
-
-def unittest_reporter(*args,**kwargs):
-    def make_wrapper(obj):
-        filename = obj.__globals__['__file__']
-        module = os.path.basename(filename).split('_test')[0]
-        prevdir = os.path.basename(os.path.dirname(filename))
-        if prevdir not in ('core','server'):
-            module = prevdir+'/'+module
-        if 'module' in kwargs:
-            module = kwargs['module']
-        name = '_'.join(obj.__name__.split('_')[2:])+'()'
-        if 'name' in kwargs:
-            name = kwargs['name']
-        if name.startswith(' '):
-            test_name = '%s%s'%(module,name)
-        else:
-            test_name = '%s.%s'%(module,name)
-        skip = False
-        if 'skip' in kwargs:
-            skip = kwargs['skip']
-            if callable(skip):
-                skip = skip()
-            skip = bool(skip)
-        @wraps(obj)
-        def wrapper(self, *args, **kwargs):
-            from iceprod.core import to_log
-            if skip:
-                printer('Test '+test_name,skipped=True)
-                return
-            try:
-                with to_log(sys.stdout), to_log(sys.stderr):
-                    if inspect.isgeneratorfunction(obj):
-                        logging.info('test is async')
-                        gen_test(obj)(self, *args,**kwargs)
-                    elif inspect.iscoroutinefunction(obj):
-                        logging.info('test is async')
-                        IOLoop.current().run_sync(partial(obj, self, *args,**kwargs))
-                    else:
-                        logging.info('test is seq')
-                        obj(self, *args,**kwargs)
-            except Exception:
-                logging.error('Error running %s test',name,
-                             exc_info=True)
-                printer('Test '+test_name,passed=False)
-                raise
-            else:
-                printer('Test '+test_name)
-        return wrapper
-    if kwargs:
-        return make_wrapper
-    else:
-        return make_wrapper(*args)
 
 test_glob = '*'
 def skipTest(obj, attr):

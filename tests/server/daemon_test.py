@@ -2,22 +2,22 @@
 Test script for daemon
 """
 
-from __future__ import absolute_import, division, print_function
-
-from tests.util import unittest_reporter, glob_tests
 
 import logging
+
+from tests.util import glob_tests
+
 logger = logging.getLogger('daemon_test')
 
+import multiprocessing
 import os
-import sys
-import time
-from functools import partial
 import shutil
-import tempfile
 import signal
 import stat
-import multiprocessing
+import sys
+import tempfile
+import time
+from functools import partial
 
 try:
     pass
@@ -32,11 +32,11 @@ from iceprod.server import daemon
 def main(cfgfile,cfgdata):
     message_queue = multiprocessing.Queue()
     def handler2(signum, frame):
-        logging.info('Signal handler2 called with signal %s' % signum)
+        logging.info('Signal handler2 called with signal %s', signum)
         logging.info('Stopping...')
         message_queue.put('stop')
     def handler3(signum, frame):
-        logging.info('Signal handler3 called with signal %s' % signum)
+        logging.info('Signal handler3 called with signal %s', signum)
         logging.info('Killing...')
         message_queue.put('kill')
         time.sleep(2)
@@ -59,14 +59,13 @@ def main(cfgfile,cfgdata):
 
 class daemon_test(unittest.TestCase):
     def setUp(self):
-        super(daemon_test,self).setUp()
+        super().setUp()
         self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
 
     def tearDown(self):
         shutil.rmtree(self.test_dir)
-        super(daemon_test,self).tearDown()
+        super().tearDown()
 
-    @unittest_reporter
     def test_01_Daemon(self):
         """Test daemon"""
 

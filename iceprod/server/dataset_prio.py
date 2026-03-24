@@ -40,7 +40,7 @@ def apply_group_prios(datasets, groups=None, filters=None):
         group_prios[g] = prio * (1.0 - subtract)
 
     # normalize dataset-group priorities
-    norm = defaultdict(0.)
+    norm = defaultdict(lambda: 0.)
     for d in datasets:
         norm[datasets[d]['groups_id']] += datasets[g]['priority']
 

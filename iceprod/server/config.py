@@ -117,7 +117,7 @@ class IceProdConfig(dict):
                     val = float(val)
                 except ValueError:
                     try:
-                        val = json.loads(val)
+                        val = json.loads(val)  # type: ignore
                     except Exception:
                         pass
 

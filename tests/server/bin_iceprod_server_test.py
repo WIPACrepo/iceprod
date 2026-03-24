@@ -2,22 +2,24 @@
 Test script for main iceprod server
 """
 
-from __future__ import absolute_import, division, print_function
-
-from tests.util import unittest_reporter, glob_tests
 
 import logging
+
+import pytest
+
+from tests.util import glob_tests
+
 logger = logging.getLogger('iceprod_server_test')
 
 import os
-import time
-import tempfile
 import shutil
 import subprocess
-
+import tempfile
+import time
 import unittest
 
 import psutil
+
 
 def get_children():
     ret = {}
@@ -36,7 +38,7 @@ def get_children():
 
 class iceprod_server_test(unittest.TestCase):
     def setUp(self):
-        super(iceprod_server_test,self).setUp()
+        super().setUp()
 
         self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
         curdir = os.getcwd()
@@ -46,7 +48,7 @@ class iceprod_server_test(unittest.TestCase):
             shutil.rmtree(self.test_dir)
         self.addCleanup(cleanup)
 
-    @unittest_reporter(skip=True)
+    @pytest.mark.skip
     def test_01_run(self):
         # make sure we don't try running the grid
         with open('iceprod_config.json','w') as f:

@@ -15,6 +15,7 @@ import builtins
 import logging
 import ast
 import operator as op
+from typing import Any
 
 from iceprod.core import dataclasses
 
@@ -268,11 +269,11 @@ class ExpParser:
         $sprintf("%04d",4)
     """
     def __init__(self):
-        self.job = None
-        self.env = None
+        self.job = dataclasses.Job()
+        self.env = {}
         self.depth = 0
         # dict of keyword : function mappings
-        self.keywords = {
+        self.keywords: dict[str, Any] = {
             'steering' : self.steering_func,
             'system' : self.system_func,
             'environ' : self.environ_func,
@@ -383,7 +384,7 @@ class ExpParser:
                         except Exception:
                             logger.debug('cannot eval: %s[%s]', word, ret,
                                          exc_info=True)
-                            stack.append(('word',word+'['+ret+']'))
+                            stack.append(('word', word+'['+ret+']'))
                     else:
                         raise SyntaxError()
             except Exception:
