@@ -109,7 +109,7 @@ class _ConfigMixin:
                 logging.warning("raising! %r", e.path)
                 path = ''.join(f'[{p!r}]' for p in e.path)
                 if isinstance(e.schema, Iterable) and 'error_msg' in e.schema:
-                    msg = e.schema['error_msg']  # type: ignore[not-subscriptable]
+                    msg = e.schema['error_msg']  # ty: ignore[not-subscriptable]
                 else:
                     msg = str(e).split('\n',1)[0]
                 raise ValidationError(f'Validation error in config{path}: {msg}') from e

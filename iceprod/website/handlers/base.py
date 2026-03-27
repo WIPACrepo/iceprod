@@ -415,7 +415,7 @@ class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler
             if self.current_user and self.auth_refresh_token:
                 self.rest_client = OpenIDRestClient(
                     address=self.rest_api,
-                    token_url=self.auth_url,  # type: ignore[invalid-argument-type]
+                    token_url=self.auth_url,  # ty: ignore[invalid-argument-type]
                     refresh_token=self.auth_refresh_token,
                     client_id=self.auth_client_id,
                     client_secret=self.auth_client_secret,
