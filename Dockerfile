@@ -15,6 +15,8 @@ RUN chown -R app:app /app
 
 USER app
 
+RUN git config --global --add safe.directory /app
+
 ENV VIRTUAL_ENV=/app/venv
 
 RUN python3 -m venv $VIRTUAL_ENV
