@@ -158,6 +158,15 @@ class CondorJob(grid.GridTask):
     status: JobStatus = JobStatus.IDLE
     extra: htcondor.classad.ClassAd | dict | None = None
 
+    def get(self, name: str, default: Any = None) -> Any:
+        """Get a value from the classad, with Undefined -> None"""
+        if not self.extra:
+            return default
+        v = self.extra.get('name', default)
+        if v in (classad.Value.Error, classad.Value.Undefined):
+            return default
+        return v
+
 
 class CondorJobId(NamedTuple):
     """Represents an HTCondor job id"""
@@ -1059,8 +1068,7 @@ class Grid(grid.BaseGrid):
             for job_id, job in all_jobs.items():
                 if job_id not in old_jobs or job.status != old_jobs[job_id].status:
                     if job.status == JobStatus.FAILED:
-                        extra = job.extra if job.extra else {}
-                        reason = extra.get('HoldReason', 'Job has failed')
+                        reason = job.get('HoldReason', 'Job has failed')
                         logger.info("job %s %s.%s removed from cross-check: %r", job_id, job.dataset_id, job.task_id, reason)
                         self.submitter.remove(job_id, reason=reason)
                     else:
@@ -1092,16 +1100,15 @@ class Grid(grid.BaseGrid):
                     self.jobs[job_id] = job
 
                 logger.info("job %s %s.%s exited on its own from cross-check", job_id, job.dataset_id, job.task_id)
-                extra = job.extra if job.extra else {}
 
                 # get stats
-                cpu = extra.get('CpusUsage', None)
-                if not cpu and (wall := extra.get('LastRemoteWallClockTime', None)):
-                    cpu = (extra.get('RemoteSysCpu', 0) + extra.get('RemoteUserCpu', 0)) * 1. / wall
-                gpu = extra.get('GpusUsage', None)
-                memory = extra.get('ResidentSetSize_RAW', None)  # KB
-                disk = extra.get('DiskUsage_RAW', None)  # KB
-                time_ = extra.get('LastRemoteWallClockTime', None)  # seconds
+                cpu = job.get('CpusUsage')
+                if not cpu and (wall := job.get('LastRemoteWallClockTime')):
+                    cpu = (job.get('RemoteSysCpu', 0) + job.get('RemoteUserCpu', 0)) * 1. / wall
+                gpu = job.get('GpusUsage')
+                memory = job.get('ResidentSetSize_RAW')  # KB
+                disk = job.get('DiskUsage_RAW')  # KB
+                time_ = job.get('LastRemoteWallClockTime')  # seconds
 
                 resources = {}
                 if cpu is not None:
@@ -1115,19 +1122,21 @@ class Grid(grid.BaseGrid):
                 if time_ is not None:
                     resources['time'] = time_/3600.
 
-                success = extra.get('JobStatus') == 4 and extra.get('ExitCode', 1) == 0
+                success = job.get('JobStatus') == 4 and job.get('ExitCode', 1) == 0
                 job.status = JobStatus.COMPLETED if success else JobStatus.FAILED
 
                 stats = {}
-                if site := extra.get('MachineAttrGLIDEIN_Site0'):
+                if site := job.get('MachineAttrGLIDEIN_Site0'):
                     stats['site'] = site
-                elif site := extra.get('MATCH_EXP_JOBGLIDEIN_ResourceName'):
+                elif site := job.get('MATCH_EXP_JOBGLIDEIN_ResourceName'):
                     stats['site'] = site
+                elif 'chtc' in job.get('LastRemotePool'):
+                    stats['site'] = 'CHTC'
 
                 reason = None
-                if r := extra.get('LastHoldReason'):
+                if r := job.get('LastHoldReason'):
                     reason = r
-                elif r := extra.get('RemoveReason'):
+                elif r := job.get('RemoveReason'):
                     reason = r
 
                 # finish job
