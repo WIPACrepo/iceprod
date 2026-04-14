@@ -26,9 +26,9 @@ def IceProdRestConfig(config: dict[str, Any], database: DB | None = None, auth_d
 class APIBase(AttrAuthMixin, PromRequestMixin, RestHandler):
     """Default REST handler"""
     def initialize(self, *args, database: DB, db_client: AsyncMongoClient | None = None, s3=None, **kwargs):  # type: ignore[override]
-        logger.info('initialze APIBase: args=%r, kwargs=%r', args, kwargs)
+        logger.debug('initialze APIBase: args=%r, kwargs=%r', args, kwargs)
         super().initialize(*args, **kwargs)
-        logger.info('do rest of initialize APIBase')
+        logger.debug('do rest of initialize APIBase')
         self.db = database
         self.db_client = db_client
         self.auth_db: AsyncDatabase | None = db_client['auth'] if db_client else None  # type: ignore
