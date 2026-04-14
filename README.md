@@ -1,6 +1,26 @@
+<!--- Top of README Badges (automated) --->
+[![PyPI](https://img.shields.io/pypi/v/iceprod)](https://pypi.org/project/iceprod/) [![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/WIPACrepo/iceprod?include_prereleases)](https://github.com/WIPACrepo/iceprod) [![Versions](https://img.shields.io/pypi/pyversions/iceprod.svg)](https://pypi.org/project/iceprod/) [![PyPI - License](https://img.shields.io/pypi/l/iceprod)](https://github.com/WIPACrepo/iceprod/blob/master/LICENSE) [![GitHub issues](https://img.shields.io/github/issues/WIPACrepo/iceprod)](https://github.com/WIPACrepo/iceprod/issues?q=is%3Aissue+sort%3Aupdated-desc+is%3Aopen) [![GitHub pull requests](https://img.shields.io/github/issues-pr/WIPACrepo/iceprod)](https://github.com/WIPACrepo/iceprod/pulls?q=is%3Apr+sort%3Aupdated-desc+is%3Aopen)
+<!--- End of README Badges (automated) --->
 # IceProd
 
 [![image](https://zenodo.org/badge/58235078.svg)](https://zenodo.org/badge/latestdoi/58235078)
+<!--- Top of README Metadata Section (automated) --->
+
+<!--- note: this information is pulled from the pyproject.toml --->
+
+<dl>
+    <dt><sub>Description</sub></dt>
+    <dd><sub>IceCube dataset management system</sub></dd>
+    <dt><sub>Authors</sub></dt>
+    <dd><sub>WIPAC Developers / <a href='mailto:developers@icecube.wisc.edu'>developers@icecube.wisc.edu</a></sub></dd>
+    <dt><sub>Keywords</sub></dt>
+    <dd><sub>WIPAC&nbsp;&nbsp;·&nbsp;&nbsp;batch&nbsp;&nbsp;·&nbsp;&nbsp;workload</sub></dd>
+    <dt><sub>URLs</sub></dt>
+    <dd><sub><a href='https://pypi.org/project/iceprod/'>Homepage</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href='https://github.com/WIPACrepo/iceprod/issues'>Tracker</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href='https://github.com/WIPACrepo/iceprod'>Source</a></sub></dd>
+</dl>
+
+<br>
+<!--- End of README Metadata Section (automated) --->
 
 IceProd is a Python framework for distributed management of batch jobs.
 It runs as a layer on top of other batch middleware, such as HTCondor,
