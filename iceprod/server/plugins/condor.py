@@ -156,13 +156,13 @@ class CondorJob(grid.GridTask):
     instance_id: str | None = None
     submit_dir: Path | None = None
     status: JobStatus = JobStatus.IDLE
-    extra: htcondor.classad.ClassAd | dict | None = None
+    extra: classad.ClassAd | dict | None = None
 
     def get(self, name: str, default: Any = None) -> Any:
         """Get a value from the classad, with Undefined -> None"""
-        if not self.extra:
+        if self.extra is None:
             return default
-        v = self.extra.get('name', default)
+        v = self.extra.get(name, default)
         if v in (classad.Value.Error, classad.Value.Undefined):
             return default
         return v
@@ -1008,7 +1008,7 @@ class Grid(grid.BaseGrid):
             stats['resources'] = resources
 
         job = self.jobs[job_id]
-        logger.info('finish for condor=%s iceprod=%s.%s', job_id, job.dataset_id, job.task_id)
+        logger.info('finish for condor=%s iceprod=%s.%s - %r', job_id, job.dataset_id, job.task_id, stats)
 
         stdout = None
         stderr = None
