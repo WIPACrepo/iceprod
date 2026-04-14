@@ -741,7 +741,7 @@ class HealthHandler(BaseCredentialsHandler):
     """
     Handle health requests.
     """
-    async def get(self):
+    async def get(self):  # ty: ignore[invalid-method-override]
         """
         Get health status.
 
