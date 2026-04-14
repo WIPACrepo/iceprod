@@ -502,7 +502,7 @@ class BaseGrid:
             if e.response.status_code != 404:
                 raise
         else:
-            if stats:
+            if stats is not None:
                 await self._upload_stats(task, stats)
             if stdout and stdout.exists():
                 await self._upload_log(task, 'stdout', stdout.read_text())
@@ -545,7 +545,7 @@ class BaseGrid:
             if e.response.status_code != 404:
                 raise
         else:
-            if stats:
+            if stats is not None:
                 await self._upload_stats(task, stats)
             if stdout and stdout.exists():
                 await self._upload_log(task, 'stdout', stdout.read_text())
