@@ -1130,7 +1130,7 @@ class Grid(grid.BaseGrid):
                     stats['site'] = site
                 elif site := job.get('MATCH_EXP_JOBGLIDEIN_ResourceName'):
                     stats['site'] = site
-                elif 'chtc' in job.get('LastRemotePool'):
+                elif 'chtc' in job.get('LastRemotePool', ''):
                     stats['site'] = 'CHTC'
 
                 reason = None
