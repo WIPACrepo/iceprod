@@ -47,11 +47,17 @@
         </div>
         <footer>{% block footer %}IceProd {{ version }}{% end %}</footer>
     </div>
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.2/jquery-ui.min.js"></script>
-    <script src="/static/util.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/choices.js/1.1.6/choices.min.js" integrity="sha512-7PQ3MLNFhvDn/IQy12+1+jKcc1A/Yx4KuL62Bn6+ztkiitRVW1T/7ikAh675pOs3I+8hyXuRknDpTteeptw4Bw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     {% block body_scripts %}{% end %}
-    <script src="/static/chosen.jquery.min.js"></script>
-    <script>$(function() {$(".chosen-select").chosen();});</script>
+    <script>
+    const elements = document.querySelectorAll('.chosen-select');
+    elements.forEach(el => {
+        new Choices(el, {
+            searchEnabled: true, // Equivalent to Chosen's default search
+            itemSelectText: '',  // Removes the "Press Enter to select" hover text
+        })
+    });
+    </script>
   </body>
 </html>
