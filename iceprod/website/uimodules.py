@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING
 
 import tornado
 
-
 if TYPE_CHECKING:
     # Define what your RequestHandler looks like
     class NonceHandler(tornado.web.RequestHandler):
