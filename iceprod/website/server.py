@@ -11,6 +11,7 @@ import logging
 import os
 import random
 import re
+import secrets
 from typing import Any
 
 from prometheus_client import Info, start_http_server
@@ -277,7 +278,7 @@ class Server:
             log_cookie_secret = cookie_secret[:4] + 'X'*(len(cookie_secret)-8) + cookie_secret[-4:]
             logger.info('using supplied cookie secret %r', log_cookie_secret)
         else:
-            cookie_secret = ''.join(hex(random.randint(0,15))[-1] for _ in range(64))
+            cookie_secret = secrets.token_hex(32)
 
         server = RestServer(
             debug=config.DEBUG,
