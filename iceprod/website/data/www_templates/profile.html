@@ -6,7 +6,7 @@
 
 {% block head_scripts %}
 <link rel="stylesheet" href="/static/documentation.css" media="all" type="text/css" />
-<style>
+{% module SecureStyle(content="""
 ul.groups {
     list-style-type: none;
 }
@@ -40,7 +40,7 @@ p, .form_group {
 form button {
     margin: .25em 0;
 }
-</style>
+""") %}
 {% end %}
 
 {% block page_title %}My Profile{% end %}

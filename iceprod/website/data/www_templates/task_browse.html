@@ -42,16 +42,13 @@
 {% if (current_user) %}
 <script type="text/javascript" src="/static/fetch.js"></script>
 <script type="text/javascript" src="/static/rest.js"></script>
-<script type="text/javascript">
-var rest_api = '{{ rest_api }}';
-const passkey = "{{ passkey }}";
-const dataset_id = "{{ list(tasks.values())[0]['dataset_id'] if tasks else '' }}";
-const task_ids_on_page = [
-    {% for t in tasks %}
-        "{{tasks[t]['task_id']}}",
-    {% end %}
-];
-
+{% module SecureScript(content=f"""
+var rest_api = '{ rest_api }';
+const passkey = "{ passkey }";
+const dataset_id = "{ list(tasks.values())[0]['dataset_id'] if tasks else '' }";
+const task_ids_on_page = [{ ','.join('"' + tasks[t]['task_id'] + '"' for t in tasks) }];
+""") %}
+{% module SecureScript(content="""
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -109,5 +106,5 @@ async function task_suspend(task_ids) {
     return await service_worker('suspend', task_ids)
 }
 {% end %}
-</script>
+""") %}
 {% end %}

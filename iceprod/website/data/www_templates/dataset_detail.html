@@ -108,11 +108,12 @@
 {% if (current_user) %}
 <script type="text/javascript" src="/static/fetch.js"></script>
 <script type="text/javascript" src="/static/rest.js"></script>
-<script type="text/javascript">
-var rest_api = '{{ rest_api }}';
-const passkey = "{{ passkey }}";
-const dataset_id = "{{ dataset_id }}";
-
+{% module SecureScript(content=f"""
+var rest_api = '{ rest_api }';
+const passkey = '{ passkey }';
+const dataset_id = '{ dataset_id }';
+""") %}
+{% module SecureScript(content="""
 async function dataset_priority() {
     try {
         const val = parseFloat($("#dataset_priority").val());
@@ -224,7 +225,7 @@ async function dataset_delete_logs(dataset_id, passkey) {
     message_close();
     return true;
 }
-</script>
+""") %}
 {% end %}
 
 {% end %}

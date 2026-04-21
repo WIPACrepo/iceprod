@@ -32,6 +32,7 @@ from .handlers.submit import Config, ConfigStatus, Submit, SubmitStatus
 from .handlers.dataset import Dataset, DatasetBrowse
 from .handlers.job import Job, JobBrowse
 from .handlers.task import Task, TaskBrowse
+from . import uimodules
 
 logger = logging.getLogger('website')
 
@@ -284,6 +285,7 @@ class Server:
             login_url=login_url,
             template_path=template_path,
             static_path=static_path,
+            uimodules=uimodules,
         )
 
         server.add_route("/", Default, handler_args)

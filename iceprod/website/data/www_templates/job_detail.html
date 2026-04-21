@@ -1,7 +1,5 @@
 {% extends "base.html" %}
 
-{% autoescape None %}
-
 {% block title %}Job {{ job['job_index'] }}, Dataset {{ dataset['dataset'] }} - IceProd{% end %}
 
 {% block page_title %}Job Details{% end %}
@@ -68,12 +66,13 @@
 {% if (current_user) %}
 <script type="text/javascript" src="/static/fetch.js"></script>
 <script type="text/javascript" src="/static/rest.js"></script>
-<script>
-var rest_api = '{{ rest_api }}';
-const passkey = "{{ passkey }}";
-const dataset_id = "{{ job['dataset_id'] if job else '' }}";
-const job_id = "{{ job['job_id'] if job else '' }}";
-
+{% module SecureScript(content=f"""
+var rest_api = '{ rest_api }';
+const passkey = "{ passkey }";
+const dataset_id = "{ job['dataset_id'] if job else '' }";
+const job_id = "{ job['job_id'] if job else '' }";
+""") %}
+{% module SecureScript(content="""
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -130,7 +129,7 @@ async function job_hard_reset() {
 async function job_suspend() {
     return await service_worker('suspend')
 }
-</script>
+""") %}
 {% end %}
 
 {% end %}
