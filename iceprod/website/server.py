@@ -285,7 +285,7 @@ class Server:
             login_url=login_url,
             template_path=template_path,
             static_path=static_path,
-            uimodules=uimodules,
+            ui_modules=uimodules,
         )
 
         server.add_route("/", Default, handler_args)
