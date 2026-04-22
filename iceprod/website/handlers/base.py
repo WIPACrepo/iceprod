@@ -403,9 +403,8 @@ class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler
     def prepare(self):
         super().prepare()
 
-        # 1. Generate a cryptographically secure nonce (at least 128 bits)
+        # set a content security policy, and use a nonce for inline style/script tags
         self.csp_nonce = secrets.token_urlsafe(16)
-
         csp_policy = (
             "default-src 'none'; "
             f"script-src 'self' 'nonce-{self.csp_nonce}' cdnjs.cloudflare.com; "
