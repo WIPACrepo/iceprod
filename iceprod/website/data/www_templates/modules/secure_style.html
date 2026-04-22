@@ -1,1 +1,1 @@
-<style nonce="{{ nonce }}">{% raw content %}</style>
+<style{% if nonce %} nonce="{{ nonce }}"{% end %}>{% raw content %}</style>
