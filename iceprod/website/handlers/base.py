@@ -411,7 +411,7 @@ class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler
             "script-src-attr 'unsafe-inline'; "
             "connect-src 'self'; "
             "img-src 'self'; "
-            f"style-src 'self' 'nonce-{self.csp_nonce}'; "
+            f"style-src 'self' 'nonce-{self.csp_nonce}' cdnjs.cloudflare.com; "
             "style-src-attr 'unsafe-inline'; "
             "frame-ancestors 'none'; "
             "form-action 'self'; "
