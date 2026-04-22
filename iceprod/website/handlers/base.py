@@ -408,7 +408,7 @@ class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler
 
         csp_policy = (
             "default-src 'none'; "
-            f"script-src 'self' 'nonce-{self.csp_nonce}' https://cloudflare.com; "
+            f"script-src 'self' 'nonce-{self.csp_nonce}' https://cdnjs.cloudflare.com; "
             "connect-src 'self'; "
             "img-src 'self'; "
             f"style-src 'self' 'nonce-{self.csp_nonce}'; "
