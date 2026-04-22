@@ -9,9 +9,8 @@
     <link rel="shortcut icon" href="/static/favicon.ico">
     <link rel="icon" href="/static/favicon.png">
     <link rel="stylesheet" href="/static/base.css" media="all" type="text/css" />
-    <link rel="stylesheet" href="/static/chosen.min.css" media="all" type="text/css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/choices.js/1.1.6/styles/css/base.min.css" integrity="sha512-pEu22gB+Mg6jrc/i3sMs4cBewDvHRCmEyXfjL83fvNyHEk6I1BTNM9vBNy4l+K7w3LLwZToLNjoKv5FlSfPwcw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/choices.js/1.1.6/styles/css/choices.min.css" integrity="sha512-/PTsSsk4pRsdHtqWjRuAL/TkYUFfOpdB5QDb6OltImgFcmd/2ZkEhW/PTQSayBKQtzjQODP9+IAeKd7S2yTXtA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!--<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/choices.js/1.1.6/styles/css/choices.min.css" integrity="sha512-/PTsSsk4pRsdHtqWjRuAL/TkYUFfOpdB5QDb6OltImgFcmd/2ZkEhW/PTQSayBKQtzjQODP9+IAeKd7S2yTXtA==" crossorigin="anonymous" referrerpolicy="no-referrer" />-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.4.3/css/tom-select.min.css" integrity="sha512-WBuHdUNR/QocxZ4cSMmXUrV142yazK51uQdknbg+RBTJsrQBbdXFxH8EPyjoU/rGV7FPR9HoWBul4nVbEWifzQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     {% block head_scripts %}{% end %}
   </head>
   <body>
@@ -50,15 +49,15 @@
         <footer>{% block footer %}IceProd {{ version }}{% end %}</footer>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/choices.js/1.1.6/choices.min.js" integrity="sha512-7PQ3MLNFhvDn/IQy12+1+jKcc1A/Yx4KuL62Bn6+ztkiitRVW1T/7ikAh675pOs3I+8hyXuRknDpTteeptw4Bw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/choices.js/1.1.6/choices.min.js" integrity="sha512-7PQ3MLNFhvDn/IQy12+1+jKcc1A/Yx4KuL62Bn6+ztkiitRVW1T/7ikAh675pOs3I+8hyXuRknDpTteeptw4Bw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.4.3/esm/tom-select.complete.min.js" integrity="sha512-Cm3gcOt0mmbZ6lsINGko2Uz01nvt3ipUMboMFQgbRrzuEUO+NzEKwr0AVsz4eT+Q1qBqJ6utm6llxeJ+WwDrcw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     {% block body_scripts %}{% end %}
     {% module SecureScript(content="""
-    const elements = document.querySelectorAll('.chosen-select');
-    elements.forEach(el => {
-        new Choices(el, {
-            searchEnabled: true, // Equivalent to Chosen's default search
-            itemSelectText: '',  // Removes the "Press Enter to select" hover text
-        })
+    document.querySelectorAll('.chosen-select').forEach((el)=>{
+        new TomSelect(el, {
+            maxItems: null,
+            maxOptions: null,
+        });
     });
     """) %}
   </body>
