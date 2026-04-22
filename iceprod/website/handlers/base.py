@@ -408,12 +408,13 @@ class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler
         csp_policy = (
             "default-src 'none'; "
             f"script-src 'self' 'nonce-{self.csp_nonce}' cdnjs.cloudflare.com; "
+            "script-src-attr 'unsafe-inline'; "
             "connect-src 'self'; "
             "img-src 'self'; "
             f"style-src 'self' 'nonce-{self.csp_nonce}'; "
+            "style-src-attr 'unsafe-inline'; "
             "frame-ancestors 'none'; "
             "form-action 'self'; "
-            "block-all-mixed-content; "
             "upgrade-insecure-requests; "
         )
         self.set_header('Content-Security-Policy', csp_policy)
