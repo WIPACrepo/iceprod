@@ -1,18 +1,24 @@
-import logging
 import json
-from typing import Any
+import logging
 import uuid
 from collections import defaultdict
+from typing import Any
 
 import pymongo.asynchronous.client_session
 import pymongo.errors
 import pymongo.read_concern
 import tornado.web
 
-from ..base_handler import APIBase
-from ..auth import authorization, attr_auth
+from iceprod.server.states import (
+    DATASET_STATUS,
+    DATASET_STATUS_START,
+    dataset_prev_statuses,
+    dataset_status_sort,
+)
 from iceprod.server.util import nowstr
-from iceprod.server.states import DATASET_STATUS, DATASET_STATUS_START, dataset_prev_statuses, dataset_status_sort
+
+from ..auth import attr_auth, authorization
+from ..base_handler import APIBase
 
 logger = logging.getLogger('rest.datasets')
 
@@ -115,7 +121,7 @@ class MultiDatasetHandler(APIBase):
             if k not in data:
                 raise tornado.web.HTTPError(400, reason='missing key: '+k)
             if not isinstance(data[k], req_fields[k]):
-                r = 'key "{}" should be of type {}'.format(k, req_fields[k].__name__)
+                r = f'key "{k}" should be of type {req_fields[k].__name__}'
                 raise tornado.web.HTTPError(400, reason=r)
 
         opt_fields = {
@@ -129,7 +135,7 @@ class MultiDatasetHandler(APIBase):
         }
         for k in opt_fields:
             if k in data and not isinstance(data[k], opt_fields[k]):
-                r = 'key "{}" should be of type {}'.format(k, opt_fields[k].__name__)
+                r = f'key "{k}" should be of type {opt_fields[k].__name__}'
                 raise tornado.web.HTTPError(400, reason=r)
 
         bad_fields = set(data).difference(set(opt_fields).union(req_fields))
