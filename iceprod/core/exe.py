@@ -517,11 +517,14 @@ class WriteToScript:
             configs = self.cfgparser.parseObject(module['configs'], env)
             configs = self.cfgparser.parseObject(configs, env)
             for filename in configs:
-                self.logger.info('creating config %r', filename)
-                with open(self.workdir / filename, 'w') as f:
+                # stop path traversal
+                name = Path(filename).name
+                target = self.workdir / name
+                self.logger.info('creating config %r', name)
+                with open(target, 'w') as f:
                     f.write(json_encode(configs[filename]))
                 data = Data(
-                    url=str(self.workdir / filename),
+                    url=str(target),
                     local=filename,
                     transfer=Transfer.TRUE,
                 )
