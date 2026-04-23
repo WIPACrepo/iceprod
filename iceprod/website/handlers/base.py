@@ -407,9 +407,9 @@ class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler
         self.csp_nonce = secrets.token_urlsafe(16)
         csp_policy = (
             "default-src 'none'; "
-            f"script-src 'self' 'nonce-{self.csp_nonce}' {self.rest_api} cdnjs.cloudflare.com; "
+            f"script-src 'self' 'nonce-{self.csp_nonce}' cdnjs.cloudflare.com; "
             "script-src-attr 'unsafe-inline'; "
-            "connect-src 'self'; "
+            f"connect-src 'self' {self.rest_api}; "
             "img-src 'self'; "
             f"style-src 'self' 'nonce-{self.csp_nonce}' cdnjs.cloudflare.com; "
             "style-src-attr 'unsafe-inline'; "
