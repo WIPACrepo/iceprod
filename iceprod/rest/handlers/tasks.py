@@ -718,6 +718,8 @@ class TasksActionsQueueHandler(APIBase):
     """
     Handle task action for waiting -> queued.
     """
+    ALLOWED_QUERY_PARAMS = {'dataset_id', 'site', 'instance_id', 'priority'}
+
     @authorization(roles=['admin', 'system'])
     async def post(self) -> None:
         """
@@ -759,6 +761,8 @@ class TasksActionsQueueHandler(APIBase):
             # handle query_params
             params = data.get('query_params', {})
             for k in params:
+                if k.startswith('$') or k not in self.ALLOWED_QUERY_PARAMS:
+                    raise tornado.web.HTTPError(400, reason=f'param {k} is not allowed')
                 if k in filter_query:
                     raise tornado.web.HTTPError(400, reason=f'param {k} would override an already set filter')
                 filter_query[k] = params[k]
@@ -784,6 +788,8 @@ class TasksActionsBulkQueueHandler(APIBase):
 
     Queues multiple tasks at once.
     """
+    ALLOWED_QUERY_PARAMS = {'dataset_id', 'site', 'instance_id', 'priority'}
+
     async def _run_query(
         self,
         session: pymongo.asynchronous.client_session.AsyncClientSession,
@@ -889,6 +895,8 @@ class TasksActionsBulkQueueHandler(APIBase):
             # handle query_params
             params = data.get('query_params', {})
             for k in params:
+                if k.startswith('$') or k not in self.ALLOWED_QUERY_PARAMS:
+                    raise tornado.web.HTTPError(400, reason=f'param {k} is not allowed')
                 if k in filter_query:
                     raise tornado.web.HTTPError(400, reason=f'param {k} would override an already set filter')
                 filter_query[k] = params[k]
