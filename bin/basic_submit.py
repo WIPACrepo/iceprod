@@ -73,8 +73,8 @@ async def run(rpc, args):
         if os.path.exists(src):
             if not src.startswith('/data'):
                 raise Exception('path must be in /data')
-            return 'gsiftp://gridftp.icecube.wisc.edu' + os.path.abspath(src)
-        elif not (src.startswith('http://') or src.startswith('https://') or src.startswith('gsiftp://')):
+            return 'osdf:///icecube/wipac' + os.path.abspath(src)
+        elif not (src.startswith('http://') or src.startswith('https://') or src.startswith('osdf:///') or src.startswith('pelican://')):
             raise Exception('unknown path: '+src)
         return src
 
@@ -88,7 +88,7 @@ async def run(rpc, args):
             files = [x.strip() for x in line.split() if x.strip()]
             if not files:
                 continue
-            outfiles = ['gsiftp://gridftp.icecube.wisc.edu' + os.path.abspath(files[-1])]
+            outfiles = ['osdf:///icecube/wipac' + os.path.abspath(files[-1])]
             jobfiles.append([modify_path(x) for x in files[:-1]]+outfiles)
 
     # make dataset config
