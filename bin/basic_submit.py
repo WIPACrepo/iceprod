@@ -116,12 +116,10 @@ async def run(rpc, args):
                   "env_shell":args['env_shell'],
                   "env_clear":True,
                   "name":"",
-                  "data":[],
                   "parameters":{}
                 }
               ],
               "name":"",
-              "data":[],
               "parameters":{}
             }
           ],
@@ -171,7 +169,7 @@ async def run(rpc, args):
     try:
         # materialize tasks
         try:
-            ret = await rpc.request('POST', '/actions/materialization', {'dataste_id': dataset_id, 'num': len(jobfiles)})
+            ret = await rpc.request('POST', '/actions/materialization', {'dataset_id': dataset_id, 'num': len(jobfiles)})
         except Exception:
             logger.warning(f'materialization request for dataset {dataset_id} failed', exc_info=True)
             fail('Creation of jobs failed')
