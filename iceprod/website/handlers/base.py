@@ -1,6 +1,7 @@
 import functools
 import logging
 import re
+import secrets
 import time
 import traceback
 from typing import Any
@@ -398,6 +399,25 @@ class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler
         namespace['states'] = iceprod.server.states
         namespace['rest_api'] = self.rest_api
         return namespace
+
+    def prepare(self):
+        super().prepare()
+
+        # set a content security policy, and use a nonce for inline style/script tags
+        self.csp_nonce = secrets.token_urlsafe(16)
+        csp_policy = (
+            "default-src 'none'; "
+            f"script-src 'self' 'nonce-{self.csp_nonce}' cdnjs.cloudflare.com; "
+            "script-src-attr 'unsafe-inline'; "
+            f"connect-src 'self' {self.rest_api}; "
+            "img-src 'self'; "
+            f"style-src 'self' 'nonce-{self.csp_nonce}' cdnjs.cloudflare.com; "
+            "style-src-attr 'unsafe-inline'; "
+            "frame-ancestors 'none'; "
+            "form-action 'self'; "
+            "upgrade-insecure-requests; "
+        )
+        self.set_header('Content-Security-Policy', csp_policy)
 
     def update_refresh_token(self, access: str | bytes, refresh: str | bytes | None):
         if access:
