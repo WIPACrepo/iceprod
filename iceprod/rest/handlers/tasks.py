@@ -765,6 +765,8 @@ class TasksActionsQueueHandler(APIBase):
                     raise tornado.web.HTTPError(400, reason=f'param {k} is not allowed')
                 if k in filter_query:
                     raise tornado.web.HTTPError(400, reason=f'param {k} would override an already set filter')
+                if not isinstance(params[k], (str, int, float, bool)):
+                    raise tornado.web.HTTPError(400, reason=f'param {k} must be a scalar value')
                 filter_query[k] = params[k]
         print('filter_query', filter_query)
         ret = await self.db.tasks.find_one_and_update(
@@ -899,6 +901,8 @@ class TasksActionsBulkQueueHandler(APIBase):
                     raise tornado.web.HTTPError(400, reason=f'param {k} is not allowed')
                 if k in filter_query:
                     raise tornado.web.HTTPError(400, reason=f'param {k} would override an already set filter')
+                if not isinstance(params[k], (str, int, float, bool)):
+                    raise tornado.web.HTTPError(400, reason=f'param {k} must be a scalar value')
                 filter_query[k] = params[k]
         logger.info('filter_query: %r', filter_query)
 
