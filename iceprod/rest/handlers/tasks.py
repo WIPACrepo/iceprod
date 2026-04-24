@@ -344,7 +344,7 @@ class DatasetMultiTasksHandler(APIBase):
         if status:
             status_list = status.split('|')
             if any(s not in TASK_STATUS for s in status_list):
-                raise tornado.web.HTTPError(400, reaosn='Unknown task status')
+                raise tornado.web.HTTPError(400, reason='Unknown task status')
             filters['status'] = {'$in': status_list}
 
         name = self.get_argument('name', None)
@@ -537,7 +537,7 @@ class TaskCountsStatusHandler(APIBase):
         if status:
             status_list = status.split('|')
             if any(s not in TASK_STATUS for s in status_list):
-                raise tornado.web.HTTPError(400, reaosn='Unknown task status')
+                raise tornado.web.HTTPError(400, reason='Unknown task status')
             match['status'] = {'$in': status_list}
 
         gpu = self.get_argument('gpu', None)
@@ -768,7 +768,6 @@ class TasksActionsQueueHandler(APIBase):
                 if not isinstance(params[k], (str, int, float, bool)):
                     raise tornado.web.HTTPError(400, reason=f'param {k} must be a scalar value')
                 filter_query[k] = params[k]
-        print('filter_query', filter_query)
         ret = await self.db.tasks.find_one_and_update(
             filter_query,
             {'$set': {'status': 'queued', 'site': site, 'instance_id': queue_instance_id}},
@@ -904,7 +903,7 @@ class TasksActionsBulkQueueHandler(APIBase):
                 if not isinstance(params[k], (str, int, float, bool)):
                     raise tornado.web.HTTPError(400, reason=f'param {k} must be a scalar value')
                 filter_query[k] = params[k]
-        logger.info('filter_query: %r', filter_query)
+        logger.debug('filter_query: %r', filter_query)
 
         assert self.db_client
         async with self.db_client.start_session() as session:

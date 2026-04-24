@@ -60,6 +60,8 @@ class APIBase(AttrAuthMixin, PromRequestMixin, RestHandler):
         # Also set Pragma and Expires headers for compatibility with older HTTP versions
         self.set_header('Pragma', 'no-cache')
         self.set_header('Expires', '0')
+        # Set Content Security Policy to deny all
+        self.set_header('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none';")
 
     def write(self, chunk: str | bytes | dict | list) -> None:  # type: ignore[override]
         """Write dict or list to json"""
