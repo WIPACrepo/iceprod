@@ -9,8 +9,8 @@ It has been broken down into several sub-handlers for easier maintenance.
 import importlib.resources
 import logging
 import os
-import random
 import re
+import secrets
 from typing import Any
 
 from prometheus_client import Info, start_http_server
@@ -32,6 +32,7 @@ from .handlers.submit import Config, ConfigStatus, Submit, SubmitStatus
 from .handlers.dataset import Dataset, DatasetBrowse
 from .handlers.job import Job, JobBrowse
 from .handlers.task import Task, TaskBrowse
+from . import uimodules
 
 logger = logging.getLogger('website')
 
@@ -276,7 +277,7 @@ class Server:
             log_cookie_secret = cookie_secret[:4] + 'X'*(len(cookie_secret)-8) + cookie_secret[-4:]
             logger.info('using supplied cookie secret %r', log_cookie_secret)
         else:
-            cookie_secret = ''.join(hex(random.randint(0,15))[-1] for _ in range(64))
+            cookie_secret = secrets.token_hex(32)
 
         server = RestServer(
             debug=config.DEBUG,
@@ -284,6 +285,7 @@ class Server:
             login_url=login_url,
             template_path=template_path,
             static_path=static_path,
+            ui_modules=uimodules,
         )
 
         server.add_route("/", Default, handler_args)

@@ -9,7 +9,7 @@
     <link rel="shortcut icon" href="/static/favicon.ico">
     <link rel="icon" href="/static/favicon.png">
     <link rel="stylesheet" href="/static/base.css" media="all" type="text/css" />
-    <link rel="stylesheet" href="/static/chosen.min.css" media="all" type="text/css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.4.3/css/tom-select.min.css" integrity="sha512-WBuHdUNR/QocxZ4cSMmXUrV142yazK51uQdknbg+RBTJsrQBbdXFxH8EPyjoU/rGV7FPR9HoWBul4nVbEWifzQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     {% block head_scripts %}{% end %}
   </head>
   <body>
@@ -47,11 +47,17 @@
         </div>
         <footer>{% block footer %}IceProd {{ version }}{% end %}</footer>
     </div>
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.2/jquery-ui.min.js"></script>
-    <script src="/static/util.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.4.3/js/tom-select.complete.js" integrity="sha512-cv8SyZZkoW3eB3rWs0JsM/wNxKZe59+tMN8ewVIu24I1EAeBOT6lqkdty/iMxo3OJGvrFRYIrrGwM5BJqAXsYw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     {% block body_scripts %}{% end %}
-    <script src="/static/chosen.jquery.min.js"></script>
-    <script>$(function() {$(".chosen-select").chosen();});</script>
+    {% module SecureScript(content="""
+    document.querySelectorAll('.chosen-select').forEach((el)=>{
+        new TomSelect(el, {
+            maxItems: null,
+            maxOptions: null,
+            plugins: ['remove_button'],
+        });
+    });
+    """) %}
   </body>
 </html>

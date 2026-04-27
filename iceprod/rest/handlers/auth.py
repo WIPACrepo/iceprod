@@ -218,6 +218,7 @@ class AuthHandler(APIBase):
                 raise tornado.web.HTTPError(400, reason=r)
 
         # check auth
+        logging.info('doing auth lookup using id %s: %r', self.current_user, data)
         self.current_user = data['username']
         self.auth_groups = data['groups']
         await self.check_attr_auth(data['name'], data['value'], data['role'])

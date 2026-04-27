@@ -1,15 +1,24 @@
-import logging
 import json
+import logging
 import uuid
 from collections import defaultdict
+from typing import Any
 
+import pymongo.asynchronous.client_session
 import pymongo.errors
+import pymongo.read_concern
 import tornado.web
 
-from ..base_handler import APIBase
-from ..auth import authorization, attr_auth
+from iceprod.server.states import (
+    DATASET_STATUS,
+    DATASET_STATUS_START,
+    dataset_prev_statuses,
+    dataset_status_sort,
+)
 from iceprod.server.util import nowstr
-from iceprod.server.states import DATASET_STATUS, DATASET_STATUS_START, dataset_prev_statuses, dataset_status_sort
+
+from ..auth import attr_auth, authorization
+from ..base_handler import APIBase
 
 logger = logging.getLogger('rest.datasets')
 
@@ -112,7 +121,7 @@ class MultiDatasetHandler(APIBase):
             if k not in data:
                 raise tornado.web.HTTPError(400, reason='missing key: '+k)
             if not isinstance(data[k], req_fields[k]):
-                r = 'key "{}" should be of type {}'.format(k, req_fields[k].__name__)
+                r = f'key "{k}" should be of type {req_fields[k].__name__}'
                 raise tornado.web.HTTPError(400, reason=r)
 
         opt_fields = {
@@ -126,7 +135,7 @@ class MultiDatasetHandler(APIBase):
         }
         for k in opt_fields:
             if k in data and not isinstance(data[k], opt_fields[k]):
-                r = 'key "{}" should be of type {}'.format(k, opt_fields[k].__name__)
+                r = f'key "{k}" should be of type {opt_fields[k].__name__}'
                 raise tornado.web.HTTPError(400, reason=r)
 
         bad_fields = set(data).difference(set(opt_fields).union(req_fields))
@@ -367,24 +376,41 @@ class DatasetJobsSubmittedHandler(APIBase):
         except Exception:
             raise tornado.web.HTTPError(400, reason='jobs_submitted is not an int')
 
-        ret = await self.db.datasets.find_one({'dataset_id':dataset_id})
-        if not ret:
-            raise tornado.web.HTTPError(404, reason='Dataset not found')
-        if ret['jobs_immutable']:
-            raise tornado.web.HTTPError(400, reason='jobs_submitted is immutable')
-        if ret['jobs_submitted'] > jobs_submitted:
-            raise tornado.web.HTTPError(400, reason='jobs_submitted must be larger than before')
-        if 'tasks_per_job' not in ret or ret['tasks_per_job'] <= 0:
-            raise tornado.web.HTTPError(400, reason='tasks_per_job not valid')
+        async def _run_query(
+            session: pymongo.asynchronous.client_session.AsyncClientSession,
+        ) -> dict[str, Any] | None:
+            collection = self.db.datasets.with_options(
+                write_concern=pymongo.WriteConcern("majority"),
+                read_concern=pymongo.read_concern.ReadConcern("local")
+            )
+            ret = await collection.find_one({'dataset_id':dataset_id})
+            if not ret:
+                raise tornado.web.HTTPError(404, reason='Dataset not found')
+            if ret['jobs_immutable']:
+                raise tornado.web.HTTPError(400, reason='jobs_submitted is immutable')
+            if ret['jobs_submitted'] > jobs_submitted:
+                raise tornado.web.HTTPError(400, reason='jobs_submitted must be larger than before')
+            if 'tasks_per_job' not in ret or ret['tasks_per_job'] <= 0:
+                raise tornado.web.HTTPError(400, reason='tasks_per_job not valid')
 
-        ret = await self.db.datasets.find_one_and_update(
-            {'dataset_id':dataset_id},
-            {'$set':{
-                'jobs_submitted': jobs_submitted,
-                'tasks_submitted': int(jobs_submitted*ret['tasks_per_job']),
-            }},
-            projection=['_id']
-        )
+            return await collection.find_one_and_update(
+                {'dataset_id':dataset_id},
+                {'$set':{
+                    'jobs_submitted': jobs_submitted,
+                    'tasks_submitted': int(jobs_submitted*ret['tasks_per_job']),
+                }},
+                projection=['_id']
+            )
+
+        assert self.db_client
+        async with self.db_client.start_session() as session:
+            try:
+                ret = await session.with_transaction(_run_query)
+            except (pymongo.errors.ConnectionFailure, pymongo.errors.OperationFailure):
+                logger.warning('error in transaction:', exc_info=True)
+                self.send_error(500, reason="Transaction error")
+                return
+
         if not ret:
             self.send_error(404, reason="Dataset not found")
         else:

@@ -23,10 +23,10 @@
 {% end %}
 
 {% block body_scripts %}
-<script type="text/javascript">
-window.location.replace('/{% if submit %}submit{% else %}config{% end %}/status/{{ message_id }}');
-setTimeout(function() {
+{% module SecureScript(content=f"""
+window.location.replace('/{ "submit" if submit else "config" }/status/{ message_id }');
+setTimeout(function() {{
     location.reload();
-}, 1000);
-</script>
+}}, 1000);
+""") %}
 {% end %}

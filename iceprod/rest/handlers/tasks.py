@@ -344,7 +344,7 @@ class DatasetMultiTasksHandler(APIBase):
         if status:
             status_list = status.split('|')
             if any(s not in TASK_STATUS for s in status_list):
-                raise tornado.web.HTTPError(400, reaosn='Unknown task status')
+                raise tornado.web.HTTPError(400, reason='Unknown task status')
             filters['status'] = {'$in': status_list}
 
         name = self.get_argument('name', None)
@@ -537,7 +537,7 @@ class TaskCountsStatusHandler(APIBase):
         if status:
             status_list = status.split('|')
             if any(s not in TASK_STATUS for s in status_list):
-                raise tornado.web.HTTPError(400, reaosn='Unknown task status')
+                raise tornado.web.HTTPError(400, reason='Unknown task status')
             match['status'] = {'$in': status_list}
 
         gpu = self.get_argument('gpu', None)
@@ -718,6 +718,8 @@ class TasksActionsQueueHandler(APIBase):
     """
     Handle task action for waiting -> queued.
     """
+    ALLOWED_QUERY_PARAMS = {'dataset_id', 'site', 'instance_id', 'priority'}
+
     @authorization(roles=['admin', 'system'])
     async def post(self) -> None:
         """
@@ -759,10 +761,13 @@ class TasksActionsQueueHandler(APIBase):
             # handle query_params
             params = data.get('query_params', {})
             for k in params:
+                if k.startswith('$') or k not in self.ALLOWED_QUERY_PARAMS:
+                    raise tornado.web.HTTPError(400, reason=f'param {k} is not allowed')
                 if k in filter_query:
                     raise tornado.web.HTTPError(400, reason=f'param {k} would override an already set filter')
+                if not isinstance(params[k], (str, int, float, bool)):
+                    raise tornado.web.HTTPError(400, reason=f'param {k} must be a scalar value')
                 filter_query[k] = params[k]
-        print('filter_query', filter_query)
         ret = await self.db.tasks.find_one_and_update(
             filter_query,
             {'$set': {'status': 'queued', 'site': site, 'instance_id': queue_instance_id}},
@@ -784,6 +789,8 @@ class TasksActionsBulkQueueHandler(APIBase):
 
     Queues multiple tasks at once.
     """
+    ALLOWED_QUERY_PARAMS = {'dataset_id', 'site', 'instance_id', 'priority'}
+
     async def _run_query(
         self,
         session: pymongo.asynchronous.client_session.AsyncClientSession,
@@ -889,10 +896,14 @@ class TasksActionsBulkQueueHandler(APIBase):
             # handle query_params
             params = data.get('query_params', {})
             for k in params:
+                if k.startswith('$') or k not in self.ALLOWED_QUERY_PARAMS:
+                    raise tornado.web.HTTPError(400, reason=f'param {k} is not allowed')
                 if k in filter_query:
                     raise tornado.web.HTTPError(400, reason=f'param {k} would override an already set filter')
+                if not isinstance(params[k], (str, int, float, bool)):
+                    raise tornado.web.HTTPError(400, reason=f'param {k} must be a scalar value')
                 filter_query[k] = params[k]
-        logger.info('filter_query: %r', filter_query)
+        logger.debug('filter_query: %r', filter_query)
 
         assert self.db_client
         async with self.db_client.start_session() as session:

@@ -54,6 +54,7 @@ class Server:
                 }
             })
         elif config.CI_TESTING:
+            logging.warning('CI_TESTING is enabled!')
             rest_config.update({
                 'auth': {
                     'secret': 'secret',
