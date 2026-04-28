@@ -201,7 +201,7 @@ class CondorSubmit:
     AD_PROJECTION_QUEUE = ['JobStatus', 'RemotePool', 'RemoteHost'] + _GENERIC_ADS
     AD_PROJECTION_HISTORY = [
         'JobStatus', 'ExitCode', 'RemoveReason', 'LastHoldReason', 'CpusUsage', 'RemoteSysCpu', 'RemoteUserCpu',
-        'GpusUsage', 'ResidentSetSize_RAW', 'DiskUsage_RAW', 'LastRemoteWallClockTime',
+        'GpusUsage', 'GPUsAverageUsage', 'GPUsMemoryUsage', 'ResidentSetSize_RAW', 'DiskUsage_RAW', 'LastRemoteWallClockTime',
         'LastRemoteHost', 'LastRemotePool', 'MachineAttrGLIDEIN_Site0',
     ] + _GENERIC_ADS
 
@@ -1105,7 +1105,11 @@ class Grid(grid.BaseGrid):
                 cpu = job.get('CpusUsage')
                 if not cpu and (wall := job.get('LastRemoteWallClockTime')):
                     cpu = (job.get('RemoteSysCpu', 0) + job.get('RemoteUserCpu', 0)) * 1. / wall
-                gpu = job.get('GpusUsage')
+                gpu = job.get('GPUsAverageUsage')
+                gpumem = job.get('GPUsMemoryUsage')  # MB
+                if not gpu:
+                    gpu = job.get('GpusUsage')
+
                 memory = job.get('ResidentSetSize_RAW')  # KB
                 disk = job.get('DiskUsage_RAW')  # KB
                 time_ = job.get('LastRemoteWallClockTime')  # seconds
@@ -1115,6 +1119,8 @@ class Grid(grid.BaseGrid):
                     resources['cpu'] = cpu
                 if gpu is not None:
                     resources['gpu'] = gpu
+                if gpumem is not None:
+                    resources['gpumem'] = gpumem/1000.
                 if memory is not None:
                     resources['memory'] = memory/1000000.
                 if disk is not None:
