@@ -718,7 +718,7 @@ class TasksActionsQueueHandler(APIBase):
     """
     Handle task action for waiting -> queued.
     """
-    ALLOWED_QUERY_PARAMS = {'dataset_id', 'site', 'instance_id', 'priority'}
+    ALLOWED_QUERY_PARAMS = {'dataset_id', 'site', 'instance_id', 'priority', 'requirements.site'}
 
     @authorization(roles=['admin', 'system'])
     async def post(self) -> None:
@@ -789,7 +789,7 @@ class TasksActionsBulkQueueHandler(APIBase):
 
     Queues multiple tasks at once.
     """
-    ALLOWED_QUERY_PARAMS = {'dataset_id', 'site', 'instance_id', 'priority'}
+    ALLOWED_QUERY_PARAMS = {'dataset_id', 'site', 'instance_id', 'priority', 'requirements.site'}
 
     async def _run_query(
         self,
