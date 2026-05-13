@@ -4,15 +4,16 @@ Get storage plots for IceProd Datasets from Ceph
 
 import argparse
 import asyncio
-from collections import Counter
-from enum import StrEnum
 import json
 import logging
+from collections import Counter
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
 import requests
 from rest_tools.client import SavedDeviceGrantAuth
+
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 
 

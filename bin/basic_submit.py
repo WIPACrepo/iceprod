@@ -48,20 +48,20 @@ Args:
     request_gpus (int): request GPUs (default: 0)
 """
 
-from collections import defaultdict
-from copy import deepcopy
+import argparse
+import asyncio
 import json
+import logging
 import os
 import sys
-import argparse
-import logging
-import asyncio
 import time
+from collections import defaultdict
+from copy import deepcopy
 from typing import Any
 
-from iceprod.services.actions.submit import TOKEN_PREFIXES, get_scope
 from rest_tools.client import SavedDeviceGrantAuth
 
+from iceprod.services.actions.submit import TOKEN_PREFIXES, get_scope
 
 logger = logging.getLogger('basic_submit')
 
