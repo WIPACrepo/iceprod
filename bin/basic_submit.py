@@ -40,25 +40,28 @@ Args:
     script (str): url or file path to script
     args (str): arguments to script
     files (str): filename with input and output files (one line per job)
+    scope (list): (optional) specify multiple scope permission overrides
     description: general description for dataset
     env_shell: an environment shell to execute before the script starts
     request_memory (float): request memory in GB (default: 1 GB)
     request_cpus (int): request CPUs (default: 1)
     request_gpus (int): request GPUs (default: 0)
-    token (str): IceProd user token (https://iceprod2.icecube.wisc.edu/profile)
 """
 
+import argparse
+import asyncio
 import json
+import logging
 import os
 import sys
-import argparse
-import logging
-import asyncio
 import time
+from collections import defaultdict
+from copy import deepcopy
 from typing import Any
 
 from rest_tools.client import SavedDeviceGrantAuth
 
+from iceprod.services.actions.submit import TOKEN_PREFIXES, get_scope
 
 logger = logging.getLogger('basic_submit')
 
@@ -66,12 +69,18 @@ def fail(message):
     print(message)
     sys.exit(1)
 
+DATA_PREFIX = '/data'
+
+ACTIONS_SLEEP = 10.
+
+
 async def run(rpc, args):
     def modify_path(src):
         if src.startswith('/cvmfs'):
             return src
         if os.path.exists(src):
-            if not src.startswith('/data'):
+            src = os.path.abspath(src)
+            if not src.startswith(DATA_PREFIX):
                 raise Exception('path must be in /data')
             return 'osdf:///icecube/wipac' + os.path.abspath(src)
         elif not (src.startswith('http://') or src.startswith('https://') or src.startswith('osdf:///') or src.startswith('pelican://')):
@@ -80,16 +89,6 @@ async def run(rpc, args):
 
     # check script location
     args['script'] = modify_path(args['script'])
-
-    # check input and output files
-    jobfiles = []
-    with open(args['files']) as f:
-        for line in f:
-            files = [x.strip() for x in line.split() if x.strip()]
-            if not files:
-                continue
-            outfiles = ['osdf:///icecube/wipac' + os.path.abspath(files[-1])]
-            jobfiles.append([modify_path(x) for x in files[:-1]]+outfiles)
 
     # make dataset config
     config = {
@@ -139,6 +138,46 @@ async def run(rpc, args):
       "categories":[]
     }
 
+    # check input and output files
+    jobfiles = []
+    scopes = defaultdict(set)
+    with open(args['files']) as f:
+        for line in f:
+            files = [x.strip() for x in line.split() if x.strip()]
+            if not files:
+                continue
+            infiles = [modify_path(x) for x in files[:-1]]
+            out_path = os.path.abspath(files[-1])
+            if not out_path.startswith(DATA_PREFIX):
+                fail('output file must start with /data')
+            outfiles = ['osdf:///icecube/wipac' + out_path]
+            jobfiles.append(infiles+outfiles)
+
+            if not args['scope']:
+                for path in infiles:
+                    for prefix in TOKEN_PREFIXES:
+                        if path.startswith(prefix):
+                            if scope := get_scope(path[len(prefix):], 'input'):
+                                logger.info('adding scope %s for remote %s', scope, path)
+                                scopes[prefix].add(scope)
+                for path in outfiles:
+                    for prefix in TOKEN_PREFIXES:
+                        if path.startswith(prefix):
+                            if scope := get_scope(path[len(prefix):], 'output'):
+                                logger.info('adding scope %s for remote %s', scope, path)
+                                scopes[prefix].add(scope)
+
+    # set token scope
+    if args['scope']:
+        config['tasks'][0]['token_scopes'] = {
+            'osdf:///icecube/wipac': ' '.join(args['scope'])
+        }
+    else:
+        if sum(len(x) for x in scopes.values()) > 25:
+            fail('too many token scopes! set generic scopes manually with --scope')
+        config['tasks'][0]['token_scopes'] = {k: ' '.join(sorted(v)) for k,v in scopes.items()}
+    logging.info('set scope to %r', config['tasks'][0]['token_scopes'])
+
     # create the dataset
     print('submitting the config')
     rpc_args = {
@@ -153,7 +192,7 @@ async def run(rpc, args):
         ret = await rpc.request('POST', '/actions/submit', rpc_args)
         submit_id = ret['result']
         while True:
-            await asyncio.sleep(10)
+            await asyncio.sleep(ACTIONS_SLEEP)
             print('.', end='')
             ret = await rpc.request('GET', f'/actions/submit/{submit_id}')
             if ret['status'] == 'complete':
@@ -177,7 +216,7 @@ async def run(rpc, args):
 
         logger.info(f'waiting for materialization request')
         while True:
-            await asyncio.sleep(10)
+            await asyncio.sleep(ACTIONS_SLEEP)
             ret = await rpc.request('GET', f'/actions/materialization/{materialization_id}')
             if ret['status'] == 'complete':
                 logger.info(f'materialization request complete')
@@ -257,6 +296,8 @@ def main():
                         help='request CPUs (default: 1)')
     parser.add_argument('--request_gpus', type=int, default=0,
                         help='request GPUs (default: 0)')
+    parser.add_argument('--scope', action='append',
+                        help='manually set token scopes. may specify multiple times, one per scope')
     parser.add_argument('--log_level', default='warning', help='log level (defaut: WARN)')
 
     args = parser.parse_args()
