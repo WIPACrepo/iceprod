@@ -425,7 +425,7 @@ class WriteToScript:
                     print('', file=f)
                 elif data.url.startswith('pelican://') or data.url.startswith('osdf://'):
                     cmd = [
-                        '/cvmfs/icecube.opensciencegrid.org/users/dschultz/dumb_pelican_client-0.1.3/dumb_pelican_client',
+                        '/cvmfs/icecube.opensciencegrid.org/users/dschultz/dumb_pelican_client-0.1.4/dumb_pelican_client',
                         '--log-level=info',
                         'object',
                         'get',
@@ -462,7 +462,7 @@ class WriteToScript:
                     print('', file=f)
                 elif data.url.startswith('pelican://') or data.url.startswith('osdf://'):
                     cmd_core = [
-                        '/cvmfs/icecube.opensciencegrid.org/users/dschultz/dumb_pelican_client-0.1.3/dumb_pelican_client',
+                        '/cvmfs/icecube.opensciencegrid.org/users/dschultz/dumb_pelican_client-0.1.4/dumb_pelican_client',
                         '--log-level=info',
                         'object',
                         'put',
@@ -558,7 +558,7 @@ else
 fi
 ''', file=f)
             print('# set some env vars for expansion', file=f)
-            print('OS_ARCH=$(/cvmfs/icecube.opensciencegrid.org/py3-v4.3.0/os_arch.sh)', file=f)
+            print('OS_ARCH=$(/cvmfs/icecube.opensciencegrid.org/py3-v4.4.2/os_arch.sh)', file=f)
             print('', file=f)
             with scope_env(self.cfgparser, self.task.dataset.config['steering'], logger=self.logger) as globalenv:
                 task = self.task.get_task_config()
