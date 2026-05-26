@@ -112,6 +112,7 @@ RESET_STDERR_REASONS = [
     'killed',
     # hopefully transient errors
     'bus error (core dumped)',
+    'bus error /cvmfs',
     'segmentation fault (core dumped)',
     'operation timed out',
     'connection timed out',
