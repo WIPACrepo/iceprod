@@ -294,14 +294,14 @@ class CondorSubmit:
         return container
 
     @staticmethod
-    def condor_resource_reqs(task: Task) -> dict[str, str]:
+    def condor_resource_reqs(task: Task) -> dict[str, str | int]:
         """Convert from Task requirements to HTCondor requirements"""
         ads = {}
         requirements = []
         if 'cpu' in task.requirements and task.requirements['cpu']:
-            ads['request_cpus'] = task.requirements['cpu']
+            ads['request_cpus'] = int(task.requirements['cpu'])
         if 'gpu' in task.requirements and task.requirements['gpu']:
-            ads['request_gpus'] = task.requirements['gpu']
+            ads['request_gpus'] = int(task.requirements['gpu'])
             requirements.append('GPUs_Capability >= 6.1')
         if 'memory' in task.requirements and task.requirements['memory']:
             ads['request_memory'] = int(task.requirements['memory']*1000)
