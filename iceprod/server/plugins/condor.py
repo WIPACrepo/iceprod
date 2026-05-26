@@ -296,7 +296,7 @@ class CondorSubmit:
     @staticmethod
     def condor_resource_reqs(task: Task) -> dict[str, str | int]:
         """Convert from Task requirements to HTCondor requirements"""
-        ads = {}
+        ads: dict[str, str | int] = {}
         requirements = []
         if 'cpu' in task.requirements and task.requirements['cpu']:
             ads['request_cpus'] = int(task.requirements['cpu'])
