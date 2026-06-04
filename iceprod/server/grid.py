@@ -143,7 +143,7 @@ class BaseGrid:
         ret.validate()
         return ret
 
-    @cached(TTLCache(10, 900), key=lambda _: 'self')
+    @cached(TTLCache(10, 900), key=lambda _: 'self')  # ty: ignore
     async def _get_priority_object(self) -> Priority:
         p = Priority(rest_client=self.rest_client)
         await p._populate_dataset_cache()
@@ -254,7 +254,7 @@ class BaseGrid:
 
         return t
 
-    @cached(TTLCache(1024, 60), key=lambda _,t: (t.dataset.dataset_id, t.name))
+    @cached(TTLCache(1024, 60), key=lambda _,t: (t.dataset.dataset_id, t.name))  # ty: ignore
     async def _get_dataset_credentials(self, task: Task) -> list[Any]:
         # todo: handle non-oauth credentials, like s3
         # todo: delayed get to see if we already have these tokens in condor
@@ -273,7 +273,7 @@ class BaseGrid:
             ret.extend(ret2)
         return ret
 
-    @cached(TTLCache(10, 60), key=lambda _: 'self')
+    @cached(TTLCache(10, 60), key=lambda _: 'self')  # ty: ignore
     async def get_scratch_credentials(self):
         if client_id := self.cfg['oauth_condor_client_id']:
             args = {'client_id': client_id, 'transfer_prefix': self.cfg['queue']['site_temp']}
