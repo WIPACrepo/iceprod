@@ -167,7 +167,8 @@ def rounded_requirements(reqs, bins=None):
         for b in bins:
             if num <= b*1.05:  # within 5%
                 return b
-        raise Exception('num too big for bin sizes')
+        logging.warning('num too big for bin sizes')
+        return bins[-1]
     ret = {}
     for k in reqs:
         v = reqs[k]

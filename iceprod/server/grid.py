@@ -27,7 +27,7 @@ from iceprod.util import VERSION_STRING
 from iceprod.core import functions
 from iceprod.core.config import Task, Job, Dataset
 from iceprod.core.defaults import add_default_options
-from iceprod.core.resources import Resources
+from iceprod.core.resources import Resources, rounded_requirements
 from iceprod.common.prom_utils import HistogramBuckets
 from iceprod.server.states import JOB_STATUS_START
 from iceprod.server.util import nowstr
@@ -298,7 +298,7 @@ class BaseGrid:
                 resource[k] = len(resource[k])  # type: ignore
         values = {}
         try:
-            for k in task.requirements:
+            for k in rounded_requirements(task.requirements):
                 if k in resource and task.requirements[k]:
                     try:
                         if isinstance(resource[k], int):
