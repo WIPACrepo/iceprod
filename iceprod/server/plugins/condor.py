@@ -302,7 +302,7 @@ class CondorSubmit:
             ads['request_cpus'] = int(task.requirements['cpu'])
         if 'gpu' in task.requirements and task.requirements['gpu']:
             ads['request_gpus'] = int(task.requirements['gpu'])
-            requirements.append('GPUs_Capability >= 6.1')
+            requirements.append('ifThenElse(isUndefined(GPUs_Capability),True,GPUs_Capability >= 6.1)')
         if 'memory' in task.requirements and task.requirements['memory']:
             ads['request_memory'] = int(task.requirements['memory']*1000)
         if 'disk' in task.requirements and task.requirements['disk']:
