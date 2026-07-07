@@ -23,7 +23,7 @@ class ValidationError(Exception):
 
 
 class ConfigSchema:
-    @ttl_cache
+    @ttl_cache  # ty: ignore
     @staticmethod
     def list_versions() -> list[float]:
         path = Path(str(importlib.resources.files('iceprod.core') / 'data'))
@@ -33,18 +33,18 @@ class ConfigSchema:
                 ret.append(float(ver.group(1)))
         return sorted(ret)
 
-    @ttl_cache
+    @ttl_cache  # ty: ignore
     @staticmethod
     def schema(version: float = 3.1) -> dict[str, Any]:
         rounded_ver = round(version, 1)
         path = importlib.resources.files('iceprod.core') / 'data' / f'dataset_v{rounded_ver}.schema.json'
         return json.loads(path.read_text())
 
-    @ttl_cache
+    @ttl_cache  # ty: ignore
     @staticmethod
     def data_defaults(version: float = 3.1) -> dict[str, Any]:
         schema = ConfigSchema.schema(version)
-        return {key: value.get('default', None) for key,value in schema['$defs']['data']['items']['properties'].items()}
+        return {key: value.get('default', None) for key,value in schema['$defs']['data']['items']['properties'].items()}  # ty: ignore
 
 
 class _ConfigMixin:
@@ -55,7 +55,7 @@ class _ConfigMixin:
         ver = self.config.get('version', None)
         if isinstance(ver, str):
             ver = float(ver)
-        config_schema = ConfigSchema.schema(ver) if ver else ConfigSchema.schema()
+        config_schema = ConfigSchema.schema(ver) if ver else ConfigSchema.schema()  # ty: ignore
 
         def _load_ref(schema_value):
             if '$ref' in list(schema_value.keys()):
@@ -63,7 +63,7 @@ class _ConfigMixin:
                 parts = schema_value['$ref'].split('/')[1:]
                 schema_value = config_schema
                 while parts:
-                    schema_value = schema_value.get(parts.pop(0), {})
+                    schema_value = schema_value.get(parts.pop(0), {})  # ty: ignore
                 logging.debug('loading from ref: %r', schema_value)
             return schema_value
 
@@ -103,7 +103,7 @@ class _ConfigMixin:
             ver = float(ver)
             self.config['version'] = ver
         try:
-            jsonschema.validate(self.config, ConfigSchema.schema(ver))
+            jsonschema.validate(self.config, ConfigSchema.schema(ver))  # ty: ignore
         except jsonschema.ValidationError as e:
             try:
                 logging.warning("raising! %r", e.path)
