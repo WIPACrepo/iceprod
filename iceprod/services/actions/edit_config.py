@@ -83,16 +83,6 @@ class Action(BaseAction):
             if reqs != prev_task['requirements']:
                 await self._api_client.request('POST', f'/datasets/{data.dataset_id}/task_actions/bulk_requirements/{task["name"]}', reqs)
 
-        # update config
-        await self._api_client.request('PUT', f'/config/{data.dataset_id}', config)
-
-        if data.description and data.description != dataset['description']:
-            # update description
-            args = {
-                'description': data.description,
-            }
-            await self._api_client.request('PUT', f'/datasets/{data.dataset_id}/description', args)
-
         # check tokens
         ts = TokenSubmitter(
             logger=self._logger,
@@ -104,5 +94,15 @@ class Action(BaseAction):
         )
         if not await ts.tokens_exist(dataset_id=data.dataset_id):
             await ts.resubmit_tokens(dataset_id=data.dataset_id)
+
+        # update config
+        await self._api_client.request('PUT', f'/config/{data.dataset_id}', config)
+
+        if data.description and data.description != dataset['description']:
+            # update description
+            args = {
+                'description': data.description,
+            }
+            await self._api_client.request('PUT', f'/datasets/{data.dataset_id}/description', args)
 
         self._logger.info('edit config complete')

@@ -215,3 +215,8 @@ async def test_edit_config_run(update, error, monkeypatch):
         assert api_calls[2][0][1] == '/datasets/d1/task_actions/bulk_requirements/testing'
         assert api_calls[3][0][1] == '/config/d1'
         assert api_calls[4][0][1] == '/datasets/d1/description'
+
+        final_config = api_calls[3][0][2]
+        logging.info('final config: %r', final_config)
+        assert final_config.get('options', {}) == {}
+        assert final_config['tasks'][0]['token_scopes']['token://'] == 'storage.read:/data/sim/IceCube/2025'
