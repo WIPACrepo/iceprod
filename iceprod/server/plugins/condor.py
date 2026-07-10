@@ -1016,6 +1016,8 @@ class Grid(grid.BaseGrid):
         if job.submit_dir and job.submit_dir.is_dir():
             stdout = job.submit_dir / 'condor.out'
             stderr = job.submit_dir / 'condor.err'
+        else:
+            logger.info('while finishing condor=%s iceprod=%s.%s - missing submit_dir, will not upload logs!', job_id, job.dataset_id, job.task_id)
 
         # do global actions
         try:
@@ -1097,8 +1099,8 @@ class Grid(grid.BaseGrid):
         async with asyncio.TaskGroup() as tg:
             last_time = time.monotonic()
             for job_id, job in hist_jobs_iter:
-                if job_id not in self.jobs:
-                    self.jobs[job_id] = job
+                # always get the latest job info
+                self.jobs[job_id] = job
 
                 logger.info("job %s %s.%s exited on its own from cross-check", job_id, job.dataset_id, job.task_id)
 

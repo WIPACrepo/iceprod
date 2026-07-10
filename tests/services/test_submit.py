@@ -174,6 +174,10 @@ async def test_submit_run(config, scope, monkeypatch):
         'always_active': True,
     }
     assert api_calls[1][0][1] == '/config/dataset'
+    final_config = api_calls[1][0][2]
+    logging.info('final config: %r', final_config)
+    assert final_config.get('options', {}) == {}
+    assert final_config['tasks'][0]['token_scopes']['token://'] == scope
 
     cred_calls = cred_client.request.call_args_list
     assert len(cred_calls) == 2
