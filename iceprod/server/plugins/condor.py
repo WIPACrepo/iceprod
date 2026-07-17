@@ -314,34 +314,37 @@ class CondorSubmit:
             ads['request_disk'] = int(task.requirements['disk']*1000000+1000000)
 
         if 'time' in task.requirements and task.requirements['time']:
-            # do time binning to make matching better
-            time_hrs = int(task.requirements['time'])
-            if time_hrs <= 4:
-                ads['+OriginalTime'] = 4*3600
-                ads['+GPUJobLength'] = 'short'  # CHTC
-                ads['+is_resumable'] = 'short'  # CHTC
-                ads['+JobDurationCategory'] = 'Medium'  # OSPool
-            elif time_hrs <= 12:
-                ads['+OriginalTime'] = 12*3600
-                ads['+GPUJobLength'] = 'short'
-                ads['+JobDurationCategory'] = 'Medium'
-            elif time_hrs <= 24:
-                ads['+OriginalTime'] = 24*3600
-                ads['+GPUJobLength'] = 'medium'
-                ads['+JobDurationCategory'] = 'Medium'
-            elif time_hrs <= 40:
-                ads['+OriginalTime'] = 40*3600
-                ads['+GPUJobLength'] = 'long'
-                ads['+JobDurationCategory'] = 'Long'
-            elif time_hrs <= 24*7:
-                ads['+OriginalTime'] = 24*7*3600
-                ads['+GPUJobLength'] = 'long'
-                ads['+JobDurationCategory'] = 'XLong'
-            else:
-                ads['+OriginalTime'] = 24*14*3600
-                ads['+GPUJobLength'] = 'xlong'
-                ads['+JobDurationCategory'] = 'XLong'
             requirements.append('TargetTime > OriginalTime')
+            time_hrs = int(task.requirements['time'])
+        else:
+            time_hrs = 1
+
+        # do time binning to make matching better
+        if time_hrs <= 4:
+            ads['+OriginalTime'] = 4*3600
+            ads['+GPUJobLength'] = 'short'  # CHTC
+            ads['+is_resumable'] = True     # CHTC
+            ads['+JobDurationCategory'] = 'Medium'  # OSPool
+        elif time_hrs <= 12:
+            ads['+OriginalTime'] = 12*3600
+            ads['+GPUJobLength'] = 'short'
+            ads['+JobDurationCategory'] = 'Medium'
+        elif time_hrs <= 24:
+            ads['+OriginalTime'] = 24*3600
+            ads['+GPUJobLength'] = 'medium'
+            ads['+JobDurationCategory'] = 'Medium'
+        elif time_hrs <= 40:
+            ads['+OriginalTime'] = 40*3600
+            ads['+GPUJobLength'] = 'long'
+            ads['+JobDurationCategory'] = 'Long'
+        elif time_hrs <= 24*7:
+            ads['+OriginalTime'] = 24*7*3600
+            ads['+GPUJobLength'] = 'long'
+            ads['+JobDurationCategory'] = 'XLong'
+        else:
+            ads['+OriginalTime'] = 24*14*3600
+            ads['+GPUJobLength'] = 'long'
+            ads['+JobDurationCategory'] = 'XLong'
 
         if requirements:
             ads['requirements'] = '('+')&&('.join(requirements)+')'
@@ -535,6 +538,10 @@ request_disk = $(disk)
 requirements = $($(reqs))
 +SingularityImage= $(container)
 
++GPUJobLength = $(gpujoblength)
++is_resumable = $(isresumable)
++JobDurationCategory = $(jobduration)
+
 {oauth_block}
 
 transfer_plugins = {transfer_plugin_str}
@@ -616,6 +623,9 @@ transfer_output_remaps = $(outremaps)
                 'disk': f'{ads["request_disk"]}',
                 'time': f'{ads["+OriginalTime"]}',
                 'reqs': f'reqs{task.task_id}',
+                'gpujoblength': f'"{ads["+GPUJobLength"]}"',
+                'isresumable': f'{ads.get("+is_resumable", False)}',
+                'jobduration': f'"{ads["+JobDurationCategory"]}"',
                 'container': f'{container}',
                 'prec': f'{ads["PreCmd"]}',
                 'prea': f'{ads["PreArguments"]}',
