@@ -185,7 +185,7 @@ class CondorSubmit:
         'request_gpus': 'UNDEFINED',
         'request_memory': 1000,
         'request_disk': 1000000,
-        '+OriginalTime': 3600,
+        '+OriginalTime': 3600*12,
         'requirements': '',
         'PreCmd': 'UNDEFINED',
         'PreArguments': 'UNDEFINED',
@@ -298,19 +298,51 @@ class CondorSubmit:
         """Convert from Task requirements to HTCondor requirements"""
         ads: dict[str, str | int] = {}
         requirements = []
+
         if 'cpu' in task.requirements and task.requirements['cpu']:
             ads['request_cpus'] = int(task.requirements['cpu'])
+
         if 'gpu' in task.requirements and task.requirements['gpu']:
             ads['request_gpus'] = int(task.requirements['gpu'])
             requirements.append('ifThenElse(isUndefined(GPUs_Capability),True,GPUs_Capability >= 6.1)')
+
         if 'memory' in task.requirements and task.requirements['memory']:
             ads['request_memory'] = int(task.requirements['memory']*1000)
+
         if 'disk' in task.requirements and task.requirements['disk']:
             # add 1G spare for log files and other misc
             ads['request_disk'] = int(task.requirements['disk']*1000000+1000000)
+
         if 'time' in task.requirements and task.requirements['time']:
-            ads['+OriginalTime'] = int(task.requirements['time']*3600)
+            # do time binning to make matching better
+            time_hrs = int(task.requirements['time'])
+            if time_hrs <= 4:
+                ads['+OriginalTime'] = 4*3600
+                ads['+GPUJobLength'] = 'short'  # CHTC
+                ads['+is_resumable'] = 'short'  # CHTC
+                ads['+JobDurationCategory'] = 'Medium'  # OSPool
+            elif time_hrs <= 12:
+                ads['+OriginalTime'] = 12*3600
+                ads['+GPUJobLength'] = 'short'
+                ads['+JobDurationCategory'] = 'Medium'
+            elif time_hrs <= 24:
+                ads['+OriginalTime'] = 24*3600
+                ads['+GPUJobLength'] = 'medium'
+                ads['+JobDurationCategory'] = 'Medium'
+            elif time_hrs <= 40:
+                ads['+OriginalTime'] = 40*3600
+                ads['+GPUJobLength'] = 'long'
+                ads['+JobDurationCategory'] = 'Long'
+            elif time_hrs <= 24*7:
+                ads['+OriginalTime'] = 24*7*3600
+                ads['+GPUJobLength'] = 'long'
+                ads['+JobDurationCategory'] = 'XLong'
+            else:
+                ads['+OriginalTime'] = 24*14*3600
+                ads['+GPUJobLength'] = 'xlong'
+                ads['+JobDurationCategory'] = 'XLong'
             requirements.append('TargetTime > OriginalTime')
+
         if requirements:
             ads['requirements'] = '('+')&&('.join(requirements)+')'
         return ads
