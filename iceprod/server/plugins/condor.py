@@ -625,7 +625,7 @@ transfer_output_remaps = $(outremaps)
                 'reqs': f'reqs{task.task_id}',
                 'gpujoblength': f'"{ads["+GPUJobLength"]}"',
                 'isresumable': f'{ads.get("+is_resumable", False)}',
-                'jobduration': f'"{ads["+JobDuration"]}"',
+                'jobduration': f'"{ads["+JobDurationCategory"]}"',
                 'container': f'{container}',
                 'prec': f'{ads["PreCmd"]}',
                 'prea': f'{ads["PreArguments"]}',
