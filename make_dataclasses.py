@@ -10,8 +10,8 @@ dcs = {}
 names = dataclasses._plurals.copy()
 for name, obj in inspect.getmembers(dataclasses,inspect.isclass):
     if name[0] != '_' and dict in inspect.getmro(obj):
-        dcs[name] = obj().output()
-        names[name] = obj.plural
+        dcs[name] = obj().output()  # type: ignore
+        names[name] = obj.plural  # type: ignore
 data = {'classes':dcs,'names':names}
 with open(os.path.join(current_path,'iceprod','server','data','www','dataclasses.js'),'w') as f:
     f.write('var dataclasses='+json.dumps(data,separators=(',',':'))+';')
