@@ -92,7 +92,7 @@ jobs:
         with:
           fetch-depth: 0  # setuptools-scm needs to access git tags
           ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.py3 }}
       - name: Install dependencies
