@@ -31,6 +31,7 @@ jobs:
       py-matrix-json: ${{ needs.py-versions.outputs.matrix }}
       max-complexity: 20
       max-statements: 100
+      ruff-modernize-rules: I,FA
 
   ############################################################################
   # PACKAGING

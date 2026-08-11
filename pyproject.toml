@@ -152,4 +152,4 @@ asyncio_mode = "auto"
 exclude = ["env", "*tests", "bin", "build", "docs", "resources", "make_dataclasses.py"]
 
 [tool.ruff.lint]
-ignore = ["ASYNC221", "ASYNC230", "B", "BLE001", "C408", "DTZ007", "E116", "E203", "E226", "E228", "E231", "E501", "FURB", "G201", "LOG015", "N999", "PIE", "PLC0206", "PLR1730", "RET501", "RUF", "S", "SIM", "TRY", "UP"]
+ignore = ["ASYNC221", "ASYNC230", "B", "BLE001", "C408", "DTZ007", "E116", "E203", "E226", "E228", "E231", "E501", "EXE001", "FURB", "G201", "LOG015", "N999", "PIE", "PLC0206", "PLR1730", "RET501", "RUF", "S", "SIM", "TRY", "UP"]
