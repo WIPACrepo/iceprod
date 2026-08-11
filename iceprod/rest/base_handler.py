@@ -1,12 +1,13 @@
 import logging
 from typing import Any
 
-from rest_tools.server import RestHandlerSetup, RestHandler
+from rest_tools.server import RestHandler, RestHandlerSetup
 from tornado.escape import json_encode
 
-from ..common.mongo import AsyncMongoClient, AsyncDatabase
-from iceprod.util import VERSION_STRING
 from iceprod.common.prom_utils import PromRequestMixin
+from iceprod.util import VERSION_STRING
+
+from ..common.mongo import AsyncDatabase, AsyncMongoClient
 from .auth import AttrAuthMixin
 
 logger = logging.getLogger('rest')

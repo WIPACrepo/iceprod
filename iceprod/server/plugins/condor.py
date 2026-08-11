@@ -5,32 +5,38 @@ The Condor plugin.  Allows submission to
 Note: Condor was renamed to HTCondor in 2012.
 """
 import asyncio
-from collections import Counter, defaultdict
-from collections.abc import Iterable
-from dataclasses import dataclass
-from datetime import datetime, timedelta, UTC
 import enum
 import importlib.resources
 import json
 import logging
 import os
-from pathlib import Path
 import re
 import shutil
 import stat
 import subprocess
 import time
+from collections import Counter, defaultdict
+from collections.abc import Iterable
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any, Generator, NamedTuple
 
 import classad2 as classad  # type: ignore
 import htcondor2 as htcondor  # type: ignore
-from wipac_dev_tools.prometheus_tools import GlobalLabels, AsyncPromWrapper, PromWrapper, AsyncPromTimer, PromTimer
+from wipac_dev_tools.prometheus_tools import (
+    AsyncPromTimer,
+    AsyncPromWrapper,
+    GlobalLabels,
+    PromTimer,
+    PromWrapper,
+)
 
-from iceprod.core.config import Task
-from iceprod.core.exe import WriteToScript, Transfer, Data
 from iceprod.common.prom_utils import HistogramBuckets
-from iceprod.server.config import IceProdConfig
+from iceprod.core.config import Task
+from iceprod.core.exe import Data, Transfer, WriteToScript
 from iceprod.server import grid
+from iceprod.server.config import IceProdConfig
 from iceprod.server.util import str2datetime
 
 logger = logging.getLogger('condor')
@@ -314,7 +320,6 @@ class CondorSubmit:
             ads['request_disk'] = int(task.requirements['disk']*1000000+1000000)
 
         if 'time' in task.requirements and task.requirements['time']:
-            requirements.append('TargetTime > OriginalTime')
             time_hrs = int(task.requirements['time'])
         else:
             time_hrs = 1
@@ -534,7 +539,6 @@ request_gpus = $(gpus)
 request_memory = $(memory)
 request_disk = $(disk)
 +OriginalTime = $(time)
-+TargetTime = (!isUndefined(Target.PYGLIDEIN_TIME_TO_LIVE) ? Target.PYGLIDEIN_TIME_TO_LIVE : Target.TimeToLive)
 requirements = $($(reqs))
 +SingularityImage= $(container)
 
@@ -900,7 +904,7 @@ class Grid(grid.BaseGrid):
         self.get_current_JEL()
 
         while True:
-            for filename, events in self.jels.items():
+            for filename, events in self.jels.items():  # ruff: ignore[PERF102]
                 try:
                     for event in events:
                         if float(event.timestamp) < self.last_event_timestamp:

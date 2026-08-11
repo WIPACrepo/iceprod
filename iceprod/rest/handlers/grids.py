@@ -1,13 +1,14 @@
-import logging
 import json
+import logging
 import uuid
 
 import pymongo
 import tornado.web
 
-from ..base_handler import APIBase
-from ..auth import authorization
 from iceprod.server.util import nowstr
+
+from ..auth import authorization
+from ..base_handler import APIBase
 
 logger = logging.getLogger('rest.grids')
 
@@ -74,7 +75,7 @@ class MultiGridsHandler(APIBase):
             if k not in data:
                 raise tornado.web.HTTPError(400, reason='missing key: '+k)
             if not isinstance(data[k], req_fields[k]):
-                r = 'key {} should be of type {}'.format(k, req_fields[k])
+                r = f'key {k} should be of type {req_fields[k]}'
                 raise tornado.web.HTTPError(400, reason=r)
 
         # set some fields

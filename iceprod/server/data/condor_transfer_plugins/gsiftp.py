@@ -8,8 +8,8 @@ by copying them from the path indicated to a job's working directory.
 
 import glob
 import os
-import sys
 import subprocess
+import sys
 import time
 
 DEFAULT_TIMEOUT = 300
@@ -22,16 +22,16 @@ EXIT_AUTHENTICATION_REFRESH = 2
 try:
     from classad import ClassAd, parseAds  # type: ignore
 except ImportError:
-    import re
     import json
+    import re
 
     class ClassAd(dict):  # type: ignore
         def printOld(self):
             ret = []
             for k,v in self.items():
                 if isinstance(v, str):
-                    v = '"{0}"'.format(v)
-                ret.append('{0} = {1}'.format(k, v))
+                    v = f'"{v}"'
+                ret.append(f'{k} = {v}')
             return '[\n' + ';\n'.join(ret) + '\n]\n'
 
     def parseAds(data):
@@ -118,7 +118,7 @@ def parse_args():
 
 
 def format_error(error):
-    return '{0}: {1}'.format(type(error).__name__, str(error))
+    return f'{type(error).__name__}: {str(error)}'
 
 
 def get_error_dict(error, url=''):

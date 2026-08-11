@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 
 import os
-from pathlib import Path
 import sys
-
+from pathlib import Path
 
 """
 This is a PreCmd script designed to rewrite input file names.

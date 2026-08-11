@@ -5,10 +5,8 @@ Task Queue
 Utilities for fairly queueing tasks based on resource usage.
 """
 
-from __future__ import absolute_import, division, print_function
 
 import logging
-
 
 logger = logging.getLogger('task_queue')
 

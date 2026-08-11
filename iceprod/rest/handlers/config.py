@@ -1,12 +1,13 @@
-import logging
-import json
 import copy
+import json
+import logging
 
 import tornado.web
 
-from ..base_handler import APIBase
-from ..auth import authorization, attr_auth
 from iceprod.core.config import Config, ValidationError
+
+from ..auth import attr_auth, authorization
+from ..base_handler import APIBase
 
 logger = logging.getLogger('rest.config')
 

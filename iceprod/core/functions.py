@@ -2,17 +2,16 @@
 Common functions
 """
 
-from __future__ import absolute_import, division, print_function
 
+import asyncio
+import hashlib
+import logging
 import os
 import shutil
-import logging
 import socket
 import subprocess
-import hashlib
-from functools import partial, reduce
 from contextlib import contextmanager
-import asyncio
+from functools import partial, reduce
 
 try:
     import psutil
@@ -21,10 +20,9 @@ except ImportError:
 
 import requests
 from requests_toolbelt.multipart.encoder import MultipartEncoder  # type: ignore
-from rest_tools.client import Session, AsyncSession
+from rest_tools.client import AsyncSession, Session
 
 from iceprod.core.gridftp import GridFTP
-
 
 # Compression Functions #
 _compress_suffixes = ('.tgz','.gz','.tbz2','.tbz','.bz2','.bz',

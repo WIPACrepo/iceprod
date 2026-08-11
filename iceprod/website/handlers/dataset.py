@@ -1,10 +1,11 @@
 import logging
 
-from cachetools.func import ttl_cache
 import tornado.web
+from cachetools.func import ttl_cache
 
 from iceprod.roles_groups import GROUPS
-from .base import authenticated, PublicHandler
+
+from .base import PublicHandler, authenticated
 
 logger = logging.getLogger('website-dataset')
 
@@ -67,19 +68,19 @@ class Dataset(PublicHandler):
             except Exception:
                 pass
         try:
-            dataset = await self.rest_client.request('GET','/datasets/{}'.format(dataset_id))
+            dataset = await self.rest_client.request('GET',f'/datasets/{dataset_id}')
         except Exception:
             raise tornado.web.HTTPError(404, reason='Dataset not found')
         dataset_num = dataset['dataset']
 
         passkey = self.auth_access_token
 
-        jobs = await self.rest_client.request('GET','/datasets/{}/job_counts/status'.format(dataset_id))
-        tasks = await self.rest_client.request('GET','/datasets/{}/task_counts/status'.format(dataset_id))
-        task_info = await self.rest_client.request('GET','/datasets/{}/task_counts/name_status'.format(dataset_id))
-        task_stats = await self.rest_client.request('GET','/datasets/{}/task_stats'.format(dataset_id))
+        jobs = await self.rest_client.request('GET',f'/datasets/{dataset_id}/job_counts/status')
+        tasks = await self.rest_client.request('GET',f'/datasets/{dataset_id}/task_counts/status')
+        task_info = await self.rest_client.request('GET',f'/datasets/{dataset_id}/task_counts/name_status')
+        task_stats = await self.rest_client.request('GET',f'/datasets/{dataset_id}/task_stats')
         try:
-            config = await self.rest_client.request('GET','/config/{}'.format(dataset_id))
+            config = await self.rest_client.request('GET',f'/config/{dataset_id}')
         except Exception:
             config = {}
         for t in task_info:

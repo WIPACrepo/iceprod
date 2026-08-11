@@ -1,9 +1,9 @@
 
+import inspect
+import logging
 from dataclasses import dataclass
 from functools import cached_property
-import inspect
 from logging import Logger
-import logging
 from typing import Any
 
 import requests
@@ -12,7 +12,6 @@ from tornado.web import HTTPError
 
 from iceprod.common.mongo_queue import AsyncMongoQueue, Message, Payload
 from iceprod.rest.base_handler import APIBase
-
 
 type HandlerTypes = list[tuple[str, Any, dict[str, Any]]]
 

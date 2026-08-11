@@ -3,11 +3,11 @@ Logfile setup
 """
 
 import dataclasses
-import os
-import time
+import gzip
 import logging
 import logging.handlers
-import gzip
+import os
+import time
 
 from wipac_dev_tools import from_environment_as_dataclass
 

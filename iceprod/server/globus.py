@@ -2,9 +2,9 @@
 Tools to help manage Globus proxies
 """
 
+import logging
 import os
 import subprocess
-import logging
 
 from iceprod.server.config import IceProdConfig
 
@@ -70,7 +70,7 @@ class SiteGlobusProxy(object):
                 if 'voms_role' in self.cfg and self.cfg['voms_role']:
                     vo = self.cfg['voms_vo']
                     role = self.cfg['voms_role']
-                    cmd.extend(['-voms', '{0}:/{0}/Role={1}'.format(vo, role)])
+                    cmd.extend(['-voms', f'{vo}:/{vo}/Role={role}'])
                 else:
                     cmd.extend(['-voms', self.cfg['voms_vo']])
             else:

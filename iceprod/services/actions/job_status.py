@@ -1,5 +1,5 @@
-from dataclasses import asdict, dataclass
 import logging
+from dataclasses import asdict, dataclass
 from typing import Any
 
 from tornado.web import HTTPError
@@ -8,7 +8,6 @@ from iceprod.common.mongo_queue import Message
 from iceprod.server.states import JOB_STATUS, dataset_prev_statuses
 from iceprod.services.actions.submit import TokenSubmitter
 from iceprod.services.base import AuthData, BaseAction
-
 
 logger = logging.getLogger('job_status')
 

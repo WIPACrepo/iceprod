@@ -2,15 +2,14 @@
 gridftp interface
 """
 
-from __future__ import absolute_import, division, print_function
 
-import os
 import logging
-from collections import namedtuple
-from datetime import datetime
-import tempfile
+import os
 import shutil
 import subprocess
+import tempfile
+from collections import namedtuple
+from datetime import datetime
 
 logger = logging.getLogger('gridftp')
 
@@ -53,15 +52,15 @@ def listify(lines,details=False,dotfiles=False):
                 pieces = pieces[1:]
             else:
                 subfiles = int(pieces[3])
-            year = datetime.now().year
+            year = datetime.now().year  # ruff: ignore[DTZ005]
             month = months[pieces[4].lower()]
             day = int(pieces[5])
             if ':' in pieces[6]:
                 hour,minute = pieces[6].split(':')
-                dt = datetime(year,month,day,int(hour),int(minute))
+                dt = datetime(year,month,day,int(hour),int(minute))  # ruff: ignore[DTZ001]
             else:
                 year = int(pieces[6])
-                dt = datetime(year,month,day)
+                dt = datetime(year,month,day)  # ruff: ignore[DTZ001]
             out.append(File(d,perms,subfiles,pieces[1],pieces[2],
                             int(pieces[3]),dt,name))
     else:

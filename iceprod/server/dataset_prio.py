@@ -2,10 +2,10 @@
 Functions used to calculate dataset priority.
 """
 
-import math
 import logging
-from functools import partial
+import math
 from collections import defaultdict
+from functools import partial
 
 
 def apply_group_prios(datasets, groups=None, filters=None):

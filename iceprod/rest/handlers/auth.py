@@ -1,12 +1,13 @@
-import logging
 import json
+import logging
 
 import pymongo.errors
 import tornado.web
 
-from ..base_handler import APIBase
+from iceprod.roles_groups import GROUP_PRIORITIES, ROLES
+
 from ..auth import authorization
-from iceprod.roles_groups import ROLES, GROUP_PRIORITIES
+from ..base_handler import APIBase
 
 logger = logging.getLogger('rest.auth')
 
@@ -214,7 +215,7 @@ class AuthHandler(APIBase):
             if k not in data:
                 raise tornado.web.HTTPError(400, reason='missing key: '+k)
             if not isinstance(data[k], req_fields[k]):
-                r = 'key "{}" should be of type {}'.format(k, req_fields[k].__name__)
+                r = f'key "{k}" should be of type {req_fields[k].__name__}'
                 raise tornado.web.HTTPError(400, reason=r)
 
         # check auth

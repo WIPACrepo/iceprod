@@ -7,20 +7,19 @@ import traceback
 from typing import Any
 from urllib.parse import urlencode
 
-from iceprod.core.jsonUtil import json_encode
-
-import tornado.web
 import jwt
 import requests.exceptions
-from rest_tools.client import RestClient, OpenIDRestClient
-from rest_tools.server import catch_error, RestHandler
+import tornado.web
+from rest_tools.client import OpenIDRestClient, RestClient
+from rest_tools.server import RestHandler, catch_error
 from rest_tools.server.session import SessionMixin
 
-from iceprod.credentials.util import get_expiration
-from iceprod.util import VERSION_STRING
-from iceprod.common.prom_utils import PromRequestMixin
-from iceprod.roles_groups import GROUPS
 import iceprod.server.states
+from iceprod.common.prom_utils import PromRequestMixin
+from iceprod.core.jsonUtil import json_encode
+from iceprod.credentials.util import get_expiration
+from iceprod.roles_groups import GROUPS
+from iceprod.util import VERSION_STRING
 
 logger = logging.getLogger('website_base')
 

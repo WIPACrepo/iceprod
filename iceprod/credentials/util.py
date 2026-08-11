@@ -1,15 +1,14 @@
-from dataclasses import dataclass
 import importlib.resources
 import json
-from hashlib import shake_128
 import logging
 import time
+from dataclasses import dataclass
+from hashlib import shake_128
 
-from cachetools.func import ttl_cache
 import jsonschema
 import jwt
+from cachetools.func import ttl_cache
 from rest_tools.utils.auth import OpenIDAuth
-
 
 logger = logging.getLogger('credentials.util')
 

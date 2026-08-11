@@ -1,24 +1,25 @@
 """
 Server for queue management
 """
-from collections import defaultdict
-from functools import partial
 import importlib
 import logging
-from pathlib import Path
 import pkgutil
+from collections import defaultdict
+from functools import partial
+from pathlib import Path
 from typing import Any
 
 from prometheus_client import Info, start_http_server
 from rest_tools.server import RestServer
-from tornado.web import RequestHandler, HTTPError
+from tornado.web import HTTPError, RequestHandler
 
 from iceprod.common.mongo import Mongo
 from iceprod.common.prom_utils import AsyncMonitor
-from iceprod.s3 import boto3, S3
+from iceprod.s3 import S3, boto3
 from iceprod.util import VERSION_STRING
-from .config import get_config
+
 from .base_handler import IceProdRestConfig
+from .config import get_config
 
 logger = logging.getLogger('rest-server')
 

@@ -3,24 +3,25 @@ Server for iceprod background services.
 """
 import json
 import logging
-from pathlib import Path
 import pkgutil
+from pathlib import Path
 from typing import Any, Self
 
 from prometheus_client import Info, start_http_server
-from rest_tools.client import RestClient, ClientCredentialsAuth
+from rest_tools.client import ClientCredentialsAuth, RestClient
 from rest_tools.server import RestServer
 from tornado.web import HTTPError
 from tornado.web import RequestHandler as TornadoRequestHandler
 
-from .config import get_config
-from .base import AuthData, BaseAction, BaseHandler
 from iceprod.common.mongo_queue import AsyncMongoQueue
-from iceprod.util import VERSION_STRING
 from iceprod.common.prom_utils import AsyncMonitor
 from iceprod.rest.auth import authorization
 from iceprod.rest.base_handler import IceProdRestConfig
 from iceprod.server.util import nowstr
+from iceprod.util import VERSION_STRING
+
+from .base import AuthData, BaseAction, BaseHandler
+from .config import get_config
 
 logger = logging.getLogger('server')
 

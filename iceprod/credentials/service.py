@@ -6,6 +6,7 @@ import httpx
 import jwt
 
 from iceprod.common.mongo import AsyncDatabase
+
 from .util import ClientCreds, get_expiration
 
 logger = logging.getLogger('refresh_service')

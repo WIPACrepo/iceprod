@@ -1,8 +1,7 @@
 import asyncio
 
-from .server import Server
 from ..core.logger import stderr_logger
-
+from .server import Server
 
 stderr_logger()
 

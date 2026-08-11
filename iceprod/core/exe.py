@@ -25,23 +25,20 @@ accomplished via an internal evironment for each scope.
 Data movement should be defined at the task level.
 """
 
-from collections.abc import Iterable
-from contextlib import contextmanager
 import copy
-from dataclasses import dataclass
-from enum import StrEnum
 import logging
 import os
+from collections.abc import Iterable
+from contextlib import contextmanager
+from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 from typing import Any, Iterator, Optional, TextIO
 
-
-from iceprod.core import config
-from iceprod.core.defaults import add_default_options
-from iceprod.core import util
-from iceprod.core import functions
 import iceprod.core.parser
-from iceprod.core.jsonUtil import json_encode,json_decode
+from iceprod.core import config, functions, util
+from iceprod.core.defaults import add_default_options
+from iceprod.core.jsonUtil import json_decode, json_encode
 
 
 class Transfer(StrEnum):

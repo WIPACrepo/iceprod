@@ -6,7 +6,7 @@ import time
 
 from prometheus_client import Histogram
 from tornado.web import RequestHandler
-from wipac_dev_tools.prometheus_tools import GlobalLabels, AsyncPromWrapper
+from wipac_dev_tools.prometheus_tools import AsyncPromWrapper, GlobalLabels
 
 
 class HistogramBuckets:
