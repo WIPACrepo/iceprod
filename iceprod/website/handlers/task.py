@@ -22,7 +22,7 @@ class TaskBrowse(PublicHandler):
             passkey = self.auth_access_token
             self.render('task_browse.html',tasks=tasks, passkey=passkey)
         else:
-            status = await self.rest_client.request('GET','/datasets/{}/task_counts/status'.format(dataset_id))
+            status = await self.rest_client.request('GET',f'/datasets/{dataset_id}/task_counts/status')
             self.render('tasks.html',status=status)
 
 
@@ -34,16 +34,16 @@ class Task(PublicHandler):
         status = self.get_argument('status', default=None)
         passkey = self.auth_access_token
 
-        dataset = await self.rest_client.request('GET', '/datasets/{}'.format(dataset_id))
-        task_details = await self.rest_client.request('GET','/datasets/{}/tasks/{}?status={}'.format(dataset_id, task_id, status))
-        task_stats = await self.rest_client.request('GET','/datasets/{}/tasks/{}/task_stats?last=true'.format(dataset_id, task_id))
+        dataset = await self.rest_client.request('GET', f'/datasets/{dataset_id}')
+        task_details = await self.rest_client.request('GET',f'/datasets/{dataset_id}/tasks/{task_id}?status={status}')
+        task_stats = await self.rest_client.request('GET',f'/datasets/{dataset_id}/tasks/{task_id}/task_stats?last=true')
         if task_stats:
             task_stats = list(task_stats.values())[0]
         try:
-            ret = await self.rest_client.request('GET','/datasets/{}/tasks/{}/logs?group=true'.format(dataset_id, task_id))
+            ret = await self.rest_client.request('GET',f'/datasets/{dataset_id}/tasks/{task_id}/logs?group=true')
             logs = ret['logs']
             # logger.info("logs: %r", logs)
-            ret2 = await self.rest_client.request('GET','/datasets/{}/tasks/{}/logs?keys=log_id|name|timestamp'.format(dataset_id, task_id))
+            ret2 = await self.rest_client.request('GET',f'/datasets/{dataset_id}/tasks/{task_id}/logs?keys=log_id|name|timestamp')
             logs2 = ret2['logs']
             logger.info("logs2: %r", logs2)
             log_by_name = defaultdict(list)

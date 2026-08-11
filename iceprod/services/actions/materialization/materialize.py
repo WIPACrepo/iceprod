@@ -49,16 +49,16 @@ class Materialize:
         for dataset_id in datasets:
             try:
                 start_time = time.monotonic()
-                dataset = await self.rest_client.request('GET', '/datasets/{}'.format(dataset_id))
+                dataset = await self.rest_client.request('GET', f'/datasets/{dataset_id}')
                 if dataset.get('truncated', False) and not only_dataset:
                     logger.info('ignoring truncated dataset %s', dataset_id)
                     continue
-                job_counts = await self.rest_client.request('GET', '/datasets/{}/job_counts/status'.format(dataset_id))
-                tasks = await self.rest_client.request('GET', '/datasets/{}/task_counts/status'.format(dataset_id))
+                job_counts = await self.rest_client.request('GET', f'/datasets/{dataset_id}/job_counts/status')
+                tasks = await self.rest_client.request('GET', f'/datasets/{dataset_id}/task_counts/status')
                 if 'waiting' not in tasks or job_counts.get('processing', 0) < num or only_dataset:
                     # buffer for this dataset
                     logger.warning('checking dataset %s', dataset_id)
-                    jobs = await self.rest_client.request('GET', '/datasets/{}/jobs'.format(dataset_id), {'keys': 'job_id|job_index'})
+                    jobs = await self.rest_client.request('GET', f'/datasets/{dataset_id}/jobs', {'keys': 'job_id|job_index'})
                     job_index_id = {j['job_index']: j['job_id'] for j in jobs.values()}
 
                     # check that last job was buffered correctly
@@ -183,7 +183,7 @@ class Materialize:
         if dataset_id in self.config_cache:
             return self.config_cache[dataset_id]
 
-        config = await self.rest_client.request('GET', '/config/{}'.format(dataset_id))
+        config = await self.rest_client.request('GET', f'/config/{dataset_id}')
         if 'options' not in config:
             config['options'] = {}
         self.config_cache[dataset_id] = config
@@ -249,7 +249,7 @@ class Materialize:
                 logging.debug('dep %r in another dataset', dep)
                 dataset_id, dep = dep.split(':',1)
                 try:
-                    tasks = await rest_client.request('GET', '/datasets/{}/tasks?keys=task_id|name|task_index&job_index={}'.format(dataset_id,job_index))
+                    tasks = await rest_client.request('GET', f'/datasets/{dataset_id}/tasks?keys=task_id|name|task_index&job_index={job_index}')
                     for task in tasks.values():
                         if dep == task['name'] or dep == str(task['task_index']):
                             ret.append(task['task_id'])
@@ -262,7 +262,7 @@ class Materialize:
                 # try for a raw task_id
                 logging.debug('dep %r is a raw id', dep)
                 try:
-                    task = await self.rest_client.request('GET', '/tasks/{}'.format(dep))
+                    task = await self.rest_client.request('GET', f'/tasks/{dep}')
                     ret.append(task['task_id'])
                 except Exception:
                     raise Exception('bad depends: %r', dep)
@@ -289,7 +289,7 @@ if __name__ == '__main__':
         logging.warning('manually buffering a job for dataset %s job %d', args.dataset_id, args.job_index)
 
         async def run():
-            dataset = await rest_client.request('GET', '/datasets/{}'.format(args.dataset_id))
+            dataset = await rest_client.request('GET', f'/datasets/{args.dataset_id}')
             materialize.prio = Priority(rest_client)
             await materialize.buffer_job(dataset, args.job_index, job_id=args.job_id)
 

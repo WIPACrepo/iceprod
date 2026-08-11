@@ -19,8 +19,8 @@ class Config(PublicHandler):
             self.write_error(400,message='must provide dataset_id')
             return
         edit = int(self.get_query_argument('edit', default='0'))
-        dataset = await self.rest_client.request('GET','/datasets/{}'.format(dataset_id))
-        config = await self.rest_client.request('GET','/config/{}'.format(dataset_id))
+        dataset = await self.rest_client.request('GET',f'/datasets/{dataset_id}')
+        config = await self.rest_client.request('GET',f'/config/{dataset_id}')
         render_args = {
             'edit': edit,
             'dataset': dataset.get('dataset',''),
@@ -42,7 +42,7 @@ class Config(PublicHandler):
         if not edit:
             self.write_error(400, message='cannot edit')
             return
-        dataset = await self.rest_client.request('GET','/datasets/{}'.format(dataset_id))
+        dataset = await self.rest_client.request('GET',f'/datasets/{dataset_id}')
         if not dataset:
             self.write_error(400, message='invalid dataset_id')
             return
@@ -124,7 +124,7 @@ class ConfigStatus(PublicHandler):
             description = ret['payload']['description']
             dataset_id = ret['payload']['dataset_id']
 
-            dataset = await self.rest_client.request('GET','/datasets/{}'.format(dataset_id))
+            dataset = await self.rest_client.request('GET',f'/datasets/{dataset_id}')
             if not dataset:
                 raise Exception('invalid dataset_id')
         except Exception as e:

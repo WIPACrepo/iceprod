@@ -165,7 +165,7 @@ class MultiTasksHandler(APIBase):
             if k not in data:
                 raise tornado.web.HTTPError(400, reason='missing key: '+k)
             if not isinstance(data[k], req_fields[k]):
-                r = 'key {} should be of type {}'.format(k, req_fields[k])
+                r = f'key {k} should be of type {req_fields[k]}'
                 raise tornado.web.HTTPError(400, reason=r)
 
         opt_fields = {
@@ -175,7 +175,7 @@ class MultiTasksHandler(APIBase):
         }
         for k in opt_fields:
             if k in data and not isinstance(data[k], opt_fields[k]):
-                r = 'key "{}" should be of type {}'.format(k, opt_fields[k].__name__)
+                r = f'key "{k}" should be of type {opt_fields[k].__name__}'
                 raise tornado.web.HTTPError(400, reason=r)
 
         bad_fields = set(data).difference(set(opt_fields).union(req_fields))
@@ -1430,13 +1430,13 @@ class DatasetTaskBulkRequirementsHandler(APIBase):
             val = data[key]
             if key == 'os':
                 if not isinstance(val, list):
-                    raise tornado.web.HTTPError(400, reason='Bad type for {}, should be list'.format(key))
+                    raise tornado.web.HTTPError(400, reason=f'Bad type for {key}, should be list')
             elif key in Resources.defaults and isinstance(Resources.defaults[key], (int, list)):
                 if not isinstance(val, int):
-                    raise tornado.web.HTTPError(400, reason='Bad type for {}, should be int'.format(key))
+                    raise tornado.web.HTTPError(400, reason=f'Bad type for {key}, should be int')
             elif key in Resources.defaults and isinstance(Resources.defaults[key], float):
                 if not isinstance(val, (int,float)):
-                    raise tornado.web.HTTPError(400, reason='Bad type for {}, should be float'.format(key))
+                    raise tornado.web.HTTPError(400, reason=f'Bad type for {key}, should be float')
             else:
                 val = str(val)
             reqs['requirements.'+key] = val
@@ -1492,18 +1492,18 @@ class DatasetTaskBulkRequirementsHandler(APIBase):
             val = data[key]
             if key == 'os':
                 if not isinstance(val, list):
-                    raise tornado.web.HTTPError(400, reason='Bad type for {}, should be list'.format(key))
+                    raise tornado.web.HTTPError(400, reason=f'Bad type for {key}, should be list')
                 if val:
                     sets['requirements.'+key] = val
                 else:
                     unsets['requirements.'+key] = ''
             elif key in Resources.defaults and isinstance(Resources.defaults[key], (int, list)):
                 if not isinstance(val, int):
-                    raise tornado.web.HTTPError(400, reason='Bad type for {}, should be int'.format(key))
+                    raise tornado.web.HTTPError(400, reason=f'Bad type for {key}, should be int')
                 maxes['requirements.'+key] = val
             elif key in Resources.defaults and isinstance(Resources.defaults[key], float):
                 if not isinstance(val, (int,float)):
-                    raise tornado.web.HTTPError(400, reason='Bad type for {}, should be float'.format(key))
+                    raise tornado.web.HTTPError(400, reason=f'Bad type for {key}, should be float')
                 maxes['requirements.'+key] = val
             else:
                 sets['requirements.'+key] = str(val)
@@ -1583,7 +1583,7 @@ class DatasetMultiFilesHandler(APIBase):
             if k not in data:
                 raise tornado.web.HTTPError(400, reason='missing key: '+k)
             if not isinstance(data[k], req_fields[k]):
-                r = 'key {} should be of type {}'.format(k, req_fields[k])
+                r = f'key {k} should be of type {req_fields[k]}'
                 raise tornado.web.HTTPError(400, reason=r)
 
         # find the task referred to
@@ -1681,7 +1681,7 @@ class DatasetTaskFilesHandler(APIBase):
             if k not in data:
                 raise tornado.web.HTTPError(400, reason='missing key: '+k)
             if not isinstance(data[k], req_fields[k]):
-                r = 'key {} should be of type {}'.format(k, req_fields[k])
+                r = f'key {k} should be of type {req_fields[k]}'
                 raise tornado.web.HTTPError(400, reason=r)
 
         # set some fields

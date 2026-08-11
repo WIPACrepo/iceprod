@@ -30,8 +30,8 @@ except ImportError:
             ret = []
             for k,v in self.items():
                 if isinstance(v, str):
-                    v = '"{0}"'.format(v)
-                ret.append('{0} = {1}'.format(k, v))
+                    v = f'"{v}"'
+                ret.append(f'{k} = {v}')
             return '[\n' + ';\n'.join(ret) + '\n]\n'
 
     def parseAds(data):
@@ -118,7 +118,7 @@ def parse_args():
 
 
 def format_error(error):
-    return '{0}: {1}'.format(type(error).__name__, str(error))
+    return f'{type(error).__name__}: {str(error)}'
 
 
 def get_error_dict(error, url=''):

@@ -13,7 +13,7 @@ class JobBrowse(PublicHandler):
         status = self.get_argument('status',default=None)
         passkey = self.auth_access_token
 
-        jobs = await self.rest_client.request('GET', '/datasets/{}/jobs'.format(dataset_id))
+        jobs = await self.rest_client.request('GET', f'/datasets/{dataset_id}/jobs')
         if status:
             for t in list(jobs):
                 if jobs[t]['status'] != status:
@@ -30,8 +30,8 @@ class Job(PublicHandler):
         status = self.get_argument('status',default=None)
         passkey = self.auth_access_token
 
-        dataset = await self.rest_client.request('GET', '/datasets/{}'.format(dataset_id))
-        job = await self.rest_client.request('GET', '/datasets/{}/jobs/{}'.format(dataset_id,job_id))
+        dataset = await self.rest_client.request('GET', f'/datasets/{dataset_id}')
+        job = await self.rest_client.request('GET', f'/datasets/{dataset_id}/jobs/{job_id}')
         args = {'job_id': job_id}
         if status:
             args['status'] = status

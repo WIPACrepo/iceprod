@@ -215,7 +215,7 @@ class AuthHandler(APIBase):
             if k not in data:
                 raise tornado.web.HTTPError(400, reason='missing key: '+k)
             if not isinstance(data[k], req_fields[k]):
-                r = 'key "{}" should be of type {}'.format(k, req_fields[k].__name__)
+                r = f'key "{k}" should be of type {req_fields[k].__name__}'
                 raise tornado.web.HTTPError(400, reason=r)
 
         # check auth

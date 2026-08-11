@@ -85,7 +85,7 @@ class Log(PublicHandler):
     @authenticated
     async def get(self, dataset_id, log_id):
         assert self.rest_client
-        ret = await self.rest_client.request('GET','/datasets/{}/logs/{}'.format(dataset_id, log_id))
+        ret = await self.rest_client.request('GET',f'/datasets/{dataset_id}/logs/{log_id}')
         log_text = ret['data']
         html = '<html><head><title>' + ret['name'] + '</title></head><body>'
         html += log_text.replace('\n', '<br/>')
