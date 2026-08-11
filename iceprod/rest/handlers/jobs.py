@@ -1,15 +1,21 @@
-import logging
 import json
+import logging
 import uuid
 from collections import defaultdict
 
 import pymongo
 import tornado.web
 
-from ..base_handler import APIBase
-from ..auth import authorization, attr_auth
+from iceprod.server.states import (
+    JOB_STATUS,
+    JOB_STATUS_START,
+    job_prev_statuses,
+    job_status_sort,
+)
 from iceprod.server.util import nowstr
-from iceprod.server.states import JOB_STATUS, JOB_STATUS_START, job_prev_statuses, job_status_sort
+
+from ..auth import attr_auth, authorization
+from ..base_handler import APIBase
 
 logger = logging.getLogger('rest.jobs')
 

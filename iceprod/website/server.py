@@ -13,26 +13,31 @@ import re
 import secrets
 from typing import Any
 
-from prometheus_client import Info, start_http_server
 import tornado.web
-from rest_tools.client import RestClient, ClientCredentialsAuth
-from rest_tools.server import catch_error, RestServer, RestHandlerSetup, OpenIDLoginHandler
+from prometheus_client import Info, start_http_server
+from rest_tools.client import ClientCredentialsAuth, RestClient
+from rest_tools.server import (
+    OpenIDLoginHandler,
+    RestHandlerSetup,
+    RestServer,
+    catch_error,
+)
 from rest_tools.server.session import Session
 
-from iceprod.util import VERSION_STRING
 from iceprod.common.prom_utils import AsyncMonitor, PromRequestMixin
 from iceprod.core.config import ConfigSchema as DATASET_SCHEMA
-from iceprod.server.config import CONFIG_SCHEMA as SERVER_SCHEMA
 from iceprod.server import documentation
+from iceprod.server.config import CONFIG_SCHEMA as SERVER_SCHEMA
 from iceprod.server.util import nowstr
+from iceprod.util import VERSION_STRING
 
+from . import uimodules
 from .config import get_config
-from .handlers.base import authenticated, LoginMixin, PublicHandler
-from .handlers.submit import Config, ConfigStatus, Submit, SubmitStatus
+from .handlers.base import LoginMixin, PublicHandler, authenticated
 from .handlers.dataset import Dataset, DatasetBrowse
 from .handlers.job import Job, JobBrowse
+from .handlers.submit import Config, ConfigStatus, Submit, SubmitStatus
 from .handlers.task import Task, TaskBrowse
-from . import uimodules
 
 logger = logging.getLogger('website')
 

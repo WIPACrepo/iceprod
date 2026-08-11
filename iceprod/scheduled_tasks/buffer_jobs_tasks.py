@@ -14,7 +14,6 @@ from rest_tools.client import RestClient
 
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 
-
 logger = logging.getLogger('buffer_jobs_tasks')
 
 MAX_PARALLEL_REQUESTS = 100

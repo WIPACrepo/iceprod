@@ -1,10 +1,11 @@
 import logging
 
-from cachetools.func import ttl_cache
 import tornado.web
+from cachetools.func import ttl_cache
 
 from iceprod.roles_groups import GROUPS
-from .base import authenticated, PublicHandler
+
+from .base import PublicHandler, authenticated
 
 logger = logging.getLogger('website-dataset')
 

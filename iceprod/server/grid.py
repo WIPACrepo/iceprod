@@ -5,33 +5,36 @@ that inherit from this class.
 """
 
 import asyncio
-from collections import Counter
-from enum import StrEnum
 import json
-import os
 import logging
-from copy import deepcopy
-from pathlib import Path
+import os
 import socket
+from collections import Counter
+from copy import deepcopy
+from enum import StrEnum
+from pathlib import Path
 from typing import Any, Protocol
 
+import requests.exceptions
 from asyncache import cached, cachedmethod  # type: ignore
 from cachetools import TTLCache
 from cachetools.func import ttl_cache
 from prometheus_client import Info
-import requests.exceptions
-from wipac_dev_tools.prometheus_tools import GlobalLabels, AsyncPromWrapper, AsyncPromTimer
+from wipac_dev_tools.prometheus_tools import (
+    AsyncPromTimer,
+    AsyncPromWrapper,
+    GlobalLabels,
+)
 
-from iceprod.server.priority import Priority
-from iceprod.util import VERSION_STRING
+from iceprod.common.prom_utils import HistogramBuckets
 from iceprod.core import functions
-from iceprod.core.config import Task, Job, Dataset
+from iceprod.core.config import Dataset, Job, Task
 from iceprod.core.defaults import add_default_options
 from iceprod.core.resources import Resources, rounded_requirements
-from iceprod.common.prom_utils import HistogramBuckets
+from iceprod.server.priority import Priority
 from iceprod.server.states import JOB_STATUS_START
 from iceprod.server.util import nowstr
-
+from iceprod.util import VERSION_STRING
 
 logger = logging.getLogger('grid')
 

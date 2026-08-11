@@ -1,7 +1,7 @@
-from collections import defaultdict
 import logging
+from collections import defaultdict
 
-from .base import authenticated, PublicHandler
+from .base import PublicHandler, authenticated
 
 logger = logging.getLogger('website-task')
 

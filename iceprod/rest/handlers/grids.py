@@ -1,13 +1,14 @@
-import logging
 import json
+import logging
 import uuid
 
 import pymongo
 import tornado.web
 
-from ..base_handler import APIBase
-from ..auth import authorization
 from iceprod.server.util import nowstr
+
+from ..auth import authorization
+from ..base_handler import APIBase
 
 logger = logging.getLogger('rest.grids')
 

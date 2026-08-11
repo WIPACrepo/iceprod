@@ -8,8 +8,8 @@ stdout: 1 year
 
 import argparse
 import asyncio
-from datetime import datetime, timedelta, UTC
 import logging
+from datetime import UTC, datetime, timedelta
 
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 from iceprod.server.util import datetime2str

@@ -4,14 +4,14 @@ Some JSON encoding and decoding utilities.
 
 from __future__ import absolute_import, division, print_function
 
-import json
-from datetime import date,datetime,time
-import base64
-from typing import Any
-import zlib
-import logging
 import ast
+import base64
 import inspect
+import json
+import logging
+import zlib
+from datetime import date, datetime, time
+from typing import Any
 
 from iceprod.core import dataclasses
 

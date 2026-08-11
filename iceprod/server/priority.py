@@ -3,8 +3,8 @@ Functions used to calculate dataset and task priority.
 """
 import argparse
 import asyncio
-from datetime import datetime, UTC
 import logging
+from datetime import UTC, datetime
 
 import wipac_dev_tools
 

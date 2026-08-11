@@ -1,12 +1,19 @@
-from dataclasses import asdict, dataclass
 import json
+from dataclasses import asdict, dataclass
 from typing import Any
 
 from tornado.web import HTTPError
 
 from iceprod.common.mongo_queue import Message
 from iceprod.rest.auth import attr_auth, authorization
-from iceprod.services.base import AuthData, BaseAction, BaseHandler, HandlerTypes, TimeoutException
+from iceprod.services.base import (
+    AuthData,
+    BaseAction,
+    BaseHandler,
+    HandlerTypes,
+    TimeoutException,
+)
+
 from .materialize import Materialize
 
 

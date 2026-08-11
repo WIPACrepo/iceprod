@@ -1,8 +1,8 @@
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
 import io
-from functools import partial
 import logging
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 
 try:
     import boto3  # type: ignore

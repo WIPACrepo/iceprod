@@ -16,8 +16,8 @@ dataclass, to be used in javascript.
 """
 
 import time
+from numbers import Integral, Number
 
-from numbers import Number, Integral
 String = str
 
 

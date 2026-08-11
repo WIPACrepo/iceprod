@@ -1,16 +1,16 @@
 import asyncio
 import logging
-from pathlib import Path
 import pkgutil
 import time
+from pathlib import Path
 
-from rest_tools.client import RestClient, ClientCredentialsAuth
+from rest_tools.client import ClientCredentialsAuth, RestClient
 
 from iceprod.common.mongo_queue import AsyncMongoQueue
 from iceprod.services.base import BaseAction, TimeoutException
 
-from .config import get_config
 from ..core.logger import stderr_logger
+from .config import get_config
 
 logger = logging.getLogger('service')
 

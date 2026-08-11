@@ -1,11 +1,11 @@
-from collections import defaultdict
-from functools import partial
 import json
 import logging
 import math
 import re
-from typing import Any
 import uuid
+from collections import defaultdict
+from functools import partial
+from typing import Any
 
 import pymongo
 import pymongo.asynchronous.client_session
@@ -14,12 +14,18 @@ import pymongo.read_concern
 import tornado.web
 from wipac_dev_tools import strtobool
 
-from ..base_handler import APIBase
-from ..auth import authorization, attr_auth
 from iceprod.core import dataclasses
 from iceprod.core.resources import Resources
+from iceprod.server.states import (
+    TASK_STATUS,
+    TASK_STATUS_START,
+    task_prev_statuses,
+    task_status_sort,
+)
 from iceprod.server.util import nowstr
-from iceprod.server.states import TASK_STATUS, TASK_STATUS_START, task_status_sort, task_prev_statuses
+
+from ..auth import attr_auth, authorization
+from ..base_handler import APIBase
 
 logger = logging.getLogger('rest.tasks')
 

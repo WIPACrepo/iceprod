@@ -1,20 +1,21 @@
 import asyncio
-from collections.abc import Iterable
-from copy import deepcopy
-from dataclasses import dataclass
 import importlib.resources
 import json
 import logging
-from pathlib import Path
 import re
+from collections.abc import Iterable
+from copy import deepcopy
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
+
 try:
     from typing import Self
 except ImportError:
     from typing_extensions import Self
 
-from cachetools.func import ttl_cache
 import jsonschema
+from cachetools.func import ttl_cache
 from rest_tools.client import RestClient
 
 

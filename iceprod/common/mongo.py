@@ -4,7 +4,6 @@ from typing import Any
 from pymongo import AsyncMongoClient
 from pymongo.asynchronous.database import AsyncDatabase
 
-
 type CollectionIndexes = dict[str, dict[str, Any]]
 """
 Indexes for a collection.

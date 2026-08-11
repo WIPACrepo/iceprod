@@ -5,9 +5,9 @@ queueing system, putting tasks on the queue and removing them as necessary.
 import asyncio
 import importlib
 import logging
-from pathlib import Path
 import pkgutil
 import time
+from pathlib import Path
 
 from rest_tools.client import ClientCredentialsAuth
 

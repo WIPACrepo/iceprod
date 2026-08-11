@@ -3,11 +3,11 @@ Daemonize a process.
 
 Based on: http://www.jejik.com/articles/2007/02/a_simple_unix_linux_daemon_in_python/
 """
-import sys
-import os
-import time
 import atexit
+import os
 import signal
+import sys
+import time
 
 
 class Daemon(object):

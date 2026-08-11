@@ -8,8 +8,8 @@ by copying them from the path indicated to a job's working directory.
 
 import glob
 import os
-import sys
 import subprocess
+import sys
 import time
 
 DEFAULT_TIMEOUT = 300
@@ -22,8 +22,8 @@ EXIT_AUTHENTICATION_REFRESH = 2
 try:
     from classad import ClassAd, parseAds  # type: ignore
 except ImportError:
-    import re
     import json
+    import re
 
     class ClassAd(dict):  # type: ignore
         def printOld(self):

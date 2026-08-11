@@ -7,14 +7,14 @@ other parts of the same configuration.
 
 from __future__ import absolute_import, division, print_function
 
-import re
-import random
+import ast
+import builtins
 import functools
 import json
-import builtins
 import logging
-import ast
 import operator as op
+import random
+import re
 from typing import Any
 
 from iceprod.core import dataclasses

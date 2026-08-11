@@ -5,32 +5,38 @@ The Condor plugin.  Allows submission to
 Note: Condor was renamed to HTCondor in 2012.
 """
 import asyncio
-from collections import Counter, defaultdict
-from collections.abc import Iterable
-from dataclasses import dataclass
-from datetime import datetime, timedelta, UTC
 import enum
 import importlib.resources
 import json
 import logging
 import os
-from pathlib import Path
 import re
 import shutil
 import stat
 import subprocess
 import time
+from collections import Counter, defaultdict
+from collections.abc import Iterable
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any, Generator, NamedTuple
 
 import classad2 as classad  # type: ignore
 import htcondor2 as htcondor  # type: ignore
-from wipac_dev_tools.prometheus_tools import GlobalLabels, AsyncPromWrapper, PromWrapper, AsyncPromTimer, PromTimer
+from wipac_dev_tools.prometheus_tools import (
+    AsyncPromTimer,
+    AsyncPromWrapper,
+    GlobalLabels,
+    PromTimer,
+    PromWrapper,
+)
 
-from iceprod.core.config import Task
-from iceprod.core.exe import WriteToScript, Transfer, Data
 from iceprod.common.prom_utils import HistogramBuckets
-from iceprod.server.config import IceProdConfig
+from iceprod.core.config import Task
+from iceprod.core.exe import Data, Transfer, WriteToScript
 from iceprod.server import grid
+from iceprod.server.config import IceProdConfig
 from iceprod.server.util import str2datetime
 
 logger = logging.getLogger('condor')

@@ -3,7 +3,8 @@ import logging
 import requests
 
 from iceprod.core.jsonUtil import json_decode, json_encode
-from .base import authenticated, PublicHandler
+
+from .base import PublicHandler, authenticated
 
 logger = logging.getLogger('website-submit')
 

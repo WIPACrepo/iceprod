@@ -1,6 +1,6 @@
 import logging
 
-from .base import authenticated, PublicHandler
+from .base import PublicHandler, authenticated
 
 logger = logging.getLogger('website-job')
 

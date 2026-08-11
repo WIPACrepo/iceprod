@@ -4,13 +4,13 @@ gridftp interface
 
 from __future__ import absolute_import, division, print_function
 
-import os
 import logging
-from collections import namedtuple
-from datetime import datetime
-import tempfile
+import os
 import shutil
 import subprocess
+import tempfile
+from collections import namedtuple
+from datetime import datetime
 
 logger = logging.getLogger('gridftp')
 

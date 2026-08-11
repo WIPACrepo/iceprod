@@ -1,14 +1,19 @@
 import logging
+import uuid
 from functools import wraps
 from typing import Protocol
-import uuid
 
 import pymongo
-from rest_tools.server import catch_error, token_attribute_role_mapping_auth, TokenAttributeRoleMappingProtocol, RestHandler
+from rest_tools.server import (
+    RestHandler,
+    TokenAttributeRoleMappingProtocol,
+    catch_error,
+    token_attribute_role_mapping_auth,
+)
 from tornado.web import HTTPError
 
 from iceprod.common.mongo import AsyncDatabase
-from iceprod.roles_groups import ROLES, GROUPS
+from iceprod.roles_groups import GROUPS, ROLES
 
 logger = logging.getLogger('rest-auth')
 

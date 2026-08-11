@@ -8,15 +8,14 @@ import argparse
 import asyncio
 import json
 import logging
-from pathlib import Path
 import subprocess
+from pathlib import Path
 
 import iceprod
-from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 import iceprod.core.config
 import iceprod.core.exe
 import iceprod.core.logger
-
+from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 
 logger = logging.getLogger('i3exec')
 

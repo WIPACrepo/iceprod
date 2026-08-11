@@ -6,16 +6,16 @@ Send monitoring data to graphite.
 
 import argparse
 import asyncio
-from collections import Counter
 import logging
 import os
+from collections import Counter
 
 from prometheus_client import Gauge, Histogram, Info, start_http_server
 
-from iceprod.util import VERSION_STRING
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
 from iceprod.common.prom_utils import HistogramBuckets
 from iceprod.server import states
+from iceprod.util import VERSION_STRING
 
 logger = logging.getLogger('dataset_monitor')
 

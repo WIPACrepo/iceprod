@@ -8,10 +8,10 @@ by copying them from the path indicated to a job's working directory.
 """
 
 import glob
-import os
-import sys
 import io
+import os
 import subprocess
+import sys
 import time
 import traceback
 
@@ -23,8 +23,8 @@ except ImportError:
 try:
     from classad import ClassAd, parseAds  # type: ignore
 except ImportError:
-    import re
     import json
+    import re
 
     class ClassAd(dict):  # type: ignore
         def printOld(self):

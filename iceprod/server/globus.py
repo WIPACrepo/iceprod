@@ -2,9 +2,9 @@
 Tools to help manage Globus proxies
 """
 
+import logging
 import os
 import subprocess
-import logging
 
 from iceprod.server.config import IceProdConfig
 

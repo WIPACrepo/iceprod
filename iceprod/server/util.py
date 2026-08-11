@@ -1,5 +1,5 @@
 """Utility functions"""
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 
 
 def datetime2str(dt):

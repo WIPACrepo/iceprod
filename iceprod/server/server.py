@@ -6,18 +6,18 @@ Run the iceprod server.
 """
 
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta, UTC
 import logging
 import os
 import sys
+from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime, timedelta
 
 from prometheus_client import start_http_server
 
-from iceprod.util import VERSION_STRING
 from iceprod.core.logger import set_log_level
 from iceprod.server.config import IceProdConfig
 from iceprod.server.queue import Queue
+from iceprod.util import VERSION_STRING
 
 logger = logging.getLogger('Server')
 

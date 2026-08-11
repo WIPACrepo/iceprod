@@ -1,12 +1,13 @@
-import logging
 import json
+import logging
 
 import pymongo.errors
 import tornado.web
 
-from ..base_handler import APIBase
+from iceprod.roles_groups import GROUP_PRIORITIES, ROLES
+
 from ..auth import authorization
-from iceprod.roles_groups import ROLES, GROUP_PRIORITIES
+from ..base_handler import APIBase
 
 logger = logging.getLogger('rest.auth')
 

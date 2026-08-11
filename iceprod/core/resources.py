@@ -3,11 +3,10 @@ Manage resources like CPUs and Memory.  Default values, detection, tracking,
 policy, etc.
 """
 
-from collections import OrderedDict
 import logging
 import math
 import os
-
+from collections import OrderedDict
 
 # default rounding bins for resources
 RESOURCE_BINS = {

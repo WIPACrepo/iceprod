@@ -6,12 +6,13 @@ Check job temp directories, and if the job is complete then delete it.
 
 import argparse
 import asyncio
-from collections import defaultdict
-from datetime import datetime, timedelta, UTC
 import logging
 import os
 import shutil
+from collections import defaultdict
+from datetime import UTC, datetime, timedelta
 from typing import Any
+
 from wipac_dev_tools import from_environment
 
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client

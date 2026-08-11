@@ -9,7 +9,7 @@ import logging
 
 import requests
 
-from .jsonUtil import json_encode, json_decode
+from .jsonUtil import json_decode, json_encode
 
 logger = logging.getLogger('file_catalog')
 
