@@ -314,7 +314,6 @@ class CondorSubmit:
             ads['request_disk'] = int(task.requirements['disk']*1000000+1000000)
 
         if 'time' in task.requirements and task.requirements['time']:
-            requirements.append('TargetTime > OriginalTime')
             time_hrs = int(task.requirements['time'])
         else:
             time_hrs = 1
@@ -534,7 +533,6 @@ request_gpus = $(gpus)
 request_memory = $(memory)
 request_disk = $(disk)
 +OriginalTime = $(time)
-+TargetTime = (!isUndefined(Target.PYGLIDEIN_TIME_TO_LIVE) ? Target.PYGLIDEIN_TIME_TO_LIVE : Target.TimeToLive)
 requirements = $($(reqs))
 +SingularityImage= $(container)
 
