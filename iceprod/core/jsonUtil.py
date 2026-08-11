@@ -2,8 +2,6 @@
 Some JSON encoding and decoding utilities.
 """
 
-from __future__ import absolute_import, division, print_function
-
 import ast
 import base64
 import inspect

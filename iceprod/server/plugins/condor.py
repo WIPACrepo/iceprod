@@ -904,7 +904,7 @@ class Grid(grid.BaseGrid):
         self.get_current_JEL()
 
         while True:
-            for filename, events in self.jels.items():
+            for filename, events in self.jels.items():  # ruff: ignore[PERF102]
                 try:
                     for event in events:
                         if float(event.timestamp) < self.last_event_timestamp:

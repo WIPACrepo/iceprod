@@ -27,12 +27,12 @@ async def run(rest_client, dataset_id=None, debug=False):
     else:
         datasets = await rest_client.request('GET', '/dataset_summaries/status')
         dataset_ids = datasets.get('processing', [])
-    for dataset_id in dataset_ids:
+    for dataset_id in dataset_ids:  # ruff: ignore[PLR1704]
         try:
             jobs = await rest_client.request('GET', f'/datasets/{dataset_id}/job_summaries/status')
             for job_id in jobs.get('processing', []):
                 tasks = await rest_client.request('GET', f'/datasets/{dataset_id}/tasks?keys=task_id|task_index|status&job_id={job_id}')
-                task_statuses = set(task['status'] for task in tasks.values())
+                task_statuses = {task['status'] for task in tasks.values()}
                 if task_statuses == {'complete'}:
                     logger.info('dataset %s job %s status -> complete', dataset_id, job_id)
                     args = {'status': 'complete'}

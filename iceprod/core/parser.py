@@ -5,7 +5,6 @@ language. Most commonly used in IceProd dataset configurations to refer to
 other parts of the same configuration.
 """
 
-from __future__ import absolute_import, division, print_function
 
 import ast
 import builtins
