@@ -22,8 +22,8 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, Generator, NamedTuple
 
-import classad2 as classad  # type: ignore
-import htcondor2 as htcondor  # type: ignore
+import classad2 as classad
+import htcondor2 as htcondor
 from wipac_dev_tools.prometheus_tools import (
     AsyncPromTimer,
     AsyncPromWrapper,

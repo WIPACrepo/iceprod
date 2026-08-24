@@ -129,7 +129,7 @@ class Profile(PublicHandler):
                     group_creds=group_creds, user_creds=user_creds)
 
 
-class Login(LoginMixin, PromRequestMixin, OpenIDLoginHandler):  # type: ignore
+class Login(LoginMixin, PromRequestMixin, OpenIDLoginHandler):
     pass
 
 

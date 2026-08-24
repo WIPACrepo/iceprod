@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 import requests.exceptions
-from asyncache import cached, cachedmethod  # type: ignore
+from asyncache import cached, cachedmethod
 from cachetools import TTLCache
 from cachetools.func import ttl_cache
 from prometheus_client import Info
@@ -257,7 +257,7 @@ class BaseGrid:
 
         return t
 
-    @cached(TTLCache(1024, 60), key=lambda _,t: (t.dataset.dataset_id, t.name))
+    @cached(TTLCache(1024, 60), key=lambda _,t: (t.dataset.dataset_id, t.name))  # ty:ignore[invalid-argument-type]
     async def _get_dataset_credentials(self, task: Task) -> list[Any]:
         # todo: handle non-oauth credentials, like s3
         # todo: delayed get to see if we already have these tokens in condor

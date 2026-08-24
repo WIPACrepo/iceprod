@@ -18,7 +18,7 @@ import traceback
 try:
     import requests
 except ImportError:
-    requests = None  # type: ignore
+    requests = None
 
 try:
     from classad import ClassAd, parseAds  # type: ignore
@@ -26,7 +26,7 @@ except ImportError:
     import json
     import re
 
-    class ClassAd(dict):  # type: ignore
+    class ClassAd(dict):
         def printOld(self):
             ret = []
             for k,v in self.items():

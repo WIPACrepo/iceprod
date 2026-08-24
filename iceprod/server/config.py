@@ -8,7 +8,7 @@ import logging
 import os
 from pathlib import Path
 
-import jsonschema  # type: ignore
+import jsonschema
 
 logger = logging.getLogger('config')
 
@@ -117,7 +117,7 @@ class IceProdConfig(dict):
                     val = float(val)
                 except ValueError:
                     try:
-                        val = json.loads(val)  # type: ignore
+                        val = json.loads(val)
                     except Exception:
                         pass
 
