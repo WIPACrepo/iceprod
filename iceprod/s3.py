@@ -5,9 +5,9 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 
 try:
-    import boto3  # type: ignore
-    import botocore.client  # type: ignore
-    import botocore.exceptions  # type: ignore
+    import boto3
+    import botocore.client
+    import botocore.exceptions
 except ImportError:
     boto3 = None  # type: ignore
     botocore = None  # type: ignore

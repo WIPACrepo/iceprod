@@ -18,7 +18,7 @@ import traceback
 try:
     import requests
 except ImportError:
-    requests = None  # type: ignore
+    requests = None
 
 try:
     from classad import ClassAd, parseAds  # type: ignore
@@ -26,7 +26,7 @@ except ImportError:
     import json
     import re
 
-    class ClassAd(dict):  # type: ignore
+    class ClassAd(dict):
         def printOld(self):
             ret = []
             for k,v in self.items():
@@ -229,6 +229,7 @@ class IceProdPlugin:
                         raise
 
             elif method in ('http', 'https'):
+                assert requests
                 response = requests.get(url, stream=True, timeout=DEFAULT_TIMEOUT)
                 try:
                     response.raise_for_status()
@@ -292,6 +293,7 @@ class IceProdPlugin:
                 file_size = os.stat(local_file_path).st_size
 
             elif method in ('http', 'https'):
+                assert requests
                 with open(local_file_path, 'rb') as f:
                     response = requests.put(url, data=f, timeout=DEFAULT_TIMEOUT)
                     response.raise_for_status()

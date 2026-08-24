@@ -190,7 +190,7 @@ class LoginMixin(SessionMixin, RestHandler):  # type: ignore[misc]
         }
         if refresh_token:
             data['refresh_token'] = refresh_token
-        self._session_mgr.set(username, data)  # ty: ignore
+        self._session_mgr.set(username, data)
 
         self.set_secure_cookie('iceprod_username', username, expires_days=30)
 
@@ -209,7 +209,7 @@ class TokenStorageMixin(RestHandler):
     """
     TokenResult = list[dict[str, Any]]
 
-    def initialize(self, *args, cred_rest_client, **kwargs):  # type: ignore
+    def initialize(self, *args, cred_rest_client, **kwargs):
         super().initialize(**kwargs)
         self.cred_rest_client = cred_rest_client
 
@@ -422,11 +422,11 @@ class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler
         if access:
             if isinstance(access, bytes):
                 access = access.decode('utf-8')
-            self.auth_access_token = access  # type: ignore
+            self.auth_access_token = access
         if refresh:
             if isinstance(refresh, bytes):
                 refresh = refresh.decode('utf-8')
-            self.auth_refresh_token = refresh  # type: ignore
+            self.auth_refresh_token = refresh
 
     async def get_current_user_async(self) -> str | None:
         try:

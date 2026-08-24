@@ -16,10 +16,10 @@ from functools import partial, reduce
 try:
     import psutil
 except ImportError:
-    psutil = None  # type: ignore
+    psutil = None
 
 import requests
-from requests_toolbelt.multipart.encoder import MultipartEncoder  # type: ignore
+from requests_toolbelt.multipart.encoder import MultipartEncoder
 from rest_tools.client import AsyncSession, Session
 
 from iceprod.core.gridftp import GridFTP
@@ -239,6 +239,7 @@ def getInterfaces():
     Returns:
         dict of {nic_name: {type: address}}
     """
+    assert psutil
     interfaces = {}
 
     ret = psutil.net_if_addrs()

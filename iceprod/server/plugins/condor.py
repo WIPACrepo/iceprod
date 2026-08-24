@@ -22,8 +22,8 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, Generator, NamedTuple
 
-import classad2 as classad  # type: ignore
-import htcondor2 as htcondor  # type: ignore
+import classad2 as classad
+import htcondor2 as htcondor
 from wipac_dev_tools.prometheus_tools import (
     AsyncPromTimer,
     AsyncPromWrapper,
@@ -737,6 +737,18 @@ transfer_output_remaps = $(outremaps)
         logger.info('removing job %s', job_id)
         self.condor_schedd.act(htcondor.JobAction.Remove, str(job_id), reason=reason if reason else '')
 
+    @PromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_remove_many', 'IceProd grid condor.remove_many calls', buckets=HistogramBuckets.SECOND))
+    def remove_many(self, job_ids: Iterable[str | CondorJobId], reason: str | None = None):
+        """
+        Remove a job from condor.
+
+        Args:
+            job_id: condor job id
+            reason: reason for removal
+        """
+        logger.info('removing jobs %r', job_ids)
+        self.condor_schedd.act(htcondor.JobAction.Remove, [str(job_id) for job_id in job_ids], reason=reason if reason else '')
+
 
 class Grid(grid.BaseGrid):
     """HTCondor grid plugin"""
@@ -1208,23 +1220,35 @@ class Grid(grid.BaseGrid):
         Sync with iceprod server status.
         """
         fut = self.get_tasks_on_queue()
-        queue_tasks = {j.task_id: j for j in self.jobs.values()}
+        queue_tasks = {j.task_id: (job_id,j) for job_id,j in self.jobs.items()}
+        queue_tasks_set = set(queue_tasks)
         server_tasks = await fut
+        server_tasks_dict = {t['task_id']: t for t in server_tasks}
+        server_tasks_set = set(server_tasks_dict)
+
         # buffer time takes the time since cross check started + 60 seconds
         buffer_time = datetime.now(UTC) - timedelta(seconds=(time.monotonic() - self.cross_check_start + 60))
+
         async with asyncio.TaskGroup() as tg:
-            for task in server_tasks:
-                if task['task_id'] not in queue_tasks:
-                    # ignore anything too recent
-                    if str2datetime(task['status_changed']) >= buffer_time:
-                        continue
-                    logger.info(f'task {task["dataset_id"]}.{task["task_id"]} in iceprod but not in queue')
-                    job = CondorJob(
-                        dataset_id=task['dataset_id'],
-                        task_id=task['task_id'],
-                        instance_id=task['instance_id'],
-                    )
-                    tg.create_task(self.task_reset(job, reason='task missing from HTCondor queue'))
+            # remove anything that iceprod thinks is on the queue, but has been locally removed
+            for task_id in server_tasks_set - queue_tasks_set:
+                task = server_tasks_dict[task_id]
+                # ignore anything too recent
+                if str2datetime(task['status_changed']) >= buffer_time:
+                    continue
+                logger.info(f'task {task["dataset_id"]}.{task["task_id"]} in iceprod but not in queue')
+                job = CondorJob(
+                    dataset_id=task['dataset_id'],
+                    task_id=task['task_id'],
+                    instance_id=task['instance_id'],
+                )
+                tg.create_task(self.task_reset(job, reason='task missing from HTCondor queue'))
+
+            # remove anything that was reset or suspended in iceprod
+            jobs = [queue_tasks[task_id][0] for task_id in queue_tasks_set - server_tasks_set]
+            if jobs:
+                self.submitter.remove_many(jobs, reason='task has been reset/suspended in iceprod')
+
 
     @PromWrapper(lambda self: self.prometheus.histogram('iceprod_grid_check_submit_dir', 'IceProd grid check calls', buckets=HistogramBuckets.TENSECOND))
     async def check_submit_dir(self, prom_histogram):
