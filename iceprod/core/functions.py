@@ -239,6 +239,7 @@ def getInterfaces():
     Returns:
         dict of {nic_name: {type: address}}
     """
+    assert psutil
     interfaces = {}
 
     ret = psutil.net_if_addrs()

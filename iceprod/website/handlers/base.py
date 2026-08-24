@@ -190,7 +190,7 @@ class LoginMixin(SessionMixin, RestHandler):  # type: ignore[misc]
         }
         if refresh_token:
             data['refresh_token'] = refresh_token
-        self._session_mgr.set(username, data)  # ty: ignore
+        self._session_mgr.set(username, data)
 
         self.set_secure_cookie('iceprod_username', username, expires_days=30)
 

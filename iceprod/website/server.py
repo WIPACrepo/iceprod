@@ -56,12 +56,12 @@ class Schemas(PublicHandler):
     @catch_error
     async def get(self, schema):
         if schema == 'dataset.schema.json':
-            self.write(DATASET_SCHEMA.schema())  # ty: ignore
+            self.write(DATASET_SCHEMA.schema())
         elif schema == 'config.schema.json':
             self.write(SERVER_SCHEMA)
         elif ver := re.match(r'dataset_v(\d\.\d).schema.json', schema):
             ver = float(ver.group(1))
-            self.write(DATASET_SCHEMA.schema(ver))  # ty: ignore
+            self.write(DATASET_SCHEMA.schema(ver))
         else:
             raise tornado.web.HTTPError(404, reason='unknown schema')
 
