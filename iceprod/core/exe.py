@@ -557,6 +557,7 @@ fi
             print('# set some env vars for expansion', file=f)
             # we use an older version, before arch optimization, as the default
             print('OS_ARCH=$(/cvmfs/icecube.opensciencegrid.org/py3-v4.3.0/os_arch.sh)', file=f)
+            print('HOME=${HOME:-$PWD}', file=f)
             print('', file=f)
             with scope_env(self.cfgparser, self.task.dataset.config['steering'], logger=self.logger) as globalenv:
                 task = self.task.get_task_config()
