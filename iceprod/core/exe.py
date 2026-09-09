@@ -668,7 +668,7 @@ obj.Execute({{}})"""
         if module['env_clear']:
             # must be on cvmfs-like environ for this to apply
             envstr = 'env -i PYTHONNOUSERSITE=1 SHELL=/bin/sh '
-            for k in ('OPENCL_VENDOR_PATH', 'http_proxy', 'TMP', 'TMPDIR', '_CONDOR_SCRATCH_DIR', 'CUDA_VISIBLE_DEVICES', 'COMPUTE', 'GPU_DEVICE_ORDINAL'):
+            for k in ('OPENCL_VENDOR_PATH', 'http_proxy', 'TMP', 'TMPDIR', '_CONDOR_SCRATCH_DIR', 'CUDA_VISIBLE_DEVICES', 'COMPUTE', 'GPU_DEVICE_ORDINAL', 'HOME'):
                 envstr += f'{k}=${k} '
             cmd.extend(envstr.split())
         if env_shell:
