@@ -916,7 +916,7 @@ class Grid(grid.BaseGrid):
         self.get_current_JEL()
 
         while True:
-            for filename, events in self.jels.items():  # ruff: ignore[PERF102]
+            for filename, events in self.jels.copy().items():
                 try:
                     for event in events:
                         if float(event.timestamp) < self.last_event_timestamp:
@@ -1024,6 +1024,13 @@ class Grid(grid.BaseGrid):
                                         self.submitter.remove(job_id, reason=event.get('HoldReason', 'Job has failed'))
                                     else:
                                         await self.job_update(job)
+                except htcondor.HTCondorException as e:
+                    logger.warning('error processing condor log', exc_info=True)
+                    if 'ULOG_RD_ERROR' in str(e):
+                        logger.warning('condor log corruction - deleting %s', filename)
+                        self.jels[filename].close()
+                        del self.jels[filename]
+                        os.remove(filename)
                 except Exception:
                     logger.warning('error processing condor log', exc_info=True)
 
