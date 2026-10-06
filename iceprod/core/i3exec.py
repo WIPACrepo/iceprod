@@ -18,6 +18,8 @@ import os
 import time
 from typing import Callable
 
+from iceprod.server.plugins.condor import CondorSubmit
+
 from iceprod.core.defaults import add_default_options
 
 import iceprod
@@ -206,6 +208,7 @@ async def prod(args, task: iceprod.core.config.Task):
         credentials.extend(ret)
         for i,cred in enumerate(credentials):
             with open(cred_dir / f'{i}.use', 'w') as f:
+                # use HTCondor cred format
                 json.dump({
                     'access_token': cred.get('access_token', ''),
                     'token_type': 'bearer',
@@ -227,7 +230,14 @@ async def prod(args, task: iceprod.core.config.Task):
     logger.info('running script: %s', scriptpath)
     await rest_rc.request('PATCH', f'/tasks/{task.task_id}', {'status': 'processing', 'site': 'local', 'instance_id': 'local'})
 
-    ret = await run_and_measure([str(scriptpath.resolve())], work_dir=grid.submit_dir, update_function=update_creds)
+    cmd = [str(scriptpath.resolve())]
+    if os_req := task.requirements.get('os', None):
+        # run under apptainer
+        container = CondorSubmit.condor_os_container(os_req)
+        if not container or not os.path.exists(container):
+            raise Exception(f'container {container} not found')
+        cmd = ['apptainer', 'run', '-B', '/cvmfs', '-B', '/tmp', container] + cmd
+    ret = await run_and_measure(cmd, work_dir=grid.submit_dir, update_function=update_creds)
 
     grid_task = TestTask(dataset_id=task.dataset.dataset_id, task_id=task.task_id, instance_id='local')
     returncode = ret.pop('returncode')
