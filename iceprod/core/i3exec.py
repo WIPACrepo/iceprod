@@ -112,10 +112,11 @@ async def run_and_measure(
             stderr=err_f
         )
         while True:
-            if res.poll() is not None:
-                break
+            try:
+                res.wait(300)
+            except subprocess.TimeoutExpired:
+                pass
 
-            time.sleep(300)
             if res.poll() is not None:
                 break
             if update_function is not None:
@@ -192,7 +193,7 @@ async def prod(args, task: iceprod.core.config.Task):
     if cred_dir.exists():
         shutil.rmtree(cred_dir)
     cred_dir.mkdir()
-    os.environ['_CONDOR_CREDS'] = str(cred_dir)
+    os.environ['_CONDOR_CREDS'] = str(cred_dir.resolve())
 
     async def update_creds():
         credentials = []
