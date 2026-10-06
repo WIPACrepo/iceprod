@@ -211,7 +211,7 @@ async def prod(args, task: iceprod.core.config.Task):
                     'token_type': 'bearer',
                     'expires_in': int(cred.get('expiration', 0) - time.time()),
                     'expires_at': cred.get('expiration', 0.),
-                    'scope': cred.get('scope', ''),
+                    'scope': cred.get('scope', '').split(),
                 }, f)
         logger.info('loaded %d Pelican tokens', len(credentials))
     await update_creds()
