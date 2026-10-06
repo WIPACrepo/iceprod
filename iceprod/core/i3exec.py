@@ -207,12 +207,13 @@ async def prod(args, task: iceprod.core.config.Task):
             with open(cred_dir / f'{i}.use', 'w') as f:
                 json.dump({
                     'access_token': cred.get('access_token', ''),
-                    'scope': cred.get('scope', ''),
+                    'token_type': 'bearer',
+                    'expires_in': cred.get('expiration', 0) - time.time(),
                     'expires_at': cred.get('expiration', 0),
+                    'scope': cred.get('scope', ''),
                 }, f)
-        logger.info('loaded %d Pelican tokens', task.dataset.dataset_id, len(credentials))
+        logger.info('loaded %d Pelican tokens', len(credentials))
     await update_creds()
-    raise Exception()
 
     logger.info('converting dataset/task to bash')
     ws = iceprod.core.exe.WriteToScript(task, workdir=grid.submit_dir, logger=logger)
