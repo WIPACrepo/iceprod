@@ -227,7 +227,6 @@ async def prod(args, task: iceprod.core.config.Task):
     if task.status == 'complete':
         raise Exception('Cannot rerun a complete task')
 
-    logger.info('running script: %s', scriptpath)
     await rest_rc.request('PATCH', f'/tasks/{task.task_id}', {'status': 'processing', 'site': 'local', 'instance_id': 'local'})
 
     cmd = [str(scriptpath.resolve())]
@@ -237,6 +236,10 @@ async def prod(args, task: iceprod.core.config.Task):
         if not container or not os.path.exists(container):
             raise Exception(f'container {container} not found')
         cmd = ['apptainer', 'run', '-B', '/cvmfs', '-B', '/tmp', container] + cmd
+    elif container := task.get_task_config().get('container', None):
+        # run under apptainer
+        cmd = ['apptainer', 'run', '-B', '/cvmfs', '-B', '/tmp', container] + cmd
+    logger.info('running script: %r', cmd)
     ret = await run_and_measure(cmd, work_dir=grid.submit_dir, update_function=update_creds)
 
     grid_task = TestTask(dataset_id=task.dataset.dataset_id, task_id=task.task_id, instance_id='local')
