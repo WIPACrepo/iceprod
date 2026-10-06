@@ -209,8 +209,8 @@ async def prod(args, task: iceprod.core.config.Task):
                 json.dump({
                     'access_token': cred.get('access_token', ''),
                     'token_type': 'bearer',
-                    'expires_in': cred.get('expiration', 0) - time.time(),
-                    'expires_at': cred.get('expiration', 0),
+                    'expires_in': int(cred.get('expiration', 0) - time.time()),
+                    'expires_at': cred.get('expiration', 0.),
                     'scope': cred.get('scope', ''),
                 }, f)
         logger.info('loaded %d Pelican tokens', len(credentials))
@@ -235,6 +235,7 @@ async def prod(args, task: iceprod.core.config.Task):
     if returncode != 0:
         logger.error('Task failed with return code %d', returncode)
         logger.error(f'stdout and stderr can be found at `{grid.submit_dir}/std[err|out]`')
+        subprocess.call(['tail', '-n', '10', str(grid.submit_dir / 'stderr')])
         await grid.task_failure(
             grid_task,
             reason=f'Task failed with return code {returncode}',
@@ -242,7 +243,7 @@ async def prod(args, task: iceprod.core.config.Task):
             stdout=grid.submit_dir / 'stdout',
             stderr=grid.submit_dir / 'stderr'
         )
-        raise subprocess.CalledProcessError(returncode, scriptpath)
+        raise SystemExit(f'Command {scriptpath.name} returned non-zero exit status {returncode}')
     else:
         logger.info('Task success!')
         await grid.task_success(
