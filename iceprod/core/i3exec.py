@@ -226,7 +226,7 @@ async def prod(args, task: iceprod.core.config.Task):
     logger.info('running script: %s', scriptpath)
     await rest_rc.request('PATCH', f'/tasks/{task.task_id}', {'status': 'processing', 'site': 'local', 'instance_id': 'local'})
 
-    ret = await run_and_measure([scriptpath.name], work_dir=grid.submit_dir, update_function=update_creds)
+    ret = await run_and_measure([str(scriptpath.resolve())], work_dir=grid.submit_dir, update_function=update_creds)
 
     grid_task = TestTask(dataset_id=task.dataset.dataset_id, task_id=task.task_id, instance_id='local')
     returncode = ret.pop('returncode')
