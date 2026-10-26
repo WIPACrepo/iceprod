@@ -37,6 +37,8 @@ async def test_run(tmp_path, mocker):
         jobs_submitted=1,
         job_index=0,
         dry_run=0,
+        prod=False,
+        check_reqs=True,
     )
 
     conv = mocker.patch('iceprod.core.exe.WriteToScript.convert', return_value='foo')
