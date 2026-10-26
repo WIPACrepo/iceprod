@@ -6,29 +6,26 @@ Run it with `python -m iceprod.core.i3exec`.
 
 import argparse
 import asyncio
-from copy import copy
-from inspect import iscoroutinefunction
 import json
 import logging
-from pathlib import Path
+import os
 import resource
 import shutil
 import subprocess
-import os
 import time
+from copy import copy
+from inspect import iscoroutinefunction
+from pathlib import Path
 from typing import Callable
-
-from iceprod.server.plugins.condor import CondorSubmit
-
-from iceprod.core.defaults import add_default_options
 
 import iceprod
 import iceprod.core.config
 import iceprod.core.exe
 import iceprod.core.logger
 from iceprod.client_auth import add_auth_to_argparse, create_rest_client
+from iceprod.core.defaults import add_default_options
+from iceprod.server.plugins.condor import CondorSubmit
 from iceprod.server.plugins.test import Grid, TestTask
-
 
 logger = logging.getLogger('i3exec')
 

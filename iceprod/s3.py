@@ -9,8 +9,8 @@ try:
     import botocore.client
     import botocore.exceptions
 except ImportError:
-    boto3 = None  # type: ignore
-    botocore = None  # type: ignore
+    boto3 = None
+    botocore = None
 
 logger = logging.getLogger('s3')
 

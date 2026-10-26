@@ -28,7 +28,7 @@ Data movement should be defined at the task level.
 import copy
 import logging
 import os
-from collections.abc import Iterable
+from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import StrEnum
@@ -153,7 +153,7 @@ class ConfigParser:
 
 
 @contextmanager
-def scope_env(cfg: ConfigParser, obj: dict, upperenv: Optional[Env] = None, logger: Optional[logging.Logger] = None) -> Iterator[Env]:
+def scope_env(cfg: ConfigParser, obj: dict, upperenv: Optional[Env] = None, logger: Optional[logging.Logger] = None) -> Generator[Env]:
     """
     A context manager for parsing scoped config, such as parameters.
 
@@ -689,7 +689,7 @@ ____HERE
 
         # run the module
         if (not module_src):
-            cmd.extend(['python', '-', "<<____HERE\n" + args_str + '\n____HERE\n'])  # type: ignore
+            cmd.extend(['python', '-', "<<____HERE\n" + args_str + '\n____HERE\n'])  # pyright: ignore[reportPossiblyUnboundVariable]
         elif module_src[-3:] == '.py':
             # call as python script
             cmd.extend(['python', module_src] + args)

@@ -129,7 +129,7 @@ class Profile(PublicHandler):
                     group_creds=group_creds, user_creds=user_creds)
 
 
-class Login(LoginMixin, PromRequestMixin, OpenIDLoginHandler):
+class Login(LoginMixin, PromRequestMixin, OpenIDLoginHandler):  # pyright: ignore[reportIncompatibleMethodOverride] # ty: ignore
     pass
 
 

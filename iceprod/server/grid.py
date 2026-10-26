@@ -257,7 +257,7 @@ class BaseGrid:
 
         return t
 
-    @cached(TTLCache(1024, 60), key=lambda _,t: (t.dataset.dataset_id, t.name))  # ty:ignore[invalid-argument-type]
+    @cached(TTLCache(1024, 60), key=lambda _,t: (t.dataset.dataset_id, t.name))
     async def _get_dataset_credentials(self, task: Task) -> list[Any]:
         # todo: handle non-oauth credentials, like s3
         # todo: delayed get to see if we already have these tokens in condor
