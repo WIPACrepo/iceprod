@@ -150,6 +150,6 @@ class Queue:
 
         while True:
             start = time.monotonic()
-            await asyncio.to_thread(blocking())  # type: ignore
+            await asyncio.to_thread(blocking())  # pyright: ignore
             end = time.monotonic()
             await asyncio.sleep(max(1, 300 - (end-start)))

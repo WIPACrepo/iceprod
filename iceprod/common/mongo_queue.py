@@ -1,10 +1,11 @@
 import asyncio
 import logging
 import uuid
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from dataclasses import KW_ONLY, asdict, dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Any, AsyncIterator, Literal
+from typing import Any, Literal
 
 from pymongo import ASCENDING, DESCENDING, ReturnDocument
 
@@ -276,7 +277,7 @@ class AsyncMongoQueue:
         )
 
     @asynccontextmanager
-    async def process_next(self, timeout_seconds=300) -> AsyncIterator[Payload | None]:
+    async def process_next(self, timeout_seconds=300) -> AsyncGenerator[Payload | None]:
         """
         Context manager that pops a message and auto-handles completion/failure.
         """

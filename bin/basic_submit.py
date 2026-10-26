@@ -212,7 +212,7 @@ async def run(rpc, args):
         except Exception:
             logger.warning(f'materialization request for dataset {dataset_id} failed', exc_info=True)
             fail('Creation of jobs failed')
-        materialization_id = ret['result']  # type: ignore
+        materialization_id = ret['result']  # pyright: ignore[reportPossiblyUnboundVariable]
 
         logger.info(f'waiting for materialization request')
         while True:
@@ -271,6 +271,7 @@ async def run(rpc, args):
         fail('failed to start dataset')
 
     # get dataset num
+    dataset_num = None
     try:
         ret = await rpc.request('GET', f'/datasets/{dataset_id}', {'keys': 'dataset'})
         dataset_num = ret['dataset']
@@ -278,7 +279,7 @@ async def run(rpc, args):
         logger.warning(f'failed to get dataset info for dataset {dataset_id}', exc_info=True)
         fail('Failed to get final dataset info')
 
-    print(f'Dataset {dataset_num} is running.')  # type: ignore
+    print(f'Dataset {dataset_num} is running.')
     print(f'Check status at https://iceprod2.icecube.wisc.edu/dataset/{dataset_num}')
 
 def main():

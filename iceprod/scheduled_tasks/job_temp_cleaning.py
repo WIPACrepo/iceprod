@@ -71,7 +71,7 @@ async def clean_dataset_dir(dataset_num: str, dataset_id: str, job_dirs: list[st
             job_indexes.add(job['job_index'])
     logger.debug('job_indexes: %r', job_indexes)
 
-    futures = set()  # type: ignore
+    futures = set()
     for j in filter_job_dirs(job_dirs, job_indexes, debug=debug):
         while len(futures) >= 16:
             done, futures = await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED)

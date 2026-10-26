@@ -25,7 +25,7 @@ except ImportError:
     import json
     import re
 
-    class ClassAd(dict):  # type: ignore
+    class ClassAd(dict):
         def printOld(self):
             ret = []
             for k,v in self.items():
