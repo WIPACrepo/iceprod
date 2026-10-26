@@ -33,7 +33,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
-from typing import Any, Iterator, Optional, TextIO
+from typing import Any, Optional, TextIO
 
 import iceprod.core.parser
 from iceprod.core import config, functions, util

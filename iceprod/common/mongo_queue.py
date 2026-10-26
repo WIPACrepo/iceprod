@@ -1,11 +1,11 @@
 import asyncio
-from collections.abc import AsyncGenerator
 import logging
 import uuid
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from dataclasses import KW_ONLY, asdict, dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Any, AsyncIterator, Literal
+from typing import Any, Literal
 
 from pymongo import ASCENDING, DESCENDING, ReturnDocument
 

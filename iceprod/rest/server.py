@@ -30,7 +30,7 @@ class Error(RequestHandler):
 
 
 class Health(RequestHandler):
-    def get(self):  # ty: ignore[invalid-method-override]
+    def get(self):  # ty: ignore
         self.write({})
 
 
