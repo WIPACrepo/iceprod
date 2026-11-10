@@ -10,7 +10,8 @@ from urllib.parse import urlencode
 import jwt
 import requests.exceptions
 import tornado.web
-from rest_tools.client import OpenIDRestClient, RestClient
+from requests.auth import HTTPBasicAuth
+from rest_tools.client import RestClient
 from rest_tools.server import RestHandler, catch_error
 from rest_tools.server.session import SessionMixin
 
@@ -22,6 +23,43 @@ from iceprod.roles_groups import GROUPS
 from iceprod.util import VERSION_STRING
 
 logger = logging.getLogger('website_base')
+
+#: refresh the user's access token when it has less than this many seconds left
+REFRESH_MARGIN = 60
+
+#: timeout (seconds) for OpenID discovery / token endpoint calls
+TOKEN_REQUEST_TIMEOUT = 10
+
+#: cache of OpenID base url -> token endpoint (discovered once per process)
+_TOKEN_ENDPOINTS: dict[str, str] = {}
+
+
+def get_token_endpoint(auth_url: str) -> str:
+    """
+    Get the OpenID token endpoint, using .well-known discovery once per process.
+
+    Args:
+        auth_url: OpenID provider base url
+
+    Returns:
+        the token endpoint url
+    """
+    if not auth_url:
+        raise RuntimeError('no auth url')
+    if auth_url not in _TOKEN_ENDPOINTS:
+        url = auth_url if auth_url.endswith('/') else auth_url + '/'
+        r = requests.get(url + '.well-known/openid-configuration', timeout=TOKEN_REQUEST_TIMEOUT)
+        r.raise_for_status()
+        _TOKEN_ENDPOINTS[auth_url] = r.json()['token_endpoint']
+    return _TOKEN_ENDPOINTS[auth_url]
+
+
+def _token_scopes(refresh_token: str) -> str:
+    """Scopes of a (possibly opaque) refresh token, for the refresh request."""
+    try:
+        return jwt.decode(refresh_token, options={'verify_signature': False}).get('scope', '')
+    except Exception:
+        return ''
 
 
 def authenticated(method):
@@ -427,32 +465,85 @@ class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler
                 refresh = refresh.decode('utf-8')
             self.auth_refresh_token = refresh
 
+    def refresh_access_token(self) -> str:
+        """
+        Exchange the session refresh token for a new access token.
+
+        Makes exactly one token endpoint call, and stores the new tokens in
+        the session via `update_refresh_token`.  Also used as the rest
+        client's token callback, so long requests refresh mid-flight.
+
+        Returns:
+            the new access token
+
+        Raises:
+            Exception: on any failure (no refresh token, http error, bad response)
+        """
+        refresh_token = self.auth_refresh_token
+        if not refresh_token:
+            raise RuntimeError('no refresh token')
+        args = {
+            'grant_type': 'refresh_token',
+            'refresh_token': refresh_token,
+            'client_id': self.auth_client_id,
+            'scope': _token_scopes(refresh_token),
+        }
+        kwargs: dict[str, Any] = {'timeout': TOKEN_REQUEST_TIMEOUT}
+        if self.auth_client_secret:
+            kwargs['auth'] = HTTPBasicAuth(self.auth_client_id, self.auth_client_secret)
+        r = requests.post(get_token_endpoint(self.auth_url or ''), data=args, **kwargs)
+        r.raise_for_status()
+        ret = r.json()
+        access_token = ret['access_token']
+        self.update_refresh_token(access_token, ret.get('refresh_token'))
+        logger.debug('refreshed access token for %s', self.current_user)
+        return access_token
+
+    def _access_token_valid(self, access_token: str | None, margin: float = 0) -> bool:
+        """Check if an access token exists and has more than `margin` seconds left."""
+        if not access_token:
+            return False
+        try:
+            return get_expiration(access_token) - time.time() > margin
+        except Exception:
+            logger.info('cannot decode access token', exc_info=True)
+            return False
+
     async def get_current_user_async(self) -> str | None:
+        """
+        Authenticate the user and build `self.rest_client`.
+
+        Token handling:
+        * cached access token valid for > REFRESH_MARGIN: use it, no Keycloak call
+        * otherwise, with a refresh token: refresh once
+        * the rest client refreshes again by itself if the token expires
+          during a long request
+
+        Returns:
+            the username, or None if not authenticated
+        """
         try:
             self.current_user = LoginMixin.get_current_user(self)
-            if self.current_user and self.auth_refresh_token:
-                self.rest_client = OpenIDRestClient(
-                    address=self.rest_api,
-                    token_url=self.auth_url,  # ty: ignore[invalid-argument-type]
-                    refresh_token=self.auth_refresh_token,
-                    client_id=self.auth_client_id,
-                    client_secret=self.auth_client_secret,
-                    update_func=self.update_refresh_token,
-                    timeout=50,
-                    retries=1,
-                )
-                # verify refresh works  (note: this contacts Keycloak every time!)
-                if not self.rest_client._openid_token():
-                    logger.info('cannot refresh token')
-                    return None
-            elif self.current_user and self.auth_access_token:
-                if get_expiration(self.auth_access_token) <= time.time():
-                    logger.info('access token expired')
-                    return None
-                self.rest_client = RestClient(self.rest_api, self.auth_access_token, timeout=50, retries=1)
-            elif not self.current_user:
+            if not self.current_user:
                 logger.info('no current user')
                 return None
+
+            access_token = self.auth_access_token
+            if self.auth_refresh_token:
+                if not self._access_token_valid(access_token, REFRESH_MARGIN):
+                    try:
+                        access_token = self.refresh_access_token()
+                    except Exception:
+                        logger.info('cannot refresh token', exc_info=True)
+                        return None
+                self.rest_client = RestClient(self.rest_api, token=self.refresh_access_token, timeout=50, retries=1)
+                # seed with the current token so no refresh happens until it expires
+                self.rest_client.access_token = access_token
+            elif access_token:
+                if not self._access_token_valid(access_token):
+                    logger.info('access token expired')
+                    return None
+                self.rest_client = RestClient(self.rest_api, access_token, timeout=50, retries=1)
             else:
                 logger.info('no access token')
                 return None

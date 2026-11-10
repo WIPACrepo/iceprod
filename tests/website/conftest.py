@@ -104,6 +104,10 @@ async def server(monkeypatch, port):
 
             username = token_data['preferred_username']
             s.session.set(username, {'access_token': auth.create_token(username, payload=token_data)})
+            # exposed for token refresh tests
+            self.session = s.session
+            self.username = username
+            self.token_data = token_data
 
             self.token_cookie = create_signed_value(cookie_secret, 'iceprod_username', username)
             logging.debug('Request cookie_secret: %r', cookie_secret)
