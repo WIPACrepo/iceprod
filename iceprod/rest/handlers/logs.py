@@ -225,7 +225,7 @@ class DatasetMultiLogsHandler(APIBase):
 
     @authorization(roles=['admin', 'user'])
     @attr_auth(arg='dataset_id', role='write')
-    async def delete(self, dataset_id, task_id):
+    async def delete(self, dataset_id):
         """
         Delete all logs for a dataset.
 
@@ -233,7 +233,6 @@ class DatasetMultiLogsHandler(APIBase):
 
         Args:
             dataset_id (str): the dataset id
-            task_id (str): the task id
 
         Returns:
             str: one json doc per line, {'status', 'percent_complete'}
@@ -253,8 +252,8 @@ class DatasetMultiLogsHandler(APIBase):
             await self.db.logs.delete_one({'log_id':log_id})
             i += 1
             ret['percent_complete'] = 100.*i/total_docs
-            self.write(ret)
-        self.write({'status': 'complete', 'percent_complete': 100.})
+            self.write(json.dumps(ret) + '\n')
+        self.write(json.dumps({'status': 'complete', 'percent_complete': 100.}) + '\n')
         self.finish()
 
 

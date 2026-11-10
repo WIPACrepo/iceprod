@@ -1,3 +1,4 @@
+import asyncio
 import random
 import string
 
@@ -246,3 +247,52 @@ async def test_rest_logs_s3_dataset_task_get(server):
     assert ret['logs'][1]['log_id'] == log_id
     assert data['data'] == ret['logs'][1]['data']
 
+
+
+async def _make_dataset(client):
+    data = {
+        'description': 'blah',
+        'tasks_per_job': 4,
+        'jobs_submitted': 1,
+        'tasks_submitted': 4,
+        'group': 'users',
+    }
+    ret = await client.request('POST', '/datasets', data)
+    return ret['result']
+
+
+async def test_rest_logs_dataset_delete(server):
+    client = server(roles=['user'], groups=['users'])
+    dataset_id = await _make_dataset(client)
+
+    log_ids = []
+    for i in range(3):
+        ret = await client.request('POST', f'/datasets/{dataset_id}/logs', {'data': f'log {i}', 'task_id': f't{i}'})
+        log_ids.append(ret['result'])
+
+    # streaming response: one json doc per line
+    lines = await asyncio.to_thread(list, client.request_stream('DELETE', f'/datasets/{dataset_id}/logs'))
+    assert len(lines) == 4
+    assert lines[-1] == {'status': 'complete', 'percent_complete': 100.}
+    assert lines[0]['total'] == 3
+
+    for log_id in log_ids:
+        with pytest.raises(Exception):
+            await client.request('GET', f'/datasets/{dataset_id}/logs/{log_id}')
+
+
+async def test_rest_logs_dataset_task_delete(server):
+    client = server(roles=['user'], groups=['users'])
+    dataset_id = await _make_dataset(client)
+
+    ret = await client.request('POST', f'/datasets/{dataset_id}/logs', {'data': 'foo', 'task_id': 't1'})
+    log1 = ret['result']
+    ret = await client.request('POST', f'/datasets/{dataset_id}/logs', {'data': 'bar', 'task_id': 't2'})
+    log2 = ret['result']
+
+    await client.request('DELETE', f'/datasets/{dataset_id}/tasks/t1/logs')
+
+    with pytest.raises(Exception):
+        await client.request('GET', f'/datasets/{dataset_id}/logs/{log1}')
+    ret = await client.request('GET', f'/datasets/{dataset_id}/logs/{log2}')
+    assert ret['data'] == 'bar'
