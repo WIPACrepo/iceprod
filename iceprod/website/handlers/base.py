@@ -396,7 +396,6 @@ class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler
             namespace['section'] = self.request.uri.lstrip('/').split('?')[0].split('/')[0]
         namespace['json_encode'] = json_encode
         namespace['states'] = iceprod.server.states
-        namespace['rest_api'] = self.rest_api
         return namespace
 
     def prepare(self):
@@ -408,7 +407,7 @@ class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler
             "default-src 'none'; "
             f"script-src 'self' 'nonce-{self.csp_nonce}' cdnjs.cloudflare.com; "
             "script-src-attr 'unsafe-inline'; "
-            f"connect-src 'self' {self.rest_api}; "
+            "connect-src 'self'; "
             "img-src 'self'; "
             f"style-src 'self' 'nonce-{self.csp_nonce}' cdnjs.cloudflare.com; "
             "style-src-attr 'unsafe-inline'; "

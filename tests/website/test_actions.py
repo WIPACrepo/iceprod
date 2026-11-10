@@ -555,3 +555,13 @@ async def test_page_job_detail(server):
             assert forms[(url, action)]['fields']['job_ids'] == ['j1']
         assert (url, 'suspend') not in forms  # not allowed from 'errors'
 
+
+async def test_csp_no_rest_api(server):
+    """Browser JS no longer calls the REST API, so CSP only allows same-origin connects."""
+    client = user(server)
+    mock_dataset_page(client)
+    async with client.get_http_client() as http_client:
+        ret = await client.request_raw(http_client, 'GET', '/dataset/d1')
+    csp = ret.headers['content-security-policy']
+    assert "connect-src 'self';" in csp
+    assert 'iceprod.test' not in csp

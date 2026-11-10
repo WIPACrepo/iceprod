@@ -234,7 +234,6 @@ class Submit(PublicHandler):
             except Exception:
                 error = e.response.text
             render_args = {
-                'passkey': '',
                 'edit': False,
                 'dataset': '',
                 'dataset_id': '',
@@ -250,7 +249,6 @@ class Submit(PublicHandler):
         except Exception as e:
             logger.warning('failed submit', exc_info=True)
             render_args = {
-                'passkey': '',
                 'edit': False,
                 'dataset': '',
                 'dataset_id': '',
@@ -302,7 +300,6 @@ class SubmitStatus(PublicHandler):
 
         if status == 'error':
             render_args = {
-                'passkey': '',
                 'edit': False,
                 'dataset': '',
                 'dataset_id': '',

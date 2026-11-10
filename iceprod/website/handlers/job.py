@@ -11,7 +11,6 @@ class JobBrowse(PublicHandler):
     async def get(self, dataset_id):
         assert self.rest_client
         status = self.get_argument('status',default=None)
-        passkey = self.auth_access_token
 
         jobs = await self.rest_client.request('GET', f'/datasets/{dataset_id}/jobs')
         if status:
@@ -19,7 +18,7 @@ class JobBrowse(PublicHandler):
                 if jobs[t]['status'] != status:
                     del jobs[t]
                     continue
-        self.render('job_browse.html', jobs=jobs, passkey=passkey)
+        self.render('job_browse.html', jobs=jobs)
 
 
 class Job(PublicHandler):
@@ -28,7 +27,6 @@ class Job(PublicHandler):
     async def get(self, dataset_id, job_id):
         assert self.rest_client
         status = self.get_argument('status',default=None)
-        passkey = self.auth_access_token
 
         dataset = await self.rest_client.request('GET', f'/datasets/{dataset_id}')
         job = await self.rest_client.request('GET', f'/datasets/{dataset_id}/jobs/{job_id}')
@@ -38,4 +36,4 @@ class Job(PublicHandler):
         tasks = await self.rest_client.request('GET', f'/datasets/{dataset_id}/tasks', args)
         job['tasks'] = list(tasks.values())
         job['tasks'].sort(key=lambda x:x['task_index'])
-        self.render('job_detail.html', dataset=dataset, job=job, passkey=passkey)
+        self.render('job_detail.html', dataset=dataset, job=job)

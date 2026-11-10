@@ -19,8 +19,7 @@ class TaskBrowse(PublicHandler):
                 if 'job_index' not in tasks[t]:
                     job = await self.rest_client.request('GET', '/datasets/{}/jobs/{}'.format(dataset_id, tasks[t]['job_id']))
                     tasks[t]['job_index'] = job['job_index']
-            passkey = self.auth_access_token
-            self.render('task_browse.html',tasks=tasks, passkey=passkey)
+            self.render('task_browse.html',tasks=tasks)
         else:
             status = await self.rest_client.request('GET',f'/datasets/{dataset_id}/task_counts/status')
             self.render('tasks.html',status=status)
@@ -32,7 +31,6 @@ class Task(PublicHandler):
     async def get(self, dataset_id, task_id):
         assert self.rest_client
         status = self.get_argument('status', default=None)
-        passkey = self.auth_access_token
 
         dataset = await self.rest_client.request('GET', f'/datasets/{dataset_id}')
         task_details = await self.rest_client.request('GET',f'/datasets/{dataset_id}/tasks/{task_id}?status={status}')
@@ -55,4 +53,4 @@ class Task(PublicHandler):
                 log_by_name[log['name']][0] = log
         except Exception:
             log_by_name = {}
-        self.render('task_detail.html', dataset=dataset, task=task_details, task_stats=task_stats, logs=log_by_name, passkey=passkey)
+        self.render('task_detail.html', dataset=dataset, task=task_details, task_stats=task_stats, logs=log_by_name)
