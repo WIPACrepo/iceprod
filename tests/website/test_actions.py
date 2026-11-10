@@ -3,12 +3,15 @@ import json
 from unittest.mock import MagicMock
 from urllib.parse import parse_qs, urlparse
 
-from bs4 import BeautifulSoup
 import pytest
 import requests
+from bs4 import BeautifulSoup
 
-from iceprod.website.handlers.actions import build_return_url, sanitize_return_query, status_url
-
+from iceprod.website.handlers.actions import (
+    build_return_url,
+    sanitize_return_query,
+    status_url,
+)
 
 # ---- pure helpers ----
 

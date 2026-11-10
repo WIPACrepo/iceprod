@@ -5,7 +5,6 @@ import string
 import pytest
 
 
-
 async def test_rest_logs_post(server):
     client = server(roles=['system'])
 
