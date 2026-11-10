@@ -408,3 +408,150 @@ async def test_action_status_complete(server, action_type, payload, args, expect
     assert ret.status_code == 303
     assert ret.headers['location'] == expected
 
+
+# ---- rendered pages: forms present, no embedded token ----
+
+def assert_no_token(html: str):
+    """The page must not embed the user's access token (JWTs start with 'eyJ')."""
+    assert 'passkey' not in html
+    assert 'eyJ' not in html
+    assert '/static/rest.js' not in html
+
+
+def get_forms(html: str) -> dict[tuple[str, str], dict]:
+    """Map (form action url, action name) -> {fields, onsubmit}."""
+    doc = BeautifulSoup(html, 'html.parser')
+    ret = {}
+    for form in doc.find_all('form', {'method': 'post'}):
+        fields: dict[str, list[str]] = {}
+        for inp in form.find_all('input'):
+            fields.setdefault(inp.get('name'), []).append(inp.get('value'))
+        action = fields.get('action', [''])[0]
+        ret[(form.get('action'), action)] = {'fields': fields, 'onsubmit': form.get('onsubmit')}
+    return ret
+
+
+def mock_dataset_page(client):
+    client.req_mock.add_mock('/datasets/d1', {'dataset_id': 'd1', 'dataset': 123, 'priority': 1.0, 'status': 'processing', 'description': 'desc'})
+    client.req_mock.add_mock('/datasets/d1/job_counts/status', {'processing': 1})
+    client.req_mock.add_mock('/datasets/d1/task_counts/status', {'idle': 1})
+    client.req_mock.add_mock('/datasets/d1/task_counts/name_status', {})
+    client.req_mock.add_mock('/datasets/d1/task_stats', {})
+    client.req_mock.add_mock('/config/d1', {})
+
+
+async def test_page_dataset_detail(server):
+    client = user(server)
+    mock_dataset_page(client)
+    async with client.get_http_client() as http_client:
+        ret = await client.request_raw(http_client, 'GET', '/dataset/d1')
+        assert ret.status_code == 200
+        assert_no_token(ret.text)
+        forms = get_forms(ret.text)
+
+        url = '/dataset/d1/actions'
+        for action in ('priority', 'reset', 'hard_reset', 'suspend', 'truncate', 'delete_logs'):
+            assert (url, action) in forms, action
+            assert forms[(url, action)]['fields']['_xsrf'][0]
+        assert forms[(url, 'reset')]['onsubmit'] is None
+        for action in ('hard_reset', 'suspend', 'truncate', 'delete_logs'):
+            assert 'confirm(' in forms[(url, action)]['onsubmit']
+
+        # submit a form straight from the page => end-to-end
+        m = client.req_mock.add_mock('/datasets/d1/priority', {})
+        fields = forms[(url, 'priority')]['fields']
+        form_data = {k: v[0] for k, v in fields.items()}
+        form_data['priority'] = '5'
+        ret = await client.request_raw(http_client, 'POST', url, form_data=form_data)
+        assert ret.status_code == 303
+        assert m.call_args[0][2] == {'priority': 5.0}
+
+
+async def test_page_task_browse(server):
+    client = user(server)
+    client.req_mock.add_mock('/datasets/d1/tasks', {
+        't1': {'task_id': 't1', 'dataset_id': 'd1', 'job_index': 0, 'task_index': 0, 'name': 'a', 'failures': 0, 'status': 'failed'},
+        't2': {'task_id': 't2', 'dataset_id': 'd1', 'job_index': 0, 'task_index': 1, 'name': 'b', 'failures': 0, 'status': 'failed'},
+    })
+    async with client.get_http_client() as http_client:
+        ret = await client.request_raw(http_client, 'GET', '/dataset/d1/task', args={'status': 'failed'})
+        assert ret.status_code == 200
+        assert_no_token(ret.text)
+
+        doc = BeautifulSoup(ret.text, 'html.parser')
+        forms = doc.find_all('form', {'action': '/dataset/d1/task/actions'})
+        # 3 "All" forms + per-row reset/hard_reset for 2 failed tasks
+        # (suspend is not allowed from 'failed')
+        assert len(forms) == 3 + 2*2
+        all_reset = forms[0]
+        ids = [i.get('value') for i in all_reset.find_all('input', {'name': 'task_ids'})]
+        assert sorted(ids) == ['t1', 't2']
+        assert all_reset.find('input', {'name': 'return_query'}).get('value') == 'status=failed'
+        assert all_reset.find('input', {'name': 'return_page'}).get('value') == 'browse'
+
+        # end-to-end: post the first per-row form
+        m = client.req_mock.add_mock('/actions/task_status', {'result': 'm1'})
+        row_form = forms[3]
+        form_data = {i.get('name'): i.get('value') for i in row_form.find_all('input')}
+        ret = await client.request_raw(http_client, 'POST', '/dataset/d1/task/actions', form_data=form_data)
+        assert ret.status_code == 303
+        loc = urlparse(ret.headers['location'])
+        assert parse_qs(loc.query) == {'return_query': ['status=failed'], 'return_page': ['browse']}
+        assert m.call_args[0][2]['task_ids'] == ['t1']
+
+
+async def test_page_task_detail(server):
+    client = user(server)
+    client.req_mock.add_mock('/datasets/d1', {'dataset_id': 'd1', 'dataset': 123})
+    client.req_mock.add_mock('/datasets/d1/tasks/t1?status=None', {'task_id': 't1', 'dataset_id': 'd1', 'job_id': 'j1', 'task_index': 0, 'status': 'failed'})
+    client.req_mock.add_mock('/datasets/d1/tasks/t1/task_stats?last=true', {})
+    async with client.get_http_client() as http_client:
+        ret = await client.request_raw(http_client, 'GET', '/dataset/d1/task/t1')
+        assert ret.status_code == 200
+        assert_no_token(ret.text)
+        forms = get_forms(ret.text)
+        url = '/dataset/d1/task/actions'
+        for action in ('reset', 'hard_reset', 'suspend', 'delete_logs'):
+            assert forms[(url, action)]['fields']['task_ids'] == ['t1']
+            assert forms[(url, action)]['fields']['return_page'] == ['detail']
+
+
+async def test_page_job_browse(server):
+    client = user(server)
+    client.req_mock.add_mock('/datasets/d1/jobs', {
+        'j1': {'job_id': 'j1', 'dataset_id': 'd1', 'job_index': 0, 'status': 'errors', 'status_changed': ''},
+    })
+    async with client.get_http_client() as http_client:
+        ret = await client.request_raw(http_client, 'GET', '/dataset/d1/job')
+        assert ret.status_code == 200
+        assert_no_token(ret.text)
+        doc = BeautifulSoup(ret.text, 'html.parser')
+        forms = doc.find_all('form', {'action': '/dataset/d1/job/actions'})
+        # 3 "All" forms + reset/hard_reset (suspend is not allowed from 'errors')
+        assert len(forms) == 3 + 2
+
+
+async def test_page_job_browse_empty(server):
+    client = user(server)
+    client.req_mock.add_mock('/datasets/d1/jobs', {})
+    async with client.get_http_client() as http_client:
+        ret = await client.request_raw(http_client, 'GET', '/dataset/d1/job')
+        assert ret.status_code == 200
+        assert '<form' not in ret.text.split('<table', 1)[1]
+
+
+async def test_page_job_detail(server):
+    client = user(server)
+    client.req_mock.add_mock('/datasets/d1', {'dataset_id': 'd1', 'dataset': 123})
+    client.req_mock.add_mock('/datasets/d1/jobs/j1', {'job_id': 'j1', 'dataset_id': 'd1', 'job_index': 0, 'status': 'errors'})
+    client.req_mock.add_mock('/datasets/d1/tasks', {})
+    async with client.get_http_client() as http_client:
+        ret = await client.request_raw(http_client, 'GET', '/dataset/d1/job/j1')
+        assert ret.status_code == 200
+        assert_no_token(ret.text)
+        forms = get_forms(ret.text)
+        url = '/dataset/d1/job/actions'
+        for action in ('reset', 'hard_reset'):
+            assert forms[(url, action)]['fields']['job_ids'] == ['j1']
+        assert (url, 'suspend') not in forms  # not allowed from 'errors'
+

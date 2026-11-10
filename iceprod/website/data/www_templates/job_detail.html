@@ -22,13 +22,15 @@
 {% end %}
 
 {% if (current_user) %}
+{% set action_url = f"/dataset/{url_escape(job['dataset_id'])}/job/actions" %}
+{% set ids = [job['job_id']] %}
 <div class="action">
     {% if job['status'] in states.job_prev_statuses(states.JOB_STATUS_START) %}
-    <button onclick='job_reset()'>Reset</button>
+    {% module ActionForm(url=action_url, action='reset', label='Reset', ids=ids, id_field='job_ids', return_page='detail') %}
     {% end %}
-    <button onclick='job_hard_reset()'>Hard Reset</button>
+    {% module ActionForm(url=action_url, action='hard_reset', label='Hard Reset', ids=ids, id_field='job_ids', return_page='detail', confirm_msg='Hard reset this job?') %}
     {% if job['status'] in states.job_prev_statuses('suspended') %}
-    <button onclick='job_suspend()'>Suspend</button>
+    {% module ActionForm(url=action_url, action='suspend', label='Suspend', ids=ids, id_field='job_ids', return_page='detail', confirm_msg='Suspend this job?') %}
     {% end %}
 </div>
 {% end %}
@@ -58,78 +60,5 @@
         {% end %}
     </table>
 </div>
-
-{% end %}
-
-{% block body_scripts %}
-
-{% if (current_user) %}
-<script type="text/javascript" src="/static/fetch.js"></script>
-<script type="text/javascript" src="/static/rest.js"></script>
-{% module SecureScript(content=f"""
-var rest_api = '{ rest_api }';
-const passkey = "{ passkey }";
-const dataset_id = "{ job['dataset_id'] if job else '' }";
-const job_id = "{ job['job_id'] if job else '' }";
-""") %}
-{% module SecureScript(content="""
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function service_worker(action) {
-    try {
-        const url = '/actions/job_status';
-        const args = {
-            dataset_id: dataset_id,
-            action: action,
-            job_ids: [job_id],
-        };
-        const ret = await fetch_json('POST', url, args, passkey);
-        if ('error' in ret) {
-            message_alert('error - '+ret['error']);
-            return false;
-        }
-        const id = ret['result'];
-
-        while (true) {
-            await sleep(1000);
-            const url = '/actions/job_status/'+id;
-            const ret = await fetch_json('GET', url, null, passkey);
-            if (ret['status'] == 'error') {
-                if ('error_message' in ret) {
-                    message_alert('error - '+ret['error_message']);
-                } else {
-                    message_alert('error - '+action+' failed');
-                }
-                return false;
-            } else if (ret['status'] == 'complete') {
-                message('complete');
-                break;
-            } else if ('payload' in ret && 'progress' in ret['payload']) {
-                message('progress - '+ret['payload']['progress']+'%')
-            }
-        }
-    } catch(err) {
-        message_alert('error - '+err);
-        return false;
-    }
-    reload();
-    return true;
-}
-
-async function job_reset() {
-    return await service_worker('reset')
-}
-
-async function job_hard_reset() {
-    return await service_worker('hard_reset')
-}
-
-async function job_suspend() {
-    return await service_worker('suspend')
-}
-""") %}
-{% end %}
 
 {% end %}

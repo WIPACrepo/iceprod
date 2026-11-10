@@ -26,19 +26,27 @@
     <td class="key">{{ k }}</td>
     <td class="value">
     {% if (k == "priority") %}
-        <input id="dataset_priority" value="{{ dataset[k] }}" /><button onclick='dataset_priority()'>Update</button>
+        {% if (current_user) %}
+        <form method="post" action="/dataset/{{ url_escape(dataset_id) }}/actions" class="action_form" style="display:inline">
+            {% raw xsrf_form_html() %}
+            <input type="hidden" name="action" value="priority" />
+            <input type="hidden" name="return_query" value="{{ request.query }}" />
+            <input id="dataset_priority" name="priority" type="number" step="any" value="{{ dataset[k] }}" required /><button type="submit">Update</button>
+        </form>
+        {% else %}{{ dataset[k] }}{% end %}
     {% else %}{{ dataset[k] }}{% end %}</td>
 </tr>
 {% end %}
 </table>
 
 {% if (current_user) %}
+{% set action_url = f'/dataset/{url_escape(dataset_id)}/actions' %}
 <div class="action">
-    <button onclick='dataset_reset()'>Reset</button>
-    <button onclick='dataset_hard_reset()'>Hard Reset</button>
-    <button onclick='dataset_suspend()'>Suspend</button>
-    <button onclick='dataset_truncate()'>Truncate</button>
-    <button onclick='dataset_delete_logs()'>Delete Logs</button>
+    {% module ActionForm(url=action_url, action='reset', label='Reset') %}
+    {% module ActionForm(url=action_url, action='hard_reset', label='Hard Reset', confirm_msg='Hard reset all jobs and tasks in this dataset?') %}
+    {% module ActionForm(url=action_url, action='suspend', label='Suspend', confirm_msg='Suspend this dataset?') %}
+    {% module ActionForm(url=action_url, action='truncate', label='Truncate', confirm_msg='Truncate this dataset?') %}
+    {% module ActionForm(url=action_url, action='delete_logs', label='Delete Logs', confirm_msg='Delete all logs for this dataset? This cannot be undone.') %}
 </div>
 {% end %}
 
@@ -101,131 +109,4 @@
         {% end %}
     </table>
 </div>
-{% end %}
-
-{% block body_scripts %}
-
-{% if (current_user) %}
-<script type="text/javascript" src="/static/fetch.js"></script>
-<script type="text/javascript" src="/static/rest.js"></script>
-{% module SecureScript(content=f"""
-var rest_api = '{ rest_api }';
-const passkey = '{ passkey }';
-const dataset_id = '{ dataset_id }';
-""") %}
-{% module SecureScript(content="""
-async function dataset_priority() {
-    try {
-        const val = parseFloat($("#dataset_priority").val());
-        
-        const url = '/datasets/' + dataset_id + '/priority';
-        const ret = await fetch_json('PUT', url, {'priority': val}, passkey);
-        if ('error' in ret) {
-            message_alert('error - '+ret['error']);
-            return false;
-        }
-    } catch(err) {
-        message_alert('error - '+err);
-        return false;
-    }
-    return true;
-}
-
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function service_worker(action) {
-    try {
-        const url = '/actions/dataset_status';
-        const args = {
-            dataset_id: dataset_id,
-            action: action,
-        };
-        const ret = await fetch_json('POST', url, args, passkey);
-        if ('error' in ret) {
-            message_alert('error - '+ret['error']);
-            return false;
-        }
-        const id = ret['result'];
-
-        while (true) {
-            await sleep(1000);
-            const url = '/actions/dataset_status/'+id;
-            const ret = await fetch_json('GET', url, null, passkey);
-            if (ret['status'] == 'error') {
-                if ('error_message' in ret) {
-                    message_alert('error - '+ret['error_message']);
-                } else {
-                    message_alert('error - '+action+' failed');
-                }
-                return false;
-            } else if (ret['status'] == 'complete') {
-                message('complete');
-                break;
-            } else if ('payload' in ret && 'progress' in ret['payload']) {
-                message('progress - '+ret['payload']['progress']+'%')
-            }
-        }
-    } catch(err) {
-        message_alert('error - '+err);
-        return false;
-    }
-    reload();
-    return true;
-}
-
-async function dataset_reset() {
-    return await service_worker('reset')
-}
-
-async function dataset_hard_reset() {
-    return await service_worker('hard_reset')
-}
-
-async function dataset_suspend() {
-    return await service_worker('suspend')
-}
-
-async function dataset_truncate() {
-    try {
-        const url = '/datasets/' + dataset_id + '/dataset_actions/truncate';
-        const ret = await fetch_json('POST', url, {}, passkey);
-        if ('error' in ret) {
-            message_alert('error - '+ret['error']);
-            return false;
-        }
-    } catch(err) {
-        message_alert('error - '+err);
-        return false;
-    }
-    reload();
-    return true;
-}
-
-async function dataset_delete_logs(dataset_id, passkey) {
-    message("Deleting logs... 0% complete");
-    try {
-        const url = '/datasets/' + dataset_id + '/logs';
-        for await (const ret of fetch_json('DELETE', url, {}, passkey)) {;
-            if ('error' in ret) {
-                message_alert('error - '+ret['error']);
-                return false;
-            } else if ('percent_complete' in ret) {
-                message('Deleting logs... ' + ret['percent_complete'].toFixed(2) + '% complete');
-            }
-            if ('status' in ret && ret['status'] == 'complete') {
-                break;
-            }
-        }
-    } catch(err) {
-        message_alert('error - '+err);
-        return false;
-    }
-    message_close();
-    return true;
-}
-""") %}
-{% end %}
-
 {% end %}

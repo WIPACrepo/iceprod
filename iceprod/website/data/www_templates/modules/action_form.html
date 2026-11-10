@@ -1,0 +1,8 @@
+<form method="post" action="{{ url }}" class="action_form" style="display:inline"{% if confirm_msg %} onsubmit="return confirm({{ json_encode(confirm_msg) }});"{% end %}>
+{% raw xsrf_form_html() %}
+<input type="hidden" name="action" value="{{ action }}" />
+{% for i in ids %}<input type="hidden" name="{{ id_field }}" value="{{ i }}" />{% end %}
+{% if return_page %}<input type="hidden" name="return_page" value="{{ return_page }}" />{% end %}
+<input type="hidden" name="return_query" value="{{ request.query }}" />
+<button type="submit"{% if css_class %} class="{{ css_class }}"{% end %}>{{ label }}</button>
+</form>
