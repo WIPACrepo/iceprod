@@ -484,9 +484,9 @@ async def test_page_dataset_detail(server):
         for action in ('priority', 'reset', 'hard_reset', 'suspend', 'truncate', 'delete_logs'):
             assert (url, action) in forms, action
             assert forms[(url, action)]['fields']['_xsrf'][0]
-        assert forms[(url, 'reset')]['onsubmit'] is None
-        for action in ('hard_reset', 'suspend', 'truncate', 'delete_logs'):
-            assert 'confirm(' in forms[(url, action)]['onsubmit']
+        for action in ('reset', 'hard_reset', 'suspend', 'truncate', 'delete_logs'):
+            assert 'confirm(' in forms[(url, action)]['onsubmit'], action
+        assert 'Running tasks will be restarted' in forms[(url, 'reset')]['onsubmit']
 
         # submit a form straight from the page => end-to-end
         m = client.req_mock.add_mock('/datasets/d1/priority', {})
@@ -519,6 +519,12 @@ async def test_page_task_browse(server):
         assert sorted(ids) == ['t1', 't2']
         assert all_reset.find('input', {'name': 'return_query'}).get('value') == 'status=failed'
         assert all_reset.find('input', {'name': 'return_page'}).get('value') == 'browse'
+
+        # bulk reset asks for confirmation; a single-row reset does not
+        assert 'Running tasks will be restarted' in all_reset.get('onsubmit')
+        row_reset = forms[3]
+        assert row_reset.find('input', {'name': 'action'}).get('value') == 'reset'
+        assert row_reset.get('onsubmit') is None
 
         # end-to-end: post the first per-row form
         m = client.req_mock.add_mock('/actions/task_status', {'result': 'm1'})
@@ -560,6 +566,13 @@ async def test_page_job_browse(server):
         forms = doc.find_all('form', {'action': '/dataset/d1/job/actions'})
         # 3 "All" forms + reset/hard_reset (suspend is not allowed from 'errors')
         assert len(forms) == 3 + 2
+
+        # bulk reset asks for confirmation; a single-row reset does not
+        all_reset, row_reset = forms[0], forms[3]
+        for f in (all_reset, row_reset):
+            assert f.find('input', {'name': 'action'}).get('value') == 'reset'
+        assert 'Running tasks will be restarted' in all_reset.get('onsubmit')
+        assert row_reset.get('onsubmit') is None
 
 
 async def test_page_job_browse_empty(server):

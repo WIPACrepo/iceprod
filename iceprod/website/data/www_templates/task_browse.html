@@ -15,7 +15,7 @@
         {% if tasks %}
         {% set action_url = f"/dataset/{url_escape(list(tasks.values())[0]['dataset_id'])}/task/actions" %}
         {% set ids_on_page = [tasks[x]['task_id'] for x in tasks] %}
-        <th>{% module ActionForm(url=action_url, action='reset', label='Reset All', ids=ids_on_page, id_field='task_ids', return_page='browse', css_class='set_status') %}</th>
+        <th>{% module ActionForm(url=action_url, action='reset', label='Reset All', ids=ids_on_page, id_field='task_ids', return_page='browse', css_class='set_status', confirm_msg='Reset all tasks on this page? Running tasks will be restarted.') %}</th>
         <th>{% module ActionForm(url=action_url, action='hard_reset', label='Hard Reset All', ids=ids_on_page, id_field='task_ids', return_page='browse', css_class='set_status', confirm_msg='Hard reset all tasks on this page?') %}</th>
         <th>{% module ActionForm(url=action_url, action='suspend', label='Suspend All', ids=ids_on_page, id_field='task_ids', return_page='browse', css_class='set_status', confirm_msg='Suspend all tasks on this page?') %}</th>
         {% else %}

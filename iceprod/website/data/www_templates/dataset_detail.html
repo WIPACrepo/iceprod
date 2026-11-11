@@ -42,7 +42,7 @@
 {% if (current_user) %}
 {% set action_url = f'/dataset/{url_escape(dataset_id)}/actions' %}
 <div class="action">
-    {% module ActionForm(url=action_url, action='reset', label='Reset') %}
+    {% module ActionForm(url=action_url, action='reset', label='Reset', confirm_msg='Reset all incomplete jobs and tasks in this dataset? Running tasks will be restarted.') %}
     {% module ActionForm(url=action_url, action='hard_reset', label='Hard Reset', confirm_msg='Hard reset all jobs and tasks in this dataset?') %}
     {% module ActionForm(url=action_url, action='suspend', label='Suspend', confirm_msg='Suspend this dataset?') %}
     {% module ActionForm(url=action_url, action='truncate', label='Truncate', confirm_msg='Truncate this dataset?') %}
