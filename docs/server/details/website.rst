@@ -121,8 +121,11 @@ On each authenticated request:
 * Without a refresh token, an expired access token means the user is logged
   out.
 
-The token endpoint is looked up once per process from the provider's
-``.well-known/openid-configuration`` and cached.
+The token endpoint comes from the token validator (``OpenIDAuth``), which
+reads the provider's ``.well-known/openid-configuration`` at startup, so a
+refresh needs no extra request.  If that discovery failed at startup, the
+website looks the endpoint up itself on the first refresh and caches it for
+the life of the process.
 
 The user's REST client is created with the current access token and with
 ``refresh_access_token`` as its token callback.  If the token expires during a
@@ -191,4 +194,4 @@ Known Limitations
   expires.
 * Token endpoint calls use the synchronous ``requests`` library and block the
   event loop.  They happen about once per access token lifetime per user.
-* The cached token endpoint is only looked up again after a restart.
+* The token endpoint is only looked up again after a restart.

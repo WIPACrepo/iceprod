@@ -14,6 +14,7 @@ from requests.auth import HTTPBasicAuth
 from rest_tools.client import RestClient
 from rest_tools.server import RestHandler, catch_error
 from rest_tools.server.session import SessionMixin
+from rest_tools.utils.auth import OpenIDAuth
 
 import iceprod.server.states
 from iceprod.common.prom_utils import PromRequestMixin
@@ -37,6 +38,10 @@ _TOKEN_ENDPOINTS: dict[str, str] = {}
 def get_token_endpoint(auth_url: str) -> str:
     """
     Get the OpenID token endpoint, using .well-known discovery once per process.
+
+    Fallback for `PublicHandler._token_endpoint`, used only when the token
+    validator (`self.auth`) did not already discover it.  Failures are not
+    cached, so the next refresh retries discovery.
 
     Args:
         auth_url: OpenID provider base url
@@ -471,6 +476,27 @@ class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler
                 refresh = refresh.decode('utf-8')
             self.auth_refresh_token = refresh
 
+    def _token_endpoint(self) -> str:
+        """
+        Get the OpenID token endpoint for refreshes.
+
+        In production `self.auth` is an `OpenIDAuth`, which already ran
+        `.well-known` discovery at startup (it validates tokens with the same
+        provider), so its `token_url` is used with no extra request.
+
+        Falls back to `get_token_endpoint` (cached discovery from
+        `self.auth_url`, the provider base url) when:
+        * discovery failed at startup: `OpenIDAuth` logs the error and leaves
+          `token_url` empty
+        * `self.auth` is not OpenID, e.g. the shared-secret `Auth` in CI testing
+
+        Returns:
+            the token endpoint url
+        """
+        if isinstance(self.auth, OpenIDAuth) and self.auth.token_url:
+            return self.auth.token_url
+        return get_token_endpoint(self.auth_url or '')
+
     def refresh_access_token(self) -> str:
         """
         Exchange the session refresh token for a new access token.
@@ -505,7 +531,7 @@ class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler
         kwargs: dict[str, Any] = {'timeout': TOKEN_REQUEST_TIMEOUT}
         if self.auth_client_secret:
             kwargs['auth'] = HTTPBasicAuth(self.auth_client_id, self.auth_client_secret)
-        r = requests.post(get_token_endpoint(self.auth_url or ''), data=args, **kwargs)
+        r = requests.post(self._token_endpoint(), data=args, **kwargs)
         r.raise_for_status()
         ret = r.json()
         access_token = ret['access_token']

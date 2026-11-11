@@ -3,8 +3,11 @@ Tests for website token handling (Phase 5: no Keycloak refresh per request).
 
 See `PublicHandler.get_current_user_async` / `refresh_access_token`.
 """
+from types import SimpleNamespace
+
 import pytest
 from rest_tools.utils import Auth
+from rest_tools.utils.auth import OpenIDAuth
 
 from iceprod.website.handlers import base
 
@@ -169,6 +172,41 @@ async def test_rest_client_refreshes_mid_request(server, token_endpoint, request
     assert rc.access_token == client.session.get_session(client.username)['access_token']
     assert rc.token_func == captured['handler'].refresh_access_token
     assert token_posts(requests_mock) == []
+
+
+def _openid_auth(token_url: str) -> OpenIDAuth:
+    """An OpenIDAuth with no network access (keys + provider info supplied)."""
+    auth = OpenIDAuth('http://idp.test', provider_info={'jwks_uri': ''}, public_keys={'k': 'key'})
+    auth.token_url = token_url  # normally set by startup discovery
+    return auth
+
+
+def test_token_endpoint_from_openid_auth(monkeypatch):
+    """Use the validator's discovered token url; no extra discovery."""
+    def fail(auth_url):
+        raise AssertionError('should not run discovery')
+    monkeypatch.setattr(base, 'get_token_endpoint', fail)
+
+    handler = SimpleNamespace(auth=_openid_auth('http://idp.test/startup-token'), auth_url='http://idp.test')
+    assert base.PublicHandler._token_endpoint(handler) == 'http://idp.test/startup-token'  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize('auth', [
+    pytest.param(lambda: _openid_auth(''), id='openid_discovery_failed'),
+    pytest.param(lambda: Auth('secret'), id='shared_secret'),
+    pytest.param(lambda: None, id='no_auth'),
+])
+def test_token_endpoint_fallback(auth, monkeypatch):
+    """Fall back to cached discovery from the provider base url."""
+    calls = []
+    def fake(auth_url):
+        calls.append(auth_url)
+        return TOKEN_URL
+    monkeypatch.setattr(base, 'get_token_endpoint', fake)
+
+    handler = SimpleNamespace(auth=auth(), auth_url='http://idp.test')
+    assert base.PublicHandler._token_endpoint(handler) == TOKEN_URL  # type: ignore[arg-type]
+    assert calls == ['http://idp.test']
 
 
 def test_get_token_endpoint_cached(monkeypatch, requests_mock):
