@@ -31,7 +31,7 @@
             {% raw xsrf_form_html() %}
             <input type="hidden" name="action" value="priority" />
             <input type="hidden" name="return_query" value="{{ request.query }}" />
-            <input id="dataset_priority" name="priority" type="number" step="any" value="{{ dataset[k] }}" required /><button type="submit">Update</button>
+            <input id="dataset_priority" name="priority" type="number" step="any" min="0" value="{{ dataset[k] }}" required /><button type="submit">Update</button>
         </form>
         {% else %}{{ dataset[k] }}{% end %}
     {% else %}{{ dataset[k] }}{% end %}</td>

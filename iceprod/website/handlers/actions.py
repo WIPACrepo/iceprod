@@ -21,6 +21,7 @@ action payload.  The user only influences an allowlisted query string
 (`return_query`) and a browse/detail hint (`return_page`).
 """
 import logging
+import math
 from typing import Any
 from urllib.parse import parse_qsl, quote, urlencode
 
@@ -210,6 +211,11 @@ class DatasetAction(ActionBase):
                 priority = float(self.get_body_argument('priority', default=''))
             except ValueError:
                 self.render_action_error('priority is not a number', return_url)
+                return
+            # same rule as the REST API (`valid_priority`); checked here for a clear message.
+            # float() accepts 'nan' and 'inf', which must not reach the database.
+            if not math.isfinite(priority) or priority < 0:
+                self.render_action_error('priority must be a finite number >= 0', return_url)
                 return
             try:
                 await self.rest_client.request('PUT', f'/datasets/{dataset_id}/priority', {'priority': priority})

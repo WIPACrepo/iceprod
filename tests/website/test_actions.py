@@ -141,6 +141,34 @@ async def test_dataset_action_priority_invalid(server):
     assert not m.called
 
 
+@pytest.mark.parametrize('value', ['nan', 'inf', '-inf', '-1', '-0.5'])
+async def test_dataset_action_priority_out_of_range(value, server):
+    """float() parses these, but they must not reach the REST API."""
+    client = user(server)
+    m = client.req_mock.add_mock('/datasets/d1/priority', {})
+    async with client.get_http_client() as http_client:
+        xsrf = await get_xsrf(client, http_client)
+        ret = await client.request_raw(http_client, 'POST', '/dataset/d1/actions', form_data={
+            '_xsrf': xsrf, 'action': 'priority', 'priority': value,
+        })
+    assert ret.status_code == 400
+    doc = BeautifulSoup(ret.text, 'html.parser')
+    assert 'finite number >= 0' in doc.find('div', {'id': 'error'}).text  # type: ignore
+    assert not m.called
+
+
+async def test_dataset_action_priority_zero(server):
+    client = user(server)
+    m = client.req_mock.add_mock('/datasets/d1/priority', {})
+    async with client.get_http_client() as http_client:
+        xsrf = await get_xsrf(client, http_client)
+        ret = await client.request_raw(http_client, 'POST', '/dataset/d1/actions', form_data={
+            '_xsrf': xsrf, 'action': 'priority', 'priority': '0',
+        })
+    assert ret.status_code == 303
+    assert m.call_args[0][2] == {'priority': 0.0}
+
+
 async def test_dataset_action_truncate(server):
     client = user(server)
     m = client.req_mock.add_mock('/datasets/d1/dataset_actions/truncate', {})

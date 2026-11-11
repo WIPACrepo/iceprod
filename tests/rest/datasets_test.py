@@ -1,4 +1,7 @@
+import asyncio
+
 import pytest
+import requests
 import requests.exceptions
 
 import iceprod.server.states
@@ -190,6 +193,71 @@ async def test_rest_datasets_update_priority(server):
 
     ret = await client.request('GET', f'/datasets/{dataset_id}')
     assert data['priority'] == ret['priority']
+
+    # values above 1 are fine (normalized later), as is 0
+    for p in (0, 5, 2.5):
+        await client.request('PUT', f'/datasets/{dataset_id}/priority', {'priority': p})
+        ret = await client.request('GET', f'/datasets/{dataset_id}')
+        assert ret['priority'] == p
+
+
+def _raw_json(client, method, path, body: str):
+    """
+    Send a raw JSON body, bypassing `requests`' encoder.
+
+    `requests` refuses to encode NaN/Infinity, but Python's json.loads on the
+    server accepts them, so a hand-written client could send them.
+    """
+    return requests.request(
+        method,
+        client.address + path,
+        data=body,
+        headers={'Authorization': f'Bearer {client.access_token}', 'Content-Type': 'application/json'},
+        timeout=5,
+    )
+
+
+@pytest.mark.parametrize('body,reason', [
+    ('{"priority": NaN}', 'finite'),
+    ('{"priority": Infinity}', 'finite'),
+    ('{"priority": -Infinity}', 'finite'),
+    ('{"priority": -0.1}', 'finite'),
+    ('{"priority": true}', 'not a number'),
+    ('{"priority": "0.5"}', 'not a number'),
+    ('{}', 'missing'),
+])
+async def test_rest_datasets_update_priority_invalid(body, reason, server):
+    client = server(roles=['user'], groups=['users'])
+
+    data = {
+        'description': 'blah',
+        'tasks_per_job': 4,
+        'jobs_submitted': 1,
+        'tasks_submitted': 4,
+        'priority': .5,
+        'group': 'users',
+    }
+    ret = await client.request('POST', '/datasets', data)
+    dataset_id = ret['result']
+
+    r = await asyncio.to_thread(_raw_json, client, 'PUT', f'/datasets/{dataset_id}/priority', body)
+    assert r.status_code == 400
+    assert reason in r.reason
+
+    ret = await client.request('GET', f'/datasets/{dataset_id}')
+    assert ret['priority'] == .5
+
+
+@pytest.mark.parametrize('priority', ['NaN', 'Infinity', '-1.0'])
+async def test_rest_datasets_create_priority_invalid(priority, server):
+    client = server(roles=['user'], groups=['users'])
+    body = (
+        '{"description": "blah", "tasks_per_job": 4, "jobs_submitted": 1,'
+        f' "tasks_submitted": 4, "group": "users", "priority": {priority}}}'
+    )
+    r = await asyncio.to_thread(_raw_json, client, 'POST', '/datasets', body)
+    assert r.status_code == 400
+    assert 'priority' in r.reason
 
 
 async def test_rest_datasets_hard_reset(server):
