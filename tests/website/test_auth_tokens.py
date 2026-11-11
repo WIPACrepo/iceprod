@@ -4,6 +4,7 @@ Tests for website token handling (Phase 5: no Keycloak refresh per request).
 See `PublicHandler.get_current_user_async` / `refresh_access_token`.
 """
 import pytest
+from rest_tools.utils import Auth
 
 from iceprod.website.handlers import base
 
@@ -95,6 +96,35 @@ async def test_failed_refresh_unauthenticated(server, token_endpoint, requests_m
     assert ret.status_code == 302
     assert '/login' in ret.headers['location']
     assert len(token_posts(requests_mock)) == 1
+
+
+@pytest.mark.parametrize('kind', ['bad_signature', 'expired', 'other_user', 'garbage'])
+async def test_refresh_rejects_invalid_token(kind, server, token_endpoint, requests_mock):
+    """A refreshed access token is validated before being stored; failure => not logged in."""
+    client = server(username='user', roles=['user'], groups=['users'])
+    set_tokens(client, access_exp=-10)
+    old = client.session.get_session(client.username)['access_token']
+
+    if kind == 'bad_signature':
+        bad = Auth('not-the-secret').create_token(client.username, expiration=3600, payload=client.token_data)
+    elif kind == 'expired':
+        # well past the validator's clock-skew leeway
+        bad = client.auth.create_token(client.username, expiration=-3600, payload=client.token_data)
+    elif kind == 'other_user':
+        bad = client.auth.create_token('mallory', expiration=3600, payload={'preferred_username': 'mallory'})
+    else:
+        bad = 'not-a-jwt'
+    requests_mock.post(TOKEN_URL, json={'access_token': bad, 'refresh_token': 'new-refresh'})
+
+    ret = await get_submit(client)
+    assert ret.status_code == 302
+    assert '/login' in ret.headers['location']
+    assert len(token_posts(requests_mock)) == 1
+
+    # nothing stored from the rejected response
+    session = client.session.get_session(client.username)
+    assert session['access_token'] == old
+    assert session['refresh_token'] != 'new-refresh'
 
 
 async def test_failed_refresh_post_forbidden(server, token_endpoint, requests_mock):

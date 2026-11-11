@@ -55,7 +55,13 @@ def get_token_endpoint(auth_url: str) -> str:
 
 
 def _token_scopes(refresh_token: str) -> str:
-    """Scopes of a (possibly opaque) refresh token, for the refresh request."""
+    """
+    Scopes of a (possibly opaque) refresh token, for the refresh request.
+
+    The signature is deliberately not verified: the scope is only echoed back
+    to the identity provider, which validates the refresh token itself and
+    grants no more than the token allows.
+    """
     try:
         return jwt.decode(refresh_token, options={'verify_signature': False}).get('scope', '')
     except Exception:
@@ -473,11 +479,19 @@ class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler
         the session via `update_refresh_token`.  Also used as the rest
         client's token callback, so long requests refresh mid-flight.
 
+        The new access token is validated (signature, expiry, issuer and
+        audience, via `self.auth`) and must belong to the logged in user
+        before it is stored.  This is the same check `store_tokens` does at
+        login, so every access token in the session has been verified once.
+        Later expiry checks (`_access_token_valid`) can then decode without
+        verification.
+
         Returns:
             the new access token
 
         Raises:
-            Exception: on any failure (no refresh token, http error, bad response)
+            Exception: on any failure (no refresh token, http error, bad
+                response, invalid token, or token for a different user)
         """
         refresh_token = self.auth_refresh_token
         if not refresh_token:
@@ -495,12 +509,29 @@ class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler
         r.raise_for_status()
         ret = r.json()
         access_token = ret['access_token']
+
+        # verify before storing; signing keys are cached by self.auth, so this
+        # normally makes no network call
+        assert self.auth
+        data = self.auth.validate(access_token)
+        username = data.get('preferred_username') or data.get('upn')
+        if username != self.current_user:
+            raise RuntimeError('refreshed token is for a different user')
+
         self.update_refresh_token(access_token, ret.get('refresh_token'))
         logger.debug('refreshed access token for %s', self.current_user)
         return access_token
 
     def _access_token_valid(self, access_token: str | None, margin: float = 0) -> bool:
-        """Check if an access token exists and has more than `margin` seconds left."""
+        """
+        Check if an access token exists and has more than `margin` seconds left.
+
+        Decodes without verifying the signature.  This is safe because:
+        * session tokens are server-side only, and were validated when stored
+          (`store_tokens` at login, `refresh_access_token` on refresh)
+        * the result only decides whether to refresh early; it grants nothing.
+          The REST API validates the token on every request.
+        """
         if not access_token:
             return False
         try:
