@@ -23,7 +23,9 @@ IceProd is the IceCube grid production system. It is a set of services backed by
 - **Status state machines** live in `iceprod/server/states.py` (`DATASET_STATUS`, `JOB_STATUS`, `TASK_STATUS`). Always use these constants instead of hard-coding status lists.
 - **Auth**:
   - REST handlers use `@authorization(roles=[...])` for the role check, and `@attr_auth(arg='dataset_id', role='read'|'write')` for per-dataset access.
-  - When one request covers many datasets, call `self.manual_attr_auth(...)` for each dataset, or `self.get_readable_dataset_ids()`.
+  - When one request covers many datasets, use the batch helpers on `AttrAuthMixin` (`iceprod/rest/auth.py`) instead of calling `manual_attr_auth` in a loop. These are `self.filter_attr_auth(arg, vals, role)`, which returns the allowed subset using batched `$in` queries, and `self.get_readable_dataset_ids()`, which parses the `dataset_ids` query argument and returns 403 if any is unreadable.
+  - The access rule itself lives only in `AttrAuthMixin._attr_auth_allowed`.
+  - The `user` role and the `users` group are defined by the same IceCube token claim, so every user token is in `users`. New datasets are readable by `users` unless `auth_groups_read` is set.
   - The `admin` and `system` roles bypass attribute auth.
 - **Separate databases**: datasets, jobs, and tasks are in *different* Mongo databases, so `$lookup` across them is not possible. Aggregate per collection and join in Python.
 - **Task requirements** may be missing from a task document. Fall back to `Resources.defaults`.
