@@ -35,8 +35,9 @@ from . import uimodules
 from .config import get_config
 from .handlers.actions import ActionStatus, DatasetAction, JobAction, TaskAction
 from .handlers.base import LoginMixin, PublicHandler, authenticated
-from .handlers.dataset import Dataset, DatasetBrowse, UserOverview
+from .handlers.dataset import Dataset, DatasetBrowse
 from .handlers.job import Job, JobBrowse
+from .handlers.overview import UserOverview
 from .handlers.submit import Config, ConfigStatus, Submit, SubmitStatus
 from .handlers.task import Task, TaskBrowse
 
