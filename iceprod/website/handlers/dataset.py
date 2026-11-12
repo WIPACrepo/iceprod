@@ -5,6 +5,7 @@ from urllib.parse import urlencode
 
 import tornado.web
 from cachetools.func import ttl_cache
+from rest_tools.client import RestClient
 
 from iceprod.roles_groups import GROUPS
 from iceprod.server.states import JOB_STATUS, TASK_STATUS
@@ -16,9 +17,12 @@ logger = logging.getLogger('website-dataset')
 
 class UsernamesMixin:
     """Provide the list of known usernames for filters"""
+    #: provided by PublicHandler
+    system_rest_client: RestClient
+
     @ttl_cache(maxsize=256, ttl=600)
     async def get_usernames(self):
-        ret = await self.system_rest_client.request('GET', '/users')  # type: ignore[attr-defined]
+        ret = await self.system_rest_client.request('GET', '/users')
         return [x['username'] for x in ret['results']]
 
 
