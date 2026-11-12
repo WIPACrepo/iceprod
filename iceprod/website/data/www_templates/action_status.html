@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}IceProd Action Status{% end %}
+
+{% block page_title %}Action Status{% end %}
+
+{% block body %}
+<div style="margin: 1rem;max-width:40rem">
+    {% if status == 'error' %}
+    <p>The action failed.</p>
+    {% else %}
+    <p>Please wait while the action is processed.</p>
+    <img src="/static/Gray_circles_rotate.gif" style="width: 50px;margin: 1rem" />
+    {% end %}
+    <p>Status: <span id="status">{{ status }}</span></p>
+    {% if progress is not None %}
+    <p>Progress: <span id="progress">{{ progress }}</span>%</p>
+    {% end %}
+    {% if message %}
+    <p>Message:</p>
+    <div id="error">{{ message }}</div>
+    {% end %}
+    {% if reload_url %}
+    <p style="margin-top:5rem">If the page does not reload every second, please <a href="{{ reload_url }}">reload manually</a>.</p>
+    {% end %}
+    <p><a id="return" href="{{ return_url }}">Return to previous page</a></p>
+</div>
+{% end %}
+
+{% block body_scripts %}
+{% if reload_url %}
+{% module SecureScript(content=f"""
+setTimeout(function() {{
+    window.location.replace({ json_encode(reload_url) });
+}}, 1000);
+""") %}
+{% end %}
+{% end %}

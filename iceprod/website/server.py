@@ -33,6 +33,7 @@ from iceprod.util import VERSION_STRING
 
 from . import uimodules
 from .config import get_config
+from .handlers.actions import ActionStatus, DatasetAction, JobAction, TaskAction
 from .handlers.base import LoginMixin, PublicHandler, authenticated
 from .handlers.dataset import Dataset, DatasetBrowse
 from .handlers.job import Job, JobBrowse
@@ -297,6 +298,11 @@ class Server:
         server.add_route('/config', Config, handler_args)
         server.add_route(r'/config/status/(\w+)', ConfigStatus, handler_args)
         server.add_route(r"/schemas/v3/([\w\.]+)", Schemas, handler_args)
+        # website actions: must precede the generic /dataset/(\w+)/... routes
+        server.add_route(r'/dataset/(\w+)/actions', DatasetAction, handler_args)
+        server.add_route(r'/dataset/(\w+)/task/actions', TaskAction, handler_args)
+        server.add_route(r'/dataset/(\w+)/job/actions', JobAction, handler_args)
+        server.add_route(r'/actions/status/(\w+)/(\w+)', ActionStatus, handler_args)
         server.add_route('/dataset', DatasetBrowse, handler_args)
         server.add_route(r"/dataset/(\w+)", Dataset, handler_args)
         server.add_route(r"/dataset/(\w+)/task", TaskBrowse, handler_args)

@@ -32,8 +32,42 @@ Communication between sites also use the json-rpc interface in the website.
 Human Interaction
 -----------------
 
-The website can modify things in the database using ajax and the json-rpc
-interface in the website.
+Pages never call the REST API from the browser.  Every change a user makes
+(dataset, task, and job status changes, priority, truncate, log deletion) is
+an ordinary HTML form posted back to the website.  The website handler then
+calls the REST API on the server, using the user's own token, so the REST API
+still applies the user's permissions.
+
+Action endpoints (`iceprod/website/handlers/actions.py`):
+
+=====================================  =========================================
+Route                                  Purpose
+=====================================  =========================================
+``POST /dataset/{id}/actions``         dataset status, priority, truncate,
+                                       delete all dataset logs
+``POST /dataset/{id}/task/actions``    status of the selected tasks, delete one
+                                       task's logs
+``POST /dataset/{id}/job/actions``     status of the selected jobs
+``GET /actions/status/{type}/{id}``    progress page for a queued action
+=====================================  =========================================
+
+Flow:
+
+1. The form posts ``action``, the selected ids, and hints for where to go
+   afterwards (``return_page``, ``return_query``).
+2. Quick actions (priority, truncate) call the REST API directly and redirect
+   back with ``303 See Other``.
+3. Longer actions are queued with ``POST /actions/{type}`` on the REST API and
+   processed by the action services (`iceprod/services/actions`).  The user is
+   redirected (303) to the status page, which reloads every second until the
+   action completes, then redirects back.  Errors are shown on the page.
+
+The 303 redirects follow the Post/Redirect/Get pattern: reloading or going
+back never resubmits the form.
+
+Return URLs are always built on the server from the action type and ids.
+``return_query`` is reduced to an allowlist of keys (``status``, ``name``), so
+a form cannot redirect the user to an arbitrary address.
 
 Nginx
 -----
@@ -52,54 +86,112 @@ Details about user accounts are in :ref:`user_accounts`.
 CSRF
 """"
 
-To protect against Cross-Site Request Forgery (and other session-stealing
-attacks), the following schemes are used:
+Cross-Site Request Forgery protection uses Tornado's ``xsrf_cookies``, which
+is enabled whenever a cookie secret is configured.
 
-Headers
-^^^^^^^
+* Every form includes the token from ``xsrf_form_html()`` (the
+  ``ActionForm`` UI module adds it automatically).
+* A POST with a missing token is rejected with 400; a wrong token with 403.
 
-If available, the `Origin` or `Referer` headers are checked.
-If they are not available, JSON-RPC requests are passed while
-other requests are blocked.
+Login and Token Storage
+"""""""""""""""""""""""
 
-.. note:: Why are JSON-RPC requests passed?
+Login uses OpenID Connect (Keycloak).  On login, the website validates the
+access token from the identity provider and stores the access and refresh
+tokens in a server-side session (Redis, or in memory for testing).
 
-   This is because JSON-RPC serves multiple purposes.  Only one of them
-   is for website requests.  One other is as an API for scripts or other
-   external entities.  But the main purpose is for IceProd task and site
-   communication.  In order to not hinder these uses, the headers are left
-   unchecked.
+The browser only receives a signed ``iceprod_username`` cookie that names the
+session.  Tokens are never placed in pages, cookies, or JavaScript.
 
-   Note that JSON-RPC does not use the user login cookie, so it cannnot be
-   tricked into running cross-site requests that way.
+Token Refresh
+"""""""""""""
 
-Login
-^^^^^
+Implemented in ``PublicHandler.get_current_user_async`` and
+``PublicHandler.refresh_access_token``
+(`iceprod/website/handlers/base.py`).
 
-There are two different types of login, which are treated differently.
+On each authenticated request:
 
-Web Login
-+++++++++
+* If the stored access token has more than ``REFRESH_MARGIN`` (60) seconds
+  left, it is used as is.  No call is made to the identity provider.
+* Otherwise, if there is a refresh token, the website makes one call to the
+  token endpoint, validates the new access token, and stores the new tokens in
+  the session.  If this fails, the user is treated as logged out: GET requests
+  are redirected to the login page, and POST requests are rejected.
+* Without a refresh token, an expired access token means the user is logged
+  out.
 
-The initial web login will save a secure cookie to identify the user, but
-this will not in itself grant any access to JSON-RPC or secure areas. The
-lifetime for the login is measured in days, and is configurable.
+The token endpoint comes from the token validator (``OpenIDAuth``), which
+reads the provider's ``.well-known/openid-configuration`` at startup, so a
+refresh needs no extra request.  If that discovery failed at startup, the
+website looks the endpoint up itself on the first refresh and caches it for
+the life of the process.
 
-When loading a page that needs to make JSON-RPC requests, a very limited
-lifetime passkey is generated (assume 15 minutes) and inserted in a hidden
-field in the html.  This passkey is then added to JSON-RPC requests.
+The user's REST client is created with the current access token and with
+``refresh_access_token`` as its token callback.  If the token expires during a
+long request, the client refreshes it once, and the result is stored in the
+session as above.
 
-Secure areas like account details will require a second login before granting
-access.
+Token Verification
+""""""""""""""""""
 
-JSON-RPC Login
-++++++++++++++
+Tokens are signature-checked wherever a decision depends on them.  Two
+places decode a token *without* verification, on purpose:
 
-This version directly returns the passkey necessary to execute authenticated
-JSON-RPC requests.  It has a fairly limited lifetime and is designed to be
-used immediately within the same script.
+==================================  ================================  ==============================
+Check                               Verified?                         Why
+==================================  ================================  ==============================
+access token at login               yes (``store_tokens``)            enters the session
+access token after refresh          yes (``refresh_access_token``)    enters the session; must
+                                                                      also name the logged in user
+website groups (``auth_groups``)    yes                               used for page permissions
+every REST API request              yes (REST server)                 enforces all permissions
+refresh token at refresh            yes (identity provider)           grants new tokens
+access token expiry                 no (``_access_token_valid``)      only decides whether to
+                                                                      refresh early
+refresh token scopes                no (``_token_scopes``)            only echoed back to the
+                                                                      identity provider
+==================================  ================================  ==============================
 
-.. warning::
+The unverified checks are safe because:
 
-   Anyone with the passkey can impersonate you for the lifetime of the key.
-   Try not to save it to file, and dispose of it when finished.
+* Session tokens can only be written by the server, and every access token was
+  validated when it was stored.
+* Neither check grants access.  A bad token would only be sent on to the REST
+  API (which rejects it) or to the identity provider (which validates the
+  refresh token itself).
+
+Validation allows 60 seconds of clock skew (the ``rest_tools`` default).
+
+Content Security Policy
+"""""""""""""""""""""""
+
+Every page sends a ``Content-Security-Policy`` header (set in
+``PublicHandler.prepare``):
+
+* ``default-src 'none'``: anything not listed below is blocked.
+* ``script-src`` / ``style-src``: this site, ``cdnjs.cloudflare.com``, and
+  inline blocks carrying the per-request nonce.  Inline scripts must use the
+  ``SecureScript`` UI module, which adds the nonce.
+* ``connect-src 'self'``: page scripts may only make network requests
+  (``fetch``, XHR, WebSocket) to the website itself.  The REST API is
+  deliberately not listed, so even injected script cannot call it from the
+  browser.
+
+.. note::
+
+   New pages must follow the form pattern in `Human Interaction`_.  A page
+   that calls the REST API from JavaScript will be blocked by the browser
+   (a CSP violation is logged in the browser console).
+
+Known Limitations
+"""""""""""""""""
+
+* Concurrent refreshes: the session store keeps the last write.  If the
+  identity provider rotates refresh tokens and two requests (for example, two
+  tabs) refresh at the same moment, one may store a refresh token that is
+  already invalid.  That user is asked to log in again once the access token
+  expires.
+* Token endpoint calls use the synchronous ``requests`` library and block the
+  event loop.  They happen about once per access token lifetime per user.
+* The token endpoint is only looked up again after a restart.

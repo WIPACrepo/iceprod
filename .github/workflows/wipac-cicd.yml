@@ -85,10 +85,29 @@ jobs:
     steps:
       - name: Run mongo replicaset
         run: |
-          docker run --rm -d --name mongo --network=host mongo:8 --replSet rs0 --bind_ip_all --port 27017
-          sleep 2
-          docker run --rm --network=host --entrypoint mongosh mongo:8 --eval "rs.initiate().ok"
-          sleep 1
+          docker run -d --name mongo --network=host mongo:7 --replSet rs0 --bind_ip_all --port 27017
+          # Wait until mongod accepts connections
+          for i in $(seq 1 30); do
+            if docker exec mongo mongosh --quiet --eval "db.adminCommand('ping').ok" >/dev/null 2>&1; then
+              echo "mongod is up after ${i}s"
+              break
+            fi
+            if [ "$i" -eq 30 ]; then
+              echo "mongod did not start in time"
+              docker logs mongo
+              exit 1
+            fi
+            sleep 1
+          done
+          docker exec mongo mongosh --quiet --eval "rs.initiate().ok"
+          # Wait for the node to become primary
+          for i in $(seq 1 30); do
+            if docker exec mongo mongosh --quiet --eval "db.hello().isWritablePrimary" | grep -q true; then
+              echo "primary elected"
+              break
+            fi
+            sleep 1
+          done
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0  # setuptools-scm needs to access git tags

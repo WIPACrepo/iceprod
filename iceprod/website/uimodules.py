@@ -34,3 +34,44 @@ class SecureStyle(tornado.web.UIModule):
             "modules/secure_style.html", 
             nonce=nonce, content=content
         )
+
+
+class ActionForm(tornado.web.UIModule):
+    """
+    Renders a single-button POST form for a website action.
+
+    Replaces JS buttons that called the REST API directly.  The form carries
+    the XSRF token, the action name, any ids, and the current page's query
+    string (`return_query`) so the user returns to the same filtered view.
+    Rendered from its own template, so it is always auto-escaped even when
+    the including page uses `{% autoescape None %}`.
+
+    Args:
+        url: form action url (one of the `/dataset/<id>/.../actions` routes)
+        action: action name
+        label: button text
+        ids: ids to send as repeated hidden `id_field` inputs
+        id_field: form field name for ids (`task_ids` | `job_ids`)
+        confirm_msg: if set, ask the user to confirm before submitting
+        return_page: `browse` | `detail` hint for the completion redirect
+        css_class: optional button class
+    """
+
+    def render(  # type: ignore[override]
+        self,
+        url: str,
+        action: str,
+        label: str,
+        ids: list[str] | None = None,
+        id_field: str | None = None,
+        confirm_msg: str | None = None,
+        return_page: str | None = None,
+        css_class: str | None = None,
+    ) -> bytes:
+        return self.render_string(
+            "modules/action_form.html",
+            url=url, action=action, label=label,
+            ids=ids or [], id_field=id_field,
+            confirm_msg=confirm_msg, return_page=return_page,
+            css_class=css_class,
+        )

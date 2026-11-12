@@ -29,11 +29,13 @@
 {% end %}
 
 {% if (current_user) %}
+{% set action_url = f"/dataset/{url_escape(task['dataset_id'])}/task/actions" %}
+{% set ids = [task['task_id']] %}
 <div class="action">
-    <button onclick='task_reset();'>Reset</button></td>
-    <button onclick='task_hard_reset();'>Hard Reset</button></td>
-    <button onclick='task_suspend();'>Suspend</button></td>
-    <button onclick='delete_task_logs();'>Delete Logs</button></td>
+    {% module ActionForm(url=action_url, action='reset', label='Reset', ids=ids, id_field='task_ids', return_page='detail') %}
+    {% module ActionForm(url=action_url, action='hard_reset', label='Hard Reset', ids=ids, id_field='task_ids', return_page='detail', confirm_msg='Hard reset this task?') %}
+    {% module ActionForm(url=action_url, action='suspend', label='Suspend', ids=ids, id_field='task_ids', return_page='detail', confirm_msg='Suspend this task?') %}
+    {% module ActionForm(url=action_url, action='delete_logs', label='Delete Logs', ids=ids, id_field='task_ids', return_page='detail', confirm_msg='Delete all logs for this task? This cannot be undone.') %}
 </div>
 {% end %}
 
@@ -100,95 +102,5 @@
   {% end %}
 {% end %}
 </section>
-
-{% end %}
-
-{% block body_scripts %}
-
-{% if (current_user) %}
-<script type="text/javascript" src="/static/fetch.js"></script>
-<script type="text/javascript" src="/static/rest.js"></script>
-{% module SecureScript(content=f"""
-var rest_api = '{ rest_api }';
-const passkey = "{ passkey }";
-const dataset_id = "{ task['dataset_id'] if task else '' }";
-const job_id = "{ task['job_id'] if task else '' }";
-const task_id = "{ task['task_id'] if task else '' }";
-""") %}
-{% module SecureScript(content="""
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function service_worker(action) {
-    try {
-        const url = '/actions/task_status';
-        const args = {
-            dataset_id: dataset_id,
-            action: action,
-            task_ids: [task_id],
-        };
-        const ret = await fetch_json('POST', url, args, passkey);
-        if ('error' in ret) {
-            message_alert('error - '+ret['error']);
-            return false;
-        }
-        const id = ret['result'];
-
-        while (true) {
-            await sleep(1000);
-            const url = '/actions/task_status/'+id;
-            const ret = await fetch_json('GET', url, null, passkey);
-            if (ret['status'] == 'error') {
-                if ('error_message' in ret) {
-                    message_alert('error - '+ret['error_message']);
-                } else {
-                    message_alert('error - '+action+' failed');
-                }
-                return false;
-            } else if (ret['status'] == 'complete') {
-                message('complete');
-                break;
-            } else if ('payload' in ret && 'progress' in ret['payload']) {
-                message('progress - '+ret['payload']['progress']+'%')
-            }
-        }
-    } catch(err) {
-        message_alert('error - '+err);
-        return false;
-    }
-    reload();
-    return true;
-}
-
-async function task_reset() {
-    return await service_worker('reset')
-}
-
-async function task_hard_reset() {
-    return await service_worker('hard_reset')
-}
-
-async function task_suspend() {
-    return await service_worker('suspend')
-}
-
-async function delete_task_logs() {
-    try {
-        const url = '/datasets/' + dataset_id + '/task/' + task_id + '/logs';
-        const ret = await fetch_json('DELETE', url, {}, passkey);
-        if ('error' in ret) {
-            message_alert('error - '+ret['error']);
-            return false;
-        }
-    } catch(err) {
-        message_alert('error - '+err);
-        return false;
-    }
-    reload();
-    return true;
-}
-""") %}
-{% end %}
 
 {% end %}

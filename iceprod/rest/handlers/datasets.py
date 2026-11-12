@@ -1,5 +1,6 @@
 import json
 import logging
+import math
 import uuid
 from collections import defaultdict
 from typing import Any
@@ -21,6 +22,29 @@ from ..auth import attr_auth, authorization
 from ..base_handler import APIBase
 
 logger = logging.getLogger('rest.datasets')
+
+
+def valid_priority(val: Any) -> bool:
+    """
+    Check a dataset priority.
+
+    The usual range is 0 - 1.0, but any non-negative value is accepted,
+    since priorities are normalized later.  NaN and infinity are rejected,
+    as they would break that normalization and any sorting by priority.
+    `bool` is rejected even though it is an `int` subclass.
+
+    Args:
+        val: the priority from a request body
+
+    Returns:
+        True if valid
+    """
+    return (
+        isinstance(val, (int, float))
+        and not isinstance(val, bool)
+        and math.isfinite(val)
+        and val >= 0
+    )
 
 
 def setup(handler_cfg):
@@ -154,6 +178,9 @@ class MultiDatasetHandler(APIBase):
 
         if 'status' in data and data['status'] not in DATASET_STATUS:
             raise tornado.web.HTTPError(400, reason='unknown status')
+
+        if 'priority' in data and not valid_priority(data['priority']):
+            raise tornado.web.HTTPError(400, reason='priority must be a finite number >= 0')
 
         # generate dataset number
         ret = await self.db.settings.find_one_and_update(
@@ -332,8 +359,10 @@ class DatasetPriorityHandler(APIBase):
         data = json.loads(self.request.body)
         if 'priority' not in data:
             raise tornado.web.HTTPError(400, reason='missing priority')
-        elif not isinstance(data['priority'], (int, float)):
+        elif not isinstance(data['priority'], (int, float)) or isinstance(data['priority'], bool):
             raise tornado.web.HTTPError(400, reason='priority is not a number')
+        elif not valid_priority(data['priority']):
+            raise tornado.web.HTTPError(400, reason='priority must be a finite number >= 0')
 
         ret = await self.db.datasets.find_one_and_update(
             {'dataset_id':dataset_id},
