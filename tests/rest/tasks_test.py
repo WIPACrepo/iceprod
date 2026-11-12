@@ -1416,3 +1416,37 @@ async def test_rest_tasks_files_task_delete(server):
 
     ret = await client.request('GET', f'/datasets/{dataset_id}/files/{task_id}')
     assert len(ret['files']) == 0
+
+
+async def test_rest_tasks_dataset_counts_resources(server):
+    client = server(roles=['system'])
+
+    data = {
+        'dataset_id': 'foo',
+        'job_id': 'foo1',
+        'task_index': 0,
+        'job_index': 0,
+        'name': 'bar',
+        'depends': [],
+        'requirements': {'cpu': 4, 'gpu': 1, 'memory': 8.0},
+        'status': 'processing',
+    }
+    await client.request('POST', '/tasks', data)
+    # task without requirements uses defaults
+    data2 = dict(data, job_id='foo2', job_index=1, requirements={})
+    await client.request('POST', '/tasks', data2)
+    data3 = dict(data, job_id='foo3', job_index=2, status='queued')
+    await client.request('POST', '/tasks', data3)
+
+    ret = await client.request('GET', '/datasets/foo/task_counts/resources')
+    assert ret == {
+        'queued': {'count': 1, 'cpu': 4, 'gpu': 1, 'memory': 8.0},
+        'processing': {'count': 2, 'cpu': 5, 'gpu': 1, 'memory': 10.0},
+    }
+
+    ret = await client.request('GET', '/datasets/foo/task_counts/resources', {'status': 'processing'})
+    assert list(ret) == ['processing']
+
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('GET', '/datasets/foo/task_counts/resources', {'status': 'blah'})
+    assert exc_info.value.response.status_code == 400

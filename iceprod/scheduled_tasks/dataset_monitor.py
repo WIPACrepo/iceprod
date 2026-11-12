@@ -1,7 +1,7 @@
 """
 Monitor the datasets.
 
-Send monitoring data to graphite.
+Export dataset, job, and task metrics (with owner labels) to Prometheus.
 """
 
 import argparse
@@ -27,9 +27,17 @@ CronDuration = Histogram('iceprod_cron_duration_seconds', 'cron duration in seco
 
 DatasetMonitorDuration = Histogram('iceprod_cron_bydataset_duration_seconds', 'cron duration by dataset in seconds', labelnames=('name', 'dataset'), buckets=HistogramBuckets.TENSECOND)
 
-JobGauge = Gauge('iceprod_jobs', 'job statuses', labelnames=('dataset', 'status'))
+JobGauge = Gauge('iceprod_jobs', 'job statuses', labelnames=('dataset', 'username', 'group', 'status'))
 
-TaskGauge = Gauge('iceprod_tasks', 'task statuses', labelnames=('dataset', 'taskname', 'status'))
+TaskGauge = Gauge('iceprod_tasks', 'task statuses', labelnames=('dataset', 'taskname', 'username', 'group', 'status'))
+
+TaskResourcesGauge = Gauge('iceprod_task_resources', 'summed resource requirements of active tasks', labelnames=('dataset', 'username', 'group', 'status', 'resource'))
+
+#: task statuses to export resource sums for
+RESOURCE_STATUSES = ('queued', 'processing')
+
+#: resources exported by TaskResourcesGauge
+RESOURCES = ('cpu', 'gpu', 'memory')
 
 FutureResourcesGauge = Gauge('iceprod_future_resources_hours', 'estimate on future resources need in hours', labelnames=('resource',))
 
@@ -47,6 +55,11 @@ async def process_dataset(rest_client, dataset_id):
     dataset_status = dataset['status']
     if dataset_status != 'processing':
         return
+    # owner labels, so metrics can be aggregated by user or group
+    owner_labels = {
+        'username': str(dataset.get('username', '')),
+        'group': str(dataset.get('group', '')),
+    }
 
     with DatasetMonitorDuration.labels(name='dataset_monitor', dataset=str(dataset_num)).time():
         jobs = await rest_client.request('GET', f'/datasets/{dataset_id}/job_counts/status')
@@ -62,6 +75,7 @@ async def process_dataset(rest_client, dataset_id):
             JobGauge.labels(
                 dataset=str(dataset_num),
                 status=status,
+                **owner_labels,
             ).set(jobs_counter[status])
 
         tasks = await rest_client.request('GET', f'/datasets/{dataset_id}/task_counts/name_status')
@@ -81,6 +95,7 @@ async def process_dataset(rest_client, dataset_id):
                     dataset=str(dataset_num),
                     taskname=str(name),
                     status=status,
+                    **owner_labels,
                 ).set(tasks_counter[status])
 
                 # now add to future resource prediction
@@ -89,6 +104,17 @@ async def process_dataset(rest_client, dataset_id):
                         continue
                     res = 'gpu' if task_stats[name]['gpu'] > 0 else 'cpu'
                     future_resources[res] += tasks_counter[status]*task_stats[name]['avg_hrs']
+
+        # resources requested by active tasks (approximates resources in use)
+        task_resources = await rest_client.request('GET', f'/datasets/{dataset_id}/task_counts/resources', {'status': '|'.join(RESOURCE_STATUSES)})
+        for status in RESOURCE_STATUSES:
+            for res in RESOURCES:
+                TaskResourcesGauge.labels(
+                    dataset=str(dataset_num),
+                    status=status,
+                    resource=res,
+                    **owner_labels,
+                ).set(task_resources.get(status, {}).get(res, 0))
 
         # add jobs not materialized to future resource prediction
         if dataset_status not in ('suspended', 'errors'):
