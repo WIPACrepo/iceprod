@@ -24,6 +24,9 @@
             <nav class="menu">
                 <ul>
                 <li{% if section == 'dataset' %} class="current"{% end %}><a href="/dataset">Datasets</a></li>
+                {% if current_user %}
+                  <li{% if section == 'overview' %} class="current"{% end %}><a href="/overview">Overview</a></li>
+                {% end %}
                 <!--
                 <li{% if section == 'util' %} class="current"{% end %}><a href="/help">Help</a></li>
                 -->

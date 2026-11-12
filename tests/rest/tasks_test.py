@@ -1450,3 +1450,71 @@ async def test_rest_tasks_dataset_counts_resources(server):
     with pytest.raises(requests.exceptions.HTTPError) as exc_info:
         await client.request('GET', '/datasets/foo/task_counts/resources', {'status': 'blah'})
     assert exc_info.value.response.status_code == 400
+
+
+async def test_rest_tasks_counts_dataset_status(server):
+    client = server(roles=['system'])
+
+    for d in ('foo', 'baz'):
+        data = {
+            'dataset_id': d,
+            'job_id': d+'1',
+            'task_index': 0,
+            'job_index': 0,
+            'name': 'bar',
+            'depends': [],
+            'requirements': {},
+        }
+        await client.request('POST', '/tasks', data)
+    await client.request('POST', '/tasks', dict(data, task_index=1, status='processing'))
+
+    ret = await client.request('GET', '/task_counts/dataset_status', {'dataset_ids': 'foo|baz|other'})
+    assert ret == {
+        'foo': {states.TASK_STATUS_START: 1},
+        'baz': {states.TASK_STATUS_START: 1, 'processing': 1},
+    }
+
+    ret = await client.request('GET', '/task_counts/dataset_status', {'dataset_ids': 'foo|baz', 'status': 'processing'})
+    assert ret == {'baz': {'processing': 1}}
+
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('GET', '/task_counts/dataset_status')
+    assert exc_info.value.response.status_code == 400
+
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('GET', '/task_counts/dataset_status', {'dataset_ids': '|'.join(f'd{i}' for i in range(101))})
+    assert exc_info.value.response.status_code == 400
+
+
+async def test_rest_tasks_counts_dataset_status_user_auth(server):
+    client = server(roles=['user'], groups=['users'])
+    ret = await client.request('POST', '/datasets', {
+        'description': 'blah',
+        'tasks_per_job': 1,
+        'jobs_submitted': 1,
+        'tasks_submitted': 1,
+        'group': 'users',
+    })
+    dataset_id = ret['result']
+
+    sys_client = server(roles=['system'])
+    await sys_client.request('POST', '/tasks', {
+        'dataset_id': dataset_id,
+        'job_id': 'foo1',
+        'task_index': 0,
+        'job_index': 0,
+        'name': 'bar',
+        'depends': [],
+        'requirements': {},
+    })
+
+    ret = await client.request('GET', '/task_counts/dataset_status', {'dataset_ids': dataset_id})
+    assert ret == {dataset_id: {states.TASK_STATUS_START: 1}}
+
+    ret = await client.request('GET', f'/datasets/{dataset_id}/task_counts/resources')
+    assert ret[states.TASK_STATUS_START]['count'] == 1
+
+    # a dataset the user cannot read
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('GET', '/task_counts/dataset_status', {'dataset_ids': f'{dataset_id}|notmine'})
+    assert exc_info.value.response.status_code == 403

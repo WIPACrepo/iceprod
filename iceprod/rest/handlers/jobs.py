@@ -43,6 +43,7 @@ def setup(handler_cfg):
             (r'/datasets/(?P<dataset_id>\w+)/job_actions/bulk_hard_reset', DatasetJobBulkHardResetHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/job_summaries/status', DatasetJobSummariesStatusHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/job_counts/status', DatasetJobCountsStatusHandler, handler_cfg),
+            (r'/job_counts/dataset_status', JobCountsDatasetStatusHandler, handler_cfg),
         ],
         'database': 'jobs',
         'indexes': {
@@ -519,5 +520,35 @@ class DatasetJobCountsStatusHandler(APIBase):
         ret2 = {}
         for k in sorted(ret, key=job_status_sort):
             ret2[k] = ret[k]
+        self.write(ret2)
+        self.finish()
+
+
+class JobCountsDatasetStatusHandler(APIBase):
+    """
+    Handle job counts for multiple datasets, grouped by dataset and status.
+    """
+    @authorization(roles=['admin', 'user', 'system'])
+    async def get(self):
+        """
+        Get the job counts for multiple datasets, group by dataset_id,status.
+
+        Params:
+            dataset_ids: | separated list of dataset ids (required, max 100)
+
+        Returns:
+            dict: {<dataset_id>: {<status>: num}}
+        """
+        dataset_ids = await self.get_readable_dataset_ids()
+        cursor = await self.db.jobs.aggregate([
+            {'$match': {'dataset_id': {'$in': dataset_ids}}},
+            {'$group': {'_id': {'dataset_id': '$dataset_id', 'status': '$status'}, 'total': {'$sum': 1}}},
+        ])
+        ret: dict[str, dict[str, int]] = defaultdict(dict)
+        async for row in cursor:
+            ret[row['_id']['dataset_id']][row['_id']['status']] = row['total']
+        ret2 = {}
+        for d in ret:
+            ret2[d] = {k: ret[d][k] for k in sorted(ret[d], key=job_status_sort)}
         self.write(ret2)
         self.finish()

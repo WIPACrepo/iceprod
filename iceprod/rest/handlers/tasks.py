@@ -61,6 +61,7 @@ def setup(handler_cfg):
             (r'/datasets/(?P<dataset_id>\w+)/task_counts/status', DatasetTaskCountsStatusHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/task_counts/name_status', DatasetTaskCountsNameStatusHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/task_counts/resources', DatasetTaskCountsResourcesHandler, handler_cfg),
+            (r'/task_counts/dataset_status', TaskCountsDatasetStatusHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/task_actions/bulk_status/(?P<status>\w+)', DatasetTaskBulkStatusHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/task_actions/bulk_suspend', DatasetTaskBulkSuspendHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/task_actions/bulk_reset', DatasetTaskBulkResetHandler, handler_cfg),
@@ -695,6 +696,44 @@ class DatasetTaskCountsResourcesHandler(APIBase):
         ret2 = {}
         for k in sorted(ret, key=task_status_sort):
             ret2[k] = ret[k]
+        self.write(ret2)
+        self.finish()
+
+
+class TaskCountsDatasetStatusHandler(APIBase):
+    """
+    Handle task counts for multiple datasets, grouped by dataset and status.
+    """
+    @authorization(roles=['admin', 'user', 'system'])
+    async def get(self):
+        """
+        Get the task counts for multiple datasets, group by dataset_id,status.
+
+        Params:
+            dataset_ids: | separated list of dataset ids (required, max 100)
+            status: | separated list of task status to filter by (optional)
+
+        Returns:
+            dict: {<dataset_id>: {<status>: num}}
+        """
+        dataset_ids = await self.get_readable_dataset_ids()
+        match: dict[str, Any] = {'dataset_id': {'$in': dataset_ids}}
+        if status := self.get_argument('status', None):
+            status_list = status.split('|')
+            if any(s not in TASK_STATUS for s in status_list):
+                raise tornado.web.HTTPError(400, reason='Unknown task status')
+            match['status'] = {'$in': status_list}
+
+        cursor = await self.db.tasks.aggregate([
+            {'$match': match},
+            {'$group': {'_id': {'dataset_id': '$dataset_id', 'status': '$status'}, 'total': {'$sum': 1}}},
+        ])
+        ret: dict[str, dict[str, int]] = defaultdict(dict)
+        async for row in cursor:
+            ret[row['_id']['dataset_id']][row['_id']['status']] = row['total']
+        ret2 = {}
+        for d in ret:
+            ret2[d] = {k: ret[d][k] for k in sorted(ret[d], key=task_status_sort)}
         self.write(ret2)
         self.finish()
 

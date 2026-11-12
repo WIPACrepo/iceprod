@@ -35,7 +35,7 @@ from . import uimodules
 from .config import get_config
 from .handlers.actions import ActionStatus, DatasetAction, JobAction, TaskAction
 from .handlers.base import LoginMixin, PublicHandler, authenticated
-from .handlers.dataset import Dataset, DatasetBrowse
+from .handlers.dataset import Dataset, DatasetBrowse, UserOverview
 from .handlers.job import Job, JobBrowse
 from .handlers.submit import Config, ConfigStatus, Submit, SubmitStatus
 from .handlers.task import Task, TaskBrowse
@@ -304,6 +304,7 @@ class Server:
         server.add_route(r'/dataset/(\w+)/job/actions', JobAction, handler_args)
         server.add_route(r'/actions/status/(\w+)/(\w+)', ActionStatus, handler_args)
         server.add_route('/dataset', DatasetBrowse, handler_args)
+        server.add_route('/overview', UserOverview, {**handler_args, 'grafana_url': config.GRAFANA_DASHBOARD_URL})
         server.add_route(r"/dataset/(\w+)", Dataset, handler_args)
         server.add_route(r"/dataset/(\w+)/task", TaskBrowse, handler_args)
         server.add_route(r"/dataset/(\w+)/task/(\w+)", Task, handler_args)

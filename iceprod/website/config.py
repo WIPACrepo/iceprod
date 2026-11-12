@@ -23,6 +23,7 @@ class DefaultConfig:
     REDIS_TLS : bool = False
     COOKIE_SECRET : str = ''
     PROMETHEUS_PORT: int = 0
+    GRAFANA_DASHBOARD_URL: str = ''
     CI_TESTING: str = ''
 
 

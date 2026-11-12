@@ -3,6 +3,7 @@ from typing import Any
 
 from rest_tools.server import RestHandler, RestHandlerSetup
 from tornado.escape import json_encode
+from tornado.web import HTTPError
 
 from iceprod.common.prom_utils import PromRequestMixin
 from iceprod.util import VERSION_STRING
@@ -13,6 +14,9 @@ from .auth import AttrAuthMixin
 logger = logging.getLogger('rest')
 
 type DB = AsyncMongoClient | AsyncDatabase
+
+#: max number of datasets allowed in a single multi-dataset request
+MAX_DATASET_IDS = 100
 
 
 def IceProdRestConfig(config: dict[str, Any], database: DB | None = None, auth_database: AsyncDatabase | None = None, s3conn=None):
@@ -63,6 +67,27 @@ class APIBase(AttrAuthMixin, PromRequestMixin, RestHandler):
         self.set_header('Expires', '0')
         # Set Content Security Policy to deny all
         self.set_header('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none';")
+
+    async def get_readable_dataset_ids(self) -> list[str]:
+        """
+        Parse and authorize the `dataset_ids` argument for multi-dataset requests.
+
+        Returns:
+            list: dataset ids
+
+        Raises:
+            HTTPError 400: missing or too many dataset ids
+            HTTPError 403: a dataset is not readable by the requester
+        """
+        dataset_ids = [d for d in self.get_argument('dataset_ids', '').split('|') if d]
+        if not dataset_ids:
+            raise HTTPError(400, reason='Missing dataset_ids')
+        if len(dataset_ids) > MAX_DATASET_IDS:
+            raise HTTPError(400, reason=f'Too many dataset_ids (max {MAX_DATASET_IDS})')
+        for d in dataset_ids:
+            if not await self.manual_attr_auth('dataset_id', d, 'read'):
+                raise HTTPError(403, reason='Unauthorized dataset_id')
+        return dataset_ids
 
     def write(self, chunk: str | bytes | dict | list) -> None:  # type: ignore[override]
         """Write dict or list to json"""

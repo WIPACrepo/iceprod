@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, PropertyMock
 from urllib.parse import urlparse, parse_qs
 
 from bs4 import BeautifulSoup
+import httpx
 import pytest
 import requests
 import requests_mock
@@ -311,6 +312,99 @@ async def test_website_profile(server):
     client = server(username='username', roles=['user'], groups=['users', 'simprod'])
 
     ret = await client.request('GET', '/profile')
+
+
+def _overview_mocks(client, datasets):
+    """Add REST mocks for the /overview page. Returns the /datasets mock."""
+    client.req_mock.add_mock('/users', {'results': [{'username': 'username'}, {'username': 'other'}]})
+    datasets_mock = client.req_mock.add_mock('/datasets', datasets)
+
+    def task_counts(method, path, args):
+        return {d: {'processing': 2, 'queued': 1} for d in args['dataset_ids'].split('|')}
+    tasks_mock = client.req_mock.add_mock('/task_counts/dataset_status', task_counts)
+
+    def job_counts(method, path, args):
+        return {d: {'processing': 1} for d in args['dataset_ids'].split('|')}
+    client.req_mock.add_mock('/job_counts/dataset_status', job_counts)
+    return datasets_mock, tasks_mock
+
+
+async def test_website_overview(server):
+    client = server(username='username', roles=['user'], groups=['users', 'simprod'])
+    datasets = {
+        'd1': {'dataset_id': 'd1', 'dataset': 20001, 'status': 'processing', 'username': 'username', 'group': 'simprod', 'description': 'one'},
+        'd2': {'dataset_id': 'd2', 'dataset': 20002, 'status': 'suspended', 'username': 'username', 'group': 'simprod', 'description': 'two'},
+    }
+    datasets_mock, _ = _overview_mocks(client, datasets)
+
+    ret = await client.request('GET', '/overview')
+
+    # defaults to the current user, active datasets only
+    args = datasets_mock.call_args.args[2]
+    assert args['users'] == 'username'
+    assert 'groups' not in args
+    assert args['status'] == 'processing|suspended|errors'
+
+    doc = BeautifulSoup(ret, 'html.parser')
+    totals = doc.find_all('table', class_='overview_totals')
+    assert totals[0].find('td', class_='processing').text == '4'
+    assert totals[0].find('td', class_='queued').text == '2'
+    assert totals[0].find('td', class_='idle').text == '0'
+    assert totals[1].find('td', class_='processing').text == '2'
+    rows = doc.find('table', class_='overview_datasets').find_all('tr')[1:]
+    assert [r.find('a').text for r in rows] == ['20002', '20001']
+    # no grafana url configured
+    assert not doc.find('a', class_='grafana')
+
+
+async def test_website_overview_filters(server):
+    client = server(username='username', roles=['user'], groups=['users', 'simprod'])
+    datasets_mock, tasks_mock = _overview_mocks(client, {})
+
+    ret = await client.request('GET', '/overview', {'groups': 'simprod', 'status': 'processing'})
+    args = datasets_mock.call_args.args[2]
+    assert args['groups'] == 'simprod'
+    assert 'users' not in args
+    assert args['status'] == 'processing'
+    # no datasets, so no count requests
+    tasks_mock.assert_not_called()
+    doc = BeautifulSoup(ret, 'html.parser')
+    assert doc.find('p', class_='no_datasets')
+
+    with pytest.raises(httpx.HTTPStatusError) as exc_info:
+        await client.request('GET', '/overview', {'status': 'complete'})
+    assert exc_info.value.response.status_code == 400
+
+
+async def test_website_overview_chunking(server):
+    client = server(username='username', roles=['user'], groups=['users', 'simprod'])
+    datasets = {
+        f'd{i}': {'dataset_id': f'd{i}', 'dataset': 20000+i, 'status': 'processing', 'username': 'username', 'group': 'simprod'}
+        for i in range(250)
+    }
+    _, tasks_mock = _overview_mocks(client, datasets)
+
+    ret = await client.request('GET', '/overview')
+    assert tasks_mock.call_count == 3
+    assert all(len(c.args[2]['dataset_ids'].split('|')) <= 100 for c in tasks_mock.call_args_list)
+    doc = BeautifulSoup(ret, 'html.parser')
+    totals = doc.find('table', class_='overview_totals')
+    assert totals.find('td', class_='processing').text == '500'
+
+
+@pytest.fixture
+def grafana_env(monkeypatch):
+    monkeypatch.setenv('GRAFANA_DASHBOARD_URL', 'https://grafana.test/d/iceprod-user-overview?orgId=1')
+
+
+async def test_website_overview_grafana(grafana_env, server):
+    client = server(username='username', roles=['user'], groups=['users', 'simprod'])
+    _overview_mocks(client, {})
+
+    ret = await client.request('GET', '/overview')
+    doc = BeautifulSoup(ret, 'html.parser')
+    link = doc.find('a', class_='grafana')
+    assert link['href'] == 'https://grafana.test/d/iceprod-user-overview?orgId=1&var-username=username'
 
 
 
