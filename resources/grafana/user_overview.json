@@ -276,7 +276,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(max by (dataset, username, group, status, resource) (last_over_time(iceprod_task_resources{username=~\"$username\",group=~\"$group\",status=\"processing\",resource=\"cpu\"}[$lookback])))",
+          "expr": "sum(max by (dataset, taskname, username, group, status, resource) (last_over_time(iceprod_task_resources{username=~\"$username\",group=~\"$group\",status=\"processing\",resource=\"cpu\"}[$lookback])))",
           "legendFormat": "",
           "refId": "A",
           "instant": true,
@@ -338,7 +338,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "avg_over_time((sum(max by (dataset, username, group, status, resource) (last_over_time(iceprod_task_resources{username=~\"$username\",group=~\"$group\",status=\"processing\",resource=\"cpu\"}[$lookback]))))[$__range:$lookback])",
+          "expr": "avg_over_time((sum(max by (dataset, taskname, username, group, status, resource) (last_over_time(iceprod_task_resources{username=~\"$username\",group=~\"$group\",status=\"processing\",resource=\"cpu\"}[$lookback]))))[$__range:$lookback])",
           "legendFormat": "",
           "refId": "A",
           "instant": true,
@@ -400,7 +400,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(max by (dataset, username, group, status, resource) (last_over_time(iceprod_task_resources{username=~\"$username\",group=~\"$group\",status=\"processing\",resource=\"gpu\"}[$lookback])))",
+          "expr": "sum(max by (dataset, taskname, username, group, status, resource) (last_over_time(iceprod_task_resources{username=~\"$username\",group=~\"$group\",status=\"processing\",resource=\"gpu\"}[$lookback])))",
           "legendFormat": "",
           "refId": "A",
           "instant": true,
@@ -462,7 +462,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "avg_over_time((sum(max by (dataset, username, group, status, resource) (last_over_time(iceprod_task_resources{username=~\"$username\",group=~\"$group\",status=\"processing\",resource=\"gpu\"}[$lookback]))))[$__range:$lookback])",
+          "expr": "avg_over_time((sum(max by (dataset, taskname, username, group, status, resource) (last_over_time(iceprod_task_resources{username=~\"$username\",group=~\"$group\",status=\"processing\",resource=\"gpu\"}[$lookback]))))[$__range:$lookback])",
           "legendFormat": "",
           "refId": "A",
           "instant": true,
@@ -580,7 +580,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (resource) (max by (dataset, username, group, status, resource) (last_over_time(iceprod_task_resources{username=~\"$username\",group=~\"$group\",status=\"processing\",resource=~\"cpu|gpu\"}[$lookback])))",
+          "expr": "sum by (resource) (max by (dataset, taskname, username, group, status, resource) (last_over_time(iceprod_task_resources{username=~\"$username\",group=~\"$group\",status=\"processing\",resource=~\"cpu|gpu\"}[$lookback])))",
           "legendFormat": "{{resource}}",
           "refId": "A"
         },
@@ -589,7 +589,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (resource) (max by (dataset, username, group, status, resource) (last_over_time(iceprod_task_resources{username=~\"$username\",group=~\"$group\",status=\"queued\",resource=~\"cpu|gpu\"}[$lookback])))",
+          "expr": "sum by (resource) (max by (dataset, taskname, username, group, status, resource) (last_over_time(iceprod_task_resources{username=~\"$username\",group=~\"$group\",status=\"queued\",resource=~\"cpu|gpu\"}[$lookback])))",
           "legendFormat": "queued {{resource}}",
           "refId": "B"
         }
@@ -821,8 +821,124 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(max by (dataset, username, group, status, resource) (last_over_time(iceprod_task_resources{username=~\"$username\",group=~\"$group\",status=\"processing\",resource=\"memory\"}[$lookback])))",
+          "expr": "sum(max by (dataset, taskname, username, group, status, resource) (last_over_time(iceprod_task_resources{username=~\"$username\",group=~\"$group\",status=\"processing\",resource=\"memory\"}[$lookback])))",
           "legendFormat": "memory (GB)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "CPUs in use by task name",
+      "description": "CPUs requested by processing tasks, per dataset and task name.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 31
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 20,
+            "spanNulls": true,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (dataset, taskname) (max by (dataset, taskname, username, group, status, resource) (last_over_time(iceprod_task_resources{username=~\"$username\",group=~\"$group\",status=\"processing\",resource=\"cpu\"}[$lookback])))",
+          "legendFormat": "{{dataset}} {{taskname}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "GPUs in use by task name",
+      "description": "GPUs requested by processing tasks, per dataset and task name.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 31
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 20,
+            "spanNulls": true,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (dataset, taskname) (max by (dataset, taskname, username, group, status, resource) (last_over_time(iceprod_task_resources{username=~\"$username\",group=~\"$group\",status=\"processing\",resource=\"gpu\"}[$lookback])))",
+          "legendFormat": "{{dataset}} {{taskname}}",
           "refId": "A"
         }
       ]

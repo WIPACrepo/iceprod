@@ -31,7 +31,7 @@ JobGauge = Gauge('iceprod_jobs', 'job statuses', labelnames=('dataset', 'usernam
 
 TaskGauge = Gauge('iceprod_tasks', 'task statuses', labelnames=('dataset', 'taskname', 'username', 'group', 'status'))
 
-TaskResourcesGauge = Gauge('iceprod_task_resources', 'summed resource requirements of active tasks', labelnames=('dataset', 'username', 'group', 'status', 'resource'))
+TaskResourcesGauge = Gauge('iceprod_task_resources', 'summed resource requirements of active tasks', labelnames=('dataset', 'taskname', 'username', 'group', 'status', 'resource'))
 
 #: task statuses to export resource sums for
 RESOURCE_STATUSES = ('queued', 'processing')
@@ -107,14 +107,17 @@ async def process_dataset(rest_client, dataset_id):
 
         # resources requested by active tasks (approximates resources in use)
         task_resources = await rest_client.request('GET', f'/datasets/{dataset_id}/task_counts/resources', {'status': '|'.join(RESOURCE_STATUSES)})
-        for status in RESOURCE_STATUSES:
-            for res in RESOURCES:
-                TaskResourcesGauge.labels(
-                    dataset=str(dataset_num),
-                    status=status,
-                    resource=res,
-                    **owner_labels,
-                ).set(task_resources.get(status, {}).get(res, 0))
+        # zero-fill every known task name, like TaskGauge
+        for name in dict.fromkeys([*tasks, *task_resources]):
+            for status in RESOURCE_STATUSES:
+                for res in RESOURCES:
+                    TaskResourcesGauge.labels(
+                        dataset=str(dataset_num),
+                        taskname=str(name),
+                        status=status,
+                        resource=res,
+                        **owner_labels,
+                    ).set(task_resources.get(name, {}).get(status, {}).get(res, 0))
 
         # add jobs not materialized to future resource prediction
         if dataset_status not in ('suspended', 'errors'):

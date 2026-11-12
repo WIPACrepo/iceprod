@@ -36,6 +36,7 @@ group:
   the closest measure of "how many slots/nodes am I using".
 * Tasks and jobs by status over time.
 * Processing tasks by dataset and by task name.
+* CPUs and GPUs in use by dataset and task name.
 * Resources requested by queued tasks (waiting for a slot).
 
 To estimate how long a production will take, set the time range to a
@@ -56,7 +57,7 @@ each ``processing`` dataset:
 
 * ``iceprod_jobs{dataset, username, group, status}``
 * ``iceprod_tasks{dataset, taskname, username, group, status}``
-* ``iceprod_task_resources{dataset, username, group, status, resource}``
+* ``iceprod_task_resources{dataset, taskname, username, group, status, resource}``
   where ``status`` is ``queued`` or ``processing`` and ``resource`` is
   ``cpu``, ``gpu``, or ``memory`` (GB).
 

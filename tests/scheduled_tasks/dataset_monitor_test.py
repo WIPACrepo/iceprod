@@ -48,14 +48,17 @@ async def test_200_run():
     assert REGISTRY.get_sample_value('iceprod_jobs', {'dataset': '123', 'username': 'alice', 'group': 'simprod', 'status': 'processing'}) == 1
 
     tasks['generate']['queued'] = 1
-    resources['queued'] = {'count': 1, 'cpu': 2, 'gpu': 1, 'memory': 4.0}
+    tasks['filter']['idle'] = 1
+    resources['generate'] = {'queued': {'count': 1, 'cpu': 2, 'gpu': 1, 'memory': 4.0}}
     await dataset_monitor.run(rc, debug=True)
     assert REGISTRY.get_sample_value('iceprod_tasks', {'dataset': '123', 'taskname': 'generate', 'username': 'alice', 'group': 'simprod', 'status': 'queued'}) == 1
-    owner = {'dataset': '123', 'username': 'alice', 'group': 'simprod'}
+    owner = {'dataset': '123', 'taskname': 'generate', 'username': 'alice', 'group': 'simprod'}
     assert REGISTRY.get_sample_value('iceprod_task_resources', {**owner, 'status': 'queued', 'resource': 'cpu'}) == 2
     assert REGISTRY.get_sample_value('iceprod_task_resources', {**owner, 'status': 'queued', 'resource': 'gpu'}) == 1
     assert REGISTRY.get_sample_value('iceprod_task_resources', {**owner, 'status': 'queued', 'resource': 'memory'}) == 4.0
     assert REGISTRY.get_sample_value('iceprod_task_resources', {**owner, 'status': 'processing', 'resource': 'cpu'}) == 0
+    # task names without active tasks are zero-filled
+    assert REGISTRY.get_sample_value('iceprod_task_resources', {**owner, 'taskname': 'filter', 'status': 'queued', 'resource': 'cpu'}) == 0
 
 
 async def test_201_run():

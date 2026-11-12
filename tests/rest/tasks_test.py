@@ -1437,15 +1437,26 @@ async def test_rest_tasks_dataset_counts_resources(server):
     await client.request('POST', '/tasks', data2)
     data3 = dict(data, job_id='foo3', job_index=2, status='queued')
     await client.request('POST', '/tasks', data3)
+    # second task name, later in the dataset config
+    data4 = dict(data, job_id='foo1', task_index=1, name='baz', requirements={'cpu': 2})
+    await client.request('POST', '/tasks', data4)
 
     ret = await client.request('GET', '/datasets/foo/task_counts/resources')
     assert ret == {
-        'queued': {'count': 1, 'cpu': 4, 'gpu': 1, 'memory': 8.0},
-        'processing': {'count': 2, 'cpu': 5, 'gpu': 1, 'memory': 10.0},
+        'bar': {
+            'queued': {'count': 1, 'cpu': 4, 'gpu': 1, 'memory': 8.0},
+            'processing': {'count': 2, 'cpu': 5, 'gpu': 1, 'memory': 10.0},
+        },
+        'baz': {
+            'processing': {'count': 1, 'cpu': 2, 'gpu': 0, 'memory': 2.0},
+        },
     }
+    # names ordered by task_index, statuses by state machine order
+    assert list(ret) == ['bar', 'baz']
+    assert list(ret['bar']) == ['queued', 'processing']
 
-    ret = await client.request('GET', '/datasets/foo/task_counts/resources', {'status': 'processing'})
-    assert list(ret) == ['processing']
+    ret = await client.request('GET', '/datasets/foo/task_counts/resources', {'status': 'queued'})
+    assert ret == {'bar': {'queued': {'count': 1, 'cpu': 4, 'gpu': 1, 'memory': 8.0}}}
 
     with pytest.raises(requests.exceptions.HTTPError) as exc_info:
         await client.request('GET', '/datasets/foo/task_counts/resources', {'status': 'blah'})
@@ -1512,7 +1523,7 @@ async def test_rest_tasks_counts_dataset_status_user_auth(server):
     assert ret == {dataset_id: {states.TASK_STATUS_START: 1}}
 
     ret = await client.request('GET', f'/datasets/{dataset_id}/task_counts/resources')
-    assert ret[states.TASK_STATUS_START]['count'] == 1
+    assert ret['bar'][states.TASK_STATUS_START]['count'] == 1
 
     # a dataset the user cannot read
     with pytest.raises(requests.exceptions.HTTPError) as exc_info:

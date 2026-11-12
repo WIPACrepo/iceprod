@@ -654,13 +654,13 @@ RESOURCE_COUNT_DEFAULTS = {
 
 class DatasetTaskCountsResourcesHandler(APIBase):
     """
-    Handle task resource summaries grouped by status.
+    Handle task resource summaries grouped by task name and status.
     """
     @authorization(roles=['admin', 'user', 'system'])
     @attr_auth(arg='dataset_id', role='read')
     async def get(self, dataset_id):
         """
-        Get the task counts and summed resource requirements for a dataset, group by status.
+        Get the task counts and summed resource requirements for a dataset, group by name,status.
 
         Missing requirements fall back to the resource defaults
         (cpu=1, gpu=0, memory=2 GB). Non-numeric values are ignored.
@@ -672,7 +672,7 @@ class DatasetTaskCountsResourcesHandler(APIBase):
             status: | separated list of task status to filter by
 
         Returns:
-            dict: {<status>: {'count': num, 'cpu': num, 'gpu': num, 'memory': num}}
+            dict: {<name>: {<status>: {'count': num, 'cpu': num, 'gpu': num, 'memory': num}}}
         """
         match: dict[str, Any] = {'dataset_id': dataset_id}
         if status := self.get_argument('status', None):
@@ -681,7 +681,11 @@ class DatasetTaskCountsResourcesHandler(APIBase):
                 raise tornado.web.HTTPError(400, reason='Unknown task status')
             match['status'] = {'$in': status_list}
 
-        group: dict[str, Any] = {'_id': '$status', 'count': {'$sum': 1}}
+        group: dict[str, Any] = {
+            '_id': {'name': '$name', 'status': '$status'},
+            'ordering': {'$first': '$task_index'},
+            'count': {'$sum': 1},
+        }
         for res, default in RESOURCE_COUNT_DEFAULTS.items():
             # $sum ignores non-numeric values (e.g. legacy list-typed gpu)
             group[res] = {'$sum': {'$ifNull': [f'$requirements.{res}', default]}}
@@ -690,12 +694,16 @@ class DatasetTaskCountsResourcesHandler(APIBase):
             {'$match': match},
             {'$group': group},
         ])
-        ret = {}
+        ret: dict[str, dict[str, dict]] = defaultdict(dict)
+        ordering = {}
         async for row in cursor:
-            ret[row['_id']] = {k: row[k] for k in ('count', *RESOURCE_COUNT_DEFAULTS)}
+            name = row['_id']['name']
+            ret[name][row['_id']['status']] = {k: row[k] for k in ('count', *RESOURCE_COUNT_DEFAULTS)}
+            ordering[name] = row['ordering']
+        # order task names like the dataset config (task_index), statuses by state machine
         ret2 = {}
-        for k in sorted(ret, key=task_status_sort):
-            ret2[k] = ret[k]
+        for name in sorted(ordering, key=lambda n: ordering[n]):
+            ret2[name] = {k: ret[name][k] for k in sorted(ret[name], key=task_status_sort)}
         self.write(ret2)
         self.finish()
 
