@@ -6,6 +6,7 @@ import logging
 from unittest.mock import MagicMock
 
 import pytest
+
 from iceprod.scheduled_tasks import dataset_cleanup
 
 logger = logging.getLogger('scheduled_tasks_dataset_cleanup_test')
