@@ -3,10 +3,11 @@
 from functools import lru_cache, partial
 
 DATASET_STATUS = {
-    'processing': ['suspended', 'errors', 'complete'],
-    'suspended': ['processing'],
-    'errors': ['processing', 'suspended'],
-    'complete': [],
+    'processing': ['suspended', 'errors', 'complete', 'obsolete'],
+    'suspended': ['processing', 'obsolete'],
+    'errors': ['processing', 'suspended', 'obsolete'],
+    'complete': ['obsolete'],
+    'obsolete': ['suspended', 'processing'],
 }
 """Dataset Statuses
 
@@ -14,6 +15,9 @@ DATASET_STATUS = {
 * suspended: the dataset has been put on hold.
 * errors: no jobs are active, and there are jobs with errors.
 * complete: all jobs and tasks are complete.
+* obsolete: the dataset is no longer relevant, and is hidden from default
+  website views. Any active jobs and tasks are suspended. It can be restored
+  to suspended, or reset to processing.
 """
 
 DATASET_STATUS_START = 'processing'

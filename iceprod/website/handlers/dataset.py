@@ -5,10 +5,14 @@ from cachetools.func import ttl_cache
 from rest_tools.client import RestClient
 
 from iceprod.roles_groups import GROUPS
+from iceprod.server.states import DATASET_STATUS
 
 from .base import PublicHandler, authenticated
 
 logger = logging.getLogger('website-dataset')
+
+#: dataset statuses hidden from the browse page unless explicitly filtered on
+HIDDEN_DATASET_STATUS = ('obsolete',)
 
 
 class UsernamesMixin:
@@ -30,7 +34,7 @@ class DatasetBrowse(UsernamesMixin, PublicHandler):
         assert self.rest_client
         usernames = await self.get_usernames()
         filter_options = {
-            'status': ['processing', 'suspended', 'errors', 'complete', 'truncated'],
+            'status': list(DATASET_STATUS),
             'groups': list(GROUPS.keys()),
             'users': usernames,
         }
@@ -44,6 +48,9 @@ class DatasetBrowse(UsernamesMixin, PublicHandler):
             if any(v not in filter_options[name] for v in val):
                 raise tornado.web.HTTPError(400, reason='Bad filter '+name+' value')
             args[name] = '|'.join(val)
+        if not filter_results['status']:
+            # hide obsolete datasets by default
+            args['status'] = '|'.join(s for s in DATASET_STATUS if s not in HIDDEN_DATASET_STATUS)
 
         url = '/datasets'
 
@@ -56,6 +63,7 @@ class DatasetBrowse(UsernamesMixin, PublicHandler):
             datasets=datasets,
             filter_options=filter_options,
             filter_results=filter_results,
+            hidden_status=HIDDEN_DATASET_STATUS,
         )
 
 

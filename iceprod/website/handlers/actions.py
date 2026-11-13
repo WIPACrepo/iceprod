@@ -38,6 +38,9 @@ ACTION_TYPES = frozenset({'dataset_status', 'task_status', 'job_status', 'delete
 #: status changes supported by the dataset/task/job status services
 STATUS_ACTIONS = frozenset({'reset', 'hard_reset', 'suspend'})
 
+#: status changes supported only by the dataset status service
+DATASET_STATUS_ACTIONS = STATUS_ACTIONS | {'obsolete'}
+
 #: query args the browse/detail pages read (see task.py, job.py)
 RETURN_QUERY_KEYS = frozenset({'status', 'name'})
 
@@ -202,7 +205,7 @@ class DatasetAction(ActionBase):
         return_query, _ = self._return_args()
         return_url = build_return_url('dataset_status', {'dataset_id': dataset_id}, return_query)
 
-        if action in STATUS_ACTIONS:
+        if action in DATASET_STATUS_ACTIONS:
             await self.queue_action('dataset_status', {'dataset_id': dataset_id, 'action': action}, return_url)
         elif action == 'delete_logs':
             await self.queue_action('delete_logs', {'dataset_id': dataset_id}, return_url)

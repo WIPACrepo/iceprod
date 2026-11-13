@@ -42,10 +42,15 @@
 {% if (current_user) %}
 {% set action_url = f'/dataset/{url_escape(dataset_id)}/actions' %}
 <div class="action">
+    {% if dataset.get('status') == 'obsolete' %}
+    {% module ActionForm(url=action_url, action='suspend', label='Restore', confirm_msg='Restore this dataset? It will be set to suspended.') %}
+    {% else %}
     {% module ActionForm(url=action_url, action='reset', label='Reset', confirm_msg='Reset all incomplete jobs and tasks in this dataset? Running tasks will be restarted.') %}
     {% module ActionForm(url=action_url, action='hard_reset', label='Hard Reset', confirm_msg='Hard reset all jobs and tasks in this dataset?') %}
     {% module ActionForm(url=action_url, action='suspend', label='Suspend', confirm_msg='Suspend this dataset?') %}
     {% module ActionForm(url=action_url, action='truncate', label='Truncate', confirm_msg='Truncate this dataset?') %}
+    {% module ActionForm(url=action_url, action='obsolete', label='Mark Obsolete', confirm_msg='Mark this dataset obsolete? Running jobs and tasks will be suspended, and it will be hidden from the dataset list.') %}
+    {% end %}
     {% module ActionForm(url=action_url, action='delete_logs', label='Delete Logs', confirm_msg='Delete all logs for this dataset? This cannot be undone.') %}
 </div>
 {% end %}

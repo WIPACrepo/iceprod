@@ -82,7 +82,7 @@ def user(server):
 
 # ---- DatasetAction ----
 
-@pytest.mark.parametrize('action', ['reset', 'hard_reset', 'suspend'])
+@pytest.mark.parametrize('action', ['reset', 'hard_reset', 'suspend', 'obsolete'])
 async def test_dataset_action_status(server, action):
     client = user(server)
     m = client.req_mock.add_mock('/actions/dataset_status', {'result': 'm1'})
@@ -290,6 +290,7 @@ async def test_task_action_delete_logs(server):
     {'action': 'reset', 'task_ids': ''},
     {'action': 'foo', 'task_ids': 't1'},
     {'action': 'delete_logs', 'task_ids': ['t1', 't2']},
+    {'action': 'obsolete', 'task_ids': 't1'},             # dataset-only action
 ])
 async def test_task_action_invalid(server, form):
     client = user(server)
@@ -337,6 +338,7 @@ async def test_job_action_status(server, action):
     {'action': 'reset'},
     {'action': 'delete_logs', 'job_ids': 'j1'},
     {'action': 'foo', 'job_ids': 'j1'},
+    {'action': 'obsolete', 'job_ids': 'j1'},
 ])
 async def test_job_action_invalid(server, form):
     client = user(server)
@@ -462,8 +464,8 @@ def get_forms(html: str) -> dict[tuple[str, str], dict]:
     return ret
 
 
-def mock_dataset_page(client):
-    client.req_mock.add_mock('/datasets/d1', {'dataset_id': 'd1', 'dataset': 123, 'priority': 1.0, 'status': 'processing', 'description': 'desc'})
+def mock_dataset_page(client, status='processing'):
+    client.req_mock.add_mock('/datasets/d1', {'dataset_id': 'd1', 'dataset': 123, 'priority': 1.0, 'status': status, 'description': 'desc'})
     client.req_mock.add_mock('/datasets/d1/job_counts/status', {'processing': 1})
     client.req_mock.add_mock('/datasets/d1/task_counts/status', {'idle': 1})
     client.req_mock.add_mock('/datasets/d1/task_counts/name_status', {})
@@ -481,11 +483,13 @@ async def test_page_dataset_detail(server):
         forms = get_forms(ret.text)
 
         url = '/dataset/d1/actions'
-        for action in ('priority', 'reset', 'hard_reset', 'suspend', 'truncate', 'delete_logs'):
+        for action in ('priority', 'reset', 'hard_reset', 'suspend', 'obsolete', 'truncate', 'delete_logs'):
             assert (url, action) in forms, action
             assert forms[(url, action)]['fields']['_xsrf'][0]
-        for action in ('reset', 'hard_reset', 'suspend', 'truncate', 'delete_logs'):
+        for action in ('reset', 'hard_reset', 'suspend', 'obsolete', 'truncate', 'delete_logs'):
             assert 'confirm(' in forms[(url, action)]['onsubmit'], action
+        assert 'Mark Obsolete' in ret.text
+        assert 'Restore' not in ret.text
         assert 'Running tasks will be restarted' in forms[(url, 'reset')]['onsubmit']
 
         # submit a form straight from the page => end-to-end
@@ -496,6 +500,40 @@ async def test_page_dataset_detail(server):
         ret = await client.request_raw(http_client, 'POST', url, form_data=form_data)
         assert ret.status_code == 303
         assert m.call_args[0][2] == {'priority': 5.0}
+
+
+async def test_page_dataset_detail_obsolete(server):
+    client = user(server)
+    mock_dataset_page(client, status='obsolete')
+    async with client.get_http_client() as http_client:
+        ret = await client.request_raw(http_client, 'GET', '/dataset/d1')
+        assert ret.status_code == 200
+        forms = get_forms(ret.text)
+        doc = BeautifulSoup(ret.text, 'html.parser')
+
+        url = '/dataset/d1/actions'
+        # reset / hard reset / truncate / obsolete are hidden; suspend is shown as Restore
+        for action in ('reset', 'hard_reset', 'truncate', 'obsolete'):
+            assert (url, action) not in forms, action
+        assert (url, 'suspend') in forms
+        assert (url, 'delete_logs') in forms
+        assert 'Restore' in forms[(url, 'suspend')]['onsubmit']
+        labels = [b.text.strip() for b in doc.select('form.action_form button')]
+        assert 'Restore' in labels
+        assert 'Suspend' not in labels
+        assert 'Mark Obsolete' not in labels
+
+        # the actions are still accepted for advanced users
+        m = client.req_mock.add_mock('/actions/dataset_status', {'result': 'm1'})
+        xsrf = forms[(url, 'suspend')]['fields']['_xsrf'][0]
+        for action in ('reset', 'hard_reset'):
+            ret = await client.request_raw(http_client, 'POST', url, form_data={'_xsrf': xsrf, 'action': action})
+            assert ret.status_code == 303
+            assert m.call_args[0][2] == {'dataset_id': 'd1', 'action': action}
+        m = client.req_mock.add_mock('/datasets/d1/dataset_actions/truncate', {})
+        ret = await client.request_raw(http_client, 'POST', url, form_data={'_xsrf': xsrf, 'action': 'truncate'})
+        assert ret.status_code == 303
+        assert m.called
 
 
 async def test_page_task_browse(server):

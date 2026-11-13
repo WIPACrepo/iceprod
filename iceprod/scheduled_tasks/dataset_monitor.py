@@ -151,6 +151,9 @@ async def run(rest_client, debug=False):
         pending_tasks = set()
         datasets = await rest_client.request('GET', '/dataset_summaries/status')
         for status in datasets:
+            if status == 'obsolete':
+                # obsolete datasets produce no metrics, so skip the lookups
+                continue
             for dataset_id in datasets[status]:
                 while len(pending_tasks) >= TASKS_IN_PARALLEL:
                     done, pending_tasks = await asyncio.wait(pending_tasks, return_when=asyncio.FIRST_COMPLETED)
