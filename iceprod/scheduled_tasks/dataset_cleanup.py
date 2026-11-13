@@ -1,5 +1,5 @@
 """
-Suspend any jobs and tasks from datasets that are suspended / errors.
+Suspend any jobs and tasks from datasets that are suspended / errors / obsolete.
 """
 
 import argparse
@@ -44,10 +44,9 @@ async def run(rest_client, debug=False):
     """
     datasets = await rest_client.request('GET', '/dataset_summaries/status')
     dataset_ids = []
-    if 'suspended' in datasets:
-        dataset_ids.extend(list(datasets['suspended']))
-    if 'errors' in datasets:
-        dataset_ids.extend(list(datasets['errors']))
+    for status in ('suspended', 'errors', 'obsolete'):
+        if status in datasets:
+            dataset_ids.extend(list(datasets[status]))
     for dataset_id in dataset_ids:
         try:
             jobs = await rest_client.request('GET', f'/datasets/{dataset_id}/job_summaries/status')

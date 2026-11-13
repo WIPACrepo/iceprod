@@ -19,3 +19,32 @@ along with the efficiency.  Efficiency is defined as:
     efficiency = successful processing time / total time spent on a task
 
 where total time includes processing time that resulted in an error.
+
+
+Dataset Status
+--------------
+
+A dataset is always in one of these statuses:
+
+* **processing**: at least one job is processing.
+* **suspended**: the dataset has been put on hold.
+* **errors**: no jobs are active, and there are jobs with errors.
+* **complete**: all jobs and tasks are complete.
+* **obsolete**: the dataset is no longer relevant.
+
+The dataset page has buttons to change the status: *Reset* and *Hard Reset*
+return a dataset to processing, and *Suspend* puts it on hold.
+
+Obsolete Datasets
+^^^^^^^^^^^^^^^^^
+
+Use *Mark Obsolete* on the dataset page to hide a dataset you no longer need.
+Any running jobs and tasks are suspended. Obsolete datasets are hidden from
+the dataset list and the overview page, but the dataset page still works.
+To list them, select ``obsolete`` in the status filter on the dataset list.
+
+To bring an obsolete dataset back, use *Restore* on the dataset page.
+This sets the dataset to suspended; from there it can be reset as usual.
+
+Advanced users can also reset or hard reset an obsolete dataset directly
+through the REST API, which moves it straight back to processing.

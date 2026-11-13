@@ -307,6 +307,15 @@ class DatasetStatusHandler(APIBase):
         """
         Set a dataset status, following possible state transitions.
 
+        Valid statuses and transitions are defined in
+        :py:data:`iceprod.server.states.DATASET_STATUS`.  Setting a status
+        here only changes the dataset document; it does not suspend jobs or
+        tasks.  Use the `dataset_status` action for that.
+
+        Body:
+            status (str): the new status, one of `processing`, `suspended`,
+                `errors`, `complete`, `obsolete`
+
         Args:
             dataset_id (str): the dataset
 

@@ -381,6 +381,63 @@ async def test_website_overview_filters(server):
     assert exc_info.value.response.status_code == 400
 
 
+async def test_website_overview_excludes_obsolete(server):
+    client = server(username='username', roles=['user'], groups=['users', 'simprod'])
+    datasets_mock, _ = _overview_mocks(client, {})
+
+    await client.request('GET', '/overview')
+    assert 'obsolete' not in datasets_mock.call_args.args[2]['status']
+
+    # obsolete is not a valid overview filter
+    with pytest.raises(httpx.HTTPStatusError) as exc_info:
+        await client.request('GET', '/overview', {'status': 'obsolete'})
+    assert exc_info.value.response.status_code == 400
+
+
+def _browse_mocks(client):
+    """Add REST mocks for the /dataset browse page. Returns the /datasets mock."""
+    client.req_mock.add_mock('/users', {'results': [{'username': 'username'}]})
+    datasets = {
+        'd1': {'dataset_id': 'd1', 'dataset': 20001, 'status': 'processing', 'username': 'username', 'group': 'users', 'description': 'one'},
+    }
+    return client.req_mock.add_mock('/datasets', datasets)
+
+
+async def test_website_dataset_browse_hides_obsolete(server):
+    client = server(username='username', roles=['user'], groups=['users'])
+    datasets_mock = _browse_mocks(client)
+
+    ret = await client.request('GET', '/dataset')
+
+    # no status filter => every status except obsolete
+    args = datasets_mock.call_args.args[2]
+    assert args['status'].split('|') == ['processing', 'suspended', 'errors', 'complete']
+    doc = BeautifulSoup(ret, 'html.parser')
+    options = [o.text for o in doc.find('select', {'name': 'status'}).find_all('option') if o.text]
+    assert options == ['processing', 'suspended', 'errors', 'complete', 'obsolete']
+    assert 'Obsolete datasets are hidden' in doc.find('p', class_='note').text
+
+
+@pytest.mark.parametrize('status', ['obsolete', 'complete'])
+async def test_website_dataset_browse_status_filter(server, status):
+    client = server(username='username', roles=['user'], groups=['users'])
+    datasets_mock = _browse_mocks(client)
+
+    await client.request('GET', '/dataset', {'status': status})
+    assert datasets_mock.call_args.args[2]['status'] == status
+
+
+async def test_website_dataset_browse_bad_status(server):
+    client = server(username='username', roles=['user'], groups=['users'])
+    datasets_mock = _browse_mocks(client)
+
+    # truncated is not a dataset status
+    with pytest.raises(httpx.HTTPStatusError) as exc_info:
+        await client.request('GET', '/dataset', {'status': 'truncated'})
+    assert exc_info.value.response.status_code == 400
+    datasets_mock.assert_not_called()
+
+
 async def test_website_overview_chunking(server):
     client = server(username='username', roles=['user'], groups=['users', 'simprod'])
     datasets = {

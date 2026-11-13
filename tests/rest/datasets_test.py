@@ -174,6 +174,92 @@ async def test_rest_datasets_update_status(server):
     assert data['status'] == ret['status']
 
 
+async def create_dataset(client, **kwargs):
+    data = {
+        'description': 'blah',
+        'tasks_per_job': 4,
+        'jobs_submitted': 1,
+        'tasks_submitted': 4,
+        'group': 'users',
+    }
+    data.update(kwargs)
+    ret = await client.request('POST', '/datasets', data)
+    return ret['result']
+
+
+@pytest.mark.parametrize('status', ['processing', 'suspended', 'errors', 'complete'])
+async def test_rest_datasets_update_status_obsolete(server, status):
+    client = server(roles=['user'], groups=['users'])
+    dataset_id = await create_dataset(client, status=status)
+
+    await client.request('PUT', f'/datasets/{dataset_id}/status', {'status': 'obsolete'})
+    ret = await client.request('GET', f'/datasets/{dataset_id}')
+    assert ret['status'] == 'obsolete'
+
+
+@pytest.mark.parametrize('status', ['suspended', 'processing'])
+async def test_rest_datasets_update_status_from_obsolete(server, status):
+    client = server(roles=['user'], groups=['users'])
+    dataset_id = await create_dataset(client, status='obsolete')
+
+    await client.request('PUT', f'/datasets/{dataset_id}/status', {'status': status})
+    ret = await client.request('GET', f'/datasets/{dataset_id}')
+    assert ret['status'] == status
+
+
+@pytest.mark.parametrize('status', ['complete', 'errors'])
+async def test_rest_datasets_update_status_from_obsolete_bad(server, status):
+    client = server(roles=['user'], groups=['users'])
+    dataset_id = await create_dataset(client, status='obsolete')
+
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('PUT', f'/datasets/{dataset_id}/status', {'status': status})
+    assert exc_info.value.response.status_code == 400
+
+    ret = await client.request('GET', f'/datasets/{dataset_id}')
+    assert ret['status'] == 'obsolete'
+
+
+async def test_rest_datasets_update_status_obsolete_bad_user(server):
+    client = server(roles=['user'], groups=['users'])
+    dataset_id = await create_dataset(client)
+
+    # other user can read (users group) but not write
+    client2 = server(username='foo', roles=['user'], groups=['users'])
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client2.request('PUT', f'/datasets/{dataset_id}/status', {'status': 'obsolete'})
+    assert exc_info.value.response.status_code == 403
+
+    ret = await client.request('GET', f'/datasets/{dataset_id}')
+    assert ret['status'] == 'processing'
+
+
+async def test_rest_datasets_filter_obsolete(server):
+    client = server(roles=['user'], groups=['users'])
+    d1 = await create_dataset(client)
+    d2 = await create_dataset(client, status='obsolete')
+
+    ret = await client.request('GET', '/datasets', {'status': 'obsolete'})
+    assert list(ret) == [d2]
+
+    ret = await client.request('GET', '/datasets', {'status': 'processing|suspended'})
+    assert list(ret) == [d1]
+
+    # default is unchanged: obsolete datasets are still returned
+    ret = await client.request('GET', '/datasets')
+    assert set(ret) == {d1, d2}
+
+
+async def test_rest_datasets_hard_reset_obsolete(server):
+    client = server(roles=['user'], groups=['users'])
+    dataset_id = await create_dataset(client, status='obsolete')
+
+    await client.request('POST', f'/datasets/{dataset_id}/dataset_actions/hard_reset', {})
+
+    ret = await client.request('GET', f'/datasets/{dataset_id}')
+    assert ret['status'] == iceprod.server.states.DATASET_STATUS_START
+
+
 async def test_rest_datasets_update_priority(server):
     client = server(roles=['user'], groups=['users'])
 

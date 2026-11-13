@@ -69,3 +69,19 @@ async def test_201_run():
 
     # check it normally hides the error
     await dataset_monitor.run(rc, debug=False)
+
+
+async def test_300_run_skips_obsolete():
+    calls = []
+
+    async def client(method, url, args=None):
+        calls.append(url)
+        if url.startswith('/dataset_summaries/status'):
+            return {'obsolete': ['foo']}
+        raise Exception(f'unexpected {url}')
+    rc = MagicMock()
+    rc.request = client
+
+    await dataset_monitor.run(rc, debug=True)
+    # obsolete datasets are not looked up
+    assert not any(u.startswith('/datasets/foo') for u in calls)

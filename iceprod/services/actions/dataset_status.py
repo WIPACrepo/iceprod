@@ -28,7 +28,7 @@ class Action(BaseAction):
         except Exception as e:
             raise HTTPError(400, reason=str(e))
 
-        if data.action not in ('hard_reset', 'reset', 'suspend'):
+        if data.action not in ('hard_reset', 'reset', 'suspend', 'obsolete'):
             raise HTTPError(400, reason='invalid action')
 
         # check auth
@@ -47,7 +47,8 @@ class Action(BaseAction):
         elif data.action == 'reset':
             task_url = f'/datasets/{data.dataset_id}/task_actions/bulk_reset'
             job_url = f'/datasets/{data.dataset_id}/job_actions/bulk_reset'
-        elif data.action == 'suspend':
+        elif data.action in ('suspend', 'obsolete'):
+            # obsolete suspends any active jobs/tasks, same as suspend
             task_url = f'/datasets/{data.dataset_id}/task_actions/bulk_suspend'
             job_url = f'/datasets/{data.dataset_id}/job_actions/bulk_suspend'
         else:
@@ -57,6 +58,13 @@ class Action(BaseAction):
 
         if data.action == 'suspend' and dataset['status'] in dataset_prev_statuses('suspended'):
             await self._api_client.request('PUT', f'/datasets/{data.dataset_id}/status', {'status': 'suspended'})
+        elif data.action == 'obsolete' and dataset['status'] in dataset_prev_statuses('obsolete'):
+            await self._api_client.request('PUT', f'/datasets/{data.dataset_id}/status', {'status': 'obsolete'})
+            if dataset['status'] == 'complete':
+                # nothing is active in a complete dataset, so skip the bulk suspend
+                self._logger.info('dataset %s was complete, skipping bulk suspend', data.dataset_id)
+                await self._queue.update_payload(message.uuid, {'progress': 100})
+                return
         elif data.action in ('reset', 'hard_reset') and dataset['status'] in dataset_prev_statuses('processing'):
             await self._api_client.request('PUT', f'/datasets/{data.dataset_id}/status', {'status': 'processing'})
             config = await self._api_client.request('GET', f'/config/{data.dataset_id}')
