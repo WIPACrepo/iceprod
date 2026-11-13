@@ -4,6 +4,21 @@
 
 {% block page_title %}User Overview{% end %}
 
+{% block head_scripts %}
+<link rel="stylesheet" href="/static/documentation.css" media="all" type="text/css" />
+{% module SecureStyle(content="""
+div.contents div.section {
+    margin: 1em .5em;
+}
+h2 {
+    margin-top: 1.5em;
+}
+h4.grafana {
+    margin: 1.5em .5em 0 .5em;
+    padding: 0;
+}
+{% end %}
+
 {% block sidebar %}
 <div class="section">
     <h3>Filters</h3>
@@ -22,61 +37,71 @@
         </form>
     </div>
 </div>
-{% if grafana_url %}
-<div class="esc-separator"></div>
-<div class="section">
-    <h4><a href="{{ grafana_url }}" class="grafana" target="_blank" rel="noopener">Usage over time (Grafana)</a></h4>
-</div>
-{% end %}
 {% end %}
 
 {% block body %}
-<p class="overview-filters">
+<div class="section">
+    <p class="overview-filters">
     Active datasets{% if filter_results['users'] %} for user(s) <strong>{{ ', '.join(filter_results['users']) }}</strong>{% end %}{% if filter_results['groups'] %} in group(s) <strong>{{ ', '.join(filter_results['groups']) }}</strong>{% end %}.
     Counts are a live snapshot.{% if grafana_url %} For averages over time, see the <a href="{{ grafana_url }}" target="_blank" rel="noopener">Grafana dashboard</a>.{% end %}
-</p>
+    </p>
+</div>
+{% if grafana_url %}
+<div class="section">
+    <h4 class="grafana"><a href="{{ grafana_url }}" class="grafana" target="_blank" rel="noopener">Usage over time (Grafana)</a></h4>
+    <p>Includes CPU/GPU/memory usage, plotted from task requirements.</p>
+</div>
+{% end %}
 
-<h2>Totals</h2>
-<table class="task_table overview_totals">
-    <tr>
-        <th></th>
-        {% for s in task_statuses %}<th>{{ s }}</th>{% end %}
-    </tr>
-    <tr>
-        <th>Tasks</th>
-        {% for s in task_statuses %}<td class="{{ s }}">{{ task_totals.get(s, 0) }}</td>{% end %}
-    </tr>
-</table>
-<table class="task_table overview_totals">
-    <tr>
-        <th></th>
-        {% for s in job_statuses %}<th>{{ s }}</th>{% end %}
-    </tr>
-    <tr>
-        <th>Jobs</th>
-        {% for s in job_statuses %}<td class="{{ s }}">{{ job_totals.get(s, 0) }}</td>{% end %}
-    </tr>
-</table>
+<h2>Job/Task Totals</h2>
+
+<div class="section task_completion">
+    <table class="overview_totals">
+        <tr>
+            <th></th>
+            {% for s in job_statuses %}<th>{{ s }}</th>{% end %}
+        </tr>
+        <tr>
+            <th>Jobs</th>
+            {% for s in job_statuses %}<td class="{{ s }}">{{ job_totals.get(s, 0) }}</td>{% end %}
+        </tr>
+    </table>
+</div>
+
+<div class="section task_completion">
+    <table class="overview_totals">
+        <tr>
+            <th></th>
+            {% for s in task_statuses %}<th>{{ s }}</th>{% end %}
+        </tr>
+        <tr>
+            <th>Tasks</th>
+            {% for s in task_statuses %}<td class="{{ s }}">{{ task_totals.get(s, 0) }}</td>{% end %}
+        </tr>
+    </table>
+</div>
 
 <h2>Tasks by Dataset</h2>
-{% if datasets %}
-<table class="task_table overview_datasets">
-    <tr>
-        <th>Dataset</th>
-        <th>Owner</th>
-        <th>Status</th>
-        {% for s in task_statuses %}<th>{{ s }}</th>{% end %}
-    </tr>
-    {% for d in datasets %}
-    <tr>
-        <td><a href="/dataset/{{ d['dataset_id'] }}" title="{{ d.get('description', '') }}">{{ d['dataset'] }}</a></td>
-        <td>{{ d.get('username', '') }} ({{ d.get('group', '') }})</td>
-        <td>{{ d['status'] }}</td>
-        {% for s in task_statuses %}<td class="{{ s }}">{{ task_counts.get(d['dataset_id'], {}).get(s, 0) }}</td>{% end %}
-    </tr>
+<div class="section">
+    {% if datasets %}
+    <table class="task_table overview_datasets">
+        <tr>
+            <th>Dataset</th>
+            <th>Owner</th>
+            <th>Status</th>
+            {% for s in task_statuses %}<th>{{ s }}</th>{% end %}
+        </tr>
+        {% for d in datasets %}
+        <tr>
+            <td><a href="/dataset/{{ d['dataset_id'] }}" title="{{ d.get('description', '') }}">{{ d['dataset'] }}</a></td>
+            <td>{{ d.get('username', '') }} ({{ d.get('group', '') }})</td>
+            <td>{{ d['status'] }}</td>
+            {% for s in task_statuses %}<td class="{{ s }}">{{ task_counts.get(d['dataset_id'], {}).get(s, 0) }}</td>{% end %}
+        </tr>
+        {% end %}
+    </table>
+    {% else %}
+    <p class="no_datasets">No active datasets found.</p>
     {% end %}
-</table>
-{% else %}
-<p class="no_datasets">No active datasets found.</p>
-{% end %}
+</div>
 {% end %}
