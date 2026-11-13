@@ -346,12 +346,12 @@ async def test_website_overview(server):
     assert args['status'] == 'processing|suspended|errors'
 
     doc = BeautifulSoup(ret, 'html.parser')
-    totals = doc.find_all('table', class_='overview_job_totals')
+    totals = doc.find_all('table', class_='overview_task_totals')
     assert totals[0].find('td', class_='processing').text == '4'
     assert totals[0].find('td', class_='queued').text == '2'
     assert totals[0].find('td', class_='idle').text == '0'
     
-    totals = doc.find_all('table', class_='overview_task_totals')
+    totals = doc.find_all('table', class_='overview_job_totals')
     assert totals[1].find('td', class_='processing').text == '2'
 
     rows = doc.find('table', class_='overview_datasets').find_all('tr')[1:]
@@ -406,7 +406,7 @@ async def test_website_overview_grafana(grafana_env, server):
 
     ret = await client.request('GET', '/overview')
     doc = BeautifulSoup(ret, 'html.parser')
-    link = doc.find('a', class_='grafana')
+    link = doc.find('div', class_='grafana').find('a')
     assert link['href'] == 'https://grafana.test/d/iceprod-user-overview?orgId=1&var-username=username'
 
 
