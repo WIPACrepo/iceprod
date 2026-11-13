@@ -2,6 +2,7 @@ import logging
 
 import tornado.web
 from cachetools.func import ttl_cache
+from rest_tools.client import RestClient
 
 from iceprod.roles_groups import GROUPS
 
@@ -10,12 +11,19 @@ from .base import PublicHandler, authenticated
 logger = logging.getLogger('website-dataset')
 
 
-class DatasetBrowse(PublicHandler):
-    """Handle /dataset urls"""
+class UsernamesMixin:
+    """Provide the list of known usernames for filters"""
+    #: provided by PublicHandler
+    system_rest_client: RestClient
+
     @ttl_cache(maxsize=256, ttl=600)
     async def get_usernames(self):
         ret = await self.system_rest_client.request('GET', '/users')
         return [x['username'] for x in ret['results']]
+
+
+class DatasetBrowse(UsernamesMixin, PublicHandler):
+    """Handle /dataset urls"""
 
     @authenticated
     async def get(self):

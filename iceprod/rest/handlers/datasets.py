@@ -116,11 +116,11 @@ class MultiDatasetHandler(APIBase):
             projection.update({x:True for x in keys.split('|') if x})
         projection['dataset_id'] = True  # must be in projection
 
-        ret = {}
+        rows = {}
         async for row in self.db.datasets.find(query, projection=projection):
-            k = row['dataset_id']
-            if await self.manual_attr_auth('dataset_id', k, 'read'):
-                ret[k] = row
+            rows[row['dataset_id']] = row
+        allowed = await self.filter_attr_auth('dataset_id', rows, 'read')
+        ret = {k: v for k, v in rows.items() if k in allowed}
         self.write(ret)
         self.finish()
 
@@ -516,9 +516,11 @@ class DatasetSummariesStatusHandler(APIBase):
             dict: {<status>: [<dataset_id>,]}
         """
         cursor = self.db.datasets.find(projection={'_id': False, 'status': True, 'dataset_id': True})
+        rows = [row async for row in cursor]
+        allowed = await self.filter_attr_auth('dataset_id', (row['dataset_id'] for row in rows), 'read')
         ret = defaultdict(list)
-        async for row in cursor:
-            if await self.manual_attr_auth('dataset_id', row['dataset_id'], 'read'):
+        for row in rows:
+            if row['dataset_id'] in allowed:
                 ret[row['status']].append(row['dataset_id'])
         ret2 = {}
         for k in sorted(ret, key=dataset_status_sort):

@@ -231,3 +231,56 @@ async def test_rest_auth_auths(server):
     with pytest.raises(requests.exceptions.HTTPError) as exc_info:
         await client.request('POST', '/auths', args)
     assert exc_info.value.response.status_code == 403
+
+
+async def _create_dataset(client, username, group, read_groups):
+    ret = await client.request('POST', '/datasets', {
+        'auth_groups_read': read_groups,
+        'description': 'blah',
+        'tasks_per_job': 1,
+        'jobs_submitted': 1,
+        'tasks_submitted': 1,
+        'username': username,
+        'group': group,
+    })
+    return ret['result']
+
+
+async def test_rest_auth_filter_attr_auth(server):
+    """Batch dataset auth: group access, user-only access, denied, and bypass"""
+    sys_client = server(roles=['system'])
+    # readable by all users (the "user" role implies the "users" group)
+    users_ds = await _create_dataset(sys_client, 'dave', 'users', ['users'])
+    # restricted to the simprod group, plus the owner via read_users
+    simprod_ds = await _create_dataset(sys_client, 'bob', 'simprod', [])
+    alice_ds = await _create_dataset(sys_client, 'alice', 'simprod', [])
+
+    # carol: not in simprod, owns nothing
+    carol = server(username='carol', roles=['user'], groups=['users'])
+    # alice: not in simprod -> alice_ds only through read_users
+    alice = server(username='alice', roles=['user'], groups=['users'])
+    # bob: in simprod -> both simprod datasets through the group
+    bob = server(username='bob', roles=['user'], groups=['users', 'simprod'])
+    all_ds = {users_ds, simprod_ds, alice_ds}
+    expected = [
+        (carol, {users_ds}),
+        (alice, {users_ds, alice_ds}),
+        (bob, all_ds),
+        (sys_client, all_ds),
+    ]
+
+    for client, readable in expected:
+        # MultiDatasetHandler
+        ret = await client.request('GET', '/datasets')
+        assert set(ret) == readable
+
+        # DatasetSummariesStatusHandler
+        ret = await client.request('GET', '/dataset_summaries/status')
+        assert set(d for ids in ret.values() for d in ids) == readable
+
+        # get_readable_dataset_ids: all readable -> 200, any unreadable -> 403
+        await client.request('GET', '/task_counts/dataset_status', {'dataset_ids': '|'.join(readable)})
+        if unreadable := all_ds - readable:
+            with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+                await client.request('GET', '/job_counts/dataset_status', {'dataset_ids': '|'.join(readable | unreadable)})
+            assert exc_info.value.response.status_code == 403

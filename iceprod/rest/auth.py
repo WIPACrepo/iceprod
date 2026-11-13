@@ -17,6 +17,12 @@ from iceprod.roles_groups import GROUPS, ROLES
 
 logger = logging.getLogger('rest-auth')
 
+#: max number of datasets allowed in a single multi-dataset request
+MAX_DATASET_IDS = 100
+
+#: max values per `$in` query when batch checking attribute auth
+ATTR_AUTH_BATCH_SIZE = 1000
+
 
 class AuthProtocol(Protocol):
     auth_db: AsyncDatabase
@@ -78,6 +84,29 @@ class AttrAuthMixin(TokenAttributeRoleMappingProtocol, AuthProtocol, RestHandler
         if ret is None:
             raise RuntimeError('failed to insert auth')
 
+    def _attr_auth_allowed(self, auth: dict, role: str) -> bool:
+        """
+        Check an `attr_auths` document against the requester's groups and username.
+
+        This is the single access rule shared by all attribute auth checks.
+
+        Args:
+            auth (dict): attr_auths document
+            role (str): the role to check for (read|write)
+
+        Returns:
+            bool: authorized
+        """
+        if role+'_groups' not in auth:
+            return False
+        try:
+            return bool(set(auth.get(role+'_groups', [])) & set(self.auth_groups) or
+                        self.current_user in auth.get(role+'_users', []))
+        except (TypeError, ValueError):
+            # malformed auth document
+            logger.debug('bad attr auth: role=%r, auth=%r', role, auth, exc_info=True)
+            return False
+
     async def check_attr_auth(self, arg, val, role):
         """
         Based on the request groups or username, check if they are allowed to
@@ -95,8 +124,7 @@ class AttrAuthMixin(TokenAttributeRoleMappingProtocol, AuthProtocol, RestHandler
                 raise HTTPError(403, reason='attr not found')
             elif role+'_groups' not in ret:
                 raise HTTPError(403, reason='role not found')
-            elif not (set(ret.get(role+'_groups', [])) & set(self.auth_groups) or
-                      self.current_user in ret.get(role+'_users', [])):
+            elif not self._attr_auth_allowed(ret, role):
                 logger.debug('arg=%r, val=%r, role=%r, auth_groups=%r, current_user=%r, auths=%r', arg, val, role, self.auth_groups, self.current_user, ret.get(role+'_users', []))
                 raise HTTPError(403, reason='authorization failed')
         except (TypeError, ValueError, KeyError):
@@ -125,6 +153,57 @@ class AttrAuthMixin(TokenAttributeRoleMappingProtocol, AuthProtocol, RestHandler
             logger.debug('unauthorized')
             return False
         return True
+
+
+    async def filter_attr_auth(self, arg, vals, role, token_role_bypass=['admin', 'system']) -> set:
+        """
+        Batch version of `manual_attr_auth`: find which values the requester may access.
+
+        Uses one indexed `$in` query per `ATTR_AUTH_BATCH_SIZE` values,
+        instead of one query per value.
+
+        Args:
+            arg (str): attribute name to check
+            vals (iterable): attribute values
+            role (str): the role to check for (read|write)
+            token_role_bypass (list): token roles that bypass this auth (default: admin,system)
+
+        Returns:
+            set: the subset of `vals` that is authorized
+        """
+        vals = list(dict.fromkeys(vals))  # dedup, keep order
+        if any(r in self.auth_roles for r in token_role_bypass):
+            logger.debug('token role bypass')
+            return set(vals)
+        allowed = set()
+        projection = {'_id': False, arg: True, role+'_groups': True, role+'_users': True}
+        for i in range(0, len(vals), ATTR_AUTH_BATCH_SIZE):
+            batch = vals[i:i+ATTR_AUTH_BATCH_SIZE]
+            async for row in self.auth_db.attr_auths.find({arg: {'$in': batch}}, projection=projection):
+                if self._attr_auth_allowed(row, role):
+                    allowed.add(row[arg])
+        return allowed
+
+    async def get_readable_dataset_ids(self) -> list[str]:
+        """
+        Parse and authorize the `dataset_ids` argument for multi-dataset requests.
+
+        Returns:
+            list: dataset ids
+
+        Raises:
+            HTTPError 400: missing or too many dataset ids
+            HTTPError 403: a dataset is not readable by the requester
+        """
+        dataset_ids = [d for d in self.get_argument('dataset_ids', '').split('|') if d]
+        if not dataset_ids:
+            raise HTTPError(400, reason='Missing dataset_ids')
+        if len(dataset_ids) > MAX_DATASET_IDS:
+            raise HTTPError(400, reason=f'Too many dataset_ids (max {MAX_DATASET_IDS})')
+        allowed = await self.filter_attr_auth('dataset_id', dataset_ids, 'read')
+        if any(d not in allowed for d in dataset_ids):
+            raise HTTPError(403, reason='Unauthorized dataset_id')
+        return dataset_ids
 
 
 #: match token roles and groups

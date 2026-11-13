@@ -311,3 +311,30 @@ async def test_rest_jobs_dataset_counts_status(server):
 
     ret = await client.request('GET', f'/datasets/{data["dataset_id"]}/job_counts/status')
     assert ret == {'processing': 1}
+
+
+async def test_rest_jobs_counts_dataset_status(server):
+    client = server(roles=['system'])
+
+    await client.request('POST', '/jobs', {'dataset_id': 'foo', 'job_index': 0})
+    await client.request('POST', '/jobs', {'dataset_id': 'foo', 'job_index': 1})
+    ret = await client.request('POST', '/jobs', {'dataset_id': 'baz', 'job_index': 0})
+    await client.request('PATCH', f'/jobs/{ret["result"]}', {'status': 'suspended'})
+
+    ret = await client.request('GET', '/job_counts/dataset_status', {'dataset_ids': 'foo|baz'})
+    assert ret == {
+        'foo': {iceprod.server.states.JOB_STATUS_START: 2},
+        'baz': {'suspended': 1},
+    }
+
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('GET', '/job_counts/dataset_status')
+    assert exc_info.value.response.status_code == 400
+
+
+async def test_rest_jobs_counts_dataset_status_user_auth(server):
+    client = server(roles=['user'], groups=['users'])
+
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('GET', '/job_counts/dataset_status', {'dataset_ids': 'notmine'})
+    assert exc_info.value.response.status_code == 403

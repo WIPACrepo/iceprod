@@ -60,6 +60,8 @@ def setup(handler_cfg):
             (r'/datasets/(?P<dataset_id>\w+)/task_summaries/status', DatasetTaskSummaryStatusHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/task_counts/status', DatasetTaskCountsStatusHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/task_counts/name_status', DatasetTaskCountsNameStatusHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/task_counts/resources', DatasetTaskCountsResourcesHandler, handler_cfg),
+            (r'/task_counts/dataset_status', TaskCountsDatasetStatusHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/task_actions/bulk_status/(?P<status>\w+)', DatasetTaskBulkStatusHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/task_actions/bulk_suspend', DatasetTaskBulkSuspendHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/task_actions/bulk_reset', DatasetTaskBulkResetHandler, handler_cfg),
@@ -638,6 +640,108 @@ class DatasetTaskCountsNameStatusHandler(APIBase):
         ret2 = {}
         for k in sorted(ordering, key=lambda n:ordering[n]):
             ret2[k] = ret[k]
+        self.write(ret2)
+        self.finish()
+
+
+#: resources summed by the task resource counts handler, with the default used when a task has no explicit requirement
+RESOURCE_COUNT_DEFAULTS = {
+    'cpu': Resources.defaults['cpu'],
+    'gpu': 0,
+    'memory': Resources.defaults['memory'],
+}
+
+
+class DatasetTaskCountsResourcesHandler(APIBase):
+    """
+    Handle task resource summaries grouped by task name and status.
+    """
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='read')
+    async def get(self, dataset_id):
+        """
+        Get the task counts and summed resource requirements for a dataset, group by name,status.
+
+        Missing requirements fall back to the resource defaults
+        (cpu=1, gpu=0, memory=2 GB). Non-numeric values are ignored.
+
+        Args:
+            dataset_id (str): dataset id
+
+        Params (optional):
+            status: | separated list of task status to filter by
+
+        Returns:
+            dict: {<name>: {<status>: {'count': num, 'cpu': num, 'gpu': num, 'memory': num}}}
+        """
+        match: dict[str, Any] = {'dataset_id': dataset_id}
+        if status := self.get_argument('status', None):
+            status_list = status.split('|')
+            if any(s not in TASK_STATUS for s in status_list):
+                raise tornado.web.HTTPError(400, reason='Unknown task status')
+            match['status'] = {'$in': status_list}
+
+        group: dict[str, Any] = {
+            '_id': {'name': '$name', 'status': '$status'},
+            'ordering': {'$first': '$task_index'},
+            'count': {'$sum': 1},
+        }
+        for res, default in RESOURCE_COUNT_DEFAULTS.items():
+            # $sum ignores non-numeric values (e.g. legacy list-typed gpu)
+            group[res] = {'$sum': {'$ifNull': [f'$requirements.{res}', default]}}
+
+        cursor = await self.db.tasks.aggregate([
+            {'$match': match},
+            {'$group': group},
+        ])
+        ret: dict[str, dict[str, dict]] = defaultdict(dict)
+        ordering = {}
+        async for row in cursor:
+            name = row['_id']['name']
+            ret[name][row['_id']['status']] = {k: row[k] for k in ('count', *RESOURCE_COUNT_DEFAULTS)}
+            ordering[name] = row['ordering']
+        # order task names like the dataset config (task_index), statuses by state machine
+        ret2 = {}
+        for name in sorted(ordering, key=lambda n: ordering[n]):
+            ret2[name] = {k: ret[name][k] for k in sorted(ret[name], key=task_status_sort)}
+        self.write(ret2)
+        self.finish()
+
+
+class TaskCountsDatasetStatusHandler(APIBase):
+    """
+    Handle task counts for multiple datasets, grouped by dataset and status.
+    """
+    @authorization(roles=['admin', 'user', 'system'])
+    async def get(self):
+        """
+        Get the task counts for multiple datasets, group by dataset_id,status.
+
+        Params:
+            dataset_ids: | separated list of dataset ids (required, max 100)
+            status: | separated list of task status to filter by (optional)
+
+        Returns:
+            dict: {<dataset_id>: {<status>: num}}
+        """
+        dataset_ids = await self.get_readable_dataset_ids()
+        match: dict[str, Any] = {'dataset_id': {'$in': dataset_ids}}
+        if status := self.get_argument('status', None):
+            status_list = status.split('|')
+            if any(s not in TASK_STATUS for s in status_list):
+                raise tornado.web.HTTPError(400, reason='Unknown task status')
+            match['status'] = {'$in': status_list}
+
+        cursor = await self.db.tasks.aggregate([
+            {'$match': match},
+            {'$group': {'_id': {'dataset_id': '$dataset_id', 'status': '$status'}, 'total': {'$sum': 1}}},
+        ])
+        ret: dict[str, dict[str, int]] = defaultdict(dict)
+        async for row in cursor:
+            ret[row['_id']['dataset_id']][row['_id']['status']] = row['total']
+        ret2 = {}
+        for d in ret:
+            ret2[d] = {k: ret[d][k] for k in sorted(ret[d], key=task_status_sort)}
         self.write(ret2)
         self.finish()
 
