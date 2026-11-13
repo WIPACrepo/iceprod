@@ -15,9 +15,7 @@ DATASET_STATUS = {
 * suspended: the dataset has been put on hold.
 * errors: no jobs are active, and there are jobs with errors.
 * complete: all jobs and tasks are complete.
-* obsolete: the dataset is no longer relevant, and is hidden from default
-  website views. Any active jobs and tasks are suspended. It can be restored
-  to suspended, or reset to processing.
+* obsolete: the dataset is no longer relevant, and hidden from view.
 """
 
 DATASET_STATUS_START = 'processing'
