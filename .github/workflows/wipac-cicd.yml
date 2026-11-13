@@ -87,6 +87,7 @@ jobs:
         run: |
           docker run -d --name mongo --network=host mongo:7 --replSet rs0 --bind_ip_all --port 27017
           # Wait until mongod accepts connections
+          sleep 1
           for i in $(seq 1 30); do
             if docker exec mongo mongosh --quiet --eval "db.adminCommand('ping').ok" >/dev/null 2>&1; then
               echo "mongod is up after ${i}s"
@@ -101,6 +102,7 @@ jobs:
           done
           docker exec mongo mongosh --quiet --eval "rs.initiate().ok"
           # Wait for the node to become primary
+          sleep 1
           for i in $(seq 1 30); do
             if docker exec mongo mongosh --quiet --eval "db.hello().isWritablePrimary" | grep -q true; then
               echo "primary elected"
