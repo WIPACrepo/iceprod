@@ -29,7 +29,7 @@ async def mongo_clear():
     }
     config = from_environment(default_config)
     db_url, db_name = config['DB_URL'].rsplit('/', 1)  # type: ignore
-    client = AsyncMongoClient(db_url, serverSelectionTimeoutMS=10)
+    client = AsyncMongoClient(db_url, serverSelectionTimeoutMS=25)
 
     async def _clean(db_name):
         db = client[db_name]
