@@ -14,7 +14,7 @@ h2 {
     margin-top: 1.5em;
 }
 h4.grafana {
-    margin: 1.5em .5em 0 .5em;
+    margin: 1.5em 0 .5em 0;
     padding: 0;
 }
 """) %}
@@ -49,7 +49,7 @@ h4.grafana {
 </div>
 {% if grafana_url %}
 <div class="section">
-    <h4 class="grafana"><a href="{{ grafana_url }}" class="grafana" target="_blank" rel="noopener">Usage over time (Grafana)</a></h4>
+    <h4 class="grafana"><a href="{{ grafana_url }}" target="_blank" rel="noopener">Usage over time (Grafana)</a></h4>
     <p>Includes CPU/GPU/memory usage, plotted from task requirements.</p>
 </div>
 {% end %}
