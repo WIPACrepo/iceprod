@@ -346,11 +346,14 @@ async def test_website_overview(server):
     assert args['status'] == 'processing|suspended|errors'
 
     doc = BeautifulSoup(ret, 'html.parser')
-    totals = doc.find_all('table', class_='overview_totals')
+    totals = doc.find_all('table', class_='overview_job_totals')
     assert totals[0].find('td', class_='processing').text == '4'
     assert totals[0].find('td', class_='queued').text == '2'
     assert totals[0].find('td', class_='idle').text == '0'
+    
+    totals = doc.find_all('table', class_='overview_task_totals')
     assert totals[1].find('td', class_='processing').text == '2'
+
     rows = doc.find('table', class_='overview_datasets').find_all('tr')[1:]
     assert [r.find('a').text for r in rows] == ['20002', '20001']
     # no grafana url configured
@@ -388,7 +391,7 @@ async def test_website_overview_chunking(server):
     assert tasks_mock.call_count == 3
     assert all(len(c.args[2]['dataset_ids'].split('|')) <= 100 for c in tasks_mock.call_args_list)
     doc = BeautifulSoup(ret, 'html.parser')
-    totals = doc.find('table', class_='overview_totals')
+    totals = doc.find('table', class_='overview_task_totals')
     assert totals.find('td', class_='processing').text == '500'
 
 

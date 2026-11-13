@@ -57,7 +57,7 @@ h4.grafana {
 <h2>Job/Task Totals</h2>
 
 <div class="section task_completion">
-    <table class="overview_totals">
+    <table class="overview_job_totals">
         <tr>
             <th></th>
             {% for s in job_statuses %}<th>{{ s }}</th>{% end %}
@@ -70,7 +70,7 @@ h4.grafana {
 </div>
 
 <div class="section task_completion">
-    <table class="overview_totals">
+    <table class="overview_task_totals">
         <tr>
             <th></th>
             {% for s in task_statuses %}<th>{{ s }}</th>{% end %}
