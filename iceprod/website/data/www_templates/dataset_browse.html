@@ -4,6 +4,16 @@
 
 {% block page_title %}Dataset Summary{% end %}
 
+{% block head_scripts %}
+<link rel="stylesheet" href="/static/documentation.css" media="all" type="text/css" />
+{% module SecureStyle(content="""
+.note {
+    margin: 1em 0;
+    font-size:0.85em
+}
+""") %}
+{% end %}
+
 {% block sidebar %}
 <div class="section">
     <h3>Filters</h3>
@@ -18,9 +28,12 @@
             {% end %}
         </select>
         {% end %}
-        <p class="note" style="font-size:0.85em">{{ ', '.join(hidden_status).capitalize() }} datasets are hidden unless selected in the status filter.</p>
         <button>Update</button>
     </div>
+</div>
+<div class="esc-separator"></div>
+<div class="section">
+    <p class="note">{{ ', '.join(hidden_status).capitalize() }} datasets are hidden unless selected in the status filter.</p>
 </div>
 <div class="esc-separator"></div>
 <div class="section">
