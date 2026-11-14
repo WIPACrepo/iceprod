@@ -80,6 +80,7 @@ def setup(handler_cfg):
                 'job_id_index': {'keys': 'job_id', 'unique': False},
                 'status_index': {'keys': 'status', 'unique': False},
                 'priority_index': {'keys': [('status', pymongo.ASCENDING), ('priority', pymongo.DESCENDING)], 'unique': False},
+                'dataset_id_job_index_index': {'keys': [('dataset_id', pymongo.ASCENDING), ('job_index', pymongo.ASCENDING)], 'unique': False},
             },
             'dataset_files': {
                 'dataset_id_index': {'keys': 'dataset_id', 'unique': False},
@@ -337,8 +338,11 @@ class DatasetMultiTasksHandler(APIBase):
         Params (optional):
             status: | separated list of task status to filter by
             name: | separated list of task names to filter by
-            job_id: job_id to filter by
-            job_index: job_index to filter by
+            job_id: job_id to filter by (cannot be combined with job_ids)
+            job_ids: | separated list of job_ids to filter by (max 100)
+            job_index: job_index to filter by (exact match)
+            job_index_min: minimum job_index to filter by (inclusive)
+            job_index_max: maximum job_index to filter by (inclusive)
             keys: | separated list of keys to return for each task
 
         Args:
@@ -362,15 +366,17 @@ class DatasetMultiTasksHandler(APIBase):
             filters['name'] = {'$in': name_list}
 
         job_id = self.get_argument('job_id', None)
+        job_ids = self.get_id_list('job_ids')
+        if job_id and job_ids:
+            raise tornado.web.HTTPError(400, reason='Cannot combine "job_id" with "job_ids"')
         if job_id:
             filters['job_id'] = job_id
+        elif job_ids:
+            filters['job_id'] = {'$in': job_ids}
 
-        job_index = self.get_argument('job_index', None)
-        if job_index:
-            try:
-                filters['job_index'] = int(job_index)
-            except ValueError:
-                raise tornado.web.HTTPError(400, reason='Bad argument "job_index": must be integer')
+        job_index = self.get_int_range_filter('job_index')
+        if job_index is not None:
+            filters['job_index'] = job_index
 
         projection = {'_id': False}
         keys = self.get_argument('keys','')

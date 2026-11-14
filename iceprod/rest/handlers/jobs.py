@@ -50,6 +50,7 @@ def setup(handler_cfg):
             'jobs': {
                 'job_id_index': {'keys': 'job_id', 'unique': True},
                 'dataset_id_index': {'keys': 'dataset_id', 'unique': False},
+                'dataset_id_job_index_index': {'keys': [('dataset_id', pymongo.ASCENDING), ('job_index', pymongo.ASCENDING)], 'unique': False},
             }
         }
     }
@@ -183,9 +184,12 @@ class DatasetMultiJobsHandler(APIBase):
         Get all jobs for a dataset.
 
         Params (optional):
-            job_index: job_index to filter by
+            job_ids: | separated list of job_ids to filter by (max 100)
+            job_index: job_index to filter by (exact match)
+            job_index_min: minimum job_index to filter by (inclusive)
+            job_index_max: maximum job_index to filter by (inclusive)
             status: | separated list of job status to filter by
-            keys: | separated list of keys to return for each task
+            keys: | separated list of keys to return for each job
 
         Args:
             dataset_id (str): dataset id
@@ -201,12 +205,13 @@ class DatasetMultiJobsHandler(APIBase):
                 raise tornado.web.HTTPError(400, reason='Unknown status')
             filters['status'] = {'$in': status_list}
 
-        job_index = self.get_argument('job_index', None)
-        if job_index:
-            try:
-                filters['job_index'] = int(job_index)
-            except ValueError:
-                raise tornado.web.HTTPError(400, reason='Bad argument "job_index": must be integer')
+        job_ids = self.get_id_list('job_ids')
+        if job_ids:
+            filters['job_id'] = {'$in': job_ids}
+
+        job_index = self.get_int_range_filter('job_index')
+        if job_index is not None:
+            filters['job_index'] = job_index
 
         projection = {'_id': False}
         keys = self.get_argument('keys','')

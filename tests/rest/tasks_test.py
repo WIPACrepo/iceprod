@@ -1659,3 +1659,88 @@ async def test_rest_tasks_files_bulk_post_user_auth(server):
 
     ret = await sys_client.request('GET', '/datasets/notmine/files')
     assert ret['files'] == []
+
+
+async def _create_filter_tasks(client, dataset_id='foo', num_jobs=5):
+    """Create one 'gen' and one 'ppc' task per job, with job_index 0..num_jobs-1"""
+    tasks = {}
+    for job_index in range(num_jobs):
+        for task_index, name in enumerate(('gen', 'ppc')):
+            data = {
+                'dataset_id': dataset_id,
+                'job_id': f'job{job_index}',
+                'task_index': task_index,
+                'job_index': job_index,
+                'name': name,
+                'depends': [],
+                'requirements': {},
+            }
+            ret = await client.request('POST', '/tasks', data)
+            tasks[ret['result']] = data
+    return tasks
+
+
+async def test_rest_tasks_dataset_get_job_index_range(server):
+    client = server(roles=['system'])
+    tasks = await _create_filter_tasks(client)
+
+    def expected(fn):
+        return {t for t, d in tasks.items() if fn(d)}
+
+    ret = await client.request('GET', '/datasets/foo/tasks', {'job_index_min': 2})
+    assert set(ret) == expected(lambda d: d['job_index'] >= 2)
+
+    ret = await client.request('GET', '/datasets/foo/tasks', {'job_index_max': 2})
+    assert set(ret) == expected(lambda d: d['job_index'] <= 2)
+
+    ret = await client.request('GET', '/datasets/foo/tasks', {'job_index_min': 1, 'job_index_max': 3})
+    assert set(ret) == expected(lambda d: 1 <= d['job_index'] <= 3)
+
+    # combined with other filters
+    ret = await client.request('GET', '/datasets/foo/tasks', {'job_index_max': 1, 'name': 'ppc', 'keys': 'task_id'})
+    assert set(ret) == expected(lambda d: d['job_index'] <= 1 and d['name'] == 'ppc')
+
+    # min > max is valid and empty
+    ret = await client.request('GET', '/datasets/foo/tasks', {'job_index_min': 3, 'job_index_max': 1})
+    assert ret == {}
+
+    # exact job_index still works, including 0
+    ret = await client.request('GET', '/datasets/foo/tasks', {'job_index': 0})
+    assert set(ret) == expected(lambda d: d['job_index'] == 0)
+
+
+async def test_rest_tasks_dataset_get_job_index_range_errors(server):
+    client = server(roles=['system'])
+    await _create_filter_tasks(client, num_jobs=1)
+
+    for args in ({'job_index_min': 'a'}, {'job_index_max': '1.5'}, {'job_index': 'x'},
+                 {'job_index': 0, 'job_index_min': 0}, {'job_index': 0, 'job_index_max': 1}):
+        with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+            await client.request('GET', '/datasets/foo/tasks', args)
+        assert exc_info.value.response.status_code == 400, args
+
+
+async def test_rest_tasks_dataset_get_job_ids(server):
+    client = server(roles=['system'])
+    tasks = await _create_filter_tasks(client)
+
+    ret = await client.request('GET', '/datasets/foo/tasks', {'job_ids': 'job1|job3|'})
+    assert set(ret) == {t for t, d in tasks.items() if d['job_id'] in ('job1', 'job3')}
+
+    # too many ids
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('GET', '/datasets/foo/tasks', {'job_ids': '|'.join(f'j{i}' for i in range(101))})
+    assert exc_info.value.response.status_code == 400
+
+    # job_id and job_ids conflict
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('GET', '/datasets/foo/tasks', {'job_id': 'job1', 'job_ids': 'job2'})
+    assert exc_info.value.response.status_code == 400
+
+
+async def test_rest_tasks_dataset_get_filters_user_auth(server):
+    client = server(roles=['user'], groups=['users'])
+
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('GET', '/datasets/notmine/tasks', {'job_index_min': 0, 'job_ids': 'job1'})
+    assert exc_info.value.response.status_code == 403

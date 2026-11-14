@@ -49,7 +49,7 @@ Sync::
         address='https://api.iceprod.wisc.edu',
         token_url='https://keycloak.icecube.wisc.edu/auth/realms/IceCube',
         filename='.iceprod-auth',
-        client_id'iceprod-public'
+        client_id='iceprod-public'
     )
     # get a list of datasets
     result = api.request_seq('GET', '/datasets', {})
@@ -63,9 +63,41 @@ Async::
         address='https://api.iceprod.wisc.edu',
         token_url='https://keycloak.icecube.wisc.edu/auth/realms/IceCube',
         filename='.iceprod-auth',
-        client_id'iceprod-public'
+        client_id='iceprod-public'
     )
     # get a list of datasets
     result = await api.request('GET', '/datasets', {})
     for dataset, metadata in result.items():
         # do something with the dataset
+
+
+Filtering tasks and task stats
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Task stats cannot be filtered by task name or job index directly.
+Instead, first filter the tasks, then fetch the stats for those task ids.
+The bulk task stats endpoint accepts at most 100 task ids per request,
+so request them in chunks::
+
+    # select complete "propagate" tasks for the first 1000 jobs
+    tasks = api.request_seq('GET', f'/datasets/{dataset_id}/tasks', {
+        'status': 'complete',
+        'name': 'propagate',
+        'job_index_min': 0,
+        'job_index_max': 999,
+        'keys': 'task_id',
+    })
+    task_ids = list(tasks)
+
+    # fetch the latest stats, at most 100 task ids per request
+    task_stats = {}
+    for i in range(0, len(task_ids), 100):
+        args = {'last': 'true', 'task_ids': '|'.join(task_ids[i:i+100])}
+        for stat in api.request_stream('GET', f'/datasets/{dataset_id}/bulk/task_stats', args):
+            task_stats[stat['task_id']] = stat
+
+The ``job_index_min`` and ``job_index_max`` filters are inclusive, and also
+work on ``/datasets/{dataset_id}/jobs``.
+
+A complete command-line version is available in
+`resources/filtered_task_stats.py <https://github.com/WIPACrepo/iceprod/blob/master/resources/filtered_task_stats.py>`_.
