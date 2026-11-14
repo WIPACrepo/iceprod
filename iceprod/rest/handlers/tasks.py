@@ -70,6 +70,7 @@ def setup(handler_cfg):
             (r'/datasets/(?P<dataset_id>\w+)/task_stats', DatasetTaskStatsHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/files', DatasetMultiFilesHandler, handler_cfg),
             (r'/datasets/(?P<dataset_id>\w+)/files/(?P<task_id>\w+)', DatasetTaskFilesHandler, handler_cfg),
+            (r'/datasets/(?P<dataset_id>\w+)/file_actions/bulk', DatasetFilesBulkHandler, handler_cfg),
         ],
         'database': 'tasks',
         'indexes': {
@@ -1631,7 +1632,96 @@ class DatasetTaskBulkRequirementsHandler(APIBase):
             self.finish()
 
 
-class DatasetMultiFilesHandler(APIBase):
+FieldTypes = dict[str, type | tuple[type, ...]]
+
+
+class DatasetFilesMixin:
+    """
+    Shared validation for the dataset_files handlers.
+
+    Mix in before `APIBase`, e.g. `class Handler(DatasetFilesMixin, APIBase)`.
+    """
+    #: maximum number of files in one bulk add request
+    MAX_BULK_FILES: int = 10000
+
+    #: required fields (and types) for every dataset file entry
+    FILE_REQUIRED_FIELDS: FieldTypes = {
+        'filename': str,
+        'movement': str,
+    }
+
+    #: fields used to find the task when the task_id is not given
+    FILE_TASK_LOOKUP_FIELDS: FieldTypes = {
+        'job_index': int,
+        'task_name': str,
+    }
+
+    #: optional fields (and types) for a dataset file entry
+    FILE_OPTIONAL_FIELDS: FieldTypes = {
+        'local': str,
+        'transfer': (str, bool),
+        'compression': (str, bool),
+    }
+
+    @staticmethod
+    def _validate_fields(data: dict, fields: FieldTypes, prefix: str = '', optional: bool = False):
+        """
+        Check that `data` has the given fields with the right types.
+
+        Args:
+            data: the file entry
+            fields: mapping of field name to allowed type(s)
+            prefix: prepended to the error reason (e.g. "files[3]: ")
+            optional: if True, missing fields are allowed
+
+        Raises:
+            tornado.web.HTTPError: 400 on a missing key or bad type
+        """
+        for k, t in fields.items():
+            if k not in data:
+                if optional:
+                    continue
+                raise tornado.web.HTTPError(400, reason=f'{prefix}missing key: {k}')
+            # bool is a subclass of int, so reject it explicitly for int fields
+            if not isinstance(data[k], t) or (t is int and isinstance(data[k], bool)):
+                name = t if isinstance(t, type) else str
+                raise tornado.web.HTTPError(400, reason=f'{prefix}key {k} should be of type {name}')
+
+    def _build_file_data(self, data: dict, dataset_id: str, task_id: str, prefix: str = '') -> dict:
+        """
+        Validate one file entry and convert it to a `dataset_files` document.
+
+        Args:
+            data: the file entry from the request body
+            dataset_id: dataset id
+            task_id: task id the file belongs to
+            prefix: prepended to any error reason (e.g. "files[3]: ")
+
+        Returns:
+            dict: the document to insert
+
+        Raises:
+            tornado.web.HTTPError: 400 on invalid data
+        """
+        self._validate_fields(data, self.FILE_REQUIRED_FIELDS, prefix=prefix)
+        self._validate_fields(data, self.FILE_OPTIONAL_FIELDS, prefix=prefix, optional=True)
+
+        file_data = dataclasses.Data()
+        file_data.update({
+            'task_id': task_id,
+            'dataset_id': dataset_id,
+            'remote': data['filename'],
+            'movement': data['movement'],
+        })
+        for k in self.FILE_OPTIONAL_FIELDS:
+            if k in data:
+                file_data[k] = data[k]
+        if not file_data.valid():
+            raise tornado.web.HTTPError(400, reason=f'{prefix}invalid file data')
+        return dict(file_data)
+
+
+class DatasetMultiFilesHandler(DatasetFilesMixin, APIBase):
     """
     Handle multi files requests, by dataset.
     """
@@ -1677,18 +1767,8 @@ class DatasetMultiFilesHandler(APIBase):
         data = json.loads(self.request.body)
 
         # validate first
-        req_fields = {
-            'filename': str,
-            'movement': str,
-            'job_index': int,
-            'task_name': str,
-        }
-        for k in req_fields:
-            if k not in data:
-                raise tornado.web.HTTPError(400, reason='missing key: '+k)
-            if not isinstance(data[k], req_fields[k]):
-                r = f'key {k} should be of type {req_fields[k]}'
-                raise tornado.web.HTTPError(400, reason=r)
+        self._validate_fields(data, self.FILE_TASK_LOOKUP_FIELDS)
+        self._validate_fields(data, self.FILE_REQUIRED_FIELDS)
 
         # find the task referred to
         filters = {
@@ -1700,39 +1780,14 @@ class DatasetMultiFilesHandler(APIBase):
         if not ret:
             raise tornado.web.HTTPError(400, reason='task referred to not found')
 
-        # set some fields
-        file_data = dataclasses.Data()
-        file_data.update({
-            'task_id': ret['task_id'],
-            'dataset_id': dataset_id,
-            'remote': data['filename'],
-            'movement': data['movement'],
-        })
-        if 'local' in data:
-            if not isinstance(data['local'], str):
-                r = 'key {} should be of type {}'.format('local', str)
-                raise tornado.web.HTTPError(400, reason=r)
-            file_data['local'] = data['local']
-        if 'transfer' in data:
-            if not isinstance(data['transfer'], (str,bool)):
-                r = 'key {} should be of type {}'.format('transfer', str)
-                raise tornado.web.HTTPError(400, reason=r)
-            file_data['transfer'] = data['transfer']
-        if 'compression' in data:
-            if not isinstance(data['compression'], (str,bool)):
-                r = 'key {} should be of type {}'.format('compression', str)
-                raise tornado.web.HTTPError(400, reason=r)
-            file_data['compression'] = data['compression']
-        if not file_data.valid():
-            raise tornado.web.HTTPError(400, reason='invalid file data')
-
-        ret = await self.db.dataset_files.insert_one(dict(file_data))
+        file_data = self._build_file_data(data, dataset_id, ret['task_id'])
+        await self.db.dataset_files.insert_one(file_data)
         self.set_status(201)
         self.write({'result': file_data['task_id']})
         self.finish()
 
 
-class DatasetTaskFilesHandler(APIBase):
+class DatasetTaskFilesHandler(DatasetFilesMixin, APIBase):
     """
     Handle multi files requests, by task.
     """
@@ -1776,45 +1831,8 @@ class DatasetTaskFilesHandler(APIBase):
         """
         data = json.loads(self.request.body)
 
-        # validate first
-        req_fields = {
-            'filename': str,
-            'movement': str,
-        }
-        for k in req_fields:
-            if k not in data:
-                raise tornado.web.HTTPError(400, reason='missing key: '+k)
-            if not isinstance(data[k], req_fields[k]):
-                r = f'key {k} should be of type {req_fields[k]}'
-                raise tornado.web.HTTPError(400, reason=r)
-
-        # set some fields
-        file_data = dataclasses.Data()
-        file_data.update({
-            'task_id': task_id,
-            'dataset_id': dataset_id,
-            'remote': data['filename'],
-            'movement': data['movement'],
-        })
-        if 'local' in data:
-            if not isinstance(data['local'], str):
-                r = 'key {} should be of type {}'.format('local', str)
-                raise tornado.web.HTTPError(400, reason=r)
-            file_data['local'] = data['local']
-        if 'transfer' in data:
-            if not isinstance(data['transfer'], (str,bool)):
-                r = 'key {} should be of type {}'.format('transfer', str)
-                raise tornado.web.HTTPError(400, reason=r)
-            file_data['transfer'] = data['transfer']
-        if 'compression' in data:
-            if not isinstance(data['compression'], (str,bool)):
-                r = 'key {} should be of type {}'.format('compression', str)
-                raise tornado.web.HTTPError(400, reason=r)
-            file_data['compression'] = data['compression']
-        if not file_data.valid():
-            raise tornado.web.HTTPError(400, reason='invalid file data')
-
-        await self.db.dataset_files.insert_one(dict(file_data))
+        file_data = self._build_file_data(data, dataset_id, task_id)
+        await self.db.dataset_files.insert_one(file_data)
         self.set_status(201)
         self.write({})
         self.finish()
@@ -1835,3 +1853,85 @@ class DatasetTaskFilesHandler(APIBase):
         filters = {'dataset_id': dataset_id, 'task_id': task_id}
         await self.db.dataset_files.delete_many(filters)
         self.write({})
+
+
+class DatasetFilesBulkHandler(DatasetFilesMixin, APIBase):
+    """
+    Handle bulk file additions, by dataset.
+    """
+    @authorization(roles=['admin', 'user', 'system'])
+    @attr_auth(arg='dataset_id', role='write')
+    async def post(self, dataset_id):
+        """
+        Create many dataset_files entries at once.
+
+        The request is all-or-nothing: every entry is validated and its task
+        resolved before anything is written. On any error, a 400 is returned
+        naming the bad entry (e.g. `files[3]: missing key: filename`), and no
+        files are inserted.
+
+        Args:
+            dataset_id (str): dataset id
+
+        Body:
+            files (list): list of file entries, at most `MAX_BULK_FILES` (10000).
+                Each entry has:
+
+                * filename (str): the full url filename
+                * movement (str): [input | output | both]
+                * job_index (int): the job index to add to
+                * task_name (str): the name of the task
+                * local (str): (optional) the local filename the task sees
+                * transfer (str): (optional) whether to transfer the file (can be bool or str)
+                * compression (str): (optional) whether to automatically compress/decompress the file
+
+        Returns:
+            dict: {'count': <number of files added>}
+        """
+        try:
+            data = json.loads(self.request.body)
+        except json.JSONDecodeError:
+            raise tornado.web.HTTPError(400, reason='body is not valid json')
+        if not isinstance(data, dict) or not isinstance(data.get('files'), list):
+            raise tornado.web.HTTPError(400, reason='files should be a list')
+        files = data['files']
+        if len(files) > self.MAX_BULK_FILES:
+            raise tornado.web.HTTPError(400, reason=f'too many files (max {self.MAX_BULK_FILES})')
+        if not files:
+            self.set_status(201)
+            self.write({'count': 0})
+            return
+
+        # first pass: validate the task lookup fields
+        job_indexes = set()
+        task_names = set()
+        for i, f in enumerate(files):
+            if not isinstance(f, dict):
+                raise tornado.web.HTTPError(400, reason=f'files[{i}]: entry should be an object')
+            self._validate_fields(f, self.FILE_TASK_LOOKUP_FIELDS, prefix=f'files[{i}]: ')
+            job_indexes.add(f['job_index'])
+            task_names.add(f['task_name'])
+
+        # resolve all tasks in one query, then join in python
+        filters = {
+            'dataset_id': dataset_id,
+            'job_index': {'$in': sorted(job_indexes)},
+            'name': {'$in': sorted(task_names)},
+        }
+        projection = {'_id': False, 'task_id': True, 'job_index': True, 'name': True}
+        task_ids = {}
+        async for row in self.db.tasks.find(filters, projection=projection):
+            task_ids[(row['job_index'], row['name'])] = row['task_id']
+
+        # second pass: build the documents
+        docs = []
+        for i, f in enumerate(files):
+            prefix = f'files[{i}]: '
+            task_id = task_ids.get((f['job_index'], f['task_name']))
+            if not task_id:
+                raise tornado.web.HTTPError(400, reason=f'{prefix}task referred to not found')
+            docs.append(self._build_file_data(f, dataset_id, task_id, prefix=prefix))
+
+        await self.db.dataset_files.insert_many(docs, ordered=True)
+        self.set_status(201)
+        self.write({'count': len(docs)})

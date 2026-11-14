@@ -83,6 +83,7 @@ POST    /datasets/<dataset_id>/files                                  add a file
 GET     /datasets/<dataset_id>/files/<task_id>                        get files for a task
 POST    /datasets/<dataset_id>/files/<task_id>                        add a file to a task
 DELETE  /datasets/<dataset_id>/files/<task_id>                        delete all files from a task
+POST    /datasets/<dataset_id>/file_actions/bulk                      add many files to a dataset, specifying url, job, task name
 ======  ============================================================  ==================================================================
 
 Tasks (internal use only)
