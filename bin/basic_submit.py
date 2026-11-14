@@ -73,6 +73,9 @@ DATA_PREFIX = '/data'
 
 ACTIONS_SLEEP = 10.
 
+# max files per bulk upload request (server limit is 10000)
+BULK_FILES_CHUNK = 5000
+
 
 async def run(rpc, args):
     def modify_path(src):
@@ -226,29 +229,33 @@ async def run(rpc, args):
                 fail('Creation of jobs failed')
             print('.', end='', flush=True)
 
-        # upload file paths
-        for i,files in enumerate(jobfiles):
-            if i%100 == 0:
-                print('.', end='', flush=True)
+        # upload file paths, in chunks via the bulk route
+        async def upload(chunk, first_job, last_job):
+            print('.', end='', flush=True)
             try:
-                for f in files[:-1]:
-                    rpc_args = {
-                        'filename': f,
-                        'movement': 'input',
-                        'job_index': i,
-                        'task_name': 'BasicSubmit',
-                    }
-                    await rpc.request('POST', f'/datasets/{dataset_id}/files', rpc_args)
-                rpc_args = {
-                    'filename': files[-1],
-                    'movement': 'output',
+                await rpc.request('POST', f'/datasets/{dataset_id}/file_actions/bulk', {'files': chunk})
+            except Exception:
+                logger.warning(f'failed to upload files for job_index {first_job}-{last_job}', exc_info=True)
+                fail('Failed to upload an input or output file path')
+
+        chunk: list[dict] = []
+        chunk_first_job = 0
+        for i,files in enumerate(jobfiles):
+            # all but the last file are inputs; the last file is the output
+            for j,f in enumerate(files):
+                chunk.append({
+                    'filename': f,
+                    'movement': 'output' if j == len(files)-1 else 'input',
                     'job_index': i,
                     'task_name': 'BasicSubmit',
-                }
-                await rpc.request('POST', f'/datasets/{dataset_id}/files', rpc_args)
-            except Exception:
-                logger.warning(f'failed to upload file for job_index {i}', exc_info=True)
-                fail('Failed to upload an input or output file path')
+                })
+                # a job's files may span chunks; each entry names its own job
+                if len(chunk) >= BULK_FILES_CHUNK:
+                    await upload(chunk, chunk_first_job, i)
+                    chunk = []
+                    chunk_first_job = i
+        if chunk:
+            await upload(chunk, chunk_first_job, len(jobfiles)-1)
 
         # set dataset to processing
         rpc_args = {

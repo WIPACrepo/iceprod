@@ -1529,3 +1529,133 @@ async def test_rest_tasks_counts_dataset_status_user_auth(server):
     with pytest.raises(requests.exceptions.HTTPError) as exc_info:
         await client.request('GET', '/task_counts/dataset_status', {'dataset_ids': f'{dataset_id}|notmine'})
     assert exc_info.value.response.status_code == 403
+
+
+async def _bulk_files_setup(client, dataset_id, jobs=2, names=('a', 'b')):
+    """Create jobs x names tasks in a dataset; return {(job_index, name): task_id}"""
+    task_ids = {}
+    for j in range(jobs):
+        for t, name in enumerate(names):
+            ret = await client.request('POST', '/tasks', {
+                'dataset_id': dataset_id,
+                'job_id': f'job{j}',
+                'job_index': j,
+                'task_index': t,
+                'name': name,
+                'depends': [],
+                'requirements': {},
+            })
+            task_ids[(j, name)] = ret['result']
+    return task_ids
+
+
+async def test_rest_tasks_files_bulk_post(server):
+    client = server(roles=['system'])
+    dataset_id = 'foo'
+    task_ids = await _bulk_files_setup(client, dataset_id)
+
+    files = [
+        {'job_index': 0, 'task_name': 'a', 'filename': 'in0a', 'movement': 'input'},
+        {'job_index': 0, 'task_name': 'a', 'filename': 'out0a', 'movement': 'output', 'local': 'out', 'transfer': 'maybe', 'compression': False},
+        {'job_index': 0, 'task_name': 'b', 'filename': 'in0b', 'movement': 'input'},
+        {'job_index': 1, 'task_name': 'b', 'filename': 'in1b', 'movement': 'both'},
+    ]
+    ret = await client.request('POST', f'/datasets/{dataset_id}/file_actions/bulk', {'files': files})
+    assert ret == {'count': 4}
+
+    ret = await client.request('GET', f'/datasets/{dataset_id}/files')
+    assert sorted(f['remote'] for f in ret['files']) == ['in0a', 'in0b', 'in1b', 'out0a']
+
+    ret = await client.request('GET', f'/datasets/{dataset_id}/files/{task_ids[(0, "a")]}')
+    assert len(ret['files']) == 2
+    out = [f for f in ret['files'] if f['remote'] == 'out0a'][0]
+    assert out['movement'] == 'output'
+    assert out['local'] == 'out'
+    assert out['transfer'] == 'maybe'
+    assert out['compression'] is False
+
+    ret = await client.request('GET', f'/datasets/{dataset_id}/files/{task_ids[(1, "a")]}')
+    assert ret['files'] == []
+
+    ret = await client.request('GET', f'/datasets/{dataset_id}/files/{task_ids[(1, "b")]}')
+    assert [f['remote'] for f in ret['files']] == ['in1b']
+
+
+async def test_rest_tasks_files_bulk_post_empty(server):
+    client = server(roles=['system'])
+    ret = await client.request('POST', '/datasets/foo/file_actions/bulk', {'files': []})
+    assert ret == {'count': 0}
+
+
+@pytest.mark.parametrize('body,reason', [
+    ({}, 'files should be a list'),
+    ({'files': 'blah'}, 'files should be a list'),
+    ({'files': [{'job_index': 0, 'task_name': 'a', 'filename': 'f', 'movement': 'input'}, 'blah']}, 'files[1]: entry should be an object'),
+    ({'files': [{'job_index': 0, 'task_name': 'a', 'filename': 'f', 'movement': 'input'}, {'job_index': 0, 'task_name': 'a', 'movement': 'input'}]}, 'files[1]: missing key: filename'),
+    ({'files': [{'job_index': 0, 'task_name': 'a', 'filename': 'f', 'movement': 'input'}, {'job_index': '0', 'task_name': 'a', 'filename': 'f', 'movement': 'input'}]}, 'files[1]: key job_index should be of type int'),
+    ({'files': [{'job_index': True, 'task_name': 'a', 'filename': 'f', 'movement': 'input'}]}, 'files[0]: key job_index should be of type int'),
+    ({'files': [{'job_index': 0, 'task_name': 'a', 'filename': 'f', 'movement': 'sideways'}]}, 'files[0]: invalid file data'),
+    ({'files': [{'job_index': 0, 'task_name': 'a', 'filename': 'f', 'movement': 'input', 'local': 3}]}, 'files[0]: key local should be of type str'),
+    ({'files': [{'job_index': 0, 'task_name': 'a', 'filename': 'f', 'movement': 'input', 'transfer': 3}]}, 'files[0]: key transfer should be of type str or bool'),
+    ({'files': [{'job_index': 0, 'task_name': 'a', 'filename': 'f', 'movement': 'input'}, {'job_index': 5, 'task_name': 'a', 'filename': 'f', 'movement': 'input'}]}, 'files[1]: task referred to not found'),
+    ({'files': [{'job_index': 1, 'task_name': 'c', 'filename': 'f', 'movement': 'input'}]}, 'files[0]: task referred to not found'),
+])
+async def test_rest_tasks_files_bulk_post_bad(server, body, reason):
+    client = server(roles=['system'])
+    dataset_id = 'foo'
+    await _bulk_files_setup(client, dataset_id)
+
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('POST', f'/datasets/{dataset_id}/file_actions/bulk', body)
+    assert exc_info.value.response.status_code == 400
+    assert reason in exc_info.value.response.reason
+
+    # nothing was inserted
+    ret = await client.request('GET', f'/datasets/{dataset_id}/files')
+    assert ret['files'] == []
+
+
+async def test_rest_tasks_files_bulk_post_too_many(server, monkeypatch):
+    import iceprod.rest.handlers.tasks
+    monkeypatch.setattr(iceprod.rest.handlers.tasks.DatasetFilesMixin, 'MAX_BULK_FILES', 3)
+
+    client = server(roles=['system'])
+    dataset_id = 'foo'
+    await _bulk_files_setup(client, dataset_id)
+
+    files = [{'job_index': 0, 'task_name': 'a', 'filename': f'f{i}', 'movement': 'input'} for i in range(4)]
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('POST', f'/datasets/{dataset_id}/file_actions/bulk', {'files': files})
+    assert exc_info.value.response.status_code == 400
+    assert 'too many files' in exc_info.value.response.reason
+
+    ret = await client.request('POST', f'/datasets/{dataset_id}/file_actions/bulk', {'files': files[:3]})
+    assert ret == {'count': 3}
+
+
+async def test_rest_tasks_files_bulk_post_user_auth(server):
+    client = server(roles=['user'], groups=['users'])
+    ret = await client.request('POST', '/datasets', {
+        'description': 'blah',
+        'tasks_per_job': 1,
+        'jobs_submitted': 1,
+        'tasks_submitted': 1,
+        'group': 'users',
+    })
+    dataset_id = ret['result']
+
+    sys_client = server(roles=['system'])
+    await _bulk_files_setup(sys_client, dataset_id, jobs=1, names=('a',))
+    await _bulk_files_setup(sys_client, 'notmine', jobs=1, names=('a',))
+
+    files = [{'job_index': 0, 'task_name': 'a', 'filename': 'f', 'movement': 'input'}]
+    ret = await client.request('POST', f'/datasets/{dataset_id}/file_actions/bulk', {'files': files})
+    assert ret == {'count': 1}
+
+    # a dataset the user cannot write
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('POST', '/datasets/notmine/file_actions/bulk', {'files': files})
+    assert exc_info.value.response.status_code == 403
+
+    ret = await sys_client.request('GET', '/datasets/notmine/files')
+    assert ret['files'] == []
