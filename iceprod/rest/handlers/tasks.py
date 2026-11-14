@@ -168,7 +168,7 @@ class MultiTasksHandler(APIBase):
             if k not in data:
                 raise tornado.web.HTTPError(400, reason='missing key: '+k)
             if not isinstance(data[k], req_fields[k]):
-                r = f'key {k} should be of type {req_fields[k]}'
+                r = f'key {k} should be of type {req_fields[k].__name__}'
                 raise tornado.web.HTTPError(400, reason=r)
 
         opt_fields = {
@@ -1684,7 +1684,8 @@ class DatasetFilesMixin:
                 raise tornado.web.HTTPError(400, reason=f'{prefix}missing key: {k}')
             # bool is a subclass of int, so reject it explicitly for int fields
             if not isinstance(data[k], t) or (t is int and isinstance(data[k], bool)):
-                name = t if isinstance(t, type) else str
+                # use plain type names: tornado>=6.5.3 replaces any reason containing '<' with "Unknown"
+                name = t.__name__ if isinstance(t, type) else ' or '.join(x.__name__ for x in t)
                 raise tornado.web.HTTPError(400, reason=f'{prefix}key {k} should be of type {name}')
 
     def _build_file_data(self, data: dict, dataset_id: str, task_id: str, prefix: str = '') -> dict:
