@@ -338,3 +338,65 @@ async def test_rest_jobs_counts_dataset_status_user_auth(server):
     with pytest.raises(requests.exceptions.HTTPError) as exc_info:
         await client.request('GET', '/job_counts/dataset_status', {'dataset_ids': 'notmine'})
     assert exc_info.value.response.status_code == 403
+
+
+async def _create_filter_jobs(client, dataset_id='foo', num_jobs=5):
+    """Create jobs with job_index 0..num_jobs-1"""
+    jobs = {}
+    for job_index in range(num_jobs):
+        data = {'dataset_id': dataset_id, 'job_index': job_index}
+        ret = await client.request('POST', '/jobs', data)
+        jobs[ret['result']] = data
+    return jobs
+
+
+async def test_rest_jobs_dataset_get_job_index_range(server):
+    client = server(roles=['system'])
+    jobs = await _create_filter_jobs(client)
+
+    def expected(fn):
+        return {j for j, d in jobs.items() if fn(d['job_index'])}
+
+    ret = await client.request('GET', '/datasets/foo/jobs', {'job_index_min': 3})
+    assert set(ret) == expected(lambda i: i >= 3)
+
+    ret = await client.request('GET', '/datasets/foo/jobs', {'job_index_max': 1})
+    assert set(ret) == expected(lambda i: i <= 1)
+
+    ret = await client.request('GET', '/datasets/foo/jobs', {'job_index_min': 1, 'job_index_max': 3, 'keys': 'job_index'})
+    assert set(ret) == expected(lambda i: 1 <= i <= 3)
+
+    ret = await client.request('GET', '/datasets/foo/jobs', {'job_index': 0})
+    assert set(ret) == expected(lambda i: i == 0)
+
+
+async def test_rest_jobs_dataset_get_job_index_range_errors(server):
+    client = server(roles=['system'])
+    await _create_filter_jobs(client, num_jobs=1)
+
+    for args in ({'job_index_min': 'a'}, {'job_index_max': '1.5'},
+                 {'job_index': 0, 'job_index_min': 0}):
+        with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+            await client.request('GET', '/datasets/foo/jobs', args)
+        assert exc_info.value.response.status_code == 400
+
+
+async def test_rest_jobs_dataset_get_job_ids(server):
+    client = server(roles=['system'])
+    jobs = await _create_filter_jobs(client)
+    job_ids = list(jobs)
+
+    ret = await client.request('GET', '/datasets/foo/jobs', {'job_ids': '|'.join(job_ids[:2])})
+    assert set(ret) == set(job_ids[:2])
+
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('GET', '/datasets/foo/jobs', {'job_ids': '|'.join(f'j{i}' for i in range(101))})
+    assert exc_info.value.response.status_code == 400
+
+
+async def test_rest_jobs_dataset_get_filters_user_auth(server):
+    client = server(roles=['user'], groups=['users'])
+
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await client.request('GET', '/datasets/notmine/jobs', {'job_index_min': 0})
+    assert exc_info.value.response.status_code == 403

@@ -96,27 +96,33 @@ class DatasetsBulkTaskStatsHandler(APIBase):
         Params (optional):
             last: bool (True: only last task_stat.  False: all task_stats)
             after: only return stats created more recently than this date
-            keys: | separated list of keys to return for each task_stat
-            buffer_size: number of records to buffer before flushing (default 100)
+            task_ids: | separated list of task_ids to filter by (max 100)
+            keys: | separated list of keys to return for each task_stat (task_stat_id and task_id are always returned)
+            buffer_size: number of records to buffer before flushing (default 1000)
 
         Returns:
-            dict: {<task_stat_id>: stats}
+            newline-delimited JSON task_stat entries, grouped by task_id
+            and sorted by create_date within each task
         """
         last = self.get_argument('last', 'f').lower() in ('true','t','1','yes','y')
 
-        query = {'dataset_id':dataset_id}
+        query: dict = {'dataset_id':dataset_id}
         after = self.get_argument('after', None)
         if after:
             query['create_date'] = {"$gte": after}
+        task_ids = self.get_id_list('task_ids')
+        if task_ids:
+            query['task_id'] = {'$in': task_ids}
 
         projection = {'_id': False}
+        # output keys, always including the ids so streamed rows can be identified
+        out_keys: set[str] = set()
         keys = self.get_argument('keys','')
         if keys:
-            keys = keys.split('|')
-            projection.update({x:True for x in keys if x})
-            projection['task_stat_id'] = True
-            projection['task_id'] = True
-            projection['create_date'] = True
+            out_keys = {x for x in keys.split('|') if x}
+            out_keys.update(('task_stat_id', 'task_id'))
+            projection.update({x:True for x in out_keys})
+            projection['create_date'] = True  # needed for sorting
         buffer_size = int(self.get_argument('buffer_size', '1000'))
 
         task_id = None
@@ -126,13 +132,12 @@ class DatasetsBulkTaskStatsHandler(APIBase):
         async def _write_data():
             nonlocal n
             ret = sorted(data, key=lambda x: x['create_date'])
-            if keys:
-                ret = [{k:d[k] for k in d if k in keys} for d in ret]
+            if out_keys:
+                ret = [{k:d[k] for k in d if k in out_keys} for d in ret]
             if last:
-                self.write(json_encode(ret[-1]) + '\n')
-            else:
-                for ret in data:
-                    self.write(json_encode(ret) + '\n')
+                ret = ret[-1:]
+            for row in ret:
+                self.write(json_encode(row) + '\n')
             n += 1
             if n >= buffer_size:
                 n = 0

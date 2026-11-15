@@ -115,3 +115,64 @@ async def test_rest_task_stats_get_details(server):
     assert task_stat_id == ret['task_stat_id']
     assert task_id == ret['task_id']
     assert data_stat == ret['stats']
+
+
+async def _bulk_task_stats(client, dataset_id, args):
+    """Call the streaming bulk task_stats endpoint and decode each line"""
+    url, kwargs = client._prepare('GET', f'/datasets/{dataset_id}/bulk/task_stats', args)
+    ret = await asyncio.wrap_future(client.session.request('GET', url, **kwargs))
+    ret.raise_for_status()
+    return [json_decode(r) for r in ret.content.split(b'\n') if r.strip()]
+
+
+async def test_rest_task_stats_bulk_task_ids(server):
+    client = server(roles=['system'])
+
+    stat_ids = {}
+    for task_id in ('t1', 't2', 't3'):
+        stat_ids[task_id] = []
+        for _ in range(2):
+            ret = await client.request('POST', f'/tasks/{task_id}/task_stats', {'dataset_id': 'foo', 'bar': 1})
+            stat_ids[task_id].append(ret['result'])
+
+    # all stats for a subset of tasks, sorted by create_date within each task
+    task_stats = await _bulk_task_stats(client, 'foo', {'task_ids': 't1|t3'})
+    assert [t['task_stat_id'] for t in task_stats] == stat_ids['t1'] + stat_ids['t3']
+
+    # last stat only
+    task_stats = await _bulk_task_stats(client, 'foo', {'task_ids': 't2', 'last': 'true'})
+    assert [t['task_stat_id'] for t in task_stats] == stat_ids['t2'][-1:]
+
+    # too many ids
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await _bulk_task_stats(client, 'foo', {'task_ids': '|'.join(f't{i}' for i in range(101))})
+    assert exc_info.value.response.status_code == 400
+
+
+async def test_rest_task_stats_bulk_keys(server):
+    client = server(roles=['system'])
+
+    data = {'dataset_id': 'foo', 'bar': 1, 'baz': 2}
+    ids = []
+    for _ in range(2):
+        ret = await client.request('POST', '/tasks/t1/task_stats', data)
+        ids.append(ret['result'])
+
+    # last=false honors keys and always returns the ids
+    task_stats = await _bulk_task_stats(client, 'foo', {'keys': 'stats'})
+    assert [t['task_stat_id'] for t in task_stats] == ids
+    for t in task_stats:
+        assert set(t) == {'task_stat_id', 'task_id', 'stats'}
+
+    task_stats = await _bulk_task_stats(client, 'foo', {'keys': 'stats', 'last': 'true'})
+    assert len(task_stats) == 1
+    assert set(task_stats[0]) == {'task_stat_id', 'task_id', 'stats'}
+    assert task_stats[0]['task_stat_id'] == ids[-1]
+
+
+async def test_rest_task_stats_bulk_user_auth(server):
+    client = server(roles=['user'], groups=['users'])
+
+    with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+        await _bulk_task_stats(client, 'notmine', {'task_ids': 't1'})
+    assert exc_info.value.response.status_code == 403

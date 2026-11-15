@@ -1,6 +1,7 @@
 """
 Server for queue management
 """
+import asyncio
 import importlib
 import logging
 import pkgutil
@@ -9,6 +10,7 @@ from functools import partial
 from pathlib import Path
 from typing import Any
 
+import pymongo
 from prometheus_client import Info, start_http_server
 from rest_tools.server import RestServer
 from tornado.web import HTTPError, RequestHandler
@@ -83,6 +85,7 @@ class Server:
             write_concern=config.DB_WRITE_CONCERN
         )
         self.indexes = defaultdict(partial(defaultdict, dict))
+        self._index_task: asyncio.Task | None = None
 
         kwargs = IceProdRestConfig(rest_config, database=self.db_client.client, s3conn=s3conn)
 
@@ -108,7 +111,36 @@ class Server:
 
         self.server = server
 
-    async def start(self):
+    async def _create_indexes(self):
+        """
+        Create Mongo indexes.
+
+        Runs without the client-wide DB_TIMEOUT, because index builds on large
+        collections can take much longer. Errors are logged, not raised, so a
+        failed build does not take down the server.
+        """
+        try:
+            # timeout(0) means "no timeout". timeout(None) would NOT work: pymongo
+            # then falls back to the client-wide timeoutMS (DB_TIMEOUT).
+            with pymongo.timeout(0):
+                for database, indexes in self.indexes.items():
+                    await self.db_client.create_indexes(db_name=database, indexes=indexes)
+            logger.info('DB: index creation complete')
+        except asyncio.CancelledError:
+            logger.info('DB: index creation cancelled')
+            raise
+        except Exception:
+            logger.exception('DB: index creation failed')
+
+    async def start(self, wait_for_indexes: bool = False):
+        """
+        Start the server.
+
+        Index creation runs in a background task so startup is not blocked.
+
+        Args:
+            wait_for_indexes: wait for index creation to finish before returning (for tests)
+        """
         if self.prometheus_port:
             logging.info("starting prometheus on %r", self.prometheus_port)
             start_http_server(self.prometheus_port)
@@ -121,10 +153,17 @@ class Server:
             await self.async_monitor.start()
 
         await self.db_client.ping()
-        for database, indexes in self.indexes.items():
-            await self.db_client.create_indexes(db_name=database, indexes=indexes)
+        self._index_task = asyncio.create_task(self._create_indexes())
+        if wait_for_indexes:
+            await self._index_task
 
     async def stop(self):
+        if self._index_task and not self._index_task.done():
+            self._index_task.cancel()
+            try:
+                await self._index_task
+            except asyncio.CancelledError:
+                pass
         await self.server.stop()
         if self.async_monitor:
             await self.async_monitor.stop()

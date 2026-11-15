@@ -21,7 +21,7 @@ async def server(monkeypatch, port, mongo_url, rest_dbs, mongo_clear, s3conn):
     monkeypatch.setenv('S3_SECRET_KEY', 'XXXX')
 
     s = Server(s3_override=s3conn)
-    await s.start()
+    await s.start(wait_for_indexes=True)
 
     auth = Auth('secret')
 
