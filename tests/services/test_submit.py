@@ -1,16 +1,16 @@
-from datetime import datetime
 import logging
 import re
+from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
 import requests
 
+import iceprod.services.actions.submit
 from iceprod.common.mongo_queue import Message
 from iceprod.core.config import Config
 from iceprod.core.jsonUtil import json_encode
-import iceprod.services.actions.submit
 from iceprod.services.actions.submit import Action, get_scope
 
 

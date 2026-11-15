@@ -2,8 +2,8 @@ import shutil
 
 import pytest
 
-from iceprod.core.config import Config
 import iceprod.core.script_check
+from iceprod.core.config import Config
 from iceprod.core.script_check import (
     ScriptProblem,
     check_config_scripts,

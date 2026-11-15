@@ -502,6 +502,63 @@ class CondorSubmit:
 
         return token_transform, block, reqs
 
+    async def generate_script(self, task: Task, submit_dir: Path) -> tuple[WriteToScript, Path] | str:
+        """
+        Generate the task script and check it for shell syntax errors.
+
+        On failure, the submit dir is removed.
+
+        Args:
+            task: IceProd Task
+            submit_dir: the task's submit dir
+
+        Returns:
+            (script, executable path) on success, or the failure reason for the task
+
+        Raises:
+            OSError: infrastructure problems (disk, permissions), so the batch is retried
+        """
+        try:
+            script = WriteToScript(task=task, workdir=submit_dir)
+            executable = await script.convert(transfer=True)
+        except OSError:
+            shutil.rmtree(submit_dir, ignore_errors=True)
+            raise
+        except Exception as e:
+            # a config problem; this will not fix itself on retry
+            logger.warning('failed to generate script for %s.%s', task.dataset.dataset_id, task.task_id, exc_info=True)
+            shutil.rmtree(submit_dir, ignore_errors=True)
+            return f'Failed to generate task script: {e}'
+        if problem := await check_syntax(executable):
+            logger.info('script syntax error for %s.%s: %s', task.dataset.dataset_id, task.task_id, problem)
+            shutil.rmtree(submit_dir, ignore_errors=True)
+            return problem.format(multiline=True)
+        return script, executable
+
+    def task_container(self, task: Task, task_config: dict) -> str:
+        """
+        Get the container for a task, quoted for the submit file.
+
+        Uses the task config's container, then the task's os requirement,
+        then the default container. 'Undefined' is not quoted.
+
+        Args:
+            task: IceProd Task
+            task_config: the task's config
+
+        Returns:
+            str: container value for the submit file
+        """
+        container = task_config.get('container', None)
+        if not container:
+            if os_arch := task.requirements.get('os'):
+                container = self.condor_os_container(os_arch)
+            else:
+                container = self.default_container
+        if container != 'Undefined':
+            container = f'"{container}"'
+        return container
+
     @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_submit', 'IceProd grid condor.submit calls', buckets=HistogramBuckets.MINUTE))
     @AsyncPromWrapper(lambda self: self.prometheus.histogram('iceprod_grid_condor_schedd_submit', 'IceProd grid htcondor.schedd.submit calls', buckets=HistogramBuckets.MINUTE))
     async def submit(self, prom_histogram, tasks: list[Task], jel: Path) -> SubmitResult:
@@ -590,24 +647,11 @@ transfer_output_remaps = $(outremaps)
         failed: list[tuple[Task, str]] = []
         for task in tasks:
             submit_dir = self.create_submit_dir(task, jel_dir)
-            try:
-                script = WriteToScript(task=task, workdir=submit_dir)
-                executable = await script.convert(transfer=True)
-            except OSError:
-                # infrastructure problem (disk, permissions), so retry later
-                shutil.rmtree(submit_dir, ignore_errors=True)
-                raise
-            except Exception as e:
-                # a config problem; this will not fix itself on retry
-                logger.warning('failed to generate script for %s.%s', task.dataset.dataset_id, task.task_id, exc_info=True)
-                shutil.rmtree(submit_dir, ignore_errors=True)
-                failed.append((task, f'Failed to generate task script: {e}'))
+            gen = await self.generate_script(task, submit_dir)
+            if isinstance(gen, str):
+                failed.append((task, gen))
                 continue
-            if problem := await check_syntax(executable):
-                logger.info('script syntax error for %s.%s: %s', task.dataset.dataset_id, task.task_id, problem)
-                shutil.rmtree(submit_dir, ignore_errors=True)
-                failed.append((task, problem.format(multiline=True)))
-                continue
+            script, executable = gen
             logger.debug('running task with exe %r', executable)
 
             ads = self.AD_DEFAULTS.copy()
@@ -618,14 +662,7 @@ transfer_output_remaps = $(outremaps)
             if task.oauth_tokens:
                 self.add_oauth_tokens(oauth_file_transform, task.oauth_tokens)
 
-            container = task_config.get('container', None)
-            if not container:
-                if os_arch := task.requirements.get('os'):
-                    container = self.condor_os_container(os_arch)
-                else:
-                    container = self.default_container
-            if container != 'Undefined':
-                container = f'"{container}"'
+            container = self.task_container(task, task_config)
 
             reqs2 = reqs
             for k,v in task_config['batchsys'].get('condor', {}).items():
