@@ -283,5 +283,7 @@ form
     margin: .5em 0;
     text-align: center;
     line-height: 1.3em;
+    /* show multi-line error messages from the REST API */
+    white-space: pre-wrap;
 }
 

@@ -15,6 +15,7 @@ from iceprod.core.config import Config as DatasetConfig
 from iceprod.core.config import ValidationError
 from iceprod.core.jsonUtil import json_decode, json_encode
 from iceprod.core.parser import ExpParser
+from iceprod.core.script_check import check_config_scripts, format_problems
 from iceprod.services.base import AuthData, BaseAction
 
 logger = logging.getLogger('submit')
@@ -215,6 +216,17 @@ class Action(BaseAction):
             raise HTTPError(400, reason=str(e))
         except Exception:
             raise HTTPError(400, reason='config is not valid')
+
+        # check the generated task scripts for shell syntax errors
+        # and unexpanded IceProd expressions
+        try:
+            problems = await check_config_scripts(dc.config, jobs_submitted=data.jobs_submitted)
+        except Exception:
+            # fail open: a bug in the checker should not block submission
+            self._logger.warning('error checking config scripts', exc_info=True)
+            problems = []
+        if problems:
+            raise HTTPError(400, reason=format_problems(problems))
 
         return await self._push(payload=asdict(data), priority=self.PRIORITY)
 

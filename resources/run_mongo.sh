@@ -4,7 +4,8 @@ podman run --rm -d --name mongo --network=host mongo:8 --replSet rs0 --bind_ip_a
 
 sleep 1
 
-mongosh --eval "rs.initiate().ok"
+# use localhost as the member host, so clients don't switch to the machine hostname
+mongosh --eval "rs.initiate({_id: 'rs0', members: [{_id: 0, host: 'localhost:27017'}]}).ok"
 
 sleep 1
 

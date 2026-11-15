@@ -29,7 +29,8 @@ async def mongo_clear():
     }
     config = from_environment(default_config)
     db_url, db_name = config['DB_URL'].rsplit('/', 1)  # type: ignore
-    client = AsyncMongoClient(db_url, serverSelectionTimeoutMS=25)
+    # allow time for replica set discovery on slow CI runners
+    client = AsyncMongoClient(db_url, serverSelectionTimeoutMS=500)
 
     async def _clean(db_name):
         db = client[db_name]
@@ -41,11 +42,15 @@ async def mongo_clear():
             for c in cols:
                 await db[c].drop()
 
-    if not config['DATABASES']:
-        await _clean(db_name)
-    else:
-        for db_name in config['DATABASES'].split('|'):  # type: ignore
+    try:
+        if not config['DATABASES']:
             await _clean(db_name)
+        else:
+            for db_name in config['DATABASES'].split('|'):  # type: ignore
+                await _clean(db_name)
+    finally:
+        # stop the client's background monitor tasks
+        await client.close()
 
 
 @pytest.fixture(scope='module')

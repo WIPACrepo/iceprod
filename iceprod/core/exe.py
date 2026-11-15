@@ -396,6 +396,8 @@ class WriteToScript:
         # set up script
         self.infiles: set[Data] = set()
         self.outfiles: set[Data] = set()
+        # number of fixed preamble lines in the script, set by convert()
+        self.preamble_lines = 0
 
     def _fill_options(self):
         self.options['dataset_id'] = self.task.dataset.dataset_id
@@ -559,6 +561,9 @@ fi
             print('OS_ARCH=$(/cvmfs/icecube.opensciencegrid.org/py3-v4.3.0/os_arch.sh)', file=f)
             print('HOME=${HOME:-$PWD}', file=f)
             print('', file=f)
+            # record where the config-derived content starts, for script_check
+            f.flush()
+            self.preamble_lines = scriptname.read_text().count('\n')
             with scope_env(self.cfgparser, self.task.dataset.config['steering'], logger=self.logger) as globalenv:
                 task = self.task.get_task_config()
                 if self.task.task_files:
