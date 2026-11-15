@@ -100,7 +100,8 @@ jobs:
             fi
             sleep 1
           done
-          docker exec mongo mongosh --quiet --eval "rs.initiate().ok"
+          # use localhost as the member host, so clients don't switch to the runner hostname
+          docker exec mongo mongosh --quiet --eval "rs.initiate({_id: 'rs0', members: [{_id: 0, host: 'localhost:27017'}]}).ok"
           # Wait for the node to become primary
           sleep 1
           for i in $(seq 1 30); do
