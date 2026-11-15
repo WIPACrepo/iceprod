@@ -35,6 +35,7 @@ from wipac_dev_tools.prometheus_tools import (
 from iceprod.common.prom_utils import HistogramBuckets
 from iceprod.core.config import Task
 from iceprod.core.exe import Data, Transfer, WriteToScript
+from iceprod.core.script_check import check_syntax
 from iceprod.server import grid
 from iceprod.server.config import IceProdConfig
 from iceprod.server.util import str2datetime
@@ -182,6 +183,15 @@ class CondorJobId(NamedTuple):
 
     def __str__(self):
         return f'{self.cluster_id}.{self.proc_id}'
+
+
+@dataclass
+class SubmitResult:
+    """Result of a `CondorSubmit.submit()` batch."""
+    #: new jobs submitted to HTCondor
+    jobs: dict[CondorJobId, CondorJob]
+    #: tasks that were not submitted, with a reason for the failure
+    failed: list[tuple[Task, str]]
 
 
 class CondorSubmit:
@@ -494,18 +504,22 @@ class CondorSubmit:
 
     @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_submit', 'IceProd grid condor.submit calls', buckets=HistogramBuckets.MINUTE))
     @AsyncPromWrapper(lambda self: self.prometheus.histogram('iceprod_grid_condor_schedd_submit', 'IceProd grid htcondor.schedd.submit calls', buckets=HistogramBuckets.MINUTE))
-    async def submit(self, prom_histogram, tasks: list[Task], jel: Path) -> dict[CondorJobId, CondorJob]:
+    async def submit(self, prom_histogram, tasks: list[Task], jel: Path) -> SubmitResult:
         """
         Submit multiple jobs to Condor as a single batch.
 
         Assumes that the resource requirements are identical.
+
+        A task whose script cannot be generated, or whose generated script
+        has a shell syntax error, is not submitted. It is returned in
+        `SubmitResult.failed` instead, so it can be failed with a reason.
 
         Args:
             tasks: IceProd Tasks to submit
             jel: common job event log
 
         Returns:
-            dict of new jobs
+            SubmitResult with the new jobs and the failed tasks
         """
         jel_dir = jel.parent
         transfer_plugin_str = ';'.join(f'{k}={v}' for k,v in self.transfer_plugins.items())
@@ -573,10 +587,27 @@ transfer_output_remaps = $(outremaps)
                 submitfile += f'+{k} = {v}\n'
 
         jobset = []
+        failed: list[tuple[Task, str]] = []
         for task in tasks:
             submit_dir = self.create_submit_dir(task, jel_dir)
-            script = WriteToScript(task=task, workdir=submit_dir)
-            executable = await script.convert(transfer=True)
+            try:
+                script = WriteToScript(task=task, workdir=submit_dir)
+                executable = await script.convert(transfer=True)
+            except OSError:
+                # infrastructure problem (disk, permissions), so retry later
+                shutil.rmtree(submit_dir, ignore_errors=True)
+                raise
+            except Exception as e:
+                # a config problem; this will not fix itself on retry
+                logger.warning('failed to generate script for %s.%s', task.dataset.dataset_id, task.task_id, exc_info=True)
+                shutil.rmtree(submit_dir, ignore_errors=True)
+                failed.append((task, f'Failed to generate task script: {e}'))
+                continue
+            if problem := await check_syntax(executable):
+                logger.info('script syntax error for %s.%s: %s', task.dataset.dataset_id, task.task_id, problem)
+                shutil.rmtree(submit_dir, ignore_errors=True)
+                failed.append((task, problem.format(multiline=True)))
+                continue
             logger.debug('running task with exe %r', executable)
 
             ads = self.AD_DEFAULTS.copy()
@@ -638,6 +669,10 @@ transfer_output_remaps = $(outremaps)
                 'outremaps': f'"{ads["transfer_output_remaps"]}"',
             })
 
+        if not jobset:
+            logger.info('no tasks left to submit after script checks')
+            return SubmitResult(jobs={}, failed=failed)
+
         submitfile += '\n\nqueue '+', '.join(jobset[0].keys())+' from (\n'
         for job in jobset:
             submitfile += '  '+', '.join(job.values())+'\n'
@@ -662,7 +697,7 @@ transfer_output_remaps = $(outremaps)
                 instance_id=job['taskinstance'].strip('"'),
                 submit_dir=Path(job['initialdir']),
             )
-        return ret
+        return SubmitResult(jobs=ret, failed=failed)
 
     @PromTimer(lambda self: self.prometheus.histogram('iceprod_grid_condor_get_jobs', 'IceProd grid condor.get_jobs calls', buckets=HistogramBuckets.MINUTE))
     def get_jobs(self) -> dict[CondorJobId, CondorJob]:
@@ -847,9 +882,10 @@ class Grid(grid.BaseGrid):
             tasks = tasks_by_dataset[key]
             dataset_num, task_name = key.split('-', 1)
             success = 'success'
+            num_ok = len(tasks)
             try:
                 ret = await self.submitter.submit(tasks, cur_jel)
-                self.jobs.update(ret)
+                self.jobs.update(ret.jobs)
             except Exception as e:
                 logger.warning('submit failed for dataset %s task %s', dataset_num, task_name, exc_info=True)
                 async with asyncio.TaskGroup() as tg:
@@ -859,7 +895,21 @@ class Grid(grid.BaseGrid):
                 success = 'fail'
             else:
                 logger.info('submit succeeded for dataset %s task %s', dataset_num, task_name)
-            prom_counter.labels({'dataset': dataset_num, 'task': task_name, 'success': success}).inc(len(tasks))
+                if ret.failed:
+                    # config errors will not fix themselves, so fail instead of reset
+                    logger.warning('%d tasks failed script checks for dataset %s task %s', len(ret.failed), dataset_num, task_name)
+                    try:
+                        async with asyncio.TaskGroup() as tg:
+                            for task, reason in ret.failed:
+                                j = CondorJob(dataset_id=task.dataset.dataset_id, task_id=task.task_id, instance_id=task.instance_id)
+                                tg.create_task(self.task_failure(j, reason=reason))
+                    except Exception:
+                        # don't block submitting the other datasets
+                        logger.warning('error failing tasks for dataset %s task %s', dataset_num, task_name, exc_info=True)
+                    prom_counter.labels({'dataset': dataset_num, 'task': task_name, 'success': 'fail'}).inc(len(ret.failed))
+                    num_ok -= len(ret.failed)
+            if num_ok:
+                prom_counter.labels({'dataset': dataset_num, 'task': task_name, 'success': success}).inc(num_ok)
 
     @PromWrapper(lambda self: self.prometheus.gauge('iceprod_grid_queue_num', 'IceProd grid queue status gauges', labels=['status'], finalize=False))
     def get_queue_num(self, prom_counter) -> int:

@@ -12,12 +12,13 @@ import htcondor2 as htcondor
 import pytest
 
 from iceprod.core.config import Job, Task
+import iceprod.core.exe
 from iceprod.core.exe import Data, Transfer
 import iceprod.server.config
 import iceprod.server.grid
 from iceprod.server.util import datetime2str
 import iceprod.server.plugins.condor
-from iceprod.server.plugins.condor import CondorJob, CondorJobId, JobStatus
+from iceprod.server.plugins.condor import CondorJob, CondorJobId, JobStatus, SubmitResult
 
 htcondor.enable_debug()
 
@@ -514,6 +515,148 @@ async def test_CondorSubmit_submit(schedd):
     assert 'if [ -f baz ]' in exe
     assert 'object put baz osdf:///baz' in exe
 
+
+def _script_check_tasks(job_indexes, args='--gcd=$steering(p$(job))'):
+    """
+    Make tasks for script check tests.
+
+    Steering has `p1` but not `p2`, so with the default args,
+    job 1 is ok and job 2 has an unexpanded expression.
+    """
+    dataset = MagicMock()
+    dataset.dataset_id = 'dataset'
+    dataset.dataset_num = 0
+    dataset.config = {
+        'options': {},
+        'steering': {
+            'parameters': {'p1': 'gcd.i3'},
+        },
+        'tasks': [{
+            'name': 'generate',
+            'batchsys': {},
+            'requirements': {},
+            'token_scopes': {},
+            'trays': [{
+                'name': 'main',
+                'iterations': 1,
+                'modules': [{
+                    'name': 'foo',
+                    'src': 'foo.py',
+                    'args': args,
+                    'env_shell': None,
+                    'env_clear': False,
+                    'configs': None,
+                }]
+            }],
+            'data': [],
+        }]
+    }
+    tasks = []
+    for index in job_indexes:
+        job = Job(dataset=dataset, job_id=f'job{index}', job_index=index, status='processing')
+        tasks.append(Task(
+            dataset=dataset,
+            job=job,
+            task_id=f'task{index}',
+            task_index=0,
+            name='generate',
+            depends=[],
+            requirements={'cpu': 1},
+            status='queued',
+            site='site',
+            stats={},
+            instance_id=f'instance{index}',
+        ))
+    return tasks
+
+
+def _script_check_submitter():
+    override = ['queue.type=condor']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+    submit_dir = Path(os.path.expanduser(os.path.expandvars(cfg['queue']['submit_dir'])))
+    cred_dir = Path(os.path.expanduser(os.path.expandvars(cfg['queue']['credentials_dir'])))
+    sub = iceprod.server.plugins.condor.CondorSubmit(cfg=cfg, submit_dir=submit_dir, credentials_dir=cred_dir)
+    sub.condor_schedd.submit = MagicMock()
+    sub._restart_schedd = MagicMock()
+    sub.add_oauth_tokens = MagicMock()
+    return sub, submit_dir
+
+
+async def test_CondorSubmit_submit_syntax_error(schedd, i3prod_path):
+    sub, submit_dir = _script_check_submitter()
+    tasks = _script_check_tasks([1, 2])
+
+    jel = submit_dir / 'today' / 'condor.log'
+    ret = await sub.submit(tasks, jel=jel)
+
+    # good task is submitted
+    assert sub.condor_schedd.submit.call_count == 1
+    itemdata = list(sub.condor_schedd.submit.call_args.kwargs['itemdata'])
+    assert [i['taskid'] for i in itemdata] == ['"task1"']
+    assert len(ret.jobs) == 1
+    assert (submit_dir / 'today' / 'task1').is_dir()
+
+    # bad task is failed, with a useful reason
+    assert len(ret.failed) == 1
+    task, reason = ret.failed[0]
+    assert task.task_id == 'task2'
+    assert 'syntax error' in reason
+    assert '$steering(p2)' in reason
+    assert 'module "foo"' in reason
+    assert not (submit_dir / 'today' / 'task2').exists()
+
+
+async def test_CondorSubmit_submit_all_failed(schedd, i3prod_path):
+    sub, submit_dir = _script_check_submitter()
+    tasks = _script_check_tasks([2, 3])
+
+    jel = submit_dir / 'today' / 'condor.log'
+    ret = await sub.submit(tasks, jel=jel)
+
+    assert sub.condor_schedd.submit.call_count == 0
+    assert ret.jobs == {}
+    assert [t.task_id for t, _ in ret.failed] == ['task2', 'task3']
+
+
+async def test_CondorSubmit_submit_convert_error(schedd, i3prod_path, monkeypatch):
+    sub, submit_dir = _script_check_submitter()
+    tasks = _script_check_tasks([1, 2])
+
+    orig_convert = iceprod.server.plugins.condor.WriteToScript.convert
+
+    async def convert(self, *args, **kwargs):
+        if self.task.task_id == 'task2':
+            raise iceprod.core.exe.ConfigError('bad module')
+        return await orig_convert(self, *args, **kwargs)
+    monkeypatch.setattr(iceprod.server.plugins.condor.WriteToScript, 'convert', convert)
+
+    jel = submit_dir / 'today' / 'condor.log'
+    ret = await sub.submit(tasks, jel=jel)
+
+    assert sub.condor_schedd.submit.call_count == 1
+    assert len(ret.jobs) == 1
+    assert len(ret.failed) == 1
+    task, reason = ret.failed[0]
+    assert task.task_id == 'task2'
+    assert reason == 'Failed to generate task script: bad module'
+    assert not (submit_dir / 'today' / 'task2').exists()
+
+
+async def test_CondorSubmit_submit_convert_oserror(schedd, i3prod_path, monkeypatch):
+    """OSError is an infrastructure problem, so the whole batch errors and is reset"""
+    sub, submit_dir = _script_check_submitter()
+    tasks = _script_check_tasks([1])
+
+    async def convert(self, *args, **kwargs):
+        raise OSError('disk full')
+    monkeypatch.setattr(iceprod.server.plugins.condor.WriteToScript, 'convert', convert)
+
+    jel = submit_dir / 'today' / 'condor.log'
+    with pytest.raises(OSError):
+        await sub.submit(tasks, jel=jel)
+    assert sub.condor_schedd.submit.call_count == 0
+    assert not (submit_dir / 'today' / 'task1').exists()
+
 async def test_Grid_save_load_timestamp(schedd, i3prod_path):
     override = ['queue.type=htcondor']
     cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
@@ -612,8 +755,9 @@ async def test_Grid_submit(schedd, i3prod_path):
     jel_path = i3prod_path/'today'/'jel.log'
     jel_path.parent.mkdir()
     g.get_current_JEL = MagicMock(return_value=jel_path)
-    g.submitter.submit = AsyncMock(return_value={})
+    g.submitter.submit = AsyncMock(return_value=SubmitResult(jobs={}, failed=[]))
     g.task_reset = AsyncMock()
+    g.task_failure = AsyncMock()
 
     await g.submit()
     assert g.get_queue_num.call_count == 1
@@ -621,6 +765,69 @@ async def test_Grid_submit(schedd, i3prod_path):
     assert g.get_current_JEL.call_count == 1
     assert g.submitter.submit.call_count == 2
     assert g.task_reset.call_count == 0
+    assert g.task_failure.call_count == 0
+
+
+async def test_Grid_submit_script_failed(schedd, i3prod_path):
+    override = ['queue.type=htcondor']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+
+    rc = MagicMock()
+    g = iceprod.server.plugins.condor.Grid(cfg=cfg, rest_client=rc, cred_client=None)
+    g.get_scratch_credentials = AsyncMock()
+
+    g.get_queue_num = MagicMock(return_value=5)
+    tasks = [MagicMock(), MagicMock()]
+    tasks[0].task_id = 't0'
+    tasks[0].instance_id = 'i0'
+    tasks[0].dataset.dataset_id = 'd0'
+    g.get_tasks_to_queue = AsyncMock(return_value=tasks)
+    jel_path = i3prod_path/'today'/'jel.log'
+    jel_path.parent.mkdir()
+    g.get_current_JEL = MagicMock(return_value=jel_path)
+    g.submitter.submit = AsyncMock(side_effect=[
+        SubmitResult(jobs={}, failed=[(tasks[0], 'syntax error')]),
+        SubmitResult(jobs={}, failed=[]),
+    ])
+    g.task_reset = AsyncMock()
+    g.task_failure = AsyncMock()
+
+    await g.submit()
+    assert g.submitter.submit.call_count == 2
+    assert g.task_reset.call_count == 0
+    assert g.task_failure.call_count == 1
+    job = g.task_failure.call_args.args[0]
+    assert job.task_id == 't0'
+    assert job.instance_id == 'i0'
+    assert job.dataset_id == 'd0'
+    assert g.task_failure.call_args.kwargs['reason'] == 'syntax error'
+
+
+async def test_Grid_submit_script_failed_error(schedd, i3prod_path):
+    """An error failing tasks should not stop other datasets from submitting"""
+    override = ['queue.type=htcondor']
+    cfg = iceprod.server.config.IceProdConfig(save=False, override=override)
+
+    rc = MagicMock()
+    g = iceprod.server.plugins.condor.Grid(cfg=cfg, rest_client=rc, cred_client=None)
+    g.get_scratch_credentials = AsyncMock()
+
+    g.get_queue_num = MagicMock(return_value=5)
+    tasks = [MagicMock(), MagicMock()]
+    g.get_tasks_to_queue = AsyncMock(return_value=tasks)
+    jel_path = i3prod_path/'today'/'jel.log'
+    jel_path.parent.mkdir()
+    g.get_current_JEL = MagicMock(return_value=jel_path)
+    g.submitter.submit = AsyncMock(side_effect=[
+        SubmitResult(jobs={}, failed=[(tasks[0], 'syntax error')]),
+        SubmitResult(jobs={}, failed=[]),
+    ])
+    g.task_reset = AsyncMock()
+    g.task_failure = AsyncMock(side_effect=RuntimeError())
+
+    await g.submit()
+    assert g.submitter.submit.call_count == 2
+    assert g.task_failure.call_count == 1
 
 
 async def test_Grid_submit_error(schedd, i3prod_path):

@@ -8,6 +8,7 @@ IceProd Core
    defaults
    i3exec
    exe
+   script_check
    exe_json
    jsonUtil
    init

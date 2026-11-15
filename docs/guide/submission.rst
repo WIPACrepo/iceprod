@@ -70,3 +70,25 @@ IceProd can expand the following env vars when using an `env_shell` in the modul
 
 Use `$environ(XXXX)` in the json config to insert the env variable in the module
 src or arguments.
+
+Script Checks
+-------------
+
+IceProd converts each task into a shell script, ``task_runner.sh``.
+
+When a dataset is submitted or its config is edited, IceProd generates the
+script for each task (with dummy values for job index and ids) and rejects
+the config if:
+
+* the script has a shell syntax error, or
+* the script contains an IceProd expression that was not expanded.
+
+The most common cause is a typo or a missing parameter, such as
+``$steering(gcdfile)`` when the steering parameter is named ``gcd``.
+IceProd leaves an expression it cannot expand as-is, and the shell then
+fails with ``syntax error near unexpected token `('``. The error message
+includes the task, tray, and module, along with the offending line.
+
+Tasks of datasets that already exist are also checked for syntax errors
+before being submitted to HTCondor. A task that fails this check is
+marked ``failed`` instead of running, and the error is in its log.

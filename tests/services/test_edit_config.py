@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
+import requests
 
 from iceprod.common.mongo_queue import Message
 from iceprod.core.config import Config
@@ -60,6 +61,43 @@ from iceprod.services.actions.edit_config import Action
         }],
         'version': 3.1,
     }, None),
+    # task script checks
+    ({
+        'tasks':[{
+            'name': 'testing',
+            'trays': [{
+                'modules': [{
+                    'src': '/usr/bin/python3',
+                    'args': '--gcd=$steering(missing)'
+                }]
+            }]
+        }],
+        'version': 3.2,
+    }, 'has a syntax error'),
+    ({
+        'tasks':[{
+            'name': 'testing',
+            'trays': [{
+                'modules': [{
+                    'src': '/usr/bin/python3',
+                    'args': '--gcd=$(missing)'
+                }]
+            }]
+        }],
+        'version': 3.2,
+    }, 'unexpanded IceProd expression'),
+    ({
+        'tasks':[{
+            'name': 'testing',
+            'trays': [{
+                'modules': [{
+                    'src': '/usr/bin/python3',
+                    'args': '--x=$( pwd ) `hostname` $HOME'
+                }]
+            }]
+        }],
+        'version': 3.2,
+    }, None),
 ])
 async def test_edit_config_server_request(config, error, server, requests_mock):
     requests_mock.register_uri('GET', re.compile('localhost'), real_http=True)
@@ -73,8 +111,11 @@ async def test_edit_config_server_request(config, error, server, requests_mock):
         'description': 'description',
     }
     if error:
-        with pytest.raises(Exception, match=error):
+        with pytest.raises(requests.exceptions.HTTPError) as exc_info:
             await client.request('POST', '/actions/edit_config', args)
+        # the full (possibly multi-line) message is in the JSON body
+        assert exc_info.value.response.status_code == 400
+        assert re.search(error, exc_info.value.response.json()['error'])
     else:
         ret = await client.request('POST', '/actions/edit_config', args)
         assert 'result' in ret
