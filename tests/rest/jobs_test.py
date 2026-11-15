@@ -378,7 +378,7 @@ async def test_rest_jobs_dataset_get_job_index_range_errors(server):
                  {'job_index': 0, 'job_index_min': 0}):
         with pytest.raises(requests.exceptions.HTTPError) as exc_info:
             await client.request('GET', '/datasets/foo/jobs', args)
-        assert exc_info.value.response.status_code == 400, args
+        assert exc_info.value.response.status_code == 400
 
 
 async def test_rest_jobs_dataset_get_job_ids(server):
