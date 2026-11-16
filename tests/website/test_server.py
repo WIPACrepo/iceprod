@@ -427,11 +427,15 @@ async def test_website_config_edit_invalid_json(server):
 
     doc = BeautifulSoup(ret.text, 'html.parser')
     error = doc.find('div', {'id': 'error'}).text  # type: ignore[union-attr]
-    # Python points at the trailing comma itself
-    assert error.startswith('Invalid JSON at line 2, column 14:')
+    # the position comes from Python's json module, which reports a trailing
+    # comma differently by version (3.12: next token; 3.13+: the comma itself)
+    with pytest.raises(json.JSONDecodeError) as exc_info:
+        json.loads(config_str)
+    line, col = exc_info.value.lineno, exc_info.value.colno
+    assert error.startswith(f'Invalid JSON at line {line}, column {col}:')
     editor = doc.find('div', {'id': 'config_editor'})
-    assert editor.get('data-error-line') == '2'  # type: ignore[union-attr]
-    assert editor.get('data-error-col') == '14'  # type: ignore[union-attr]
+    assert editor.get('data-error-line') == str(line)  # type: ignore[union-attr]
+    assert editor.get('data-error-col') == str(col)  # type: ignore[union-attr]
 
 
 async def test_website_schema_unknown_version(server):
