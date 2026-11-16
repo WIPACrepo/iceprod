@@ -2,13 +2,13 @@ import json
 import logging
 import re
 from unittest.mock import AsyncMock, MagicMock, PropertyMock
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import parse_qs, urlparse
 
-from bs4 import BeautifulSoup
 import httpx
 import pytest
 import requests
 import requests_mock
+from bs4 import BeautifulSoup
 
 from iceprod.core.config import Config, ConfigSchema
 
