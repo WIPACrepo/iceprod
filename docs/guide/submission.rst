@@ -30,7 +30,48 @@ Submission Types
 The only submission type right now is the raw json configuration. Copying/pasting
 the configuration is very easy here.
 
-.. warning:: Be careful of json syntax errors!
+Config Editor
+^^^^^^^^^^^^^
+
+The submit and config pages use a code editor (Monaco, the editor from VS Code) with:
+
+* line numbers, bracket matching, and folding
+* search (`Ctrl+F`) and go to line (`Ctrl+G`)
+* live checks while typing:
+
+  * json syntax errors are underlined in red
+  * problems found by the dataset config schema (unknown keys, wrong types,
+    missing required fields) are underlined in yellow
+  * hover over an underline to see the message
+
+The in-editor checks are advisory: they never block a submission, and the
+server's validation is the final check. If the server rejects a config because
+of a json syntax error, the error names the line and column, and the editor
+jumps to it.
+
+If the editor can't load (for example, JavaScript is disabled), the page falls
+back to a plain text box.
+
+.. note:: In Firefox, the browser console may show "Content-Security-Policy"
+   errors from `NetUtil.sys.mjs` for Monaco's `*.worker-*.js` files while the
+   developer tools are open. These come from the developer tools, not the page,
+   and can be ignored.
+
+Config Versions
+^^^^^^^^^^^^^^^
+
+Each config has a `version` field that selects the schema it is validated against.
+
+* New submissions are always validated and stored as the latest version,
+  whatever `version` says. The editor on the submit page checks against the
+  latest schema and warns if `version` is different.
+* A config without a `version` is treated as an old config from before
+  versioning, and uses version 3.1. This fallback is only for old configs.
+  When editing an existing dataset, the editor checks against the config's own
+  `version`.
+
+The schemas are available at `/schemas/v3/dataset_vX.Y.schema.json` on the website.
+The unversioned `/schemas/v3/dataset.schema.json` is the 3.1 fallback for old configs.
 
 Macros
 ------

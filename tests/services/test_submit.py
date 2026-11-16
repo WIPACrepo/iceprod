@@ -1,3 +1,4 @@
+import json
 import logging
 import re
 from datetime import datetime
@@ -9,7 +10,7 @@ import requests
 
 import iceprod.services.actions.submit
 from iceprod.common.mongo_queue import Message
-from iceprod.core.config import Config
+from iceprod.core.config import Config, ConfigSchema
 from iceprod.core.jsonUtil import json_encode
 from iceprod.services.actions.submit import Action, get_scope
 
@@ -103,6 +104,36 @@ async def test_submit_server_request(config, error, server):
 
         ret = await client.request('GET', f'/actions/submit/{ret["result"]}')
         assert ret['status'] == 'queued'
+
+
+@pytest.mark.parametrize('version', [None, 3.1, 3.2])
+async def test_submit_server_request_latest_version(server, version):
+    """New submissions are always stored as the latest schema version"""
+    client = server(roles=['user'], groups=['users'])
+
+    config = {
+        'tasks':[{
+            'name': 'testing',
+            'trays': [{
+                'modules': [{
+                    'src': '/usr/bin/python3',
+                    'args': ''
+                }]
+            }]
+        }],
+    }
+    if version is not None:
+        config['version'] = version
+    args = {
+        'config': json_encode(config),
+        'description': 'desc',
+        'jobs_submitted': 1,
+        'group': 'users',
+    }
+    ret = await client.request('POST', '/actions/submit', args)
+    ret = await client.request('GET', f'/actions/submit/{ret["result"]}')
+    stored = json.loads(ret['payload']['config'])
+    assert stored['version'] == ConfigSchema.latest_version()
 
 
 async def test_submit_server_request_bad_args(server):
