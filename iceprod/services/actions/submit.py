@@ -12,7 +12,7 @@ from tornado.web import HTTPError
 
 from iceprod.common.mongo_queue import Message
 from iceprod.core.config import Config as DatasetConfig
-from iceprod.core.config import ValidationError
+from iceprod.core.config import ConfigSchema, ValidationError
 from iceprod.core.jsonUtil import json_decode, json_encode
 from iceprod.core.parser import ExpParser
 from iceprod.core.script_check import check_config_scripts, format_problems
@@ -208,7 +208,9 @@ class Action(BaseAction):
         # validate config
         try:
             dc = DatasetConfig(json_decode(data.config))
-            dc.config['version'] = 3.2  # force 3.2 config validation
+            # new submissions always use the latest schema version, whatever the
+            # config says (the 3.1 no-version fallback is only for old configs)
+            dc.config['version'] = ConfigSchema.latest_version()
             dc.fill_defaults()
             dc.validate()
             data.config = json_encode(dc.config)

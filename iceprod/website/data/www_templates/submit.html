@@ -5,7 +5,7 @@
 {% block title %}IceProd Config{% if dataset %} Dataset {{ dataset }}{% end %}{% end %}
 
 {% block head_scripts %}
-<link rel="stylesheet" href="/static/submit.css" media="all" type="text/css" />
+<link rel="stylesheet" href="{{ static_url('submit.css') }}" media="all" type="text/css" />
 <link rel="stylesheet" href="/static/documentation.css" media="all" type="text/css" />
 {% end %}
 
@@ -51,6 +51,22 @@
         {% module xsrf_form_html() %}
     {% end %}
         <textarea name="submit_box" id="submit_box" style="min-height: 500px" autofocus{% if view_only %} readonly{% end %}>{{ config }}</textarea>
+        {# Monaco editor; replaces the textarea above when it loads (see /static/config_editor.js) #}
+        <div id="config_editor" hidden
+             data-monaco-base="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.57.0/min/vs"
+             data-read-only="{{ '1' if view_only else '0' }}"
+             data-schema-versions="{{ xhtml_escape(json_encode(config_schema_versions)) }}"
+             {% if dataset_id %}
+             {# existing dataset: follow its "version"; old configs without one are legacy (3.1) #}
+             data-schema-default-version="{{ config_schema_legacy }}"
+             {% else %}
+             {# new submissions are always validated as the latest version #}
+             data-schema-default-version="{{ config_schema_latest }}"
+             data-schema-force-version="{{ config_schema_latest }}"
+             {% end %}
+             {% if error_line %}
+             data-error-line="{{ error_line }}" data-error-col="{{ error_col }}" data-error-message="{{ xhtml_escape(error) }}"
+             {% end %}></div>
         <textarea name="description" id="description" placeholder="Description"{% if view_only %} readonly{% end %}>{{ description }}</textarea>
         <div class="submit_contents">
             {% if dataset_id %}
@@ -76,4 +92,10 @@
     {% end %}
 </div>
 <div id="error">{{ error }}</div>
+{% end %}
+
+{% block body_scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.57.0/min/vs/loader.min.js" integrity="sha512-2DJ/UX0VmkE/Cq9bjrRet/01ETdenJ5zu2QVeI9PDN/n5s7kTSh9c1Rhr3E7ZQJOnm4N4ONBTXamiX7Ec9FQlA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+{# static_url adds a content hash (?v=...) so browsers don't keep a stale copy #}
+<script src="{{ static_url('config_editor.js') }}" nonce="{{ handler.csp_nonce }}"></script>
 {% end %}

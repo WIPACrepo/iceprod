@@ -24,6 +24,21 @@ class ValidationError(Exception):
 
 
 class ConfigSchema:
+    """
+    Dataset config JSON schemas, one per config version.
+
+    Version policy:
+
+    * New submissions are always validated and stored as :meth:`latest_version`,
+      whatever their `version` field says (see `iceprod.services.actions.submit`).
+    * :attr:`LEGACY_VERSION` is a fallback **only for old configs** that were
+      stored before configs had a `version` field. It is the default for the
+      methods below and for configs without a `version`.
+    """
+    #: Version assumed for old configs without a `version` field.
+    #: Do not use it as a default for new configs; use `latest_version()`.
+    LEGACY_VERSION = 3.1
+
     @ttl_cache
     @staticmethod
     def list_versions() -> list[float]:
@@ -34,16 +49,21 @@ class ConfigSchema:
                 ret.append(float(ver.group(1)))
         return sorted(ret)
 
+    @staticmethod
+    def latest_version() -> float:
+        """The newest schema version; used for all new submissions."""
+        return max(ConfigSchema.list_versions())
+
     @ttl_cache
     @staticmethod
-    def schema(version: float = 3.1) -> dict[str, Any]:
+    def schema(version: float = LEGACY_VERSION) -> dict[str, Any]:
         rounded_ver = round(version, 1)
         path = importlib.resources.files('iceprod.core') / 'data' / f'dataset_v{rounded_ver}.schema.json'
         return json.loads(path.read_text())
 
     @ttl_cache
     @staticmethod
-    def data_defaults(version: float = 3.1) -> dict[str, Any]:
+    def data_defaults(version: float = LEGACY_VERSION) -> dict[str, Any]:
         schema = ConfigSchema.schema(version)
         return {key: value.get('default', None) for key,value in schema['$defs']['data']['items']['properties'].items()}
 
@@ -52,7 +72,13 @@ class _ConfigMixin:
     config: dict
 
     def fill_defaults(self):
-        """Fill in config defaults"""
+        """
+        Fill in config defaults.
+
+        A config without a `version` is treated as an old config and gets
+        `ConfigSchema.LEGACY_VERSION`. New submissions set the latest version
+        before calling this.
+        """
         ver = self.config.get('version', None)
         if isinstance(ver, str):
             ver = float(ver)

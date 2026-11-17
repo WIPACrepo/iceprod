@@ -14,6 +14,13 @@ def test_config_schema():
 
     assert ConfigSchema.data_defaults(3.2)['remote'] == ''
 
+
+def test_config_schema_versions():
+    # new submissions use the latest; the legacy fallback is only for old configs
+    assert ConfigSchema.latest_version() == max(ConfigSchema.list_versions())
+    assert ConfigSchema.LEGACY_VERSION == 3.1
+    assert ConfigSchema.schema() == ConfigSchema.schema(ConfigSchema.LEGACY_VERSION)
+
 def test_config():
     config = {'tasks':[
         {

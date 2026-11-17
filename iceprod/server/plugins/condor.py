@@ -782,10 +782,14 @@ transfer_output_remaps = $(outremaps)
             submit_dir = None
             if s := ad.get('Iwd'):
                 submit_dir = Path(s)
+            else:
+                logger.info('missing Iwd classad for job %s', job_id)
 
             status = JobStatus.IDLE
             if s := ad.get('JobStatus'):
                 status = JobStatus.from_condor_status(s)
+            else:
+                logger.info('missing JobStatus classad for job %s', job_id)
 
             job = CondorJob(
                 dataset_id=ad.get('IceProdDatasetId'),
@@ -1182,14 +1186,14 @@ class Grid(grid.BaseGrid):
                     # check condor error for reset reason
                     for text in RESET_CONDOR_REASONS:
                         if text.lower() in reason.lower():
-                            future = self.task_reset(job, stats=stats, reason=reason)
+                            future = self.task_reset(job, stats=stats, reason=reason, stdout=stdout, stderr=stderr)
                             break
                 if future is None and stderr and stderr.is_file():
                     # check stderr for reset reason
                     data = stderr.open().read()
                     for text in RESET_STDERR_REASONS:
                         if text.lower() in data.lower():
-                            future = self.task_reset(job, stats=stats, reason=reason)
+                            future = self.task_reset(job, stats=stats, reason=f'Job reset due to error matching "{text}"', stdout=stdout, stderr=stderr)
                             break
                 if future is None:
                     future = self.task_failure(job, stats=stats, reason=reason, stdout=stdout, stderr=stderr)

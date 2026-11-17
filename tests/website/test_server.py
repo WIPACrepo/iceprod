@@ -1,15 +1,16 @@
 import json
 import logging
+import re
 from unittest.mock import AsyncMock, MagicMock, PropertyMock
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import parse_qs, urlparse
 
-from bs4 import BeautifulSoup
 import httpx
 import pytest
 import requests
 import requests_mock
+from bs4 import BeautifulSoup
 
-from iceprod.core.config import Config
+from iceprod.core.config import Config, ConfigSchema
 
 
 async def test_website_root(server):
@@ -268,6 +269,180 @@ async def test_website_config(server):
     client.req_mock.add_mock('/config/123', {})
 
     ret = await client.request('GET', '/config', {'dataset_id': '123'})
+
+
+def _csp(ret) -> dict[str, list[str]]:
+    """Parse a Content-Security-Policy header into {directive: [sources]}"""
+    ret_csp = {}
+    for part in ret.headers['Content-Security-Policy'].split(';'):
+        if part.strip():
+            name, *sources = part.split()
+            ret_csp[name] = sources
+    return ret_csp
+
+
+async def test_website_config_editor_submit(server):
+    client = server(username='username', roles=['user'], groups=['users', 'simprod'])
+
+    async with client.get_http_client() as http_client:
+        ret = await client.request_raw(http_client, 'GET', '/submit')
+        ret.raise_for_status()
+
+    csp = _csp(ret)
+    assert 'blob:' in csp['worker-src']
+    assert 'data:' in csp['font-src']
+    assert 'data:' in csp['img-src']
+    # style-src stays nonce-based (no 'unsafe-inline')
+    assert "'unsafe-inline'" not in csp['style-src']
+
+    doc = BeautifulSoup(ret.text, 'html.parser')
+    textarea = doc.find('textarea', {'id': 'submit_box'})
+    assert textarea is not None and textarea.get('name') == 'submit_box'  # no-JS fallback
+    editor = doc.find('div', {'id': 'config_editor'})
+    assert editor is not None
+    assert editor.get('data-read-only') == '0'
+    versions = json.loads(editor.get('data-schema-versions'))  # type: ignore[arg-type]
+    assert versions == sorted(versions) and 3.1 in versions
+    # new submissions default to the latest schema version
+    assert float(editor.get('data-schema-default-version')) == max(versions)  # type: ignore[arg-type]
+
+    nonce = csp['script-src'][1].removeprefix("'nonce-").removesuffix("'")
+    script = doc.find('script', {'src': re.compile(r'^/static/config_editor\.js\?v=')})  # cache-busting hash
+    assert script is not None and script.get('nonce') == nonce
+
+
+async def test_website_config_editor_view(server):
+    client = server(username='username', roles=['user'], groups=['users', 'simprod'])
+
+    client.req_mock.add_mock('/datasets/123', {'dataset': 123})
+    client.req_mock.add_mock('/config/123', {'tasks': []})
+
+    async with client.get_http_client() as http_client:
+        ret = await client.request_raw(http_client, 'GET', '/config', args={'dataset_id': '123'})
+        ret.raise_for_status()
+
+    assert 'blob:' in _csp(ret)['worker-src']
+    doc = BeautifulSoup(ret.text, 'html.parser')
+    editor = doc.find('div', {'id': 'config_editor'})
+    assert editor is not None
+    assert editor.get('data-read-only') == '1'
+    # existing configs without a version fall back to 3.1
+    assert float(editor.get('data-schema-default-version')) == 3.1  # type: ignore[arg-type]
+
+
+async def test_website_csp_default(server):
+    """Pages without the config editor keep the default policy"""
+    client = server(username='username', roles=['user'], groups=['users', 'simprod'])
+
+    async with client.get_http_client() as http_client:
+        ret = await client.request_raw(http_client, 'GET', '/')
+        ret.raise_for_status()
+
+    csp = _csp(ret)
+    assert 'worker-src' not in csp
+    assert 'font-src' not in csp
+    assert csp['img-src'] == ["'self'"]
+    assert csp['default-src'] == ["'none'"]
+
+
+async def test_website_submit_default_version(server):
+    """New submissions start from, and are validated as, the latest schema version"""
+    client = server(username='username', roles=['user'], groups=['users', 'simprod'])
+
+    async with client.get_http_client() as http_client:
+        ret = await client.request_raw(http_client, 'GET', '/submit')
+        ret.raise_for_status()
+
+    latest = ConfigSchema.latest_version()
+    doc = BeautifulSoup(ret.text, 'html.parser')
+    config = json.loads(doc.find('textarea', {'id': 'submit_box'}).text)  # type: ignore[union-attr]
+    assert config['version'] == latest
+    editor = doc.find('div', {'id': 'config_editor'})
+    assert float(editor.get('data-schema-force-version')) == latest  # type: ignore[union-attr,arg-type]
+
+
+async def test_website_submit_invalid_json(server):
+    client = server(username='username', roles=['user'], groups=['users', 'simprod'])
+
+    # missing comma after "a": 1 -> error at line 3, column 3
+    config_str = '{\n  "a": 1\n  "b": 2\n}'
+
+    async with client.get_http_client() as http_client:
+        ret = await client.request_raw(http_client, 'GET', '/submit')
+        ret.raise_for_status()
+        doc = BeautifulSoup(ret.text, 'html.parser')
+        xsrf = doc.find('input', {'name': '_xsrf'}).get('value')  # type: ignore
+
+        submit_mock = client.req_mock.add_mock('/actions/submit', {'result': '123'})
+
+        ret = await client.request_raw(http_client, 'POST', '/submit', form_data={
+            '_xsrf': xsrf,
+            'submit_box': config_str,
+            'description': 'desc',
+            'number_jobs': 10,
+            'group': 'users',
+        })
+        assert ret.status_code == 400
+        assert not submit_mock.called
+
+    doc = BeautifulSoup(ret.text, 'html.parser')
+    error = doc.find('div', {'id': 'error'}).text  # type: ignore[union-attr]
+    assert error.startswith('Invalid JSON at line 3, column 3:')
+    editor = doc.find('div', {'id': 'config_editor'})
+    assert editor.get('data-error-line') == '3'  # type: ignore[union-attr]
+    assert editor.get('data-error-col') == '3'  # type: ignore[union-attr]
+    assert editor.get('data-error-message') == error  # type: ignore[union-attr]
+    # the config is shown exactly as submitted, so the position matches
+    assert doc.find('textarea', {'id': 'submit_box'}).text == config_str  # type: ignore[union-attr]
+
+
+async def test_website_config_edit_invalid_json(server):
+    client = server(username='username', roles=['user'], groups=['users', 'simprod'])
+
+    client.req_mock.add_mock('/datasets/123', {'dataset': 123, 'description': 'desc'})
+    client.req_mock.add_mock('/config/123', {'tasks': []})
+    edit_mock = client.req_mock.add_mock('/actions/edit_config', {'result': '456'})
+
+    config_str = '{\n  "tasks": [],\n}'  # trailing comma
+
+    async with client.get_http_client() as http_client:
+        ret = await client.request_raw(http_client, 'GET', '/config', args={'dataset_id': '123', 'edit': '1'})
+        ret.raise_for_status()
+        doc = BeautifulSoup(ret.text, 'html.parser')
+        xsrf = doc.find('input', {'name': '_xsrf'}).get('value')  # type: ignore
+        editor = doc.find('div', {'id': 'config_editor'})
+        assert editor.get('data-read-only') == '0'  # type: ignore[union-attr]
+        assert editor.get('data-schema-force-version') is None  # type: ignore[union-attr]
+        assert editor.get('data-error-line') is None  # type: ignore[union-attr]
+
+        ret = await client.request_raw(http_client, 'POST', '/config', form_data={
+            '_xsrf': xsrf,
+            'dataset_id': '123',
+            'edit': '1',
+            'submit_box': config_str,
+            'description': 'desc',
+        })
+        assert ret.status_code == 400
+        assert not edit_mock.called
+
+    doc = BeautifulSoup(ret.text, 'html.parser')
+    error = doc.find('div', {'id': 'error'}).text  # type: ignore[union-attr]
+    # the position comes from Python's json module, which reports a trailing
+    # comma differently by version (3.12: next token; 3.13+: the comma itself)
+    with pytest.raises(json.JSONDecodeError) as exc_info:
+        json.loads(config_str)
+    line, col = exc_info.value.lineno, exc_info.value.colno
+    assert error.startswith(f'Invalid JSON at line {line}, column {col}:')
+    editor = doc.find('div', {'id': 'config_editor'})
+    assert editor.get('data-error-line') == str(line)  # type: ignore[union-attr]
+    assert editor.get('data-error-col') == str(col)  # type: ignore[union-attr]
+
+
+async def test_website_schema_unknown_version(server):
+    client = server()
+    with pytest.raises(httpx.HTTPStatusError) as exc_info:
+        await client.request('GET', '/schemas/v3/dataset_v9.9.schema.json')
+    assert exc_info.value.response.status_code == 404
 
 
 async def test_website_config_status_queued(server):

@@ -58,11 +58,16 @@ class Schemas(PublicHandler):
     @catch_error
     async def get(self, schema):
         if schema == 'dataset.schema.json':
-            self.write(DATASET_SCHEMA.schema())
+            # Unversioned fallback URL for old configs: always the legacy
+            # version (3.1), never the latest. New code should use the
+            # versioned URLs below.
+            self.write(DATASET_SCHEMA.schema(DATASET_SCHEMA.LEGACY_VERSION))
         elif schema == 'config.schema.json':
             self.write(SERVER_SCHEMA)
         elif ver := re.match(r'dataset_v(\d\.\d).schema.json', schema):
             ver = float(ver.group(1))
+            if ver not in DATASET_SCHEMA.list_versions():
+                raise tornado.web.HTTPError(404, reason='unknown schema version')
             self.write(DATASET_SCHEMA.schema(ver))
         else:
             raise tornado.web.HTTPError(404, reason='unknown schema')
@@ -224,7 +229,7 @@ class Server:
         self.async_monitor = None
 
         if config.ICEPROD_CRED_CLIENT_ID and config.ICEPROD_CRED_CLIENT_SECRET:
-            logging.info(f'enabling auth via {config.OPENID_URL} for aud "{config.OPENID_AUDIENCE}"')
+            logging.info(f'enabling cred auth via {config.OPENID_URL} for aud "{config.OPENID_AUDIENCE}"')
             cred_client = ClientCredentialsAuth(
                 address=config.ICEPROD_CRED_ADDRESS,
                 token_url=config.OPENID_URL,
@@ -240,6 +245,7 @@ class Server:
         if config.CI_TESTING:
             self.session = Session()
         else:
+            logging.info(f'enabling redis on {config.REDIS_HOST}')
             kwargs = {}
             if config.REDIS_USER:
                 kwargs['username'] = config.REDIS_USER

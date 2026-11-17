@@ -439,7 +439,7 @@ class BaseGrid:
                 raise
 
     @AsyncPromTimer(lambda self: self.prometheus.histogram('iceprod_grid_task_reset', 'IceProd grid.task_reset calls', buckets=HistogramBuckets.MINUTE))
-    async def task_reset(self, task: GridTask, reason: str | None = None, stats: dict | None = None):
+    async def task_reset(self, task: GridTask, reason: str | None = None, stats: dict | None = None, stdout: Path | None = None, stderr: Path | None = None):
         """
         Tell IceProd API a task should be reset back to the "waiting" status.
 
@@ -466,6 +466,10 @@ class BaseGrid:
             if e.response.status_code != 404:
                 raise
         else:
+            if stdout and stdout.exists():
+                await self._upload_log(task, 'stdout', stdout.read_text())
+            if stderr and stderr.exists():
+                await self._upload_log(task, 'stderr', stderr.read_text())
             if reason:
                 await self._upload_log(task, 'stdlog', reason)
 

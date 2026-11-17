@@ -4,7 +4,7 @@ import re
 import secrets
 import time
 import traceback
-from typing import Any
+from typing import Any, ClassVar
 from urllib.parse import urlencode
 
 import jwt
@@ -414,6 +414,10 @@ class TokenStorageMixin(RestHandler):
 
 class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler):  # type: ignore[override]
     """Default Handler"""
+    #: Extra Content-Security-Policy sources, merged into the default policy
+    #: in :meth:`prepare`. Override in subclasses that need more (keep it narrow).
+    csp_extra: ClassVar[dict[str, list[str]]] = {}
+
     def initialize(  # type: ignore[override]
         self,
         *args,
@@ -452,18 +456,22 @@ class PublicHandler(LoginMixin, TokenStorageMixin, PromRequestMixin, RestHandler
 
         # set a content security policy, and use a nonce for inline style/script tags
         self.csp_nonce = secrets.token_urlsafe(16)
-        csp_policy = (
-            "default-src 'none'; "
-            f"script-src 'self' 'nonce-{self.csp_nonce}' cdnjs.cloudflare.com; "
-            "script-src-attr 'unsafe-inline'; "
-            "connect-src 'self'; "
-            "img-src 'self'; "
-            f"style-src 'self' 'nonce-{self.csp_nonce}' cdnjs.cloudflare.com; "
-            "style-src-attr 'unsafe-inline'; "
-            "frame-ancestors 'none'; "
-            "form-action 'self'; "
-            "upgrade-insecure-requests; "
-        )
+        csp: dict[str, list[str]] = {
+            'default-src': ["'none'"],
+            'script-src': ["'self'", f"'nonce-{self.csp_nonce}'", 'cdnjs.cloudflare.com'],
+            'script-src-attr': ["'unsafe-inline'"],
+            'connect-src': ["'self'"],
+            'img-src': ["'self'"],
+            'style-src': ["'self'", f"'nonce-{self.csp_nonce}'", 'cdnjs.cloudflare.com'],
+            'style-src-attr': ["'unsafe-inline'"],
+            'frame-ancestors': ["'none'"],
+            'form-action': ["'self'"],
+            'upgrade-insecure-requests': [],
+        }
+        # per-handler additions (e.g. the config editor pages)
+        for directive, sources in self.csp_extra.items():
+            csp.setdefault(directive, []).extend(s for s in sources if s not in csp.get(directive, []))
+        csp_policy = ''.join(f'{" ".join([d] + s)}; ' for d, s in csp.items())
         self.set_header('Content-Security-Policy', csp_policy)
 
     def update_refresh_token(self, access: str | bytes, refresh: str | bytes | None):

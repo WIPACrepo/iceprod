@@ -209,6 +209,9 @@ span.hide {
 #submit_area textarea
 {
     width: 100%;
+    /* include the browser's default padding in the 100%, so textareas line up
+       with the Monaco editor (a full-width block) instead of overflowing it */
+    box-sizing: border-box;
     resize: vertical;
     height: 4em;
     margin: .5em auto;
@@ -237,7 +240,7 @@ form
 {
     background-color: #dddfe5;
     border-radius: .4em;
-    padding: .1em .5em .2em;
+    padding: .5em .5em .2em;
 
     background: #dddfe5; /* Old browsers */
     background: -moz-linear-gradient(-45deg, #dddfe5 0%, #c3cadd 100%); /* FF3.6-15 */
@@ -287,3 +290,22 @@ form
     white-space: pre-wrap;
 }
 
+
+/* Monaco config editor (config_editor.js); the textarea is the no-JS fallback */
+/* `#submit_area textarea { display: block }` would override the hidden attribute
+   that config_editor.js sets on the fallback textarea */
+#submit_area [hidden] {
+    display: none;
+}
+#config_editor {
+    /* full available width, like the textareas (block element, auto width) */
+    box-sizing: border-box;
+    margin: .5em auto;
+    border-radius: .4em;
+    height: 70vh;
+    min-height: 500px;
+    /* let users drag the editor taller; Monaco re-layouts automatically.
+       overflow: hidden also clips Monaco to the rounded corners */
+    resize: vertical;
+    overflow: hidden;
+}
