@@ -151,6 +151,23 @@ def http_error_message(e: requests.exceptions.HTTPError) -> str:
 class ActionBase(PublicHandler):
     """Shared helpers for the action form handlers."""
 
+    def _get_ids(self, name: str) -> list[str]:
+        """
+        Read a list of ids from the form.
+
+        `ActionForm` sends all ids as one comma-separated field, because
+        Tornado limits urlencoded bodies to 1000 fields and browse pages can
+        list many more ids than that.  Repeated fields are also accepted.
+
+        Args:
+            name: form field name (`task_ids` | `job_ids`)
+
+        Returns:
+            unique, non-empty ids, in form order
+        """
+        ids = (i.strip() for val in self.get_body_arguments(name) for i in val.split(','))
+        return list(dict.fromkeys(i for i in ids if i))
+
     def _return_args(self) -> tuple[str, str | None]:
         """Read the (unsanitized) return_query and validated return_page from the form."""
         return_query = self.get_body_argument('return_query', default='') or ''
@@ -243,7 +260,7 @@ class TaskAction(ActionBase):
     @authenticated
     async def post(self, dataset_id: str):
         action = self.get_body_argument('action', default='')
-        task_ids = [t for t in self.get_body_arguments('task_ids') if t]
+        task_ids = self._get_ids('task_ids')
         return_query, return_page = self._return_args()
         payload = {'dataset_id': dataset_id, 'task_ids': task_ids}
         return_url = build_return_url('task_status', payload, return_query, return_page)
@@ -268,7 +285,7 @@ class JobAction(ActionBase):
     @authenticated
     async def post(self, dataset_id: str):
         action = self.get_body_argument('action', default='')
-        job_ids = [j for j in self.get_body_arguments('job_ids') if j]
+        job_ids = self._get_ids('job_ids')
         return_query, return_page = self._return_args()
         payload = {'dataset_id': dataset_id, 'job_ids': job_ids}
         return_url = build_return_url('job_status', payload, return_query, return_page)
