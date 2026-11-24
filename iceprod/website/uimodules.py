@@ -50,7 +50,8 @@ class ActionForm(tornado.web.UIModule):
         url: form action url (one of the `/dataset/<id>/.../actions` routes)
         action: action name
         label: button text
-        ids: ids to send as repeated hidden `id_field` inputs
+        ids: ids to send, comma-joined in one hidden `id_field` input
+            (one field per id can exceed Tornado's 1000-field body limit)
         id_field: form field name for ids (`task_ids` | `job_ids`)
         confirm_msg: if set, ask the user to confirm before submitting
         return_page: `browse` | `detail` hint for the completion redirect

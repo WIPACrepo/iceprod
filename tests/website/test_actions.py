@@ -553,8 +553,9 @@ async def test_page_task_browse(server):
         # (suspend is not allowed from 'failed')
         assert len(forms) == 3 + 2*2
         all_reset = forms[0]
+        # ids are sent comma-joined in one field (see test_page_browse_many_ids)
         ids = [i.get('value') for i in all_reset.find_all('input', {'name': 'task_ids'})]
-        assert sorted(ids) == ['t1', 't2']
+        assert ids == ['t1,t2']
         assert all_reset.find('input', {'name': 'return_query'}).get('value') == 'status=failed'
         assert all_reset.find('input', {'name': 'return_page'}).get('value') == 'browse'
 
@@ -611,6 +612,64 @@ async def test_page_job_browse(server):
             assert f.find('input', {'name': 'action'}).get('value') == 'reset'
         assert 'Running tasks will be restarted' in all_reset.get('onsubmit')
         assert row_reset.get('onsubmit') is None
+
+
+@pytest.mark.parametrize('kind', ['task', 'job'])
+async def test_page_browse_many_ids(server, kind):
+    """
+    "All" forms on a browse page with more ids than Tornado's form field
+    limit (1000) must still post successfully.
+    """
+    client = user(server)
+    n = 1500
+    rows = {}
+    for i in range(n):
+        id_ = f'{kind[0]}{i}'
+        rows[id_] = {f'{kind}_id': id_, 'dataset_id': 'd1', 'job_index': i, 'task_index': 0,
+                     'name': 'a', 'failures': 0, 'status': 'failed' if kind == 'task' else 'errors',
+                     'status_changed': ''}
+    client.req_mock.add_mock(f'/datasets/d1/{kind}s', rows)
+    m = client.req_mock.add_mock(f'/actions/{kind}_status', {'result': 'm1'})
+    async with client.get_http_client() as http_client:
+        # the task page only lists tasks when filtered by status
+        args = {'status': 'failed'} if kind == 'task' else {}
+        ret = await client.request_raw(http_client, 'GET', f'/dataset/d1/{kind}', args=args)
+        assert ret.status_code == 200
+        doc = BeautifulSoup(ret.text, 'html.parser')
+        all_reset = doc.find('form', {'action': f'/dataset/d1/{kind}/actions'})
+        form_data = {i.get('name'): i.get('value') for i in all_reset.find_all('input')}
+        ret = await client.request_raw(http_client, 'POST', f'/dataset/d1/{kind}/actions', form_data=form_data)
+    assert ret.status_code == 303
+    assert m.call_args[0][2][f'{kind}_ids'] == list(rows)
+
+
+@pytest.mark.parametrize('ids,expected', [
+    ('j1,j2', ['j1', 'j2']),
+    (' j1 , ,j2,', ['j1', 'j2']),
+    (['j1,j2', 'j3', 'j1'], ['j1', 'j2', 'j3']),
+])
+async def test_job_action_ids_format(server, ids, expected):
+    client = user(server)
+    m = client.req_mock.add_mock('/actions/job_status', {'result': 'm1'})
+    async with client.get_http_client() as http_client:
+        xsrf = await get_xsrf(client, http_client)
+        ret = await client.request_raw(http_client, 'POST', '/dataset/d1/job/actions', form_data={
+            '_xsrf': xsrf, 'action': 'reset', 'job_ids': ids,
+        })
+    assert ret.status_code == 303
+    assert m.call_args[0][2]['job_ids'] == expected
+
+
+async def test_job_action_ids_only_commas(server):
+    client = user(server)
+    m = client.req_mock.add_mock('/actions/job_status', {'result': 'm1'})
+    async with client.get_http_client() as http_client:
+        xsrf = await get_xsrf(client, http_client)
+        ret = await client.request_raw(http_client, 'POST', '/dataset/d1/job/actions', form_data={
+            '_xsrf': xsrf, 'action': 'reset', 'job_ids': ',,',
+        })
+    assert ret.status_code == 400
+    assert not m.called
 
 
 async def test_page_job_browse_empty(server):

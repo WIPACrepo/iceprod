@@ -30,7 +30,7 @@ def IceProdRestConfig(config: dict[str, Any], database: DB | None = None, auth_d
 
 class APIBase(AttrAuthMixin, PromRequestMixin, RestHandler):
     """Default REST handler"""
-    def initialize(self, *args, database: DB, db_client: AsyncMongoClient | None = None, s3=None, **kwargs):  # type: ignore[override]
+    def initialize(self, *args, database: DB, db_client: AsyncMongoClient | None = None, s3=None, **kwargs):  # ty: ignore[incompatible-method-override]
         logger.debug('initialze APIBase: args=%r, kwargs=%r', args, kwargs)
         super().initialize(*args, **kwargs)
         logger.debug('do rest of initialize APIBase')

@@ -129,7 +129,7 @@ def eval_expression(token, e):
     return [r for r in ret if r]
 
 
-class LoginMixin(SessionMixin, RestHandler):  # type: ignore[misc]
+class LoginMixin(SessionMixin, RestHandler):  # type: ignore[misc]  # ty: ignore[incompatible-method-override]
     """
     Store/load current user's `OpenIDLoginHandler` tokens in Redis.
     """
@@ -258,7 +258,7 @@ class TokenStorageMixin(RestHandler):
     """
     TokenResult = list[dict[str, Any]]
 
-    def initialize(self, *args, cred_rest_client, **kwargs):
+    def initialize(self, *args, cred_rest_client, **kwargs):  # ty: ignore[incompatible-method-override]
         super().initialize(**kwargs)
         self.cred_rest_client = cred_rest_client
 
